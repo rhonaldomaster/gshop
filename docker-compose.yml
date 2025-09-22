@@ -1,0 +1,88 @@
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: gshop_postgres
+    environment:
+      POSTGRES_DB: gshop_db
+      POSTGRES_USER: gshop_user
+      POSTGRES_PASSWORD: gshop_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - gshop_network
+    restart: unless-stopped
+
+  # Redis (Optional for caching)
+  redis:
+    image: redis:7-alpine
+    container_name: gshop_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gshop_network
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gshop_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://gshop_user:gshop_password@postgres:5432/gshop_db
+      - JWT_SECRET=your-super-secret-jwt-key
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - gshop_network
+    restart: unless-stopped
+    command: npm run start:dev
+
+  # Admin Web Panel
+  admin-web:
+    build:
+      context: ./admin-web
+      dockerfile: Dockerfile
+    container_name: gshop_admin
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3000/api/v1
+      - NEXTAUTH_URL=http://localhost:3001
+      - NEXTAUTH_SECRET=your-nextauth-secret
+    depends_on:
+      - backend
+    volumes:
+      - ./admin-web:/app
+      - /app/node_modules
+    networks:
+      - gshop_network
+    restart: unless-stopped
+    command: npm run dev
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  gshop_network:
+    driver: bridge

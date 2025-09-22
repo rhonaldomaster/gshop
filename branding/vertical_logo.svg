@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="150" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .logo-text { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 32px; }
+      .logo-mark { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 28px; }
+    </style>
+  </defs>
+  
+  <!-- Background circle for G -->
+  <circle cx="200" cy="40" r="30" fill="#FF0050" />
+  
+  <!-- G letter in white -->
+  <text x="200" y="52" text-anchor="middle" fill="#FFFFFF" class="logo-mark">G</text>
+  
+  <!-- SHOP text -->
+  <text x="200" y="100" text-anchor="middle" fill="#000000" class="logo-text">SHOP</text>
+  
+  <!-- Accent dot -->
+  <circle cx="280" cy="25" r="3" fill="#00C853" />
+</svg>
