@@ -48,10 +48,10 @@ export function StatsCards() {
         ]);
 
         setStats({
-          totalRevenue: paymentsStats?.totalRevenue || 0,
-          totalOrders: ordersStats?.totalOrders || 0,
-          totalUsers: usersStats?.totalUsers || 0,
-          totalProducts: productsStats?.totalProducts || 0,
+          totalRevenue: (paymentsStats as any)?.totalRevenue || 0,
+          totalOrders: (ordersStats as any)?.totalOrders || 0,
+          totalUsers: (usersStats as any)?.totalUsers || 0,
+          totalProducts: (productsStats as any)?.totalProducts || 0,
           revenueChange: 12.5,
           ordersChange: 8.2,
           usersChange: 15.3,

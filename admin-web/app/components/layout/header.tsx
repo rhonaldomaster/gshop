@@ -27,7 +27,7 @@ export function Header() {
       ?.toUpperCase?.() || 'U';
   };
 
-  const fullName = session?.user?.name || `${session?.user?.firstName || ''} ${session?.user?.lastName || ''}`.trim();
+  const fullName = session?.user?.name || 'User';
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -58,7 +58,7 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={session?.user?.image || session?.user?.avatar} />
+                  <AvatarImage src={session?.user?.image || undefined} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {getInitials(fullName)}
                   </AvatarFallback>

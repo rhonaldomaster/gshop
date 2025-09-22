@@ -228,7 +228,7 @@ export function ProductsTable() {
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.style?.setProperty?.('display', 'flex');
+                              (e.currentTarget.nextElementSibling as HTMLElement)?.style?.setProperty?.('display', 'flex');
                             }}
                           />
                         ) : null}

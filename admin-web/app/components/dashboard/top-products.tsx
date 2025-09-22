@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, TrendingUp } from 'lucide-react';
+import { Star, TrendingUp, Package } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
 interface Product {

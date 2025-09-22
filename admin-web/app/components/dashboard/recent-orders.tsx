@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Eye } from 'lucide-react';
+import { ExternalLink, Eye, ShoppingCart } from 'lucide-react';
 import { apiClient, formatCurrency, formatDate, getStatusColor } from '@/lib/api-client';
 
 interface Order {
