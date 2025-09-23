@@ -7,6 +7,10 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SellersModule } from './sellers/sellers.module';
+import { AffiliatesModule } from './affiliates/affiliates.module';
+import { PixelModule } from './pixel/pixel.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -23,6 +27,10 @@ import { AppService } from './app.service';
     ProductsModule,
     OrdersModule,
     PaymentsModule,
+    SellersModule,
+    AffiliatesModule,
+    PixelModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
