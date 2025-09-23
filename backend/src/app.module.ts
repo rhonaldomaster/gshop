@@ -11,6 +11,9 @@ import { SellersModule } from './sellers/sellers.module';
 import { AffiliatesModule } from './affiliates/affiliates.module';
 import { PixelModule } from './pixel/pixel.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AdsModule } from './ads/ads.module';
+import { AudiencesModule } from './audiences/audiences.module';
+import { LiveModule } from './live/live.module';
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -31,6 +34,9 @@ import { AppService } from './app.service';
     AffiliatesModule,
     PixelModule,
     AnalyticsModule,
+    AdsModule,
+    AudiencesModule,
+    LiveModule,
   ],
   controllers: [AppController],
   providers: [AppService],

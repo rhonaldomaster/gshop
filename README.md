@@ -14,6 +14,8 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - **Authentication**: JWT + NextAuth
 - **Affiliate System**: Link generation and tracking
 - **Analytics**: Real-time tracking with GSHOP Pixel
+- **Ads Manager**: Campaign management with DPA and retargeting
+- **Live Shopping**: RTMP streaming with real-time chat
 
 ## 📋 Features
 
@@ -68,6 +70,22 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - Traffic source analysis
 - Product performance metrics
 
+### 🎯 Ads Manager Features (PHASE 2)
+- Campaign creation and management (DPA, Retargeting, Custom)
+- Real-time campaign metrics (CTR, CPA, ROAS)
+- Budget control and scheduling
+- Audience management with pixel-based segmentation
+- Dynamic Product Ads with auto-generated creatives
+- Performance analytics dashboard
+
+### 📺 Live Shopping Features (PHASE 2)
+- RTMP/HLS live streaming infrastructure
+- Real-time chat with WebSocket integration
+- Live product showcasing with purchase overlays
+- Viewer count tracking and engagement metrics
+- Stream scheduling and management
+- Mobile-optimized viewing experience
+
 ### Mobile App Features
 - Product browsing and search
 - Social shopping features
@@ -75,6 +93,8 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - Secure checkout
 - Order tracking
 - User profiles
+- Live stream viewing with chat (PHASE 2)
+- Real-time product recommendations (PHASE 2)
 
 ## 🚀 Quick Start
 
@@ -139,14 +159,20 @@ gshop/
 │   │   ├── affiliates/    # 🆕 Affiliate system (links, tracking)
 │   │   ├── pixel/         # 🆕 Analytics tracking events
 │   │   ├── analytics/     # 🆕 Reporting and metrics
+│   │   ├── ads/           # 🆕 Phase 2: Campaign management & DPA
+│   │   ├── audiences/     # 🆕 Phase 2: Audience segmentation
+│   │   ├── live/          # 🆕 Phase 2: Live streaming infrastructure
 │   │   └── database/      # Database config & migrations
 │   └── Dockerfile
 ├── admin-web/             # Next.js Admin Panel
-│   ├── src/
-│   │   ├── components/    # Reusable components
-│   │   ├── pages/         # Admin pages
-│   │   ├── styles/        # Tailwind styles
-│   │   └── utils/         # Helper functions
+│   ├── app/
+│   │   ├── ads/          # 🆕 Phase 2: Ads Manager UI
+│   │   ├── live/         # 🆕 Phase 2: Live Shopping management
+│   │   └── dashboard/    # Admin dashboard pages
+│   ├── components/
+│   │   ├── ads/          # 🆕 Phase 2: Campaign components
+│   │   ├── live/         # 🆕 Phase 2: Live streaming components
+│   │   └── ui/           # Reusable UI components
 │   └── Dockerfile
 ├── seller-panel/          # 🆕 Next.js Seller Panel
 │   ├── app/              # Next.js 14 app directory
@@ -155,8 +181,10 @@ gshop/
 │   └── types/            # TypeScript definitions
 ├── mobile/                # React Native App
 │   ├── src/
-│   │   ├── components/    # UI components
-│   │   ├── screens/       # App screens
+│   │   ├── components/
+│   │   │   └── live/     # 🆕 Phase 2: Live streaming components
+│   │   ├── screens/
+│   │   │   └── live/     # 🆕 Phase 2: Live shopping screens
 │   │   ├── navigation/    # Navigation setup
 │   │   └── services/      # API services
 │   └── app.json
@@ -194,7 +222,7 @@ Once the backend is running, visit:
 - Swagger UI: `http://localhost:3000/api/docs`
 - API Endpoints: `http://localhost:3000/api/v1`
 
-### New API Endpoints (Phase 1)
+### Phase 1 API Endpoints
 
 #### Seller Authentication
 - `POST /api/v1/auth/seller/register` - Register new seller with KYC
@@ -214,6 +242,36 @@ Once the backend is running, visit:
 - `POST /api/v1/pixel/track` - Track pixel event
 - `GET /api/v1/pixel/analytics` - Get analytics data
 - `GET /api/v1/pixel/realtime` - Get realtime events
+
+### Phase 2 API Endpoints
+
+#### Ads Manager
+- `POST /api/v1/ads/campaigns` - Create advertising campaign
+- `GET /api/v1/ads/campaigns` - List seller campaigns
+- `PUT /api/v1/ads/campaigns/:id/status` - Update campaign status
+- `POST /api/v1/ads/campaigns/:id/metrics` - Record campaign metrics
+- `GET /api/v1/ads/dashboard` - Get ads dashboard statistics
+
+#### Audience Management
+- `POST /api/v1/audiences` - Create custom audience
+- `GET /api/v1/audiences` - List seller audiences
+- `POST /api/v1/audiences/:id/rebuild` - Rebuild audience from rules
+- `GET /api/v1/audiences/:id/users` - Get audience members
+
+#### Dynamic Product Ads
+- `GET /api/v1/dpa/feed/:sellerId` - Get product catalog feed
+- `GET /api/v1/dpa/recommendations/:userId` - Get personalized recommendations
+- `GET /api/v1/dpa/retargeting/:audienceId` - Get retargeting product suggestions
+- `GET /api/v1/dpa/creative/:productId` - Generate creative assets for product
+
+#### Live Shopping
+- `POST /api/v1/live/streams` - Create live stream
+- `GET /api/v1/live/streams/active` - Get active live streams
+- `POST /api/v1/live/streams/:id/start` - Start live stream
+- `POST /api/v1/live/streams/:id/end` - End live stream
+- `POST /api/v1/live/streams/:id/products` - Add product to stream
+- `POST /api/v1/live/streams/:id/messages` - Send chat message
+- `GET /api/v1/live/streams/:id/stats` - Get stream analytics
 
 ## 🎨 Branding
 
@@ -414,14 +472,22 @@ For support and questions, please open an issue in the repository.
 - **Analytics Dashboard**: Real-time metrics and reporting
 - **Enhanced Payments**: Commission tracking and withdrawals
 
-### 🚧 Phase 2 - Advanced Features (PLANNED)
-- Live streaming integration
+### ✅ Phase 2 - Ads Manager & Live Shopping (COMPLETED)
+- **Ads Manager**: Campaign creation with DPA, retargeting, and custom campaigns
+- **Dynamic Product Ads**: Auto-generated product feeds and personalized recommendations
+- **Audience Management**: Pixel-based segmentation and lookalike audiences
+- **Live Shopping Platform**: RTMP/HLS streaming with real-time chat
+- **Mobile Live Experience**: Stream viewing with interactive product showcases
+- **WebSocket Integration**: Real-time communication infrastructure
+
+### 🚧 Phase 3 - Advanced Social Features (PLANNED)
 - Social features (reviews, ratings, follows)
-- Advanced recommendation engine
+- Advanced recommendation engine with ML
 - Multi-language support
 - Enhanced mobile app features
+- Creator monetization tools
 
-### 🔮 Phase 3 - Enterprise Features (PLANNED)
+### 🔮 Phase 4 - Enterprise Features (PLANNED)
 - White-label solutions
 - Advanced analytics and AI insights
 - B2B marketplace features

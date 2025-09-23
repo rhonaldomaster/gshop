@@ -17,6 +17,8 @@ import {
   Menu,
   X,
   LogOut,
+  Target,
+  Radio,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
@@ -28,6 +30,8 @@ const navigation = [
   { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
   { name: 'Users', href: '/dashboard/users', icon: Users },
   { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
+  { name: 'Ads Manager', href: '/ads', icon: Target },
+  { name: 'Live Shopping', href: '/live', icon: Radio },
   { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
