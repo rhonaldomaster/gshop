@@ -273,3 +273,7 @@ build/
 
 # Storybook build outputs
 storybook-static
+
+# Tool-specific files
+*.donotdelete
+.abacus.*
