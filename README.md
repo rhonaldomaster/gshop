@@ -16,6 +16,10 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - **Analytics**: Real-time tracking with GSHOP Pixel
 - **Ads Manager**: Campaign management with DPA and retargeting
 - **Live Shopping**: RTMP streaming with real-time chat
+- **Marketplace Global**: Multi-seller marketplace with advanced features
+- **Enhanced Payments V2**: Stripe and USDC crypto payments
+- **GSHOP Token System**: Rewards, cashback, and wallet management
+- **AI Recommendations**: ML-powered personalized product suggestions
 
 ## 📋 Features
 
@@ -86,6 +90,46 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - Stream scheduling and management
 - Mobile-optimized viewing experience
 
+### 🛒 Marketplace Global Features (PHASE 3)
+- Multi-seller marketplace with seller verification and KYC
+- Advanced product catalog with multi-image support
+- Comprehensive review and rating system with image uploads
+- Inventory management with stock tracking and alerts
+- Shipping management with carrier integration and tracking
+- Advanced product search with filters (category, price, rating, location)
+- Seller dashboard with performance analytics and insights
+- Commission management and automated payouts
+
+### 💳 Enhanced Payment System V2 (PHASE 3)
+- Stripe integration for traditional card and bank payments
+- USDC cryptocurrency payments on Polygon blockchain
+- Hybrid fiat/crypto payment processing with real-time conversion
+- Blockchain transaction verification with gas optimization
+- Automated PDF invoice generation with unique numbering
+- Payment method management (cards, bank accounts, crypto wallets)
+- Multi-currency support with exchange rate integration
+- Advanced payment analytics and fraud detection
+
+### 🪙 GSHOP Token Economy (PHASE 3)
+- Internal wallet system with secure balance management
+- 5% cashback rewards on all purchases (configurable rates)
+- Peer-to-peer token transfer system with transaction history
+- Fiat-to-token conversion via credit cards and bank transfers
+- Admin token management (minting, burning, circulation control)
+- Comprehensive transaction categorization and analytics
+- Token exchange rate tracking and valuation
+- Reward distribution automation and scheduling
+
+### 🤖 AI-Powered Recommendations (PHASE 3)
+- Multiple ML algorithms: collaborative filtering, content-based, and hybrid
+- Real-time user behavior tracking (views, clicks, purchases, cart actions)
+- Dynamic preference learning with weighted interaction scoring
+- Product similarity engine for "customers also bought" features
+- Cold start solutions for new users with demographic targeting
+- Context-aware recommendations (checkout, browsing, abandonment)
+- A/B testing framework for algorithm performance optimization
+- Recommendation feedback loop for continuous improvement
+
 ### Mobile App Features
 - Product browsing and search
 - Social shopping features
@@ -94,7 +138,9 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - Order tracking
 - User profiles
 - Live stream viewing with chat (PHASE 2)
-- Real-time product recommendations (PHASE 2)
+- Marketplace shopping with seller ratings (PHASE 3)
+- GSHOP wallet with cashback tracking (PHASE 3)
+- Personalized product recommendations (PHASE 3)
 
 ## 🚀 Quick Start
 
@@ -162,12 +208,19 @@ gshop/
 │   │   ├── ads/           # 🆕 Phase 2: Campaign management & DPA
 │   │   ├── audiences/     # 🆕 Phase 2: Audience segmentation
 │   │   ├── live/          # 🆕 Phase 2: Live streaming infrastructure
+│   │   ├── marketplace/   # 🆕 Phase 3: Multi-seller marketplace system
+│   │   ├── payments/      # Enhanced with V2 crypto payments (Phase 3)
+│   │   ├── token/         # 🆕 Phase 3: GSHOP token economy & wallet
+│   │   ├── recsys/        # 🆕 Phase 3: AI recommendation engine
 │   │   └── database/      # Database config & migrations
 │   └── Dockerfile
 ├── admin-web/             # Next.js Admin Panel
 │   ├── app/
 │   │   ├── ads/          # 🆕 Phase 2: Ads Manager UI
 │   │   ├── live/         # 🆕 Phase 2: Live Shopping management
+│   │   ├── marketplace/  # 🆕 Phase 3: Marketplace management UI
+│   │   ├── payments/     # Enhanced with crypto payment management
+│   │   ├── tokens/       # 🆕 Phase 3: Token economy dashboard
 │   │   └── dashboard/    # Admin dashboard pages
 │   ├── components/
 │   │   ├── ads/          # 🆕 Phase 2: Campaign components
@@ -202,13 +255,29 @@ gshop/
 
 ## 🔧 Configuration
 
-### MercadoPago Setup
+### Payment Gateway Setup
+
+#### MercadoPago (Legacy)
 1. Create a MercadoPago developer account
 2. Get your credentials from the dashboard
 3. Update environment variables:
    - `MERCAPAGO_CLIENT_ID`
    - `MERCAPAGO_CLIENT_SECRET`
    - `MERCAPAGO_ACCESS_TOKEN`
+
+#### Stripe (Phase 3)
+1. Create a Stripe account at stripe.com
+2. Get your API keys from the dashboard
+3. Update environment variables:
+   - `STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key`
+   - `STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key`
+
+#### Polygon Blockchain (Phase 3)
+1. Set up Polygon RPC endpoint (use Alchemy, Infura, or public RPC)
+2. Configure USDC contract address for Polygon network
+3. Update environment variables:
+   - `POLYGON_RPC_URL=https://polygon-rpc.com`
+   - `USDC_CONTRACT_ADDRESS=0x2791bca1f2de4661ed88a30c99a7a9449aa84174`
 
 ### Database Configuration
 The application uses PostgreSQL with TypeORM. Migrations are automatically run on startup.
@@ -272,6 +341,48 @@ Once the backend is running, visit:
 - `POST /api/v1/live/streams/:id/products` - Add product to stream
 - `POST /api/v1/live/streams/:id/messages` - Send chat message
 - `GET /api/v1/live/streams/:id/stats` - Get stream analytics
+
+### Phase 3 API Endpoints
+
+#### Marketplace Global
+- `POST /api/v1/marketplace/sellers` - Create marketplace seller with KYC
+- `GET /api/v1/marketplace/products` - Search products with advanced filters
+- `POST /api/v1/marketplace/reviews` - Submit product review with images
+- `PUT /api/v1/marketplace/products/:id/inventory` - Update inventory levels
+- `GET /api/v1/marketplace/sellers/:id/stats` - Get seller performance metrics
+- `GET /api/v1/marketplace/categories` - Get product categories
+- `GET /api/v1/marketplace/featured` - Get featured products
+
+#### Enhanced Payment System V2
+- `POST /api/v1/payments-v2` - Create payment (fiat or crypto)
+- `POST /api/v1/payments-v2/:id/process/stripe` - Process Stripe card payment
+- `POST /api/v1/payments-v2/:id/process/crypto` - Process USDC crypto payment
+- `POST /api/v1/payments-v2/crypto/verify/:id` - Verify blockchain transaction
+- `GET /api/v1/payments-v2/invoices/:id/pdf` - Generate and download PDF invoice
+- `POST /api/v1/payments-v2/methods` - Create payment method
+- `GET /api/v1/payments-v2/stats/overview` - Get payment analytics
+- `GET /api/v1/payments-v2/exchange-rates/usdc-usd` - Get USDC exchange rate
+
+#### GSHOP Token System
+- `GET /api/v1/tokens/wallet` - Get user wallet balance and details
+- `POST /api/v1/tokens/transfer` - Transfer tokens between users
+- `POST /api/v1/tokens/rewards/cashback` - Process cashback rewards
+- `POST /api/v1/tokens/topup` - Top up wallet with fiat payment
+- `GET /api/v1/tokens/wallet/transactions` - Get transaction history
+- `GET /api/v1/tokens/stats` - Get token economy statistics
+- `GET /api/v1/tokens/circulation` - Get circulation data
+- `POST /api/v1/tokens/admin/mint` - Admin: mint new tokens
+- `POST /api/v1/tokens/admin/burn` - Admin: burn tokens
+
+#### AI-Powered Recommendations
+- `POST /api/v1/recommendations/interactions` - Track user behavior
+- `POST /api/v1/recommendations/generate` - Generate personalized recommendations
+- `GET /api/v1/recommendations/user/:userId` - Get user recommendations
+- `GET /api/v1/recommendations/trending` - Get trending products
+- `POST /api/v1/recommendations/realtime` - Get context-aware recommendations
+- `GET /api/v1/recommendations/preferences/:userId` - Get user preferences
+- `POST /api/v1/recommendations/feedback` - Submit recommendation feedback
+- `GET /api/v1/recommendations/stats` - Get recommendation performance stats
 
 ## 🎨 Branding
 
@@ -480,12 +591,13 @@ For support and questions, please open an issue in the repository.
 - **Mobile Live Experience**: Stream viewing with interactive product showcases
 - **WebSocket Integration**: Real-time communication infrastructure
 
-### 🚧 Phase 3 - Advanced Social Features (PLANNED)
-- Social features (reviews, ratings, follows)
-- Advanced recommendation engine with ML
-- Multi-language support
-- Enhanced mobile app features
-- Creator monetization tools
+### ✅ Phase 3 - Marketplace & AI Features (COMPLETED)
+- **Marketplace Global**: Multi-seller platform with KYC, reviews, and inventory management
+- **Enhanced Payment System V2**: Stripe integration and USDC crypto payments on Polygon
+- **GSHOP Token Economy**: Internal wallet, 5% cashback rewards, and peer-to-peer transfers
+- **AI-Powered Recommendations**: ML algorithms with collaborative filtering, content-based, and hybrid approaches
+- **Advanced Analytics**: Token circulation metrics, payment analytics, and recommendation performance tracking
+- **Blockchain Integration**: Real-time transaction verification and gas optimization on Polygon network
 
 ### 🔮 Phase 4 - Enterprise Features (PLANNED)
 - White-label solutions
