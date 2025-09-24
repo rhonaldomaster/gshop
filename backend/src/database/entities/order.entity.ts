@@ -19,9 +19,11 @@ export enum OrderStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
   PROCESSING = 'processing',
+  IN_TRANSIT = 'in_transit',
   SHIPPED = 'shipped',
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
+  RETURN_REQUESTED = 'return_requested',
   REFUNDED = 'refunded',
 }
 
@@ -102,6 +104,56 @@ export class Order {
   @ApiProperty()
   @Column({ nullable: true })
   shippingCarrier: string;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  shippingCost: number;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  courierService: string;
+
+  @ApiProperty()
+  @Column('json', { nullable: true })
+  shippingOptions: {
+    carrier: string;
+    service: string;
+    rate: number;
+    deliveryTime: string;
+    easypostRateId?: string;
+  }[];
+
+  @ApiProperty()
+  @Column('json', { nullable: true })
+  packageDimensions: {
+    length: number;
+    width: number;
+    height: number;
+    weight: number;
+  };
+
+  @ApiProperty()
+  @Column('json', { nullable: true })
+  customerDocument: {
+    type: string;
+    number: string;
+  };
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  isGuestOrder: boolean;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  easypostShipmentId: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  returnReason: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  shippingProof: string;
 
   @ApiProperty()
   @Column({ nullable: true })

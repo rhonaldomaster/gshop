@@ -16,6 +16,7 @@ GSHOP is a TikTok Shop clone MVP with a microservices architecture consisting of
 - **Affiliate System**: Link generation and tracking with commission management
 - **GSHOP Pixel**: JavaScript tracking script for external websites
 - **Analytics**: Real-time analytics and reporting dashboard
+- **Logistics System**: EasyPost integration for dynamic shipping rates and tracking
 
 ## Development Commands
 
@@ -453,6 +454,9 @@ STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 POLYGON_RPC_URL=https://polygon-rpc.com
 USDC_CONTRACT_ADDRESS=0x2791bca1f2de4661ed88a30c99a7a9449aa84174
+
+# Add to .env for Logistics features
+EASYPOST_API_KEY=EZAK_your_easypost_api_key
 ```
 
 ## Phase 3 Features (Implemented)
@@ -593,3 +597,140 @@ USDC_CONTRACT_ADDRESS=0x2791bca1f2de4661ed88a30c99a7a9449aa84174
 - **Crypto Processing**: USDC payments with blockchain verification
 - **Invoice System**: Automated PDF generation with unique numbering
 - **Multi-currency**: USD and crypto with real-time conversion rates
+
+## GSHOP Logistics Phase (Latest Implementation)
+
+### 🚚 Complete Shipping & Logistics System
+- **Backend Module**: `backend/src/shipping/` and `backend/src/returns/`
+- **EasyPost Integration**: Dynamic shipping rates and automated tracking
+- **Features**:
+  - Real-time shipping rate calculation from multiple carriers (Servientrega, Coordinadora, DHL, FedEx)
+  - Automatic tracking number generation and shipment creation
+  - Package dimension and weight-based pricing
+  - Guest checkout with mandatory document validation
+  - Returns management with automated MercadoPago refunds
+  - Seller dashboard for shipping approval and return processing
+  - Mobile app with dynamic shipping selection and order tracking
+
+### 📱 Mobile Buyer Experience
+- **Checkout Flow**: Dynamic shipping rates displayed before payment
+- **Guest Checkout**: Full checkout without account creation, with document validation
+- **Document Validation**: Support for Cédula, Pasaporte, and other Colombian ID types
+- **Real-time Tracking**: Live order status with carrier tracking links
+- **Return Requests**: In-app return initiation with 30-day window
+
+### 🏪 Seller Panel Integration
+- **Order Management**: Complete order lifecycle from confirmation to delivery
+- **Shipping Approval**: Review automatically generated shipping labels and tracking
+- **Return Processing**: Approve/reject return requests with automated refunds
+- **Shipping Analytics**: Track shipping costs, carriers, and delivery times
+
+### 🔧 Technical Implementation
+
+#### Order Entity Enhancements
+```typescript
+// New order status types
+export enum OrderStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  PROCESSING = 'processing',
+  IN_TRANSIT = 'in_transit',
+  SHIPPED = 'shipped',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+  RETURN_REQUESTED = 'return_requested',
+  REFUNDED = 'refunded',
+}
+
+// New order fields
+interface OrderShippingData {
+  shippingCarrier?: string;
+  courierService?: string;
+  shippingCost?: number;
+  trackingNumber?: string;
+  easypostShipmentId?: string;
+  shippingOptions?: ShippingOption[];
+  packageDimensions?: PackageDimensions;
+  customerDocument?: CustomerDocument;
+  isGuestOrder?: boolean;
+  returnReason?: string;
+  shippingProof?: string;
+}
+```
+
+#### EasyPost Integration
+- **Rate Shopping**: Automatically fetches rates from all available carriers
+- **Shipment Creation**: Generates tracking numbers and shipping labels
+- **Real-time Tracking**: Updates order status based on carrier tracking events
+- **Fallback System**: Mock rates when API is unavailable for development
+
+### 🛒 Guest Checkout System
+- **No Account Required**: Complete purchases without user registration
+- **Document Validation**: Mandatory Colombian ID validation (CC, CE, PA, TI)
+- **Address Validation**: Colombian state/department selection and postal code verification
+- **Temporary User Creation**: Creates temporary user records for order management
+
+### 📦 Returns & Refunds
+- **30-Day Return Window**: Automatic calculation from delivery date
+- **Reason Tracking**: Detailed return reason collection and storage
+- **Automated Refunds**: Integration with existing MercadoPago refund system
+- **Seller Review**: Approve/reject returns with seller notes
+
+### 🌐 API Endpoints - Logistics
+
+#### Shipping Management
+- `POST /api/v1/orders/:id/shipping-options` - Get dynamic shipping rates for order
+- `POST /api/v1/orders/:id/confirm-shipping` - Confirm selected shipping method
+- `GET /api/v1/orders/:id/tracking` - Get real-time tracking information
+- `PUT /api/v1/orders/:id/shipping-status` - Update shipping status (seller/admin)
+
+#### Returns Management
+- `POST /api/v1/orders/:id/return` - Request return for delivered order
+- `PUT /api/v1/orders/:id/process-return` - Process return (approve/reject)
+- `GET /api/v1/returns` - Get all return requests (filtered by seller)
+- `GET /api/v1/orders/:id/return-details` - Get return details for specific order
+- `GET /api/v1/returns/stats` - Get return statistics and analytics
+
+#### Guest Checkout
+- `POST /api/v1/orders/guest` - Create order for guest user
+- All existing shipping and payment endpoints work with guest orders
+
+### 💰 Cost Structure
+- **Shipping Costs**: Dynamically calculated based on package dimensions and destination
+- **Return Handling**: Free returns within 30-day window (cost absorbed by seller)
+- **EasyPost Fees**: Standard API fees for rate calculation and tracking
+
+### 📊 Analytics & Reporting
+- **Shipping Performance**: Track delivery times, carrier performance, and costs
+- **Return Analytics**: Monitor return rates, reasons, and seller approval rates
+- **Guest Conversion**: Track guest checkout completion rates and user conversion
+
+### 🔐 Security & Validation
+- **Document Verification**: Validates Colombian ID formats and patterns
+- **Address Validation**: Ensures complete and valid Colombian addresses
+- **Rate Protection**: Prevents rate manipulation through server-side validation
+
+### 📱 Mobile Implementation Files
+- `mobile/src/screens/checkout/ShippingOptionsScreen.tsx` - Dynamic rate selection
+- `mobile/src/screens/checkout/GuestCheckoutScreen.tsx` - Guest checkout with validation
+- `mobile/src/screens/orders/OrderTrackingScreen.tsx` - Real-time order tracking
+
+### 🖥️ Seller Panel Files
+- `seller-panel/app/dashboard/orders/page.tsx` - Complete order management dashboard
+
+### ⚙️ Environment Configuration
+```bash
+# Required for logistics functionality
+EASYPOST_API_KEY=EZAK_your_easypost_api_key_here
+
+# Existing MercadoPago config still used for refunds
+MERCAPAGO_CLIENT_ID=your-mercadopago-client-id
+MERCAPAGO_CLIENT_SECRET=your-mercadopago-client-secret
+MERCAPAGO_ACCESS_TOKEN=your-mercadopago-access-token
+```
+
+### 🚀 Deployment Notes
+- EasyPost requires production API keys for live shipping rates
+- Colombian carrier integration optimized (Servientrega, Coordinadora primary)
+- Database migration required for new Order entity fields
+- Mobile app requires @react-native-picker/picker dependency

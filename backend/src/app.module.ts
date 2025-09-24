@@ -18,6 +18,8 @@ import { LiveModule } from './live/live.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { TokenModule } from './token/token.module';
 import { RecsysModule } from './recsys/recsys.module';
+import { ShippingModule } from './shipping/shipping.module';
+import { ReturnsModule } from './returns/returns.module';
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -45,6 +47,8 @@ import { AppService } from './app.service';
     MarketplaceModule,
     TokenModule,
     RecsysModule,
+    ShippingModule,
+    ReturnsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
