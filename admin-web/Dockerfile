@@ -6,10 +6,10 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package files from the app subdirectory
-COPY app/package*.json ./
+COPY app/package*.json app/package-lock.json* ./
 
 # Install dependencies
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy source code
 COPY app/ ./
@@ -30,10 +30,10 @@ RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nextjs -u 1001
 
 # Copy package files
-COPY app/package*.json ./
+COPY app/package*.json app/package-lock.json* ./
 
 # Install all dependencies (dev dependencies needed for Next.js dev mode)
-RUN npm ci && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
