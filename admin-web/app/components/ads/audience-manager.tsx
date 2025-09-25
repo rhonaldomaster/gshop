@@ -140,9 +140,9 @@ export function AudienceManager() {
                   <div key={event} className="flex items-center space-x-2">
                     <Checkbox
                       id={event}
-                      checked={formData.rules.events?.includes(event)}
+                      checked={(formData.rules as any).events?.includes(event)}
                       onCheckedChange={(checked) => {
-                        const events = formData.rules.events || []
+                        const events = (formData.rules as any).events || []
                         const newEvents = checked
                           ? [...events, event]
                           : events.filter((e: string) => e !== event)
@@ -167,7 +167,7 @@ export function AudienceManager() {
                 type="number"
                 min="1"
                 max="365"
-                value={formData.rules.timeframe || ''}
+                value={(formData.rules as any).timeframe || ''}
                 onChange={(e) => setFormData({
                   ...formData,
                   rules: { ...formData.rules, timeframe: parseInt(e.target.value) }
@@ -185,7 +185,7 @@ export function AudienceManager() {
               <Label htmlFor="userIds">User IDs (one per line)</Label>
               <Textarea
                 id="userIds"
-                value={formData.rules.userIds?.join('\n') || ''}
+                value={(formData.rules as any).userIds?.join('\n') || ''}
                 onChange={(e) => setFormData({
                   ...formData,
                   rules: {
@@ -206,7 +206,7 @@ export function AudienceManager() {
             <div className="space-y-2">
               <Label htmlFor="sourceAudience">Source Audience</Label>
               <Select
-                value={formData.rules.sourceAudienceId || ''}
+                value={(formData.rules as any).sourceAudienceId || ''}
                 onValueChange={(value) => setFormData({
                   ...formData,
                   rules: { ...formData.rules, sourceAudienceId: value }
@@ -233,7 +233,7 @@ export function AudienceManager() {
                 step="0.1"
                 min="0.1"
                 max="1"
-                value={formData.rules.similarity || ''}
+                value={(formData.rules as any).similarity || ''}
                 onChange={(e) => setFormData({
                   ...formData,
                   rules: { ...formData.rules, similarity: parseFloat(e.target.value) }
