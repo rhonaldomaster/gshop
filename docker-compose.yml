@@ -35,7 +35,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: gshop_backend
     ports:
       - "3000:3000"
@@ -44,6 +44,8 @@ services:
       - JWT_SECRET=your-super-secret-jwt-key
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+      - EASYPOST_API_KEY=EZAK_your_easypost_api_key_here
     depends_on:
       - postgres
       - redis
