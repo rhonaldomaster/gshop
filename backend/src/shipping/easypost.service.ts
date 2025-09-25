@@ -24,7 +24,7 @@ export interface EasyPostParcel {
 @Injectable()
 export class EasyPostService {
   private readonly logger = new Logger(EasyPostService.name);
-  private easyPost: EasyPostClient;
+  private easyPost: any; // EasyPost client instance
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('EASYPOST_API_KEY');

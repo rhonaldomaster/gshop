@@ -328,7 +328,8 @@ export class MarketplaceService {
       ...shippingData,
     });
 
-    return this.shippingRepository.save(shipping);
+    const savedShipping = await this.shippingRepository.save(shipping);
+    return Array.isArray(savedShipping) ? savedShipping[0] : savedShipping;
   }
 
   async updateShippingStatus(shippingId: string, status: ShippingStatus, trackingNumber?: string): Promise<Shipping> {

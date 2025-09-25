@@ -9,6 +9,9 @@ export class PixelEvent {
   @Column()
   sellerId: string
 
+  @Column({ nullable: true })
+  userId: string
+
   @Column({ type: 'enum', enum: ['page_view', 'product_view', 'add_to_cart', 'purchase', 'custom'] })
   eventType: string
 
@@ -42,6 +45,9 @@ export class PixelEvent {
   @Column({ type: 'json', nullable: true })
   customData: any
 
+  @Column({ type: 'json', nullable: true })
+  eventData: any
+
   @Column({ nullable: true })
   country: string
 
@@ -50,4 +56,9 @@ export class PixelEvent {
 
   @CreateDateColumn()
   createdAt: Date
+
+  // Alias for createdAt (for compatibility)
+  get timestamp(): Date {
+    return this.createdAt;
+  }
 }

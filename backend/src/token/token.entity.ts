@@ -8,8 +8,13 @@ export enum TokenTransactionType {
   PURCHASE = 'purchase',
   WITHDRAWAL = 'withdrawal',
   TRANSFER = 'transfer',
+  TRANSFER_OUT = 'transfer_out',
+  TRANSFER_IN = 'transfer_in',
   BONUS = 'bonus',
-  PENALTY = 'penalty'
+  PENALTY = 'penalty',
+  TOPUP = 'topup',
+  BURN = 'burn',
+  MINT = 'mint'
 }
 
 export enum TokenTransactionStatus {
@@ -24,7 +29,8 @@ export enum RewardTier {
   SILVER = 'silver',
   GOLD = 'gold',
   PLATINUM = 'platinum',
-  DIAMOND = 'diamond'
+  DIAMOND = 'diamond',
+  CASHBACK = 'cashback'
 }
 
 @Entity('gshop_wallets')
@@ -62,6 +68,9 @@ export class GshopWallet {
 
   @Column({ default: true })
   isActive: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastTransactionAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -125,6 +134,9 @@ export class GshopTransaction {
   @Column({ type: 'timestamp', nullable: true })
   processedAt: Date;
 
+  @Column({ nullable: true })
+  paymentMethod: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -175,6 +187,9 @@ export class RewardCampaign {
 
   @Column('int', { nullable: true })
   usageLimit: number;
+
+  @Column({ nullable: true })
+  userId: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -256,6 +271,12 @@ export class TokenMetrics {
   @Column('int', { default: 0 })
   dailyTransactions: number;
 
+  @Column('int', { default: 0 })
+  totalTransactions: number;
+
+  @Column('int', { default: 0 })
+  totalWallets: number;
+
   @Column('decimal', { precision: 18, scale: 8, default: 0 })
   dailyVolume: number;
 
@@ -268,3 +289,13 @@ export class TokenMetrics {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+
+// Add missing entity aliases for imports
+export class TokenReward extends RewardCampaign {}
+export class WalletTopup extends GshopTransaction {}
+export class TokenCirculation extends TokenMetrics {}
+
+// Add missing enums/types
+export const TransactionType = TokenTransactionType;
+export const RewardType = RewardTier;
+export const TopupStatus = TokenTransactionStatus;

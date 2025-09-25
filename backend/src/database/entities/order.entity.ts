@@ -65,6 +65,11 @@ export class Order {
   @Column('decimal', { precision: 10, scale: 2 })
   totalAmount: number;
 
+  // Alias for totalAmount (for compatibility)
+  get total(): number {
+    return this.totalAmount;
+  }
+
   @ApiProperty()
   @Column('json')
   shippingAddress: {

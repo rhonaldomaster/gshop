@@ -20,7 +20,7 @@ import {
   TokenStatsQueryDto
 } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { TopupStatus } from './token.entity';
+import { TokenTransactionStatus } from './token.entity';
 
 @Controller('tokens')
 export class TokenController {
@@ -90,7 +90,7 @@ export class TokenController {
   @UseGuards(JwtAuthGuard)
   async processTopup(
     @Param('id') topupId: string,
-    @Body() body: { status: TopupStatus }
+    @Body() body: { status: TokenTransactionStatus }
   ) {
     return this.tokenService.processTopup(topupId, body.status);
   }

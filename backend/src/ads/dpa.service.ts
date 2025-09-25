@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Product } from '../products/product.entity';
 import { PixelEvent } from '../pixel/pixel.entity';
 import { Audience } from '../audiences/audience.entity';
 
-interface DPARecommendation {
+export interface DPARecommendation {
   productId: string;
   product: Product;
   score: number;
@@ -41,7 +41,7 @@ export class DPAService {
         brand: product.seller?.businessName || 'GSHOP',
         category: product.category,
         product_type: product.category,
-        google_product_category: this.mapToGoogleCategory(product.category),
+        google_product_category: this.mapToGoogleCategory(product.category?.name || (product.category as unknown as string)),
         custom_label_0: product.sellerId,
         mpn: product.id,
         gtin: product.barcode || '',
@@ -221,7 +221,7 @@ export class DPAService {
       select: ['category'],
     });
 
-    return [...new Set(products.map(p => p.category))];
+    return [...new Set(products.map(p => p.category?.name || (p.category as unknown as string)))] as string[];
   }
 
   private async getPopularProducts(limit: number, excludeIds: string[] = []): Promise<DPARecommendation[]> {

@@ -23,7 +23,7 @@ export class PaymentsV2Service {
     private cryptoTransactionRepository: Repository<CryptoTransaction>,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: '2023-10-16',
+      apiVersion: '2025-08-27.basil',
     });
 
     this.polygonProvider = new ethers.JsonRpcProvider(
@@ -138,7 +138,10 @@ export class PaymentsV2Service {
       }
 
       cryptoTx.blockNumber = receipt.blockNumber;
-      cryptoTx.confirmations = receipt.confirmations || 0;
+      const confirmations = typeof receipt.confirmations === 'function'
+        ? await receipt.confirmations()
+        : (receipt.confirmations || 0);
+      cryptoTx.confirmations = Number(confirmations);
       cryptoTx.gasFee = Number(ethers.formatEther(receipt.gasUsed * receipt.gasPrice));
 
       if (receipt.status === 1) {

@@ -63,9 +63,22 @@ export class Product {
   @Column('int', { default: 0 })
   quantity: number;
 
+  // Alias for quantity (for compatibility)
+  get stock(): number {
+    return this.quantity;
+  }
+
+  set stock(value: number) {
+    this.quantity = value;
+  }
+
   @ApiProperty()
   @Column({ default: true })
   trackQuantity: boolean;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  barcode: string;
 
   @ApiProperty()
   @Column('decimal', { precision: 8, scale: 2, nullable: true })
@@ -94,6 +107,11 @@ export class Product {
   @ApiProperty()
   @Column({ default: true })
   isVisible: boolean;
+
+  // Alias for status === 'active' (for compatibility)
+  get isActive(): boolean {
+    return this.status === ProductStatus.ACTIVE;
+  }
 
   @ApiProperty()
   @Column('json', { nullable: true })

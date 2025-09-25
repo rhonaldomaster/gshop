@@ -9,7 +9,9 @@ import {
   TokenCirculation,
   TransactionType,
   RewardType,
-  TopupStatus
+  TopupStatus,
+  TokenTransactionType,
+  TokenTransactionStatus
 } from './token.entity';
 import { CreateWalletDto, TransferTokensDto, RewardUserDto, TopupWalletDto, TokenStatsQueryDto } from './dto';
 
@@ -70,7 +72,7 @@ export class TokenService {
   async updateWalletBalance(
     userId: string,
     amount: number,
-    transactionType: TransactionType,
+    transactionType: TokenTransactionType,
     metadata?: any
   ): Promise<GshopWallet> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -176,23 +178,25 @@ export class TokenService {
 
     // Create reward record
     const reward = this.rewardRepository.create({
+      name: `Reward for user ${userId}`,
+      description: `Reward of ${amount} tokens`,
+      rewardType: TokenTransactionType.REWARD,
+      rewardAmount: amount,
       userId,
-      rewardType,
-      amount,
-      orderId,
-      metadata,
+      isActive: true,
     });
 
     const savedReward = await this.rewardRepository.save(reward);
+    const rewardEntity = Array.isArray(savedReward) ? savedReward[0] : savedReward;
 
     // Update wallet balance
     await this.updateWalletBalance(userId, amount, TransactionType.REWARD, {
-      rewardId: savedReward.id,
+      rewardId: rewardEntity.id,
       rewardType,
       orderId,
     });
 
-    return savedReward;
+    return rewardEntity;
   }
 
   async processCashback(userId: string, orderAmount: number, orderId: string): Promise<TokenReward> {
@@ -222,7 +226,7 @@ export class TokenService {
     return this.topupRepository.save(topup);
   }
 
-  async processTopup(topupId: string, status: TopupStatus): Promise<WalletTopup> {
+  async processTopup(topupId: string, status: TokenTransactionStatus): Promise<WalletTopup> {
     const topup = await this.topupRepository.findOne({ where: { id: topupId } });
 
     if (!topup) {

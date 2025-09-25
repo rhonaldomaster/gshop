@@ -7,7 +7,16 @@ export enum InteractionType {
   PURCHASE = 'purchase',
   WISHLIST = 'wishlist',
   SHARE = 'share',
-  REVIEW = 'review'
+  REVIEW = 'review',
+  LIKE = 'like',
+  WISHLIST_ADD = 'wishlist_add'
+}
+
+export enum PreferenceType {
+  CATEGORY = 'category',
+  BRAND = 'brand',
+  PRICE_RANGE = 'price_range',
+  ATTRIBUTE = 'attribute'
 }
 
 export enum RecommendationType {
@@ -57,8 +66,17 @@ export class UserPreference {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid', { unique: true })
+  @Column('uuid')
   userId: string;
+
+  @Column({ type: 'enum', enum: PreferenceType })
+  preferenceType: PreferenceType;
+
+  @Column('varchar', { length: 255 })
+  preferenceValue: string;
+
+  @Column('decimal', { precision: 3, scale: 2, default: 0.5 })
+  strength: number;
 
   @Column('json', { nullable: true })
   categories: string[];
@@ -165,6 +183,15 @@ export class Recommendation {
   @Column({ type: 'timestamp', nullable: true })
   expiredAt: Date;
 
+  @Column({ type: 'timestamp', nullable: true })
+  generatedAt: Date;
+
+  @Column({ nullable: true })
+  algorithm: string;
+
+  @Column('int', { nullable: true })
+  position: number;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -258,3 +285,7 @@ export class RecommendationMetrics {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+
+// Add missing entity aliases
+export class ProductSimilarity extends SimilarityMatrix {}
+export class RecommendationResult extends Recommendation {}

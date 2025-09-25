@@ -73,6 +73,10 @@ export class User {
   bio: string;
 
   @ApiProperty()
+  @Column({ nullable: true })
+  businessName: string;
+
+  @ApiProperty()
   @Column({ type: 'json', nullable: true })
   addresses: any[];
 

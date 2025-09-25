@@ -1,5 +1,5 @@
 import { IsString, IsNumber, IsEnum, IsOptional, Min, IsObject } from 'class-validator';
-import { RewardType } from '../token.entity';
+import { RewardTier } from '../token.entity';
 
 export class CreateWalletDto {
   @IsOptional()
@@ -28,8 +28,8 @@ export class RewardUserDto {
   @IsString()
   userId: string;
 
-  @IsEnum(RewardType)
-  rewardType: RewardType;
+  @IsEnum(RewardTier)
+  rewardType: RewardTier;
 
   @IsNumber()
   @Min(0.01)

@@ -70,7 +70,7 @@ services:
     depends_on:
       - backend
     volumes:
-      - ./admin-web:/app
+      - ./admin-web/app:/app
       - /app/node_modules
     networks:
       - gshop_network
