@@ -8,6 +8,7 @@ import DashboardLayout from '@/components/DashboardLayout'
 import StatsCards from '@/components/dashboard/StatsCards'
 import RecentOrders from '@/components/dashboard/RecentOrders'
 import QuickActions from '@/components/dashboard/QuickActions'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
@@ -37,7 +38,7 @@ export default function DashboardPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       </DashboardLayout>
     )
@@ -45,15 +46,17 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {session?.seller?.businessName || 'Seller'}!
-          </h1>
-          <p className="text-gray-600">
-            Here's what's happening with your store today.
-          </p>
-        </div>
+      <div className="space-y-6 animate-fade-in">
+        <Card className="gshop-seller-header border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-3xl font-bold">
+              Welcome back, {session?.seller?.businessName || 'Seller'}! 🏪
+            </CardTitle>
+            <p className="text-white/90 text-lg">
+              Here's what's happening with your store today.
+            </p>
+          </CardHeader>
+        </Card>
 
         <StatsCards stats={stats} />
 

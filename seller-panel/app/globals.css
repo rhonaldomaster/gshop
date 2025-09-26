@@ -4,48 +4,57 @@
 
 @layer base {
   :root {
+    /* GSHOP Seller Panel Brand Colors */
+    --primary: 345 100% 65%; /* #FF0050 */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 0%; /* #000000 */
+    --secondary-foreground: 0 0% 98%;
+
+    --accent: 140 100% 39%; /* #00C853 */
+    --accent-foreground: 0 0% 98%;
+
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 3.9%;
+
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --popover-foreground: 0 0% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+
+    --ring: 345 100% 65%;
+
     --radius: 0.5rem;
+
+    --success: 140 100% 39%;
+    --warning: 38 92% 50%;
+    --error: 0 84% 60%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
   }
 }
 
@@ -53,7 +62,166 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/20;
+  }
+}
+
+@layer components {
+  /* GSHOP Seller Panel Custom Components */
+  .gshop-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  }
+
+  .gshop-card {
+    @apply bg-card border border-border rounded-lg shadow-sm;
+  }
+
+  .gshop-button-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors;
+  }
+
+  .gshop-button-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/90 transition-colors;
+  }
+
+  .gshop-button-accent {
+    @apply bg-accent text-accent-foreground hover:bg-accent/90 transition-colors;
+  }
+
+  .gshop-stats-card {
+    @apply gshop-card p-6 hover:shadow-lg transition-shadow duration-200;
+  }
+
+  .gshop-nav-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors;
+    @apply hover:bg-accent hover:text-accent-foreground;
+    @apply data-[active=true]:bg-primary data-[active=true]:text-primary-foreground;
+  }
+
+  .gshop-seller-header {
+    @apply gshop-gradient p-6 text-white rounded-t-lg;
+  }
+
+  .gshop-metric-card {
+    @apply gshop-card p-4 text-center hover:gshop-gradient hover:text-white transition-all duration-300;
+  }
+
+  /* Enhanced Input Styling */
+  .gshop-input {
+    display: flex;
+    height: 3rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 2px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  .gshop-input::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .gshop-input:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  .gshop-input:hover {
+    border-color: hsl(var(--primary) / 0.5);
+  }
+
+  .gshop-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Force explicit input styling */
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    display: flex;
+    height: 3rem;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 2px solid #d1d5db;
+    background-color: #ffffff;
+    color: #111827;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease-in-out;
+  }
+
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="text"]:focus {
+    outline: none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  }
+
+  input[type="email"]:hover,
+  input[type="password"]:hover,
+  input[type="text"]:hover {
+    border-color: #9ca3af;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-counter {
+    animation: counter 2s ease-out forwards;
+  }
+
+  @keyframes counter {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
