@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { MarketplaceService } from './marketplace.service';
-import { CreateSellerDto, UpdateSellerDto, CreateProductDto, UpdateProductDto, CreateReviewDto, ProductSearchDto, UpdateSellerStatusDto } from './dto';
+import { CreateSellerDto, UpdateSellerDto, CreateMarketplaceProductDto, UpdateMarketplaceProductDto, CreateReviewDto, ProductSearchDto, UpdateSellerStatusDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { MarketplaceSellerStatus, ShippingStatus } from './marketplace.entity';
 
@@ -64,7 +64,7 @@ export class MarketplaceController {
   @UseInterceptors(FilesInterceptor('images', 10))
   async createProduct(
     @Request() req,
-    @Body() createProductDto: CreateProductDto,
+    @Body() createProductDto: CreateMarketplaceProductDto,
     @UploadedFiles() files: Express.Multer.File[],
   ) {
     const seller = await this.marketplaceService.getSellerByUserId(req.user.id);
@@ -107,7 +107,7 @@ export class MarketplaceController {
   async updateProduct(
     @Request() req,
     @Param('id') productId: string,
-    @Body() updateProductDto: UpdateProductDto,
+    @Body() updateProductDto: UpdateMarketplaceProductDto,
     @UploadedFiles() files?: Express.Multer.File[],
   ) {
     const seller = await this.marketplaceService.getSellerByUserId(req.user.id);

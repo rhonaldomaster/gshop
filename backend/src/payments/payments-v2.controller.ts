@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { PaymentsV2Service } from './payments-v2.service';
-import { CreatePaymentDto, ProcessCryptoPaymentDto, CreatePaymentMethodDto, CreateInvoiceDto, UpdateInvoiceStatusDto, PaymentStatsQueryDto } from './dto';
+import { CreatePaymentV2Dto, ProcessCryptoPaymentDto, CreatePaymentMethodDto, CreateInvoiceDto, UpdateInvoiceStatusDto, PaymentStatsQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('payments-v2')
@@ -21,7 +21,7 @@ export class PaymentsV2Controller {
   // Payment Processing
   @Post()
   @UseGuards(JwtAuthGuard)
-  async createPayment(@Body() createPaymentDto: CreatePaymentDto) {
+  async createPayment(@Body() createPaymentDto: CreatePaymentV2Dto) {
     return this.paymentsV2Service.createPayment(createPaymentDto);
   }
 

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MarketplaceSeller, MarketplaceProduct, Review, Inventory, Shipping, MarketplaceSellerStatus, ShippingStatus } from './marketplace.entity';
-import { CreateSellerDto, UpdateSellerDto, CreateProductDto, UpdateProductDto, CreateReviewDto } from './dto';
+import { CreateSellerDto, UpdateSellerDto, CreateMarketplaceProductDto, UpdateMarketplaceProductDto, CreateReviewDto } from './dto';
 
 @Injectable()
 export class MarketplaceService {
@@ -107,7 +107,7 @@ export class MarketplaceService {
   }
 
   // Product Management
-  async createProduct(sellerId: string, createProductDto: CreateProductDto): Promise<MarketplaceProduct> {
+  async createProduct(sellerId: string, createProductDto: CreateMarketplaceProductDto): Promise<MarketplaceProduct> {
     const seller = await this.sellerRepository.findOne({ where: { id: sellerId } });
     if (!seller) {
       throw new NotFoundException('Seller not found');
@@ -153,7 +153,7 @@ export class MarketplaceService {
     return product;
   }
 
-  async updateProduct(productId: string, sellerId: string, updateProductDto: UpdateProductDto): Promise<MarketplaceProduct> {
+  async updateProduct(productId: string, sellerId: string, updateProductDto: UpdateMarketplaceProductDto): Promise<MarketplaceProduct> {
     const product = await this.productRepository.findOne({
       where: { id: productId, sellerId },
     });

@@ -41,6 +41,11 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://gshop_user:gshop_password@postgres:5432/gshop_db
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=gshop_user
+      - DB_PASSWORD=gshop_password
+      - DB_DATABASE=gshop_db
       - JWT_SECRET=your-super-secret-jwt-key
       - REDIS_HOST=redis
       - REDIS_PORT=6379

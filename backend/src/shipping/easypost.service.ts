@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import EasyPostClient from '@easypost/api';
+const EasyPost = require('@easypost/api');
 import { ShippingOptionDto } from './dto';
 
 export interface EasyPostAddress {
@@ -33,7 +33,7 @@ export class EasyPostService {
       return;
     }
 
-    this.easyPost = new EasyPostClient(apiKey);
+    this.easyPost = new EasyPost(apiKey);
   }
 
   async getShippingRates(

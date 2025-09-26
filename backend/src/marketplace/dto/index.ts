@@ -72,7 +72,7 @@ export class UpdateSellerDto {
   paymentSettings?: any;
 }
 
-export class CreateProductDto {
+export class CreateMarketplaceProductDto {
   @IsString()
   name: string;
 
@@ -126,7 +126,7 @@ export class CreateProductDto {
   barcode?: string;
 }
 
-export class UpdateProductDto {
+export class UpdateMarketplaceProductDto {
   @IsOptional()
   @IsString()
   name?: string;

@@ -1,7 +1,7 @@
 import { IsString, IsNumber, IsEnum, IsOptional, IsArray, IsObject, Min } from 'class-validator';
 import { PaymentMethod, PaymentStatus, InvoiceStatus } from '../payments-v2.entity';
 
-export class CreatePaymentDto {
+export class CreatePaymentV2Dto {
   @IsString()
   orderId: string;
 

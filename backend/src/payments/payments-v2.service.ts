@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaymentV2, Invoice, PaymentMethodEntity, CryptoTransaction, PaymentMethod, PaymentStatus, InvoiceStatus } from './payments-v2.entity';
-import { CreatePaymentDto, CreateInvoiceDto, CreatePaymentMethodDto, ProcessCryptoPaymentDto } from './dto';
+import { CreatePaymentV2Dto, CreateInvoiceDto, CreatePaymentMethodDto, ProcessCryptoPaymentDto } from './dto';
 import Stripe from 'stripe';
 import { ethers } from 'ethers';
 
@@ -32,7 +32,7 @@ export class PaymentsV2Service {
   }
 
   // Payment Processing
-  async createPayment(createPaymentDto: CreatePaymentDto): Promise<PaymentV2> {
+  async createPayment(createPaymentDto: CreatePaymentV2Dto): Promise<PaymentV2> {
     const payment = this.paymentRepository.create(createPaymentDto);
     return this.paymentRepository.save(payment);
   }
