@@ -18,8 +18,13 @@ interface LiveStream {
   description: string;
   status: 'scheduled' | 'live' | 'ended';
   viewerCount: number;
-  seller: {
+  hostType: 'seller' | 'affiliate';
+  seller?: {
     businessName: string;
+    profileImage?: string;
+  };
+  affiliate?: {
+    name: string;
     profileImage?: string;
   };
   products: Array<{
@@ -139,14 +144,28 @@ export default function LiveStreamsScreen({ navigation }: any) {
         <View style={styles.sellerInfo}>
           <View style={styles.sellerAvatar}>
             <Text style={styles.sellerInitial}>
-              {item.seller.businessName.charAt(0).toUpperCase()}
+              {item.hostType === 'seller'
+                ? item.seller?.businessName.charAt(0).toUpperCase()
+                : item.affiliate?.name.charAt(0).toUpperCase()
+              }
             </Text>
           </View>
           <View style={styles.streamDetails}>
             <Text style={styles.streamTitle} numberOfLines={2}>
               {item.title}
             </Text>
-            <Text style={styles.sellerName}>{item.seller.businessName}</Text>
+            <View style={styles.hostInfo}>
+              <Text style={styles.sellerName}>
+                {item.hostType === 'seller' ? item.seller?.businessName : item.affiliate?.name}
+              </Text>
+              <View style={[styles.hostTypeBadge, {
+                backgroundColor: item.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
+              }]}>
+                <Text style={styles.hostTypeText}>
+                  {item.hostType === 'seller' ? 'SELLER' : 'AFFILIATE'}
+                </Text>
+              </View>
+            </View>
             <Text style={styles.productCount}>
               {item.products.length} product{item.products.length !== 1 ? 's' : ''}
             </Text>
@@ -332,10 +351,25 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
+  hostInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
   sellerName: {
     fontSize: 14,
     color: '#6b7280',
-    marginBottom: 2,
+    marginRight: 8,
+  },
+  hostTypeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  hostTypeText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: 'bold',
   },
   productCount: {
     fontSize: 12,

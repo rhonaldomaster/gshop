@@ -168,6 +168,23 @@ export class Order {
   @Column({ nullable: true })
   deliveredAt: Date;
 
+  // Live Streaming Attribution
+  @ApiProperty()
+  @Column({ nullable: true })
+  liveSessionId: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  affiliateId: string;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  commissionRate: number;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  commissionAmount: number;
+
   @ApiProperty()
   @CreateDateColumn()
   createdAt: Date;

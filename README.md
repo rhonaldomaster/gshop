@@ -83,12 +83,15 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - Performance analytics dashboard
 
 ### 📺 Live Shopping Features (PHASE 2)
-- RTMP/HLS live streaming infrastructure
+- RTMP/HLS live streaming infrastructure with dual host support
+- **Seller & Affiliate Hosting**: Both sellers and affiliates can host live streams
 - Real-time chat with WebSocket integration
 - Live product showcasing with purchase overlays
+- **Purchase Attribution**: Automatic commission tracking for affiliate-hosted streams
 - Viewer count tracking and engagement metrics
-- Stream scheduling and management
-- Mobile-optimized viewing experience
+- Stream scheduling and management from seller panel
+- Mobile-optimized viewing experience with host type badges
+- **Commission Calculation**: Automatic commission calculation for affiliate sales during live streams
 
 ### 🛒 Marketplace Global Features (PHASE 3)
 - Multi-seller marketplace with seller verification and KYC
@@ -137,7 +140,7 @@ A comprehensive e-commerce platform with social shopping features, built with mo
 - Secure checkout
 - Order tracking
 - User profiles
-- Live stream viewing with chat (PHASE 2)
+- Live stream viewing with chat and affiliate/seller host badges (PHASE 2)
 - Marketplace shopping with seller ratings (PHASE 3)
 - GSHOP wallet with cashback tracking (PHASE 3)
 - Personalized product recommendations (PHASE 3)
@@ -207,7 +210,7 @@ gshop/
 │   │   ├── analytics/     # 🆕 Reporting and metrics
 │   │   ├── ads/           # 🆕 Phase 2: Campaign management & DPA
 │   │   ├── audiences/     # 🆕 Phase 2: Audience segmentation
-│   │   ├── live/          # 🆕 Phase 2: Live streaming infrastructure
+│   │   ├── live/          # 🆕 Phase 2: Live streaming with seller/affiliate support
 │   │   ├── marketplace/   # 🆕 Phase 3: Multi-seller marketplace system
 │   │   ├── payments/      # Enhanced with V2 crypto payments (Phase 3)
 │   │   ├── token/         # 🆕 Phase 3: GSHOP token economy & wallet
@@ -228,7 +231,10 @@ gshop/
 │   │   └── ui/           # Reusable UI components
 │   └── Dockerfile
 ├── seller-panel/          # 🆕 Next.js Seller Panel
-│   ├── app/              # Next.js 14 app directory
+│   ├── app/
+│   │   ├── dashboard/
+│   │   │   └── live/     # 🆕 Live streaming management dashboard
+│   │   └── auth/         # Authentication pages
 │   ├── components/       # Seller UI components
 │   ├── lib/              # Auth and utilities
 │   └── types/            # TypeScript definitions
@@ -334,13 +340,18 @@ Once the backend is running, visit:
 - `GET /api/v1/dpa/creative/:productId` - Generate creative assets for product
 
 #### Live Shopping
-- `POST /api/v1/live/streams` - Create live stream
+- `POST /api/v1/live/streams` - Create live stream (seller)
+- `POST /api/v1/live/affiliate/streams` - Create affiliate live stream
 - `GET /api/v1/live/streams/active` - Get active live streams
+- `GET /api/v1/live/streams/:id` - Get stream details with host info
 - `POST /api/v1/live/streams/:id/start` - Start live stream
 - `POST /api/v1/live/streams/:id/end` - End live stream
 - `POST /api/v1/live/streams/:id/products` - Add product to stream
+- `PUT /api/v1/live/streams/:id/products/:productId/toggle` - Toggle product visibility
 - `POST /api/v1/live/streams/:id/messages` - Send chat message
 - `GET /api/v1/live/streams/:id/stats` - Get stream analytics
+- `GET /api/v1/live/streams/seller/:sellerId` - Get seller's streams
+- `GET /api/v1/live/streams/affiliate/:affiliateId` - Get affiliate's streams
 
 ### Phase 3 API Endpoints
 
@@ -532,6 +543,66 @@ const response = await fetch('/api/v1/auth/seller/register', {
 });
 ```
 
+### Live Shopping with Affiliate Support
+Create and manage live streams with commission tracking:
+
+```javascript
+// Create seller live stream
+const sellerStream = await fetch('/api/v1/live/streams', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer SELLER_TOKEN'
+  },
+  body: JSON.stringify({
+    title: 'Fashion Sale Live',
+    description: '50% off all summer clothes',
+    hostType: 'seller',
+    sellerId: 'seller_123'
+  })
+});
+
+// Create affiliate live stream
+const affiliateStream = await fetch('/api/v1/live/affiliate/streams', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer AFFILIATE_TOKEN'
+  },
+  body: JSON.stringify({
+    title: 'Tech Reviews & Deals',
+    description: 'Latest gadget reviews with exclusive discounts',
+    hostType: 'affiliate',
+    affiliateId: 'affiliate_456',
+    sellerId: 'seller_123'  // Products from this seller
+  })
+});
+
+// Purchase during affiliate live stream (mobile app)
+// Order automatically includes attribution:
+{
+  "liveSessionId": "stream_789",
+  "affiliateId": "affiliate_456",
+  "commissionRate": 7.5,  // From affiliate's rate
+  "commissionAmount": 15.00  // Calculated automatically
+}
+
+// WebSocket real-time integration
+const socket = io('/live');
+
+socket.emit('joinStream', {
+  streamId: 'stream_789',
+  sessionId: 'mobile_user_123'
+});
+
+// Track purchase for commission attribution
+socket.emit('streamPurchase', {
+  streamId: 'stream_789',
+  productId: 'product_456',
+  affiliateId: 'affiliate_456'  // For commission tracking
+});
+```
+
 ## 🚀 Deployment Script
 
 Use the automated deployment script for quick setup:
@@ -587,9 +658,11 @@ For support and questions, please open an issue in the repository.
 - **Ads Manager**: Campaign creation with DPA, retargeting, and custom campaigns
 - **Dynamic Product Ads**: Auto-generated product feeds and personalized recommendations
 - **Audience Management**: Pixel-based segmentation and lookalike audiences
-- **Live Shopping Platform**: RTMP/HLS streaming with real-time chat
-- **Mobile Live Experience**: Stream viewing with interactive product showcases
+- **Live Shopping Platform**: RTMP/HLS streaming with seller & affiliate host support
+- **Affiliate Live Streaming**: Complete integration with commission tracking and attribution
+- **Mobile Live Experience**: Stream viewing with host badges and interactive showcases
 - **WebSocket Integration**: Real-time communication infrastructure
+- **Purchase Attribution**: Automatic commission calculation for affiliate-hosted streams
 
 ### ✅ Phase 3 - Marketplace & AI Features (COMPLETED)
 - **Marketplace Global**: Multi-seller platform with KYC, reviews, and inventory management

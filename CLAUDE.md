@@ -230,16 +230,19 @@ npm run docker:logs        # View container logs
 
 ### 📺 Live Shopping Platform
 - **Backend Module**: `backend/src/live/`
-- **Admin Panel**: `admin-web/app/live/`
+- **Seller Panel**: `seller-panel/app/dashboard/live/`
 - **Mobile App**: `mobile/src/screens/live/`
 - **Features**:
-  - RTMP/HLS live streaming infrastructure
+  - RTMP/HLS live streaming infrastructure with dual host support
+  - **Seller & Affiliate Hosting**: Both sellers and affiliates can host live streams
   - Real-time chat with WebSocket integration
   - Live product showcasing with overlay purchase buttons
+  - **Purchase Attribution**: Automatic commission tracking for affiliate-hosted streams
   - Viewer count tracking and engagement metrics
-  - Stream scheduling and management
-  - Mobile-optimized viewing experience
-  - Integration with existing product catalog
+  - Stream scheduling and management from seller panel
+  - Mobile-optimized viewing experience with host type badges
+  - Integration with existing product catalog and affiliate system
+  - **Commission Calculation**: Automatic commission calculation for affiliate sales during live streams
 
 ### 🔧 Advanced Integrations
 - **WebSocket Integration**: Real-time communication for live streams
@@ -380,13 +383,18 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 - `GET /api/v1/dpa/creative/:productId` - Generate creative assets for product
 
 ### Live Shopping (Phase 2)
-- `POST /api/v1/live/streams` - Create live stream
+- `POST /api/v1/live/streams` - Create live stream (seller)
+- `POST /api/v1/live/affiliate/streams` - Create affiliate live stream
 - `GET /api/v1/live/streams/active` - Get active live streams
+- `GET /api/v1/live/streams/:id` - Get stream details with host info
 - `POST /api/v1/live/streams/:id/start` - Start live stream
 - `POST /api/v1/live/streams/:id/end` - End live stream
 - `POST /api/v1/live/streams/:id/products` - Add product to stream
+- `PUT /api/v1/live/streams/:id/products/:productId/toggle` - Toggle product visibility
 - `POST /api/v1/live/streams/:id/messages` - Send chat message
 - `GET /api/v1/live/streams/:id/stats` - Get stream analytics
+- `GET /api/v1/live/streams/seller/:sellerId` - Get seller's streams
+- `GET /api/v1/live/streams/affiliate/:affiliateId` - Get affiliate's streams
 
 ## Architecture Notes
 
@@ -409,13 +417,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 - `affiliate_links` - Generated affiliate links with tracking
 - `affiliate_clicks` - Click tracking data
 - `pixel_events` - Website tracking events
+- `orders` - Enhanced with live stream attribution (liveSessionId, affiliateId, commissionRate, commissionAmount)
 
 #### Phase 2 Entities
 - `campaigns` - Advertising campaigns with budget and targeting
 - `campaign_metrics` - Daily performance metrics (CTR, CPA, ROAS)
 - `audiences` - Custom audiences with segmentation rules
 - `audience_users` - User membership in audiences
-- `live_streams` - Live shopping sessions with RTMP/HLS URLs
+- `live_streams` - Live shopping sessions with RTMP/HLS URLs and host type (seller/affiliate)
 - `live_stream_products` - Products featured in live streams
 - `live_stream_messages` - Real-time chat messages
 - `live_stream_viewers` - Viewer tracking and engagement
@@ -710,6 +719,18 @@ interface OrderShippingData {
 - **Address Validation**: Ensures complete and valid Colombian addresses
 - **Rate Protection**: Prevents rate manipulation through server-side validation
 
+### 📺 Live Shopping Implementation Files
+- `backend/src/live/live.entity.ts` - Live stream entity with affiliate support
+- `backend/src/live/live.service.ts` - Live streaming business logic with host type handling
+- `backend/src/live/live.controller.ts` - API endpoints for both seller and affiliate streams
+- `backend/src/live/live.gateway.ts` - WebSocket gateway for real-time communication
+- `backend/src/database/entities/order.entity.ts` - Enhanced with live stream attribution fields
+- `backend/src/orders/orders.service.ts` - Commission calculation for affiliate live stream sales
+- `seller-panel/app/dashboard/live/page.tsx` - Live stream management dashboard
+- `seller-panel/app/dashboard/live/[id]/page.tsx` - Individual stream management interface
+- `mobile/src/screens/live/LiveStreamsScreen.tsx` - Live streams discovery with host badges
+- `mobile/src/screens/live/LiveStreamScreen.tsx` - Live stream viewing with purchase attribution
+
 ### 📱 Mobile Implementation Files
 - `mobile/src/screens/checkout/ShippingOptionsScreen.tsx` - Dynamic rate selection
 - `mobile/src/screens/checkout/GuestCheckoutScreen.tsx` - Guest checkout with validation
@@ -734,3 +755,63 @@ MERCAPAGO_ACCESS_TOKEN=your-mercadopago-access-token
 - Colombian carrier integration optimized (Servientrega, Coordinadora primary)
 - Database migration required for new Order entity fields
 - Mobile app requires @react-native-picker/picker dependency
+
+## Live Shopping Usage Examples
+
+### Creating Live Streams
+
+#### Seller Live Stream
+```javascript
+// Create seller live stream via API
+POST /api/v1/live/streams
+{
+  "title": "Fashion Sale Live",
+  "description": "50% off all summer clothes",
+  "hostType": "seller",
+  "sellerId": "seller_123"
+}
+```
+
+#### Affiliate Live Stream
+```javascript
+// Create affiliate live stream via API
+POST /api/v1/live/affiliate/streams
+{
+  "title": "Tech Reviews & Deals",
+  "description": "Latest gadget reviews with exclusive discounts",
+  "hostType": "affiliate",
+  "affiliateId": "affiliate_456",
+  "sellerId": "seller_123"  // Products from this seller
+}
+```
+
+### Purchase Attribution Flow
+```javascript
+// Mobile app: User purchases during affiliate live stream
+// Order automatically includes:
+{
+  "liveSessionId": "stream_789",
+  "affiliateId": "affiliate_456",
+  "commissionRate": 7.5,  // From affiliate's rate
+  "commissionAmount": 15.00  // Calculated automatically
+}
+
+// Commission is tracked and paid to affiliate
+// Seller gets remaining revenue after commission
+```
+
+### WebSocket Integration
+```javascript
+// Real-time chat and viewer tracking
+socket.emit('joinStream', {
+  streamId: 'stream_789',
+  sessionId: 'mobile_user_123'
+});
+
+// Purchase during live stream
+socket.emit('streamPurchase', {
+  streamId: 'stream_789',
+  productId: 'product_456',
+  affiliateId: 'affiliate_456'  // For attribution
+});
+```

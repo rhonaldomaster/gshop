@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsNumber, IsDateString, IsUUID, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsDateString, IsUUID, IsBoolean, IsEnum } from 'class-validator';
+import { HostType } from '../live.entity';
 
 export class CreateLiveStreamDto {
   @IsString()
@@ -11,6 +12,14 @@ export class CreateLiveStreamDto {
   @IsOptional()
   @IsDateString()
   scheduledAt?: string;
+
+  @IsOptional()
+  @IsEnum(HostType)
+  hostType?: HostType;
+
+  @IsOptional()
+  @IsUUID()
+  affiliateId?: string;
 }
 
 export class UpdateLiveStreamDto {

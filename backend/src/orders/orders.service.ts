@@ -8,6 +8,8 @@ import { Product } from '../database/entities/product.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
+import { LiveStream } from '../live/live.entity';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 
 @Injectable()
 export class OrdersService {
@@ -18,6 +20,10 @@ export class OrdersService {
     private orderItemRepository: Repository<OrderItem>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    @InjectRepository(LiveStream)
+    private liveStreamRepository: Repository<LiveStream>,
+    @InjectRepository(Affiliate)
+    private affiliateRepository: Repository<Affiliate>,
     private dataSource: DataSource,
   ) {}
 
@@ -42,6 +48,21 @@ export class OrdersService {
       const discountAmount = createOrderDto.discountAmount || 0;
       const totalAmount = subtotal + taxAmount + shippingAmount - discountAmount;
 
+      // Calculate commission if affiliate is involved
+      let commissionRate = 0;
+      let commissionAmount = 0;
+
+      if (createOrderDto.affiliateId) {
+        const affiliate = await queryRunner.manager.findOne(Affiliate, {
+          where: { id: createOrderDto.affiliateId }
+        });
+
+        if (affiliate) {
+          commissionRate = Number(affiliate.commissionRate);
+          commissionAmount = (totalAmount * commissionRate) / 100;
+        }
+      }
+
       // Create order
       const order = queryRunner.manager.create(Order, {
         orderNumber,
@@ -55,6 +76,10 @@ export class OrdersService {
         shippingAddress: createOrderDto.shippingAddress,
         billingAddress: createOrderDto.billingAddress,
         notes: createOrderDto.notes,
+        liveSessionId: createOrderDto.liveSessionId,
+        affiliateId: createOrderDto.affiliateId,
+        commissionRate,
+        commissionAmount,
       });
 
       const savedOrder = await queryRunner.manager.save(Order, order);
@@ -86,6 +111,48 @@ export class OrdersService {
           { id: item.productId },
           'ordersCount',
           1,
+        );
+      }
+
+      // Update live stream stats if applicable
+      if (createOrderDto.liveSessionId) {
+        await queryRunner.manager.increment(
+          LiveStream,
+          { id: createOrderDto.liveSessionId },
+          'totalSales',
+          totalAmount,
+        );
+
+        // Update live stream product stats
+        for (const item of orderItems) {
+          await queryRunner.manager
+            .createQueryBuilder()
+            .update('live_stream_products')
+            .set({
+              orderCount: () => 'orderCount + 1',
+              revenue: () => `revenue + ${item.totalPrice}`
+            })
+            .where('streamId = :streamId AND productId = :productId', {
+              streamId: createOrderDto.liveSessionId,
+              productId: item.productId
+            })
+            .execute();
+        }
+      }
+
+      // Update affiliate earnings if applicable
+      if (createOrderDto.affiliateId && commissionAmount > 0) {
+        await queryRunner.manager.increment(
+          Affiliate,
+          { id: createOrderDto.affiliateId },
+          'totalEarnings',
+          commissionAmount,
+        );
+        await queryRunner.manager.increment(
+          Affiliate,
+          { id: createOrderDto.affiliateId },
+          'pendingBalance',
+          commissionAmount,
         );
       }
 

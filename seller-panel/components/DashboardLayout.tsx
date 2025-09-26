@@ -14,13 +14,15 @@ import {
   LogOut,
   Menu,
   X,
-  DollarSign
+  DollarSign,
+  Video
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Products', href: '/dashboard/products', icon: Package },
   { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
+  { name: 'Live Streaming', href: '/dashboard/live', icon: Video },
   { name: 'Analytics', href: '/dashboard/analytics', icon: TrendingUp },
   { name: 'Affiliates', href: '/dashboard/affiliates', icon: Users },
   { name: 'Payments', href: '/dashboard/payments', icon: DollarSign },

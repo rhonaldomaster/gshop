@@ -116,4 +116,23 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // Live Streaming Attribution
+  @ApiProperty({
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    required: false,
+    description: 'Live session ID if order was made during live stream'
+  })
+  @IsOptional()
+  @IsUUID()
+  liveSessionId?: string;
+
+  @ApiProperty({
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    required: false,
+    description: 'Affiliate ID if order was made through affiliate live stream'
+  })
+  @IsOptional()
+  @IsUUID()
+  affiliateId?: string;
 }

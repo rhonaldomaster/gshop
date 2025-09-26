@@ -23,8 +23,13 @@ interface LiveStreamData {
   description: string;
   status: string;
   hlsUrl: string;
-  seller: {
+  hostType: 'seller' | 'affiliate';
+  seller?: {
     businessName: string;
+  };
+  affiliate?: {
+    id: string;
+    name: string;
   };
   products: Array<{
     id: string;
@@ -152,7 +157,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const onProductPress = (productId: string) => {
-    navigation.navigate('ProductDetails', { productId });
+    // Pass live stream context for attribution
+    navigation.navigate('ProductDetails', {
+      productId,
+      liveSessionId: streamId,
+      affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined
+    });
   };
 
   const formatViewerCount = (count: number) => {
@@ -216,7 +226,18 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               <Text style={styles.streamTitle} numberOfLines={1}>
                 {stream.title}
               </Text>
-              <Text style={styles.sellerName}>{stream.seller.businessName}</Text>
+              <View style={styles.hostInfo}>
+                <Text style={styles.sellerName}>
+                  {stream.hostType === 'seller' ? stream.seller?.businessName : stream.affiliate?.name}
+                </Text>
+                <View style={[styles.hostTypeBadge, {
+                  backgroundColor: stream.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
+                }]}>
+                  <Text style={styles.hostTypeText}>
+                    {stream.hostType === 'seller' ? 'SELLER' : 'AFFILIATE'}
+                  </Text>
+                </View>
+              </View>
             </View>
 
             <View style={styles.viewerInfo}>
@@ -358,9 +379,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  hostInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
   sellerName: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
+    marginRight: 8,
+  },
+  hostTypeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  hostTypeText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: 'bold',
   },
   viewerInfo: {
     flexDirection: 'row',

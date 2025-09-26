@@ -1,13 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { Seller } from '../sellers/seller.entity';
+import { Seller } from '../sellers/entities/seller.entity';
 import { Product } from '../products/product.entity';
 import { User } from '../users/user.entity';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 
 export enum StreamStatus {
   SCHEDULED = 'scheduled',
   LIVE = 'live',
   ENDED = 'ended',
   CANCELLED = 'cancelled'
+}
+
+export enum HostType {
+  SELLER = 'seller',
+  AFFILIATE = 'affiliate'
 }
 
 @Entity('live_streams')
@@ -23,6 +29,9 @@ export class LiveStream {
 
   @Column({ type: 'enum', enum: StreamStatus, default: StreamStatus.SCHEDULED })
   status: StreamStatus;
+
+  @Column({ type: 'enum', enum: HostType, default: HostType.SELLER })
+  hostType: HostType;
 
   @Column({ nullable: true })
   streamKey: string;
@@ -51,12 +60,19 @@ export class LiveStream {
   @Column({ type: 'timestamp', nullable: true })
   endedAt: Date;
 
-  @Column('uuid')
+  @Column('uuid', { nullable: true })
   sellerId: string;
 
-  @ManyToOne(() => Seller)
+  @ManyToOne(() => Seller, { nullable: true })
   @JoinColumn({ name: 'sellerId' })
   seller: Seller;
+
+  @Column('uuid', { nullable: true })
+  affiliateId: string;
+
+  @ManyToOne(() => Affiliate, { nullable: true })
+  @JoinColumn({ name: 'affiliateId' })
+  affiliate: Affiliate;
 
   @OneToMany(() => LiveStreamProduct, product => product.stream)
   products: LiveStreamProduct[];

@@ -12,22 +12,37 @@ import {
 } from '@nestjs/common';
 import { LiveService } from './live.service';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto } from './dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { HostType } from './live.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('live')
 export class LiveController {
   constructor(private readonly liveService: LiveService) {}
 
+  // Seller endpoints
   @Post('streams')
   @UseGuards(JwtAuthGuard)
   async createLiveStream(@Request() req, @Body() createLiveStreamDto: CreateLiveStreamDto) {
-    return this.liveService.createLiveStream(req.user.sellerId, createLiveStreamDto);
+    return this.liveService.createLiveStream(req.user.sellerId, createLiveStreamDto, HostType.SELLER);
+  }
+
+  // Affiliate endpoints
+  @Post('affiliate/streams')
+  @UseGuards(JwtAuthGuard)
+  async createAffiliateLiveStream(@Request() req, @Body() createLiveStreamDto: CreateLiveStreamDto) {
+    return this.liveService.createLiveStream(req.user.affiliateId, createLiveStreamDto, HostType.AFFILIATE);
   }
 
   @Get('streams')
   @UseGuards(JwtAuthGuard)
   async getLiveStreams(@Request() req) {
     return this.liveService.findLiveStreamsBySeller(req.user.sellerId);
+  }
+
+  @Get('affiliate/streams')
+  @UseGuards(JwtAuthGuard)
+  async getAffiliateLiveStreams(@Request() req) {
+    return this.liveService.findLiveStreamsByAffiliate(req.user.affiliateId);
   }
 
   @Get('streams/active')
@@ -47,26 +62,55 @@ export class LiveController {
     @Param('id') id: string,
     @Body() updateLiveStreamDto: UpdateLiveStreamDto,
   ) {
-    return this.liveService.updateLiveStream(id, req.user.sellerId, updateLiveStreamDto);
+    return this.liveService.updateLiveStream(id, req.user.sellerId, updateLiveStreamDto, HostType.SELLER);
+  }
+
+  @Put('affiliate/streams/:id')
+  @UseGuards(JwtAuthGuard)
+  async updateAffiliateLiveStream(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateLiveStreamDto: UpdateLiveStreamDto,
+  ) {
+    return this.liveService.updateLiveStream(id, req.user.affiliateId, updateLiveStreamDto, HostType.AFFILIATE);
   }
 
   @Delete('streams/:id')
   @UseGuards(JwtAuthGuard)
   async deleteLiveStream(@Request() req, @Param('id') id: string) {
-    await this.liveService.deleteLiveStream(id, req.user.sellerId);
+    await this.liveService.deleteLiveStream(id, req.user.sellerId, HostType.SELLER);
+    return { message: 'Live stream deleted successfully' };
+  }
+
+  @Delete('affiliate/streams/:id')
+  @UseGuards(JwtAuthGuard)
+  async deleteAffiliateLiveStream(@Request() req, @Param('id') id: string) {
+    await this.liveService.deleteLiveStream(id, req.user.affiliateId, HostType.AFFILIATE);
     return { message: 'Live stream deleted successfully' };
   }
 
   @Post('streams/:id/start')
   @UseGuards(JwtAuthGuard)
   async startLiveStream(@Request() req, @Param('id') id: string) {
-    return this.liveService.startLiveStream(id, req.user.sellerId);
+    return this.liveService.startLiveStream(id, req.user.sellerId, HostType.SELLER);
+  }
+
+  @Post('affiliate/streams/:id/start')
+  @UseGuards(JwtAuthGuard)
+  async startAffiliateLiveStream(@Request() req, @Param('id') id: string) {
+    return this.liveService.startLiveStream(id, req.user.affiliateId, HostType.AFFILIATE);
   }
 
   @Post('streams/:id/end')
   @UseGuards(JwtAuthGuard)
   async endLiveStream(@Request() req, @Param('id') id: string) {
-    return this.liveService.endLiveStream(id, req.user.sellerId);
+    return this.liveService.endLiveStream(id, req.user.sellerId, HostType.SELLER);
+  }
+
+  @Post('affiliate/streams/:id/end')
+  @UseGuards(JwtAuthGuard)
+  async endAffiliateLiveStream(@Request() req, @Param('id') id: string) {
+    return this.liveService.endLiveStream(id, req.user.affiliateId, HostType.AFFILIATE);
   }
 
   @Post('streams/:id/products')

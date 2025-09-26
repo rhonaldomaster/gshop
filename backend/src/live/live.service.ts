@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus } from './live.entity';
+import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType } from './live.entity';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto } from './dto';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -16,16 +17,30 @@ export class LiveService {
     private streamMessageRepository: Repository<LiveStreamMessage>,
     @InjectRepository(LiveStreamViewer)
     private streamViewerRepository: Repository<LiveStreamViewer>,
+    @InjectRepository(Affiliate)
+    private affiliateRepository: Repository<Affiliate>,
   ) {}
 
-  async createLiveStream(sellerId: string, createLiveStreamDto: CreateLiveStreamDto): Promise<LiveStream> {
+  async createLiveStream(hostId: string, createLiveStreamDto: CreateLiveStreamDto, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
     const streamKey = uuidv4();
     const rtmpUrl = `rtmp://localhost:1935/live/${streamKey}`;
     const hlsUrl = `http://localhost:8080/hls/${streamKey}.m3u8`;
 
+    // Validate affiliate exists if creating affiliate stream
+    if (hostType === HostType.AFFILIATE) {
+      const affiliate = await this.affiliateRepository.findOne({
+        where: { id: hostId, status: 'approved', isActive: true }
+      });
+      if (!affiliate) {
+        throw new BadRequestException('Affiliate not found or not approved');
+      }
+    }
+
     const liveStream = this.liveStreamRepository.create({
       ...createLiveStreamDto,
-      sellerId,
+      hostType,
+      sellerId: hostType === HostType.SELLER ? hostId : null,
+      affiliateId: hostType === HostType.AFFILIATE ? hostId : null,
       streamKey,
       rtmpUrl,
       hlsUrl,
@@ -36,7 +51,15 @@ export class LiveService {
 
   async findLiveStreamsBySeller(sellerId: string): Promise<LiveStream[]> {
     return this.liveStreamRepository.find({
-      where: { sellerId },
+      where: { sellerId, hostType: HostType.SELLER },
+      relations: ['products', 'products.product'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findLiveStreamsByAffiliate(affiliateId: string): Promise<LiveStream[]> {
+    return this.liveStreamRepository.find({
+      where: { affiliateId, hostType: HostType.AFFILIATE },
       relations: ['products', 'products.product'],
       order: { createdAt: 'DESC' },
     });
@@ -45,7 +68,7 @@ export class LiveService {
   async findActiveLiveStreams(): Promise<LiveStream[]> {
     return this.liveStreamRepository.find({
       where: { status: StreamStatus.LIVE },
-      relations: ['seller', 'products', 'products.product'],
+      relations: ['seller', 'affiliate', 'products', 'products.product'],
       order: { viewerCount: 'DESC' },
     });
   }
@@ -53,7 +76,7 @@ export class LiveService {
   async findLiveStreamById(id: string): Promise<LiveStream> {
     const liveStream = await this.liveStreamRepository.findOne({
       where: { id },
-      relations: ['seller', 'products', 'products.product', 'messages', 'messages.user'],
+      relations: ['seller', 'affiliate', 'products', 'products.product', 'messages', 'messages.user'],
     });
 
     if (!liveStream) {
@@ -63,9 +86,13 @@ export class LiveService {
     return liveStream;
   }
 
-  async updateLiveStream(id: string, sellerId: string, updateLiveStreamDto: UpdateLiveStreamDto): Promise<LiveStream> {
+  async updateLiveStream(id: string, hostId: string, updateLiveStreamDto: UpdateLiveStreamDto, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id, sellerId: hostId }
+      : { id, affiliateId: hostId };
+
     const liveStream = await this.liveStreamRepository.findOne({
-      where: { id, sellerId },
+      where: whereCondition,
     });
 
     if (!liveStream) {
@@ -76,9 +103,13 @@ export class LiveService {
     return this.liveStreamRepository.save(liveStream);
   }
 
-  async deleteLiveStream(id: string, sellerId: string): Promise<void> {
+  async deleteLiveStream(id: string, hostId: string, hostType: HostType = HostType.SELLER): Promise<void> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id, sellerId: hostId }
+      : { id, affiliateId: hostId };
+
     const liveStream = await this.liveStreamRepository.findOne({
-      where: { id, sellerId },
+      where: whereCondition,
     });
 
     if (!liveStream) {
@@ -92,9 +123,13 @@ export class LiveService {
     await this.liveStreamRepository.remove(liveStream);
   }
 
-  async startLiveStream(id: string, sellerId: string): Promise<LiveStream> {
+  async startLiveStream(id: string, hostId: string, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id, sellerId: hostId }
+      : { id, affiliateId: hostId };
+
     const liveStream = await this.liveStreamRepository.findOne({
-      where: { id, sellerId },
+      where: whereCondition,
     });
 
     if (!liveStream) {
@@ -111,9 +146,13 @@ export class LiveService {
     return this.liveStreamRepository.save(liveStream);
   }
 
-  async endLiveStream(id: string, sellerId: string): Promise<LiveStream> {
+  async endLiveStream(id: string, hostId: string, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id, sellerId: hostId }
+      : { id, affiliateId: hostId };
+
     const liveStream = await this.liveStreamRepository.findOne({
-      where: { id, sellerId },
+      where: whereCondition,
     });
 
     if (!liveStream) {
