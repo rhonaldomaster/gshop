@@ -1,6 +1,4 @@
 
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -78,6 +76,30 @@ services:
       - backend
     volumes:
       - ./admin-web/app:/app
+      - /app/node_modules
+    networks:
+      - gshop_network
+    restart: unless-stopped
+    command: npm run dev
+
+  # Seller Panel
+  seller-panel:
+    build:
+      context: ./seller-panel
+      dockerfile: Dockerfile.dev
+    container_name: gshop_seller
+    ports:
+      - "3002:3002"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:3000/api/v1
+      - NEXTAUTH_URL=http://localhost:3002
+      - NEXTAUTH_SECRET=your-nextauth-secret-seller
+      - DATABASE_URL=postgresql://gshop_user:gshop_password@postgres:5432/gshop_db
+    depends_on:
+      - backend
+      - postgres
+    volumes:
+      - ./seller-panel:/app
       - /app/node_modules
     networks:
       - gshop_network

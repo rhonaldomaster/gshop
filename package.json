@@ -17,6 +17,8 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
+    "docker:build": "docker compose build",
+    "docker:rebuild": "docker compose down && docker compose build --no-cache && docker compose up -d",
     "db:migrate": "cd backend && npm run migration:run",
     "db:seed": "cd backend && npm run seed",
     "test": "npm run test:backend && npm run test:admin",
