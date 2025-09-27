@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType } from './live.entity';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto } from './dto';
-import { Affiliate } from '../affiliates/entities/affiliate.entity';
+import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -29,7 +29,7 @@ export class LiveService {
     // Validate affiliate exists if creating affiliate stream
     if (hostType === HostType.AFFILIATE) {
       const affiliate = await this.affiliateRepository.findOne({
-        where: { id: hostId, status: 'approved', isActive: true }
+        where: { id: hostId, status: AffiliateStatus.APPROVED, isActive: true }
       });
       if (!affiliate) {
         throw new BadRequestException('Affiliate not found or not approved');
