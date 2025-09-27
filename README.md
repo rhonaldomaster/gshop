@@ -193,13 +193,14 @@ npm run db:seed
 
 4. **Start development**
 ```bash
-# All services (includes new seller panel)
+# All services (includes seller and creator panels)
 npm run dev
 
 # Individual services
 npm run dev:backend   # Backend API on :3000
 npm run dev:admin     # Admin panel on :3001
 npm run dev:seller    # Seller panel on :3002
+npm run dev:creator   # Creator panel on :3003
 npm run dev:mobile    # Mobile app with Expo
 
 # Quick deployment with automated setup
@@ -485,14 +486,34 @@ npm run test:admin
 ## 🐳 Docker Deployment
 
 ```bash
-# Start all services
+# Start all services (backend, admin, seller, creator, database)
 npm run docker:up
 
-# View logs
+# View logs for all services
 npm run docker:logs
 
-# Stop services
+# Stop all services
 npm run docker:down
+
+# Build all containers
+npm run docker:build
+
+# Full rebuild (no cache)
+npm run docker:rebuild
+
+# Creator Panel specific commands
+npm run docker:creator       # Start only creator-panel container
+npm run docker:creator:build # Build only creator-panel
+npm run docker:creator:logs  # View creator-panel logs
+
+# Development with hot reload for creator panel
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up creator-panel
+
+# Individual service access
+# Backend API: http://localhost:3000
+# Admin Panel: http://localhost:3001
+# Seller Panel: http://localhost:3002
+# Creator Panel: http://localhost:3003
 ```
 
 ## 📱 Mobile Development
