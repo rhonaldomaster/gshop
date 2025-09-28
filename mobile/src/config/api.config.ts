@@ -1,0 +1,135 @@
+export const API_CONFIG = {
+  // Base URLs - switch between development and production
+  BASE_URL: __DEV__
+    ? 'http://localhost:3000'
+    : 'https://api.gshop.com',
+
+  // API version
+  API_VERSION: '/api/v1',
+
+  // Timeout settings
+  TIMEOUT: 30000, // 30 seconds
+
+  // Retry settings
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 1000, // 1 second
+
+  // Storage keys
+  STORAGE_KEYS: {
+    AUTH_TOKEN: '@gshop:auth_token',
+    USER_DATA: '@gshop:user_data',
+    CART_DATA: '@gshop:cart_data',
+    GUEST_DATA: '@gshop:guest_data',
+  },
+
+  // API Endpoints
+  ENDPOINTS: {
+    // Authentication
+    AUTH: {
+      LOGIN: '/auth/login',
+      REGISTER: '/auth/register',
+      LOGOUT: '/auth/logout',
+      REFRESH: '/auth/refresh',
+      PROFILE: '/auth/profile',
+    },
+
+    // Products
+    PRODUCTS: {
+      LIST: '/products',
+      DETAIL: '/products/:id',
+      SEARCH: '/products/search',
+      CATEGORIES: '/products/categories',
+      TRENDING: '/products/trending',
+    },
+
+    // Orders
+    ORDERS: {
+      LIST: '/orders',
+      CREATE: '/orders',
+      DETAIL: '/orders/:id',
+      GUEST: '/orders/guest',
+      SHIPPING_OPTIONS: '/orders/:id/shipping-options',
+      CONFIRM_SHIPPING: '/orders/:id/confirm-shipping',
+      TRACKING: '/orders/:id/tracking',
+    },
+
+    // Cart (if needed for API sync)
+    CART: {
+      GET: '/cart',
+      ADD: '/cart/add',
+      UPDATE: '/cart/update',
+      REMOVE: '/cart/remove',
+      CLEAR: '/cart/clear',
+    },
+
+    // Payments
+    PAYMENTS: {
+      CREATE: '/payments',
+      PROCESS_STRIPE: '/payments/:id/process/stripe',
+      PROCESS_CRYPTO: '/payments/:id/process/crypto',
+      METHODS: '/payments/methods',
+    },
+
+    // Live Streams
+    LIVE: {
+      ACTIVE: '/live/streams/active',
+      DETAIL: '/live/streams/:id',
+      MESSAGES: '/live/streams/:id/messages',
+      JOIN: '/live/streams/:id/join',
+    },
+
+    // Marketplace
+    MARKETPLACE: {
+      SELLERS: '/marketplace/sellers',
+      REVIEWS: '/marketplace/reviews',
+    },
+
+    // Recommendations
+    RECOMMENDATIONS: {
+      GENERATE: '/recommendations/generate',
+      TRENDING: '/recommendations/trending',
+      INTERACTIONS: '/recommendations/interactions',
+    },
+  },
+} as const;
+
+// Helper function to build full API URL
+export const buildApiUrl = (endpoint: string): string => {
+  return `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}${endpoint}`;
+};
+
+// Helper function to replace path parameters
+export const buildEndpointUrl = (endpoint: string, params: Record<string, string | number>): string => {
+  let url = endpoint;
+
+  Object.entries(params).forEach(([key, value]) => {
+    url = url.replace(`:${key}`, String(value));
+  });
+
+  return buildApiUrl(url);
+};
+
+// Response types
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  errors?: string[];
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Error types
+export interface ApiError {
+  message: string;
+  statusCode: number;
+  errors?: string[];
+}

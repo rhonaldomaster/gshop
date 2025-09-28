@@ -1,15 +1,8 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  avatar?: string;
-  role: string;
-}
+import { authService, User, LoginRequest, RegisterRequest } from '../services/auth.service';
+import { API_CONFIG } from '../config/api.config';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -21,17 +14,12 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
-  logout: () => void;
-  updateProfile: (userData: Partial<User>) => void;
+  logout: () => Promise<void>;
+  updateProfile: (userData: Partial<User>) => Promise<User>;
 }
 
-interface RegisterData {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-}
+// Use RegisterRequest from auth service
+type RegisterData = RegisterRequest;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -101,15 +89,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuthState = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const userString = await AsyncStorage.getItem('user');
-      
+      // Use API_CONFIG storage keys
+      const token = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.AUTH_TOKEN);
+      const userString = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.USER_DATA);
+
       if (token && userString) {
         const user = JSON.parse(userString);
-        dispatch({
-          type: 'LOGIN_SUCCESS',
-          payload: { user, token },
-        });
+
+        // Verify token is still valid by checking with server
+        try {
+          const isValid = await authService.isAuthenticated();
+          if (isValid) {
+            dispatch({
+              type: 'LOGIN_SUCCESS',
+              payload: { user, token },
+            });
+          } else {
+            // Token is invalid, clear auth data
+            await authService.clearAuthToken();
+          }
+        } catch (error) {
+          // If verification fails, clear auth data
+          console.warn('Token verification failed:', error);
+          await authService.clearAuthToken();
+        }
       }
     } catch (error) {
       console.error('Error checking auth state:', error);
@@ -120,81 +123,67 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (email: string, password: string) => {
     dispatch({ type: 'LOGIN_START' });
-    
-    try {
-      // TODO: Replace with actual API call
-      const mockResponse = {
-        user: {
-          id: 'mock-user-id',
-          email,
-          firstName: 'Demo',
-          lastName: 'User',
-          role: 'buyer',
-        },
-        access_token: 'mock-token-123',
-      };
 
-      await AsyncStorage.setItem('token', mockResponse.access_token);
-      await AsyncStorage.setItem('user', JSON.stringify(mockResponse.user));
+    try {
+      const loginData: LoginRequest = { email, password };
+      const authResponse = await authService.login(loginData);
 
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: {
-          user: mockResponse.user,
-          token: mockResponse.access_token,
+          user: authResponse.user,
+          token: authResponse.access_token,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       dispatch({ type: 'LOGIN_FAILURE' });
-      throw new Error('Login failed');
+      throw new Error(error.message || 'Login failed');
     }
   };
 
   const register = async (userData: RegisterData) => {
     dispatch({ type: 'LOGIN_START' });
-    
-    try {
-      // TODO: Replace with actual API call
-      const mockResponse = {
-        user: {
-          id: 'mock-user-id',
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          role: 'buyer',
-        },
-        access_token: 'mock-token-123',
-      };
 
-      await AsyncStorage.setItem('token', mockResponse.access_token);
-      await AsyncStorage.setItem('user', JSON.stringify(mockResponse.user));
+    try {
+      const authResponse = await authService.register(userData);
 
       dispatch({
         type: 'LOGIN_SUCCESS',
         payload: {
-          user: mockResponse.user,
-          token: mockResponse.access_token,
+          user: authResponse.user,
+          token: authResponse.access_token,
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Register error:', error);
       dispatch({ type: 'LOGIN_FAILURE' });
-      throw new Error('Registration failed');
+      throw new Error(error.message || 'Registration failed');
     }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.multiRemove(['token', 'user']);
+      await authService.logout();
       dispatch({ type: 'LOGOUT' });
     } catch (error) {
       console.error('Logout error:', error);
+      // Still dispatch logout even if API call fails
+      dispatch({ type: 'LOGOUT' });
     }
   };
 
-  const updateProfile = (userData: Partial<User>) => {
-    dispatch({ type: 'UPDATE_PROFILE', payload: userData });
+  const updateProfile = async (userData: Partial<User>) => {
+    try {
+      const updatedUser = await authService.updateProfile(userData);
+
+      dispatch({ type: 'UPDATE_PROFILE', payload: updatedUser });
+
+      return updatedUser;
+    } catch (error: any) {
+      console.error('Update profile error:', error);
+      throw new Error(error.message || 'Failed to update profile');
+    }
   };
 
   return (
