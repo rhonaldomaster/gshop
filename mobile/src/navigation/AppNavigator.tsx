@@ -1,9 +1,11 @@
 
 import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCart } from '../hooks/useCart';
 import HomeNavigator from './HomeNavigator';
 import CategoriesNavigator from './CategoriesNavigator';
 import CartScreen from '../screens/cart/CartScreen';
@@ -18,6 +20,29 @@ export type AppTabParamList = {
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
+// Cart icon with badge component
+const CartIconWithBadge = ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
+  const { theme } = useTheme();
+  const { totalItems } = useCart();
+
+  return (
+    <View style={styles.cartIconContainer}>
+      <Ionicons
+        name={focused ? 'bag' : 'bag-outline'}
+        size={size}
+        color={color}
+      />
+      {totalItems > 0 && (
+        <View style={[styles.cartBadge, { backgroundColor: theme.colors.error }]}>
+          <Text style={[styles.cartBadgeText, { color: theme.colors.white }]}>
+            {totalItems > 99 ? '99+' : totalItems.toString()}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
 export default function AppNavigator() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -27,6 +52,11 @@ export default function AppNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
+          // Use custom cart icon with badge for Cart tab
+          if (route.name === 'Cart') {
+            return <CartIconWithBadge focused={focused} color={color} size={size} />;
+          }
+
           let iconName: keyof typeof Ionicons.glyphMap;
 
           switch (route.name) {
@@ -35,9 +65,6 @@ export default function AppNavigator() {
               break;
             case 'Categories':
               iconName = focused ? 'grid' : 'grid-outline';
-              break;
-            case 'Cart':
-              iconName = focused ? 'bag' : 'bag-outline';
               break;
             case 'Profile':
               iconName = focused ? 'person' : 'person-outline';
@@ -89,3 +116,25 @@ export default function AppNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  cartIconContainer: {
+    position: 'relative',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  cartBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+});
