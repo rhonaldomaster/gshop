@@ -144,6 +144,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     });
 
     setNewMessage('');
+
+    // Add haptic feedback for sending message
+    // Vibration.vibrate(50); // Uncomment if you want vibration
   };
 
   const toggleProducts = () => {
@@ -165,6 +168,31 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     });
   };
 
+  const quickBuyProduct = (product: any) => {
+    Alert.alert(
+      'Quick Buy',
+      `Add "${product.product.name}" to cart?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Add to Cart',
+          onPress: () => {
+            // Add to cart with live stream context
+            // In a real app, use cart context here
+            console.log('Adding to cart:', {
+              productId: product.product.id,
+              liveSessionId: streamId,
+              affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined,
+              specialPrice: product.specialPrice
+            });
+
+            Alert.alert('Success', 'Product added to cart!');
+          }
+        }
+      ]
+    );
+  };
+
   const formatViewerCount = (count: number) => {
     if (count < 1000) return count.toString();
     if (count < 1000000) return `${(count / 1000).toFixed(1)}K`;
@@ -179,6 +207,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     <ProductCard
       product={item}
       onPress={() => onProductPress(item.product.id)}
+      onQuickBuy={() => quickBuyProduct(item)}
+      showSpecialPrice={true}
+      liveMode={true}
     />
   );
 

@@ -15,9 +15,18 @@ interface ProductCardProps {
     isActive: boolean;
   };
   onPress: () => void;
+  onQuickBuy?: () => void;
+  showSpecialPrice?: boolean;
+  liveMode?: boolean;
 }
 
-export function ProductCard({ product, onPress }: ProductCardProps) {
+export function ProductCard({
+  product,
+  onPress,
+  onQuickBuy,
+  showSpecialPrice = false,
+  liveMode = false
+}: ProductCardProps) {
   const hasDiscount = product.specialPrice && product.specialPrice < product.product.price;
   const displayPrice = product.specialPrice || product.product.price;
 
@@ -51,10 +60,22 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
           )}
         </View>
 
-        <TouchableOpacity style={styles.addToCartButton} onPress={onPress}>
-          <MaterialIcons name="add-shopping-cart" size={16} color="white" />
-          <Text style={styles.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
+        {liveMode && onQuickBuy ? (
+          <View style={styles.liveButtonContainer}>
+            <TouchableOpacity style={styles.quickBuyButton} onPress={onQuickBuy}>
+              <MaterialIcons name="flash-on" size={16} color="white" />
+              <Text style={styles.quickBuyText}>Quick Buy</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.viewDetailsButton} onPress={onPress}>
+              <MaterialIcons name="visibility" size={16} color="#8b5cf6" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={styles.addToCartButton} onPress={onPress}>
+            <MaterialIcons name="add-shopping-cart" size={16} color="white" />
+            <Text style={styles.addToCartText}>Add to Cart</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -136,5 +157,34 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  liveButtonContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  quickBuyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ef4444',
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
+  },
+  quickBuyText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  viewDetailsButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
   },
 });

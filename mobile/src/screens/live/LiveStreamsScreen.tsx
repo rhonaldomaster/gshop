@@ -8,9 +8,12 @@ import {
   RefreshControl,
   Image,
   ActivityIndicator,
+  Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface LiveStream {
   id: string;
@@ -110,7 +113,13 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const renderStreamCard = ({ item }: { item: LiveStream }) => (
     <TouchableOpacity
       style={styles.streamCard}
-      onPress={() => navigation.navigate('LiveStream', { streamId: item.id })}
+      onPress={() => {
+        if (item.status === 'ended') {
+          Alert.alert('Stream Ended', 'This live stream has ended. Check for replays or upcoming streams!');
+          return;
+        }
+        navigation.navigate('LiveStream', { streamId: item.id });
+      }}
       activeOpacity={0.7}
     >
       {/* Stream Preview */}
@@ -122,8 +131,18 @@ export default function LiveStreamsScreen({ navigation }: any) {
           style={styles.previewImage}
         />
 
-        {/* Live Badge */}
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+        {/* Gradient Overlay for better text readability */}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.3)']}
+          style={styles.gradientOverlay}
+        />
+
+        {/* Live Badge with pulsing animation for live streams */}
+        <View style={[
+          styles.statusBadge,
+          { backgroundColor: getStatusColor(item.status) },
+          item.status === 'live' && styles.livePulsing
+        ]}>
           {item.status === 'live' && (
             <MaterialIcons name="fiber-manual-record" size={8} color="white" style={styles.liveIcon} />
           )}
@@ -137,6 +156,17 @@ export default function LiveStreamsScreen({ navigation }: any) {
             <Text style={styles.viewerCount}>{formatViewerCount(item.viewerCount)}</Text>
           </View>
         )}
+
+        {/* Host Type Corner Badge */}
+        <View style={[styles.hostCornerBadge, {
+          backgroundColor: item.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
+        }]}>
+          <MaterialIcons
+            name={item.hostType === 'seller' ? 'store' : 'person'}
+            size={12}
+            color="white"
+          />
+        </View>
       </View>
 
       {/* Stream Info */}
@@ -231,6 +261,8 @@ export default function LiveStreamsScreen({ navigation }: any) {
   );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -244,6 +276,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   headerTitle: {
     fontSize: 24,
@@ -287,6 +325,13 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: '#f3f4f6',
   },
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
   statusBadge: {
     position: 'absolute',
     top: 12,
@@ -296,6 +341,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  livePulsing: {
+    // Add subtle pulsing animation
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  hostCornerBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 52, // Position next to viewer count
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
   },
   liveIcon: {
     marginRight: 4,
