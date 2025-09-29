@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, RouteProp } from '@react-navigation/native';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import GSText from '../../components/ui/GSText';
+import GSButton from '../../components/ui/GSButton';
+import { ordersService } from '../../services/orders.service';
 
 interface ShippingOption {
   carrier: string;
@@ -32,61 +37,58 @@ interface ShippingAddress {
   phone?: string;
 }
 
-interface Props {
-  route: {
-    params: {
-      orderId: string;
-      shippingAddress: ShippingAddress;
-      packageDimensions: {
-        length: number;
-        width: number;
-        height: number;
-        weight: number;
-      };
-    };
+type ShippingOptionsScreenParams = {
+  orderId: string;
+  shippingAddress: ShippingAddress;
+  packageDimensions: {
+    length: number;
+    width: number;
+    height: number;
+    weight: number;
   };
+};
+
+type ShippingOptionsScreenRouteProp = RouteProp<{ params: ShippingOptionsScreenParams }, 'params'>;
+
+interface Props {
+  route: ShippingOptionsScreenRouteProp;
 }
 
 export default function ShippingOptionsScreen({ route }: Props) {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const { getToken } = useAuth();
   const { orderId, shippingAddress, packageDimensions } = route.params;
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedOption, setSelectedOption] = useState<ShippingOption | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     fetchShippingOptions();
   }, []);
 
-  const fetchShippingOptions = async () => {
+  const fetchShippingOptions = useCallback(async (isRefresh = false) => {
     try {
-      const response = await fetch(`/api/v1/orders/${orderId}/shipping-options`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${/* token */}`, // Get from storage
-        },
-        body: JSON.stringify({
-          shippingAddress,
-          packageDimensions,
-        }),
+      if (!isRefresh) {
+        setLoading(true);
+      }
+
+      const options = await ordersService.getShippingOptions(orderId, {
+        shippingAddress,
+        packageDimensions,
       });
 
-      if (response.ok) {
-        const options = await response.json();
-        setShippingOptions(options);
-        if (options.length > 0) {
-          setSelectedOption(options[0]); // Select first option by default
-        }
-      } else {
-        Alert.alert('Error', 'No se pudieron cargar las opciones de envío');
+      setShippingOptions(options);
+      if (options.length > 0 && !selectedOption) {
+        setSelectedOption(options[0]); // Select first option by default
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching shipping options:', error);
-      Alert.alert('Error', 'Error de conexión. Intenta nuevamente.');
+      Alert.alert('Error', error.message || 'No se pudieron cargar las opciones de envío');
 
-      // Mock data for development
+      // Mock data for development when API fails
       const mockOptions: ShippingOption[] = [
         {
           carrier: 'Servientrega',
@@ -119,13 +121,22 @@ export default function ShippingOptionsScreen({ route }: Props) {
       ];
 
       setShippingOptions(mockOptions);
-      setSelectedOption(mockOptions[0]);
+      if (!selectedOption) {
+        setSelectedOption(mockOptions[0]);
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [orderId, shippingAddress, packageDimensions, selectedOption]);
 
-  const handleConfirmShipping = async () => {
+  // Handle refresh
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchShippingOptions(true);
+  }, [fetchShippingOptions]);
+
+  const handleConfirmShipping = useCallback(async () => {
     if (!selectedOption) {
       Alert.alert('Error', 'Por favor selecciona una opción de envío');
       return;
@@ -133,45 +144,34 @@ export default function ShippingOptionsScreen({ route }: Props) {
 
     setConfirming(true);
     try {
-      const response = await fetch(`/api/v1/orders/${orderId}/confirm-shipping`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${/* token */}`,
+      await ordersService.confirmShipping(orderId, {
+        selectedCarrier: selectedOption.carrier,
+        selectedService: selectedOption.service,
+        selectedRate: selectedOption.rate,
+        easypostRateId: selectedOption.easypostRateId,
+        customerDocument: {
+          type: 'CC', // This would come from previous form
+          number: '12345678', // This would come from previous form
         },
-        body: JSON.stringify({
-          selectedCarrier: selectedOption.carrier,
-          selectedService: selectedOption.service,
-          selectedRate: selectedOption.rate,
-          easypostRateId: selectedOption.easypostRateId,
-          customerDocument: {
-            type: 'CC', // This would come from previous form
-            number: '12345678', // This would come from previous form
-          },
-        }),
       });
 
-      if (response.ok) {
-        Alert.alert(
-          'Envío Confirmado',
-          `Tu pedido será enviado por ${selectedOption.carrier}. Recibirás un número de seguimiento pronto.`,
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('OrderTracking' as never, { orderId } as never),
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Error', 'No se pudo confirmar el envío. Intenta nuevamente.');
-      }
-    } catch (error) {
+      Alert.alert(
+        'Envío Confirmado',
+        `Tu pedido será enviado por ${selectedOption.carrier}. Recibirás un número de seguimiento pronto.`,
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('OrderTracking' as never, { orderId } as never),
+          },
+        ]
+      );
+    } catch (error: any) {
       console.error('Error confirming shipping:', error);
-      Alert.alert('Error', 'Error de conexión. Intenta nuevamente.');
+      Alert.alert('Error', error.message || 'No se pudo confirmar el envío. Intenta nuevamente.');
     } finally {
       setConfirming(false);
     }
-  };
+  }, [selectedOption, orderId, navigation]);
 
   const getCarrierIcon = (carrier: string) => {
     switch (carrier.toLowerCase()) {
@@ -204,109 +204,164 @@ export default function ShippingOptionsScreen({ route }: Props) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <GSText variant="h3" weight="bold">
+            Opciones de Envío
+          </GSText>
+          <View style={{ width: 24 }} />
+        </View>
+
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Calculando opciones de envío...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
+            Calculando opciones de envío...
+          </GSText>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Opciones de Envío</Text>
+        <GSText variant="h3" weight="bold">
+          Opciones de Envío
+        </GSText>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.addressContainer}>
-          <Text style={styles.sectionTitle}>Dirección de Envío</Text>
-          <Text style={styles.addressText}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+          />
+        }
+      >
+        {/* Shipping Address */}
+        <View style={[styles.addressContainer, { backgroundColor: theme.colors.surface }]}>
+          <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+            Dirección de Envío
+          </GSText>
+          <GSText variant="body" weight="medium" style={styles.addressText}>
             {shippingAddress.firstName} {shippingAddress.lastName}
-          </Text>
-          <Text style={styles.addressText}>{shippingAddress.address1}</Text>
+          </GSText>
+          <GSText variant="body" color="textSecondary" style={styles.addressText}>
+            {shippingAddress.address1}
+          </GSText>
           {shippingAddress.address2 && (
-            <Text style={styles.addressText}>{shippingAddress.address2}</Text>
+            <GSText variant="body" color="textSecondary" style={styles.addressText}>
+              {shippingAddress.address2}
+            </GSText>
           )}
-          <Text style={styles.addressText}>
+          <GSText variant="body" color="textSecondary" style={styles.addressText}>
             {shippingAddress.city}, {shippingAddress.state} {shippingAddress.postalCode}
-          </Text>
-          <Text style={styles.addressText}>{shippingAddress.country}</Text>
+          </GSText>
+          <GSText variant="body" color="textSecondary" style={styles.addressText}>
+            {shippingAddress.country}
+          </GSText>
         </View>
 
-        <Text style={styles.sectionTitle}>Selecciona tu Opción de Envío</Text>
+        <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+          Selecciona tu Opción de Envío
+        </GSText>
 
-        {shippingOptions.map((option, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.optionCard,
-              selectedOption?.carrier === option.carrier &&
-              selectedOption?.service === option.service &&
-                styles.selectedOption,
-            ]}
-            onPress={() => setSelectedOption(option)}
-          >
-            <View style={styles.optionHeader}>
-              <View style={styles.carrierInfo}>
-                <Ionicons
-                  name={getCarrierIcon(option.carrier) as any}
-                  size={24}
-                  color={getCarrierColor(option.carrier)}
-                />
-                <View style={styles.carrierDetails}>
-                  <Text style={styles.carrierName}>{option.carrier}</Text>
-                  <Text style={styles.serviceName}>{option.service}</Text>
+        {shippingOptions.map((option, index) => {
+          const isSelected = selectedOption?.carrier === option.carrier &&
+                            selectedOption?.service === option.service;
+
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.optionCard,
+                { backgroundColor: theme.colors.surface },
+                isSelected && {
+                  borderColor: theme.colors.primary,
+                  borderWidth: 2,
+                },
+              ]}
+              onPress={() => setSelectedOption(option)}
+            >
+              <View style={styles.optionHeader}>
+                <View style={styles.carrierInfo}>
+                  <View style={[
+                    styles.carrierIconContainer,
+                    { backgroundColor: getCarrierColor(option.carrier) + '20' }
+                  ]}>
+                    <Ionicons
+                      name={getCarrierIcon(option.carrier) as any}
+                      size={24}
+                      color={getCarrierColor(option.carrier)}
+                    />
+                  </View>
+                  <View style={styles.carrierDetails}>
+                    <GSText variant="body" weight="bold">
+                      {option.carrier}
+                    </GSText>
+                    <GSText variant="caption" color="textSecondary">
+                      {option.service}
+                    </GSText>
+                  </View>
+                </View>
+                <View style={styles.priceContainer}>
+                  <GSText variant="h4" weight="bold" color="success">
+                    ${option.rate.toLocaleString('es-CO')}
+                  </GSText>
+                  <GSText variant="caption" color="textSecondary">
+                    {option.deliveryTime}
+                  </GSText>
                 </View>
               </View>
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>
-                  ${option.rate.toLocaleString('es-CO')}
-                </Text>
-                <Text style={styles.deliveryTime}>{option.deliveryTime}</Text>
-              </View>
-            </View>
 
-            {selectedOption?.carrier === option.carrier &&
-            selectedOption?.service === option.service && (
-              <View style={styles.selectedIndicator}>
-                <Ionicons name="checkmark-circle" size={20} color="#34D399" />
-                <Text style={styles.selectedText}>Seleccionado</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
+              {isSelected && (
+                <View style={styles.selectedIndicator}>
+                  <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
+                  <GSText variant="caption" color="success" weight="medium" style={{ marginLeft: 8 }}>
+                    Seleccionado
+                  </GSText>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
-      <View style={styles.footer}>
+      {/* Footer */}
+      <View style={[styles.footer, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>Costo de Envío:</Text>
-          <Text style={styles.totalAmount}>
+          <GSText variant="body" weight="medium">
+            Costo de Envío:
+          </GSText>
+          <GSText variant="h3" weight="bold" color="success">
             ${selectedOption?.rate.toLocaleString('es-CO') || '0'}
-          </Text>
+          </GSText>
         </View>
-        <TouchableOpacity
-          style={[
-            styles.confirmButton,
-            !selectedOption && styles.disabledButton,
-          ]}
+
+        <GSButton
+          title="Confirmar Envío"
           onPress={handleConfirmShipping}
-          disabled={!selectedOption || confirming}
-        >
-          {confirming ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <>
-              <Ionicons name="checkmark" size={20} color="#FFF" />
-              <Text style={styles.confirmButtonText}>Confirmar Envío</Text>
-            </>
-          )}
-        </TouchableOpacity>
+          loading={confirming}
+          disabled={!selectedOption}
+          style={styles.confirmButton}
+        />
       </View>
     </SafeAreaView>
   );
@@ -315,7 +370,6 @@ export default function ShippingOptionsScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
@@ -323,66 +377,52 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+  backButton: {
+    padding: 4,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
+    padding: 20,
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
   },
   addressContainer: {
-    backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 12,
     marginVertical: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
     marginBottom: 12,
+    paddingHorizontal: 16,
+    marginTop: 8,
   },
   addressText: {
-    fontSize: 14,
-    color: '#6B7280',
     marginBottom: 4,
   },
   optionCard: {
-    backgroundColor: '#FFF',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    borderWidth: 2,
+    marginHorizontal: 16,
+    borderWidth: 1,
     borderColor: 'transparent',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
-  },
-  selectedOption: {
-    borderColor: '#34D399',
+    elevation: 3,
   },
   optionHeader: {
     flexDirection: 'row',
@@ -394,29 +434,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  carrierIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
   carrierDetails: {
-    marginLeft: 12,
-  },
-  carrierName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  serviceName: {
-    fontSize: 14,
-    color: '#6B7280',
+    flex: 1,
   },
   priceContainer: {
     alignItems: 'flex-end',
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#059669',
-  },
-  deliveryTime: {
-    fontSize: 12,
-    color: '#6B7280',
   },
   selectedIndicator: {
     flexDirection: 'row',
@@ -424,19 +454,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  selectedText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#34D399',
-    fontWeight: '500',
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   footer: {
-    backgroundColor: '#FFF',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   totalContainer: {
     flexDirection: 'row',
@@ -444,31 +467,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  totalAmount: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#059669',
-  },
   confirmButton: {
-    backgroundColor: '#007AFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  disabledButton: {
-    backgroundColor: '#9CA3AF',
-  },
-  confirmButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    marginBottom: 0,
   },
 });

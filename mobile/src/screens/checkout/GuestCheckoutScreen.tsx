@@ -1,19 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
+import { useTheme } from '../../contexts/ThemeContext';
+import GSText from '../../components/ui/GSText';
+import GSButton from '../../components/ui/GSButton';
+import GSInput from '../../components/ui/GSInput';
+import { ordersService } from '../../services/orders.service';
 
 interface CustomerInfo {
   firstName: string;
@@ -54,6 +58,7 @@ const colombianStates = [
 
 export default function GuestCheckoutScreen() {
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
     lastName: '',
@@ -75,157 +80,218 @@ export default function GuestCheckoutScreen() {
   });
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [loading, setLoading] = useState(false);
 
-  const validateEmail = (email: string): boolean => {
+  // Enhanced validation functions
+  const validateEmail = useCallback((email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+    return emailRegex.test(email.trim().toLowerCase());
+  }, []);
 
-  const validateDocumentNumber = (type: string, number: string): boolean => {
-    if (!number.trim()) return false;
+  const validatePhone = useCallback((phone: string): boolean => {
+    // Colombian phone formats: +57 300 123 4567, 300 123 4567, 3001234567
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
+    const phoneRegex = /^(\+57)?[1-9]\d{9}$/;
+    return phoneRegex.test(cleanPhone);
+  }, []);
+
+  const validateDocumentNumber = useCallback((type: string, number: string): boolean => {
+    const cleanNumber = number.trim().toUpperCase();
+    if (!cleanNumber) return false;
 
     switch (type) {
       case 'CC':
       case 'CE':
-        // Colombian ID: 6-12 digits
-        return /^\d{6,12}$/.test(number);
+        // Colombian ID: 6-12 digits, no special characters
+        return /^\d{6,12}$/.test(cleanNumber) && parseInt(cleanNumber) > 0;
       case 'TI':
         // ID Card: 6-12 digits
-        return /^\d{6,12}$/.test(number);
+        return /^\d{6,12}$/.test(cleanNumber) && parseInt(cleanNumber) > 0;
       case 'PA':
-        // Passport: alphanumeric, 6-12 characters
-        return /^[A-Z0-9]{6,12}$/i.test(number);
+        // Passport: alphanumeric, 6-12 characters, must contain at least one letter
+        return /^[A-Z0-9]{6,12}$/.test(cleanNumber) && /[A-Z]/.test(cleanNumber);
       default:
         return false;
     }
-  };
+  }, []);
 
-  const validateForm = (): boolean => {
+  const validatePostalCode = useCallback((postalCode: string): boolean => {
+    // Colombian postal codes: 5-6 digits
+    const cleanCode = postalCode.trim();
+    return /^\d{5,6}$/.test(cleanCode) && parseInt(cleanCode) > 0;
+  }, []);
+
+  const validateForm = useCallback((): boolean => {
     const newErrors: {[key: string]: string} = {};
 
     // Customer info validation
-    if (!customerInfo.firstName.trim()) {
+    const firstName = customerInfo.firstName.trim();
+    const lastName = customerInfo.lastName.trim();
+
+    if (!firstName) {
       newErrors.firstName = 'El nombre es obligatorio';
+    } else if (firstName.length < 2) {
+      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(firstName)) {
+      newErrors.firstName = 'El nombre solo puede contener letras';
     }
 
-    if (!customerInfo.lastName.trim()) {
+    if (!lastName) {
       newErrors.lastName = 'El apellido es obligatorio';
+    } else if (lastName.length < 2) {
+      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(lastName)) {
+      newErrors.lastName = 'El apellido solo puede contener letras';
     }
 
-    if (!validateEmail(customerInfo.email)) {
-      newErrors.email = 'Email inválido';
+    if (!customerInfo.email.trim()) {
+      newErrors.email = 'El email es obligatorio';
+    } else if (!validateEmail(customerInfo.email)) {
+      newErrors.email = 'Formato de email inválido';
     }
 
-    if (!customerInfo.phone.trim() || !/^\+?[\d\s-()]{10,15}$/.test(customerInfo.phone)) {
-      newErrors.phone = 'Teléfono inválido (min. 10 dígitos)';
+    if (!customerInfo.phone.trim()) {
+      newErrors.phone = 'El teléfono es obligatorio';
+    } else if (!validatePhone(customerInfo.phone)) {
+      newErrors.phone = 'Formato de teléfono inválido (ej: +57 300 123 4567)';
     }
 
-    if (!validateDocumentNumber(customerInfo.document.type, customerInfo.document.number)) {
-      newErrors.documentNumber = `Número de ${documentTypes.find(d => d.value === customerInfo.document.type)?.label} inválido`;
+    if (!customerInfo.document.number.trim()) {
+      newErrors.documentNumber = 'El número de documento es obligatorio';
+    } else if (!validateDocumentNumber(customerInfo.document.type, customerInfo.document.number)) {
+      const docTypeName = documentTypes.find(d => d.value === customerInfo.document.type)?.label;
+      newErrors.documentNumber = `Número de ${docTypeName} inválido`;
     }
 
     // Shipping address validation
-    if (!shippingAddress.address1.trim()) {
+    const address1 = shippingAddress.address1.trim();
+    const city = shippingAddress.city.trim();
+
+    if (!address1) {
       newErrors.address1 = 'La dirección es obligatoria';
+    } else if (address1.length < 10) {
+      newErrors.address1 = 'La dirección debe ser más específica';
     }
 
-    if (!shippingAddress.city.trim()) {
+    if (!city) {
       newErrors.city = 'La ciudad es obligatoria';
+    } else if (city.length < 2) {
+      newErrors.city = 'El nombre de la ciudad debe tener al menos 2 caracteres';
+    } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(city)) {
+      newErrors.city = 'La ciudad solo puede contener letras';
     }
 
-    if (!shippingAddress.postalCode.trim() || !/^\d{5,6}$/.test(shippingAddress.postalCode)) {
+    if (!shippingAddress.postalCode.trim()) {
+      newErrors.postalCode = 'El código postal es obligatorio';
+    } else if (!validatePostalCode(shippingAddress.postalCode)) {
       newErrors.postalCode = 'Código postal inválido (5-6 dígitos)';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [customerInfo, shippingAddress, validateEmail, validatePhone, validateDocumentNumber, validatePostalCode]);
 
-  const handleContinueToShipping = async () => {
+  const handleContinueToShipping = useCallback(async () => {
     if (!validateForm()) {
-      Alert.alert('Datos incompletos', 'Por favor completa todos los campos obligatorios');
+      Alert.alert(
+        'Datos incompletos',
+        'Por favor revisa y corrige los errores en el formulario',
+        [{ text: 'OK' }]
+      );
       return;
     }
 
+    setLoading(true);
     try {
-      // Create temporary user and order
-      const response = await fetch('/api/v1/orders/guest', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Sanitize and prepare data
+      const sanitizedCustomerInfo = {
+        firstName: customerInfo.firstName.trim(),
+        lastName: customerInfo.lastName.trim(),
+        email: customerInfo.email.trim().toLowerCase(),
+        phone: customerInfo.phone.replace(/[\s\-\(\)]/g, ''),
+        document: {
+          type: customerInfo.document.type,
+          number: customerInfo.document.number.trim().toUpperCase(),
         },
-        body: JSON.stringify({
-          customerInfo,
-          shippingAddress: {
-            ...shippingAddress,
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            phone: customerInfo.phone,
-          },
-        }),
+      };
+
+      const sanitizedShippingAddress = {
+        ...shippingAddress,
+        address1: shippingAddress.address1.trim(),
+        address2: shippingAddress.address2.trim(),
+        city: shippingAddress.city.trim(),
+        postalCode: shippingAddress.postalCode.trim(),
+        firstName: sanitizedCustomerInfo.firstName,
+        lastName: sanitizedCustomerInfo.lastName,
+        phone: sanitizedCustomerInfo.phone,
+      };
+
+      const { orderId } = await ordersService.createGuestOrder({
+        customerInfo: sanitizedCustomerInfo,
+        shippingAddress: sanitizedShippingAddress,
       });
 
-      if (response.ok) {
-        const { orderId } = await response.json();
-
-        navigation.navigate('ShippingOptions' as never, {
-          orderId,
-          shippingAddress: {
-            ...shippingAddress,
-            firstName: customerInfo.firstName,
-            lastName: customerInfo.lastName,
-            phone: customerInfo.phone,
-          },
-          packageDimensions: {
-            length: 20,
-            width: 15,
-            height: 10,
-            weight: 0.5, // Default weight in kg
-          },
-        } as never);
-      } else {
-        Alert.alert('Error', 'No se pudo procesar la información. Intenta nuevamente.');
-      }
-    } catch (error) {
+      navigation.navigate('ShippingOptions' as never, {
+        orderId,
+        shippingAddress: sanitizedShippingAddress,
+        packageDimensions: {
+          length: 20,
+          width: 15,
+          height: 10,
+          weight: 0.5, // Default weight in kg
+        },
+      } as never);
+    } catch (error: any) {
       console.error('Error creating guest order:', error);
-      Alert.alert('Error', 'Error de conexión. Intenta nuevamente.');
+      Alert.alert(
+        'Error',
+        error.message || 'No se pudo procesar la información. Intenta nuevamente.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [customerInfo, shippingAddress, validateForm, navigation]);
 
-  const renderInput = (
-    label: string,
-    value: string,
-    onChangeText: (text: string) => void,
-    placeholder: string,
-    keyboardType: any = 'default',
-    errorKey?: string
-  ) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>{label} *</Text>
-      <TextInput
-        style={[
-          styles.input,
-          errors[errorKey || ''] && styles.inputError,
-        ]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        keyboardType={keyboardType}
-        autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
-      />
-      {errors[errorKey || ''] && (
-        <Text style={styles.errorText}>{errors[errorKey || '']}</Text>
-      )}
-    </View>
-  );
+  // Clean input handlers
+  const handlePhoneChange = useCallback((text: string) => {
+    // Auto-format phone number as user types
+    const cleaned = text.replace(/\D/g, '');
+    const formatted = cleaned.length >= 10
+      ? `+57 ${cleaned.slice(-10).replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}`
+      : cleaned;
+    setCustomerInfo({ ...customerInfo, phone: formatted });
+  }, [customerInfo]);
+
+  const handleDocumentNumberChange = useCallback((text: string) => {
+    // Remove non-alphanumeric characters for document number
+    const cleaned = customerInfo.document.type === 'PA'
+      ? text.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      : text.replace(/\D/g, '');
+    setCustomerInfo({
+      ...customerInfo,
+      document: { ...customerInfo.document, number: cleaned },
+    });
+  }, [customerInfo]);
+
+  const handlePostalCodeChange = useCallback((text: string) => {
+    const cleaned = text.replace(/\D/g, '');
+    setShippingAddress({ ...shippingAddress, postalCode: cleaned });
+  }, [shippingAddress]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Comprar como Invitado</Text>
+        <GSText variant="h3" weight="bold">
+          Comprar como Invitado
+        </GSText>
         <View style={{ width: 24 }} />
       </View>
 
@@ -235,50 +301,62 @@ export default function GuestCheckoutScreen() {
       >
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Customer Information Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Información Personal</Text>
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+              Información Personal
+            </GSText>
 
-            {renderInput(
-              'Nombres',
-              customerInfo.firstName,
-              (text) => setCustomerInfo({ ...customerInfo, firstName: text }),
-              'Ingresa tus nombres',
-              'default',
-              'firstName'
-            )}
+            <GSInput
+              label="Nombres"
+              value={customerInfo.firstName}
+              onChangeText={(text) => setCustomerInfo({ ...customerInfo, firstName: text })}
+              placeholder="Ingresa tus nombres"
+              autoCapitalize="words"
+              error={errors.firstName}
+              style={styles.input}
+            />
 
-            {renderInput(
-              'Apellidos',
-              customerInfo.lastName,
-              (text) => setCustomerInfo({ ...customerInfo, lastName: text }),
-              'Ingresa tus apellidos',
-              'default',
-              'lastName'
-            )}
+            <GSInput
+              label="Apellidos"
+              value={customerInfo.lastName}
+              onChangeText={(text) => setCustomerInfo({ ...customerInfo, lastName: text })}
+              placeholder="Ingresa tus apellidos"
+              autoCapitalize="words"
+              error={errors.lastName}
+              style={styles.input}
+            />
 
-            {renderInput(
-              'Email',
-              customerInfo.email,
-              (text) => setCustomerInfo({ ...customerInfo, email: text }),
-              'ejemplo@correo.com',
-              'email-address',
-              'email'
-            )}
+            <GSInput
+              label="Email"
+              value={customerInfo.email}
+              onChangeText={(text) => setCustomerInfo({ ...customerInfo, email: text })}
+              placeholder="ejemplo@correo.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={errors.email}
+              style={styles.input}
+            />
 
-            {renderInput(
-              'Teléfono',
-              customerInfo.phone,
-              (text) => setCustomerInfo({ ...customerInfo, phone: text }),
-              '+57 300 123 4567',
-              'phone-pad',
-              'phone'
-            )}
+            <GSInput
+              label="Teléfono"
+              value={customerInfo.phone}
+              onChangeText={handlePhoneChange}
+              placeholder="+57 300 123 4567"
+              keyboardType="phone-pad"
+              error={errors.phone}
+              style={styles.input}
+            />
 
             {/* Document Type and Number */}
             <View style={styles.documentContainer}>
               <View style={styles.documentTypeContainer}>
-                <Text style={styles.inputLabel}>Tipo de Documento *</Text>
-                <View style={styles.pickerContainer}>
+                <GSText variant="body" weight="medium" style={styles.inputLabel}>
+                  Tipo de Documento
+                </GSText>
+                <View style={[
+                  styles.pickerContainer,
+                  { backgroundColor: theme.colors.background, borderColor: theme.colors.border }
+                ]}>
                   <Picker
                     selectedValue={customerInfo.document.type}
                     onValueChange={(value) =>
@@ -287,7 +365,7 @@ export default function GuestCheckoutScreen() {
                         document: { ...customerInfo.document, type: value },
                       })
                     }
-                    style={styles.picker}
+                    style={[styles.picker, { color: theme.colors.text }]}
                   >
                     {documentTypes.map((doc) => (
                       <Picker.Item key={doc.value} label={doc.label} value={doc.value} />
@@ -297,17 +375,17 @@ export default function GuestCheckoutScreen() {
               </View>
 
               <View style={styles.documentNumberContainer}>
-                {renderInput(
-                  'Número de Documento',
-                  customerInfo.document.number,
-                  (text) => setCustomerInfo({
-                    ...customerInfo,
-                    document: { ...customerInfo.document, number: text },
-                  }),
-                  '12345678',
-                  'numeric',
-                  'documentNumber'
-                )}
+                <GSInput
+                  label="Número de Documento"
+                  value={customerInfo.document.number}
+                  onChangeText={handleDocumentNumberChange}
+                  placeholder="12345678"
+                  keyboardType={customerInfo.document.type === 'PA' ? 'default' : 'numeric'}
+                  autoCapitalize={customerInfo.document.type === 'PA' ? 'characters' : 'none'}
+                  error={errors.documentNumber}
+                  style={styles.input}
+                  maxLength={customerInfo.document.type === 'PA' ? 12 : 12}
+                />
               </View>
             </View>
           </View>
@@ -378,14 +456,15 @@ export default function GuestCheckoutScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.continueButton}
+        {/* Footer */}
+        <View style={[styles.footer, { backgroundColor: theme.colors.surface }]}>
+          <GSButton
+            title="Continuar al Envío"
             onPress={handleContinueToShipping}
-          >
-            <Text style={styles.continueButtonText}>Continuar al Envío</Text>
-            <Ionicons name="arrow-forward" size={20} color="#FFF" />
-          </TouchableOpacity>
+            loading={loading}
+            disabled={loading}
+            style={styles.continueButton}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -395,7 +474,6 @@ export default function GuestCheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   flex: {
     flex: 1,
@@ -406,60 +484,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+  backButton: {
+    padding: 4,
   },
   content: {
     flex: 1,
     paddingHorizontal: 16,
   },
   section: {
-    backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  inputContainer: {
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
     marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#FFF',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
+    marginBottom: 16,
   },
   documentContainer: {
     flexDirection: 'row',
@@ -473,9 +525,7 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
     borderRadius: 8,
-    backgroundColor: '#FFF',
   },
   picker: {
     height: 50,
@@ -488,23 +538,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: {
-    backgroundColor: '#FFF',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   continueButton: {
-    backgroundColor: '#007AFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-  },
-  continueButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
+    marginBottom: 0,
   },
 });

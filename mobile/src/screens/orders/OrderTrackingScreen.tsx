@@ -1,17 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   RefreshControl,
   Linking,
   Alert,
+  ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import GSText from '../../components/ui/GSText';
+import GSButton from '../../components/ui/GSButton';
+import { ordersService } from '../../services/orders.service';
 
 interface TrackingInfo {
   orderId: string;
@@ -43,12 +49,14 @@ interface TrackingInfo {
   }>;
 }
 
+type OrderTrackingScreenParams = {
+  orderId: string;
+};
+
+type OrderTrackingScreenRouteProp = RouteProp<{ params: OrderTrackingScreenParams }, 'params'>;
+
 interface Props {
-  route: {
-    params: {
-      orderId: string;
-    };
-  };
+  route: OrderTrackingScreenRouteProp;
 }
 
 const statusMap: Record<string, { label: string; color: string; icon: string }> = {
@@ -65,33 +73,96 @@ const statusMap: Record<string, { label: string; color: string; icon: string }> 
 
 export default function OrderTrackingScreen({ route }: Props) {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
   const { orderId } = route.params;
+
   const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string>('');
+
+  // Real-time tracking refs
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const appStateRef = useRef(AppState.currentState);
 
   useEffect(() => {
     fetchTrackingInfo();
+    startRealTimeTracking();
+
+    // Listen to app state changes
+    const handleAppStateChange = (nextAppState: string) => {
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
+        // App came to foreground, refresh tracking
+        fetchTrackingInfo();
+      }
+      appStateRef.current = nextAppState;
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      stopRealTimeTracking();
+      subscription?.remove();
+    };
   }, [orderId]);
 
-  const fetchTrackingInfo = async (isRefresh = false) => {
+  // Focus effect for automatic refresh when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchTrackingInfo();
+      startRealTimeTracking();
+
+      return () => {
+        stopRealTimeTracking();
+      };
+    }, [orderId])
+  );
+
+  // Real-time tracking functions
+  const startRealTimeTracking = useCallback(() => {
+    // Stop any existing interval
+    stopRealTimeTracking();
+
+    // Set up interval for real-time updates (every 30 seconds)
+    intervalRef.current = setInterval(() => {
+      fetchTrackingInfo(true);
+    }, 30000); // 30 seconds
+  }, []);
+
+  const stopRealTimeTracking = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  const fetchTrackingInfo = useCallback(async (isRefresh = false) => {
     try {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
-
-      const response = await fetch(`/api/v1/orders/${orderId}/tracking`, {
-        headers: {
-          'Authorization': `Bearer ${/* token */}`, // Get from storage
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTrackingInfo(data);
+      if (isRefresh) {
+        setRefreshing(true);
       } else {
-        Alert.alert('Error', 'No se pudo cargar la información de seguimiento');
+        setLoading(true);
+      }
 
-        // Mock data for development
+      const data = await ordersService.getOrderTracking(orderId);
+      setTrackingInfo(data);
+      setLastUpdate(new Date().toLocaleTimeString('es-CO', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }));
+
+    } catch (error: any) {
+      console.error('Error fetching tracking info:', error);
+
+      // Only show error if it's not a background refresh
+      if (!isRefresh) {
+        Alert.alert('Error', error.message || 'No se pudo cargar la información de seguimiento');
+      }
+
+      // Mock data for development when API fails
+      if (!trackingInfo) {
         const mockData: TrackingInfo = {
           orderId: orderId,
           orderNumber: 'GS-001',
@@ -137,15 +208,17 @@ export default function OrderTrackingScreen({ route }: Props) {
           }
         };
         setTrackingInfo(mockData);
+        setLastUpdate(new Date().toLocaleTimeString('es-CO', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }));
       }
-    } catch (error) {
-      console.error('Error fetching tracking info:', error);
-      Alert.alert('Error', 'Error de conexión. Intenta nuevamente.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [orderId, trackingInfo]);
 
   const openCarrierTracking = () => {
     if (!trackingInfo) return;
@@ -176,28 +249,63 @@ export default function OrderTrackingScreen({ route }: Props) {
     });
   };
 
-  const requestReturn = async () => {
+  // Handle manual refresh
+  const handleRefresh = useCallback(() => {
+    fetchTrackingInfo(true);
+  }, [fetchTrackingInfo]);
+
+  const requestReturn = useCallback(async () => {
+    if (!trackingInfo) return;
+
     Alert.alert(
       'Solicitar Devolución',
-      '¿Estás seguro de que quieres solicitar una devolución para este pedido?',
+      '¿Estás seguro de que quieres solicitar una devolución para este pedido? Una vez solicitada, recibirás instrucciones por email.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Solicitar',
+          text: 'Solicitar Devolución',
           style: 'destructive',
-          onPress: () => {
-            navigation.navigate('ReturnRequest' as never, { orderId } as never);
+          onPress: async () => {
+            try {
+              await ordersService.requestReturn(orderId, {
+                reason: 'Producto defectuoso', // This could be from a form
+              });
+
+              Alert.alert(
+                'Devolución Solicitada',
+                'Tu solicitud de devolución ha sido enviada. Te contactaremos pronto.',
+                [{ text: 'OK', onPress: () => fetchTrackingInfo() }]
+              );
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'No se pudo procesar la solicitud de devolución');
+            }
           }
         }
       ]
     );
-  };
+  }, [orderId, trackingInfo, fetchTrackingInfo]);
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <GSText variant="h3" weight="bold">
+            Seguimiento de Pedido
+          </GSText>
+          <View style={{ width: 24 }} />
+        </View>
+
         <View style={styles.loadingContainer}>
-          <Text>Cargando información...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
+            Cargando información de seguimiento...
+          </GSText>
         </View>
       </SafeAreaView>
     );
@@ -205,9 +313,33 @@ export default function OrderTrackingScreen({ route }: Props) {
 
   if (!trackingInfo) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <GSText variant="h3" weight="bold">
+            Seguimiento de Pedido
+          </GSText>
+          <View style={{ width: 24 }} />
+        </View>
+
         <View style={styles.errorContainer}>
-          <Text>No se pudo cargar la información del pedido</Text>
+          <Ionicons name="alert-circle-outline" size={60} color={theme.colors.textSecondary} />
+          <GSText variant="h3" weight="bold" style={{ marginTop: 16, textAlign: 'center' }}>
+            Error de Conexión
+          </GSText>
+          <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
+            No se pudo cargar la información del pedido
+          </GSText>
+          <GSButton
+            title="Reintentar"
+            onPress={() => fetchTrackingInfo()}
+            style={{ marginTop: 24 }}
+          />
         </View>
       </SafeAreaView>
     );
@@ -216,14 +348,35 @@ export default function OrderTrackingScreen({ route }: Props) {
   const statusInfo = statusMap[trackingInfo.status] || statusMap.pending;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Header with real-time indicator */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Seguimiento de Pedido</Text>
-        <TouchableOpacity onPress={() => fetchTrackingInfo(true)}>
-          <Ionicons name="refresh" size={24} color="#007AFF" />
+        <View style={styles.headerCenter}>
+          <GSText variant="h3" weight="bold">
+            Seguimiento de Pedido
+          </GSText>
+          {lastUpdate && (
+            <GSText variant="caption" color="textSecondary">
+              Actualizado: {lastUpdate}
+            </GSText>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.refreshButton}
+          onPress={handleRefresh}
+          disabled={refreshing}
+        >
+          {refreshing ? (
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          ) : (
+            <Ionicons name="refresh" size={24} color={theme.colors.primary} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -233,23 +386,39 @@ export default function OrderTrackingScreen({ route }: Props) {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => fetchTrackingInfo(true)}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
           />
         }
       >
         {/* Order Status Card */}
-        <View style={styles.statusCard}>
+        <View style={[styles.statusCard, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.statusHeader}>
-            <Ionicons
-              name={statusInfo.icon as any}
-              size={32}
-              color={statusInfo.color}
-            />
+            <View style={[
+              styles.statusIconContainer,
+              { backgroundColor: statusInfo.color + '20' }
+            ]}>
+              <Ionicons
+                name={statusInfo.icon as any}
+                size={32}
+                color={statusInfo.color}
+              />
+            </View>
             <View style={styles.statusInfo}>
-              <Text style={styles.orderNumber}>{trackingInfo.orderNumber}</Text>
-              <Text style={[styles.status, { color: statusInfo.color }]}>
+              <GSText variant="h3" weight="bold">
+                {trackingInfo.orderNumber}
+              </GSText>
+              <GSText variant="body" style={{ color: statusInfo.color }} weight="medium">
                 {statusInfo.label}
-              </Text>
+              </GSText>
+              {trackingInfo.status === 'in_transit' && (
+                <View style={styles.liveIndicator}>
+                  <View style={[styles.liveDot, { backgroundColor: theme.colors.success }]} />
+                  <GSText variant="caption" color="success" weight="medium">
+                    Actualizaciones en tiempo real
+                  </GSText>
+                </View>
+              )}
             </View>
           </View>
 
@@ -338,16 +507,34 @@ export default function OrderTrackingScreen({ route }: Props) {
 
         {/* Action Buttons */}
         {['delivered', 'shipped'].includes(trackingInfo.status) && (
-          <View style={styles.actionsCard}>
-            <TouchableOpacity
-              style={styles.returnButton}
+          <View style={[styles.actionsCard, { backgroundColor: theme.colors.surface }]}>
+            <GSButton
+              title="Solicitar Devolución"
               onPress={requestReturn}
-            >
-              <Ionicons name="return-up-back-outline" size={20} color="#EF4444" />
-              <Text style={styles.returnButtonText}>Solicitar Devolución</Text>
-            </TouchableOpacity>
+              variant="outline"
+              style={styles.returnButton}
+            />
           </View>
         )}
+
+        {/* Real-time tracking info */}
+        <View style={[styles.infoCard, { backgroundColor: theme.colors.surface }]}>
+          <View style={styles.infoHeader}>
+            <Ionicons name="information-circle-outline" size={20} color={theme.colors.primary} />
+            <GSText variant="body" weight="medium" style={{ marginLeft: 8 }}>
+              Información de Seguimiento
+            </GSText>
+          </View>
+          <GSText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
+            • Las actualizaciones se sincronizan automáticamente cada 30 segundos
+          </GSText>
+          <GSText variant="caption" color="textSecondary">
+            • Puedes deslizar hacia abajo para actualizar manualmente
+          </GSText>
+          <GSText variant="caption" color="textSecondary">
+            • El seguimiento externo abre en el navegador
+          </GSText>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -356,7 +543,6 @@ export default function OrderTrackingScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   header: {
     flexDirection: 'row',
@@ -364,14 +550,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+  backButton: {
+    padding: 4,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  refreshButton: {
+    padding: 4,
   },
   content: {
     flex: 1,
@@ -381,22 +571,42 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   statusCard: {
-    backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
+  },
+  statusIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
   },
   statusHeader: {
     flexDirection: 'row',
@@ -598,19 +808,20 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   returnButton: {
+    marginBottom: 0,
+  },
+  infoCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#EF4444',
-    borderRadius: 8,
-    backgroundColor: '#FEF2F2',
-  },
-  returnButtonText: {
-    color: '#EF4444',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
   },
 });
