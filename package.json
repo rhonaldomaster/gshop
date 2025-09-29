@@ -28,7 +28,8 @@
     "db:seed": "cd backend && npm run seed",
     "test": "npm run test:backend && npm run test:admin",
     "test:backend": "cd backend && npm run test",
-    "test:admin": "cd admin-web && npm run test"
+    "test:admin": "cd admin-web && npm run test",
+    "expo-clean": "cd mobile && rm -rf .expo node_modules/.cache && npx expo start --clear"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

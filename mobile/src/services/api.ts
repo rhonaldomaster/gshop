@@ -142,8 +142,12 @@ class ApiClient {
   // HTTP Methods
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.axiosInstance.get<ApiResponse<T>>(url, config);
-      return response.data;
+      const response = await this.axiosInstance.get<T>(url, config);
+      // Wrap the response in ApiResponse format
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       throw error;
     }
@@ -151,8 +155,12 @@ class ApiClient {
 
   async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.axiosInstance.post<ApiResponse<T>>(url, data, config);
-      return response.data;
+      const response = await this.axiosInstance.post<T>(url, data, config);
+      // Wrap the response in ApiResponse format
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       throw error;
     }
@@ -160,8 +168,12 @@ class ApiClient {
 
   async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.axiosInstance.put<ApiResponse<T>>(url, data, config);
-      return response.data;
+      const response = await this.axiosInstance.put<T>(url, data, config);
+      // Wrap the response in ApiResponse format
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       throw error;
     }
@@ -169,8 +181,12 @@ class ApiClient {
 
   async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.axiosInstance.patch<ApiResponse<T>>(url, data, config);
-      return response.data;
+      const response = await this.axiosInstance.patch<T>(url, data, config);
+      // Wrap the response in ApiResponse format
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       throw error;
     }
@@ -178,8 +194,12 @@ class ApiClient {
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      const response = await this.axiosInstance.delete<ApiResponse<T>>(url, config);
-      return response.data;
+      const response = await this.axiosInstance.delete<T>(url, config);
+      // Wrap the response in ApiResponse format
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       throw error;
     }
@@ -196,8 +216,12 @@ class ApiClient {
         },
       };
 
-      const response = await this.axiosInstance.post<ApiResponse<T>>(url, file, uploadConfig);
-      return response.data;
+      const response = await this.axiosInstance.post<T>(url, file, uploadConfig);
+      // Wrap the response in ApiResponse format
+      return {
+        success: true,
+        data: response.data,
+      };
     } catch (error) {
       throw error;
     }

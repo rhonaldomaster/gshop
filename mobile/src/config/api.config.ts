@@ -1,7 +1,7 @@
 export const API_CONFIG = {
   // Base URLs - switch between development and production
   BASE_URL: __DEV__
-    ? 'http://localhost:3000'
+    ? 'http://192.168.20.85:3000'
     : 'https://api.gshop.com',
 
   // API version

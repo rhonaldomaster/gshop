@@ -8,19 +8,28 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+COPY package.json ./
+RUN npm install --omit=dev && npm cache clean --force
+
+# Install all dependencies (including dev dependencies) for building
+FROM base AS build-deps
+WORKDIR /app
+COPY package.json ./
+RUN npm install && npm cache clean --force
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build-deps /app/node_modules ./node_modules
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create public directory if it doesn't exist (for consistency)
+RUN mkdir -p public
 
 # Build the application
 RUN npm run build
@@ -29,12 +38,13 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy public folder (will be created by builder if it doesn't exist)
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
@@ -50,8 +60,8 @@ USER nextjs
 
 EXPOSE 3003
 
-ENV PORT 3003
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=3003
+ENV HOSTNAME="0.0.0.0"
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output
