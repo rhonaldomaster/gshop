@@ -3,10 +3,11 @@ import React, { createContext, useContext, ReactNode } from 'react';
 // Simple theme object with all the colors and styles we need
 const defaultTheme = {
   colors: {
-    primary: '#FF0050',
-    primaryDark: '#E6004A',
-    secondary: '#000000',
-    accent: '#00C853',
+    primary: '#27BFF9',
+    primaryDark: '#1AA5DC',
+    secondary: '#633EBB',
+    accent: '#994636',
+    accentDark: '#7A3829',
     background: '#FFFFFF',
     surface: '#F8F9FA',
     text: '#1A1A1A',

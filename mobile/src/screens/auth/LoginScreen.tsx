@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
@@ -22,6 +23,7 @@ type LoginNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavigationProp>();
   const { login } = useAuth();
+  const { theme } = useTheme();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -65,7 +67,7 @@ export default function LoginScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Logo */}
           <View style={styles.logoSection}>
-            <View style={styles.logo}>
+            <View style={[styles.logo, { backgroundColor: theme.colors.primary }]}>
               <GSText style={styles.logoText} variant="h2" color="white">
                 G
               </GSText>
@@ -109,7 +111,7 @@ export default function LoginScreen() {
             />
 
             <TouchableOpacity style={styles.forgotPassword}>
-              <GSText variant="body" color="#FF0050">
+              <GSText variant="body" style={{ color: theme.colors.primary }}>
                 Forgot Password?
               </GSText>
             </TouchableOpacity>
@@ -156,7 +158,7 @@ export default function LoginScreen() {
           >
             <GSText variant="body" color="#6B7280">
               Don't have an account?{' '}
-              <GSText variant="body" color="#FF0050">
+              <GSText variant="body" style={{ color: theme.colors.primary }}>
                 Sign Up
               </GSText>
             </GSText>
@@ -196,7 +198,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: '#FF0050',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,

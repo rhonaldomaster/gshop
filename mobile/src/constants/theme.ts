@@ -2,11 +2,11 @@
 export const theme = {
   colors: {
     // GSHOP Brand Colors
-    primary: '#FF0050',
-    primaryDark: '#E6004A',
-    secondary: '#000000',
-    accent: '#00C853',
-    accentDark: '#00A047',
+    primary: '#27BFF9',
+    primaryDark: '#1AA5DC',
+    secondary: '#633EBB',
+    accent: '#994636',
+    accentDark: '#7A3829',
     
     // UI Colors
     background: '#FFFFFF',

@@ -9,19 +9,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
-
-// Mock data
-const categories = [
-  { id: '1', name: 'Electronics', icon: '📱', color: '#FF0050' },
-  { id: '2', name: 'Fashion', icon: '👕', color: '#00C853' },
-  { id: '3', name: 'Home', icon: '🏠', color: '#FF9800' },
-  { id: '4', name: 'Sports', icon: '⚽', color: '#2196F3' },
-];
 
 const featuredProducts = [
   {
@@ -44,6 +37,15 @@ const featuredProducts = [
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { theme } = useTheme();
+
+  // Mock data with theme colors
+  const categories = [
+    { id: '1', name: 'Electronics', icon: '📱', color: theme.colors.primary },
+    { id: '2', name: 'Fashion', icon: '👕', color: theme.colors.accent },
+    { id: '3', name: 'Home', icon: '🏠', color: theme.colors.warning },
+    { id: '4', name: 'Sports', icon: '⚽', color: theme.colors.info },
+  ];
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -74,7 +76,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero Banner */}
-        <View style={styles.heroBanner}>
+        <View style={[styles.heroBanner, { backgroundColor: theme.colors.primary }]}>
           <View style={styles.heroContent}>
             <GSText variant="h2" color="white" weight="bold">
               Summer Sale
@@ -102,7 +104,7 @@ export default function HomeScreen() {
               Categories
             </GSText>
             <TouchableOpacity>
-              <GSText variant="body" color="#FF0050">
+              <GSText variant="body" style={{ color: theme.colors.primary }}>
                 View All
               </GSText>
             </TouchableOpacity>
@@ -129,7 +131,7 @@ export default function HomeScreen() {
               Featured Products
             </GSText>
             <TouchableOpacity>
-              <GSText variant="body" color="#FF0050">
+              <GSText variant="body" style={{ color: theme.colors.primary }}>
                 View All
               </GSText>
             </TouchableOpacity>
@@ -175,21 +177,21 @@ export default function HomeScreen() {
 
           <View style={styles.quickActions}>
             <TouchableOpacity style={styles.quickAction}>
-              <Ionicons name="bag-outline" size={24} color="#FF0050" />
+              <Ionicons name="bag-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
                 My Orders
               </GSText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.quickAction}>
-              <Ionicons name="heart-outline" size={24} color="#FF0050" />
+              <Ionicons name="heart-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
                 Wishlist
               </GSText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.quickAction}>
-              <Ionicons name="card-outline" size={24} color="#FF0050" />
+              <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
                 Payments
               </GSText>
@@ -228,7 +230,6 @@ const styles = StyleSheet.create({
   heroBanner: {
     marginHorizontal: 20,
     borderRadius: 16,
-    backgroundColor: '#FF0050',
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',

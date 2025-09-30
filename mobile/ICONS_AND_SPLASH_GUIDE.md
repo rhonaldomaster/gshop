@@ -47,9 +47,9 @@ Complete guide for creating and optimizing app icons and splash screens for the 
 
 #### Primary Colors
 ```
-Primary:    #6366f1 (Indigo)
-Secondary:  #8b5cf6 (Purple)
-Accent:     #ec4899 (Pink)
+Primary:    #27BFF9 (Sky Blue)
+Secondary:  #633EBB (Grape)
+Accent:     #994636 (Chestnut)
 Background: #ffffff (White)
 Text:       #1f2937 (Dark Gray)
 ```

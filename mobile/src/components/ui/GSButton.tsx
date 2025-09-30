@@ -7,6 +7,7 @@ import {
   View,
   Text,
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface GSButtonProps extends TouchableOpacityProps {
   title: string;
@@ -30,9 +31,39 @@ export default function GSButton({
   disabled,
   ...props
 }: GSButtonProps) {
+  const { theme } = useTheme();
+
+  const getVariantStyle = () => {
+    switch (variant) {
+      case 'primary':
+        return { backgroundColor: theme.colors.primary };
+      case 'secondary':
+        return { backgroundColor: theme.colors.secondary };
+      case 'outline':
+        return { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary };
+      case 'ghost':
+        return { backgroundColor: 'transparent' };
+      default:
+        return { backgroundColor: theme.colors.primary };
+    }
+  };
+
+  const getTextColor = () => {
+    switch (variant) {
+      case 'primary':
+      case 'secondary':
+        return theme.colors.white;
+      case 'outline':
+      case 'ghost':
+        return theme.colors.primary;
+      default:
+        return theme.colors.white;
+    }
+  };
+
   const buttonStyle = [
     styles.button,
-    styles[variant],
+    getVariantStyle(),
     styles[size],
     fullWidth && styles.fullWidth,
     disabled && styles.disabled,
@@ -41,7 +72,7 @@ export default function GSButton({
 
   const textStyle = [
     styles.text,
-    styles[`${variant}Text`],
+    { color: getTextColor() },
     styles[`${size}Text`],
   ];
 
@@ -52,7 +83,7 @@ export default function GSButton({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#fff' : '#FF0050'} />
+        <ActivityIndicator color={variant === 'primary' ? theme.colors.white : theme.colors.primary} />
       ) : (
         <View style={styles.content}>
           {leftIcon}
@@ -77,34 +108,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontWeight: '600',
-  },
-  // Variants
-  primary: {
-    backgroundColor: '#FF0050',
-  },
-  secondary: {
-    backgroundColor: '#000000',
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#FF0050',
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  // Text variants
-  primaryText: {
-    color: '#FFFFFF',
-  },
-  secondaryText: {
-    color: '#FFFFFF',
-  },
-  outlineText: {
-    color: '#FF0050',
-  },
-  ghostText: {
-    color: '#FF0050',
   },
   // Sizes
   small: {
