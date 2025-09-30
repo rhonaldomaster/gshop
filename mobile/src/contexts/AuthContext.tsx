@@ -106,12 +106,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
           } else {
             // Token is invalid, clear auth data
-            await authService.clearAuthToken();
+            dispatch({ type: 'LOGOUT' });
           }
         } catch (error) {
           // If verification fails, clear auth data
           console.warn('Token verification failed:', error);
-          await authService.clearAuthToken();
+          dispatch({ type: 'LOGOUT' });
         }
       }
     } catch (error) {

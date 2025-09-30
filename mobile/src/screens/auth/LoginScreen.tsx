@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -12,7 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import GSText from '../../components/ui/GSText';
@@ -23,9 +21,8 @@ type LoginNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNavigationProp>();
-  const { theme } = useTheme();
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -50,7 +47,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -61,14 +58,14 @@ export default function LoginScreen() {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+            <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Logo */}
           <View style={styles.logoSection}>
-            <View style={[styles.logo, { backgroundColor: theme.colors.primary }]}>
+            <View style={styles.logo}>
               <GSText style={styles.logoText} variant="h2" color="white">
                 G
               </GSText>
@@ -76,7 +73,7 @@ export default function LoginScreen() {
             <GSText variant="h1" style={styles.title}>
               Welcome Back
             </GSText>
-            <GSText variant="body" color="textSecondary" style={styles.subtitle}>
+            <GSText variant="body" color="#6B7280" style={styles.subtitle}>
               Sign in to your account
             </GSText>
           </View>
@@ -90,7 +87,7 @@ export default function LoginScreen() {
               onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
               keyboardType="email-address"
               autoCapitalize="none"
-              leftIcon={<Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} />}
+              leftIcon={<Ionicons name="mail-outline" size={20} color="#6B7280" />}
             />
 
             <GSInput
@@ -101,18 +98,18 @@ export default function LoginScreen() {
               secureTextEntry={!showPassword}
               rightIcon={
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons 
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                    size={20} 
-                    color={theme.colors.textSecondary} 
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color="#6B7280"
                   />
                 </TouchableOpacity>
               }
-              leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
+              leftIcon={<Ionicons name="lock-closed-outline" size={20} color="#6B7280" />}
             />
 
             <TouchableOpacity style={styles.forgotPassword}>
-              <GSText variant="body" style={{ color: theme.colors.primary }}>
+              <GSText variant="body" color="#FF0050">
                 Forgot Password?
               </GSText>
             </TouchableOpacity>
@@ -125,27 +122,23 @@ export default function LoginScreen() {
             />
 
             <View style={styles.divider}>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.gray300 }]} />
-              <GSText variant="caption" color="textSecondary" style={styles.dividerText}>
+              <View style={styles.dividerLine} />
+              <GSText variant="caption" color="#6B7280" style={styles.dividerText}>
                 Or continue with
               </GSText>
-              <View style={[styles.dividerLine, { backgroundColor: theme.colors.gray300 }]} />
+              <View style={styles.dividerLine} />
             </View>
 
             {/* Social Login Buttons */}
             <View style={styles.socialButtons}>
-              <TouchableOpacity
-                style={[styles.socialButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.gray300 }]}
-              >
+              <TouchableOpacity style={styles.socialButton}>
                 <GSText variant="body">🔵</GSText>
                 <GSText variant="body" weight="semiBold">
                   Facebook
                 </GSText>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.socialButton, { backgroundColor: theme.colors.surface, borderColor: theme.colors.gray300 }]}
-              >
+              <TouchableOpacity style={styles.socialButton}>
                 <GSText variant="body">🔴</GSText>
                 <GSText variant="body" weight="semiBold">
                   Google
@@ -161,9 +154,9 @@ export default function LoginScreen() {
             onPress={() => navigation.navigate('Register')}
             style={styles.signUpLink}
           >
-            <GSText variant="body" color="textSecondary">
+            <GSText variant="body" color="#6B7280">
               Don't have an account?{' '}
-              <GSText variant="body" style={{ color: theme.colors.primary }}>
+              <GSText variant="body" color="#FF0050">
                 Sign Up
               </GSText>
             </GSText>
@@ -177,6 +170,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
@@ -202,6 +196,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
+    backgroundColor: '#FF0050',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -234,6 +229,7 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
+    backgroundColor: '#D1D5DB',
   },
   dividerText: {
     marginHorizontal: 16,
@@ -248,8 +244,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
     borderRadius: 8,
     borderWidth: 1,
+    borderColor: '#D1D5DB',
     gap: 8,
   },
   footer: {

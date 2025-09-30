@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   View,
@@ -9,7 +8,6 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
@@ -45,7 +43,6 @@ const featuredProducts = [
 ];
 
 export default function HomeScreen() {
-  const { theme } = useTheme();
   const { user } = useAuth();
 
   const formatPrice = (price: number) => {
@@ -58,32 +55,26 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <GSText variant="body" color="textSecondary">
+            <GSText variant="body" color="#6B7280">
               Welcome back,
             </GSText>
             <GSText variant="h3" weight="bold">
               {user?.firstName || 'User'}!
             </GSText>
           </View>
-          
-          <TouchableOpacity 
-            style={[styles.searchButton, { backgroundColor: theme.colors.surface }]}
-          >
-            <Ionicons 
-              name="search" 
-              size={24} 
-              color={theme.colors.textSecondary} 
-            />
+
+          <TouchableOpacity style={styles.searchButton}>
+            <Ionicons name="search" size={24} color="#6B7280" />
           </TouchableOpacity>
         </View>
 
         {/* Hero Banner */}
-        <View style={[styles.heroBanner, { backgroundColor: theme.colors.primary }]}>
+        <View style={styles.heroBanner}>
           <View style={styles.heroContent}>
             <GSText variant="h2" color="white" weight="bold">
               Summer Sale
@@ -111,21 +102,15 @@ export default function HomeScreen() {
               Categories
             </GSText>
             <TouchableOpacity>
-              <GSText variant="body" style={{ color: theme.colors.primary }}>
+              <GSText variant="body" color="#FF0050">
                 View All
               </GSText>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.categoriesGrid}>
             {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryCard,
-                  { backgroundColor: theme.colors.surface }
-                ]}
-              >
+              <TouchableOpacity key={category.id} style={styles.categoryCard}>
                 <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
                   <GSText variant="h3">{category.icon}</GSText>
                 </View>
@@ -144,18 +129,16 @@ export default function HomeScreen() {
               Featured Products
             </GSText>
             <TouchableOpacity>
-              <GSText variant="body" style={{ color: theme.colors.primary }}>
+              <GSText variant="body" color="#FF0050">
                 View All
               </GSText>
             </TouchableOpacity>
           </View>
-          
+
           <FlatList
             data={featuredProducts}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.productCard, { backgroundColor: theme.colors.surface }]}
-              >
+              <TouchableOpacity style={styles.productCard}>
                 <View style={styles.productImage}>
                   <GSText variant="h1">📱</GSText>
                 </View>
@@ -169,7 +152,7 @@ export default function HomeScreen() {
                   <View style={styles.productMeta}>
                     <View style={styles.rating}>
                       <Ionicons name="star" size={14} color="#FFB800" />
-                      <GSText variant="caption" color="textSecondary">
+                      <GSText variant="caption" color="#6B7280">
                         {item.rating} ({item.reviews})
                       </GSText>
                     </View>
@@ -189,30 +172,24 @@ export default function HomeScreen() {
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
             Quick Actions
           </GSText>
-          
+
           <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={[styles.quickAction, { backgroundColor: theme.colors.surface }]}
-            >
-              <Ionicons name="bag-outline" size={24} color={theme.colors.primary} />
+            <TouchableOpacity style={styles.quickAction}>
+              <Ionicons name="bag-outline" size={24} color="#FF0050" />
               <GSText variant="caption" style={styles.quickActionText}>
                 My Orders
               </GSText>
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.quickAction, { backgroundColor: theme.colors.surface }]}
-            >
-              <Ionicons name="heart-outline" size={24} color={theme.colors.primary} />
+
+            <TouchableOpacity style={styles.quickAction}>
+              <Ionicons name="heart-outline" size={24} color="#FF0050" />
               <GSText variant="caption" style={styles.quickActionText}>
                 Wishlist
               </GSText>
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.quickAction, { backgroundColor: theme.colors.surface }]}
-            >
-              <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
+
+            <TouchableOpacity style={styles.quickAction}>
+              <Ionicons name="card-outline" size={24} color="#FF0050" />
               <GSText variant="caption" style={styles.quickActionText}>
                 Payments
               </GSText>
@@ -227,6 +204,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
@@ -243,12 +221,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
+    backgroundColor: '#F8F9FA',
     justifyContent: 'center',
     alignItems: 'center',
   },
   heroBanner: {
     marginHorizontal: 20,
     borderRadius: 16,
+    backgroundColor: '#FF0050',
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -298,6 +278,7 @@ const styles = StyleSheet.create({
   categoryCard: {
     flex: 1,
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
     padding: 16,
     borderRadius: 12,
     marginHorizontal: 4,
@@ -318,6 +299,7 @@ const styles = StyleSheet.create({
   },
   productCard: {
     width: 180,
+    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     padding: 12,
   },
@@ -354,6 +336,7 @@ const styles = StyleSheet.create({
   quickAction: {
     flex: 1,
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
     padding: 20,
     borderRadius: 12,
     marginHorizontal: 6,

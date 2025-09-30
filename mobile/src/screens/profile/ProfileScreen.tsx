@@ -112,7 +112,7 @@ export default function ProfileScreen() {
           <GSText variant="h3" weight="bold" style={styles.guestTitle}>
             Welcome to GSHOP
           </GSText>
-          <GSText variant="body" color="textSecondary" style={styles.guestSubtitle}>
+          <GSText variant="body" color={theme.colors.textSecondary} style={styles.guestSubtitle}>
             Sign in to access your profile, orders, and more
           </GSText>
           <GSButton
@@ -161,11 +161,11 @@ export default function ProfileScreen() {
           <GSText variant="h3" weight="bold" style={styles.userName}>
             {user.firstName} {user.lastName}
           </GSText>
-          <GSText variant="body" color="textSecondary" style={styles.userEmail}>
+          <GSText variant="body" color={theme.colors.textSecondary} style={styles.userEmail}>
             {user.email}
           </GSText>
           {user.phone && (
-            <GSText variant="body" color="textSecondary">
+            <GSText variant="body" color={theme.colors.textSecondary}>
               {user.phone}
             </GSText>
           )}
@@ -173,26 +173,26 @@ export default function ProfileScreen() {
           {/* Quick Stats */}
           <View style={styles.quickStats}>
             <View style={styles.statItem}>
-              <GSText variant="h4" weight="bold" color="primary">
+              <GSText variant="h4" weight="bold" color={theme.colors.primary}>
                 {cartSummary.itemCount}
               </GSText>
-              <GSText variant="caption" color="textSecondary">
+              <GSText variant="caption" color={theme.colors.textSecondary}>
                 Cart Items
               </GSText>
             </View>
             <View style={styles.statItem}>
-              <GSText variant="h4" weight="bold" color="primary">
+              <GSText variant="h4" weight="bold" color={theme.colors.primary}>
                 0
               </GSText>
-              <GSText variant="caption" color="textSecondary">
+              <GSText variant="caption" color={theme.colors.textSecondary}>
                 Orders
               </GSText>
             </View>
             <View style={styles.statItem}>
-              <GSText variant="h4" weight="bold" color="primary">
+              <GSText variant="h4" weight="bold" color={theme.colors.primary}>
                 0
               </GSText>
-              <GSText variant="caption" color="textSecondary">
+              <GSText variant="caption" color={theme.colors.textSecondary}>
                 Wishlist
               </GSText>
             </View>
@@ -211,10 +211,10 @@ export default function ProfileScreen() {
                 <Ionicons name={item.icon as any} size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.menuTextContainer}>
-                <GSText variant="body" weight="medium">
+                <GSText variant="body" weight="semiBold">
                   {item.title}
                 </GSText>
-                <GSText variant="caption" color="textSecondary">
+                <GSText variant="caption" color={theme.colors.textSecondary}>
                   {item.subtitle}
                 </GSText>
               </View>
@@ -229,7 +229,7 @@ export default function ProfileScreen() {
         <View style={styles.footer}>
           <GSButton
             title="Sign Out"
-            variant="outlined"
+            variant="outline"
             onPress={handleLogout}
             loading={isLoggingOut}
             style={styles.logoutButton}
@@ -249,11 +249,43 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 32,
+  },
+  editButton: {
+    padding: 8,
+  },
+  guestContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  guestIcon: {
+    marginBottom: 24,
+  },
+  guestTitle: {
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    marginBottom: 32,
+    textAlign: 'center',
+  },
+  signInButton: {
+    minWidth: 200,
   },
   userSection: {
     alignItems: 'center',
     marginBottom: 32,
+    padding: 20,
+    borderRadius: 16,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 16,
   },
   avatar: {
     width: 80,
@@ -261,10 +293,41 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarEditIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   userName: {
     marginBottom: 4,
+  },
+  userEmail: {
+    marginBottom: 16,
+  },
+  quickStats: {
+    flexDirection: 'row',
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    width: '100%',
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
   },
   menuSection: {
     flex: 1,
@@ -276,11 +339,25 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
+  menuIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuTextContainer: {
+    flex: 1,
+    marginLeft: 16,
+  },
   menuText: {
     flex: 1,
     marginLeft: 16,
   },
   footer: {
     marginTop: 20,
+  },
+  logoutButton: {
+    marginTop: 10,
   },
 });

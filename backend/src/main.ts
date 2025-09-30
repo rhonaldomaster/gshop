@@ -21,7 +21,9 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3001', // Admin web panel
+      'http://localhost:3002', // Seller panel
       'http://localhost:19006', // Expo dev server
+      /^http:\/\/192\.168\.\d+\.\d+:\d+$/, // Mobile app on local network (any IP)
     ],
     credentials: true,
   });
