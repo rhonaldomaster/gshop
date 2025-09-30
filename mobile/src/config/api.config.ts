@@ -1,11 +1,14 @@
+import ENV from './env.config';
+
 export const API_CONFIG = {
-  // Base URLs - switch between development and production
-  BASE_URL: __DEV__
-    ? 'http://192.168.20.85:3000'
-    : 'https://api.gshop.com',
+  // Base URLs - from environment configuration
+  BASE_URL: ENV.API_BASE_URL,
 
   // API version
-  API_VERSION: '/api/v1',
+  API_VERSION: ENV.API_VERSION,
+
+  // WebSocket URL
+  WEBSOCKET_URL: ENV.WEBSOCKET_URL,
 
   // Timeout settings
   TIMEOUT: 30000, // 30 seconds

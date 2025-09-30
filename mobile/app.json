@@ -7,6 +7,12 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "your-expo-project-id"
+      }
+    },
+    "scheme": "gshop",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
