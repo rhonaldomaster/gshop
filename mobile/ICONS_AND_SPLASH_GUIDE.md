@@ -49,7 +49,7 @@ Complete guide for creating and optimizing app icons and splash screens for the 
 ```
 Primary:    #27BFF9 (Sky Blue)
 Secondary:  #633EBB (Grape)
-Accent:     #994636 (Chestnut)
+Accent:     #FF4D80 (Coral Pink)
 Background: #ffffff (White)
 Text:       #1f2937 (Dark Gray)
 ```

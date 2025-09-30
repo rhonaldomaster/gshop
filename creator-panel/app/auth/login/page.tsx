@@ -44,11 +44,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 to-purple-50">
       <Card className="w-[400px]">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 creator-gradient rounded-lg flex items-center justify-center">
               <Icons.video className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -82,7 +82,7 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              className="w-full creator-gradient hover:opacity-90"
               disabled={isLoading}
             >
               {isLoading && (
@@ -95,7 +95,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <a href="/auth/register" className="text-purple-600 hover:underline">
+              <a href="/auth/register" className="text-primary hover:underline">
                 Apply to become a creator
               </a>
             </p>

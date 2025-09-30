@@ -11,7 +11,7 @@ export default function QuickActions() {
       description: "Create new content for your audience",
       icon: Icons.upload,
       href: "/dashboard/content/create",
-      color: "bg-blue-500 hover:bg-blue-600",
+      color: "bg-primary hover:opacity-90",
     },
     {
       title: "Go Live",
@@ -32,7 +32,7 @@ export default function QuickActions() {
       description: "Update your creator profile",
       icon: Icons.user,
       href: "/dashboard/profile",
-      color: "bg-purple-500 hover:bg-purple-600",
+      color: "bg-secondary hover:opacity-90",
     },
   ]
 

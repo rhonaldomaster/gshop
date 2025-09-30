@@ -5,8 +5,8 @@ export const theme = {
     primary: '#27BFF9',
     primaryDark: '#1AA5DC',
     secondary: '#633EBB',
-    accent: '#994636',
-    accentDark: '#7A3829',
+    accent: '#FF4D80',
+    accentDark: '#E6456B',
     
     // UI Colors
     background: '#FFFFFF',

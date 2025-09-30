@@ -15,8 +15,8 @@ export default function StatsCards({ stats }: StatsCardsProps) {
       title: "Total Followers",
       value: formatNumber(stats?.totalFollowers || 0),
       icon: Icons.users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      color: "text-primary",
+      bgColor: "bg-sky-50",
     },
     {
       title: "Total Views",
@@ -29,15 +29,15 @@ export default function StatsCards({ stats }: StatsCardsProps) {
       title: "Total Videos",
       value: formatNumber(stats?.totalVideos || 0),
       icon: Icons.video,
-      color: "text-purple-600",
+      color: "text-secondary",
       bgColor: "bg-purple-50",
     },
     {
       title: "Total Earnings",
       value: formatCurrency(stats?.totalEarnings || 0),
       icon: Icons.dollarSign,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
+      color: "text-accent",
+      bgColor: "bg-pink-50",
     },
   ]
 
