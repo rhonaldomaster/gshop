@@ -36,7 +36,7 @@ export class ProductsService {
     // Apply search
     if (query.search) {
       queryBuilder.andWhere(
-        '(product.name ILIKE :search OR product.description ILIKE :search OR product.tags && ARRAY[:search])',
+        '(product.name ILIKE :search OR product.description ILIKE :search OR product.tags ILIKE :search)',
         { search: `%${query.search}%` }
       );
     }
@@ -55,10 +55,12 @@ export class ProductsService {
 
     return {
       data: products,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -147,10 +149,12 @@ export class ProductsService {
 
     return {
       data: products,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
@@ -171,10 +175,12 @@ export class ProductsService {
 
     return {
       data: products,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 

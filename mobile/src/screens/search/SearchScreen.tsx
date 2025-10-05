@@ -398,7 +398,8 @@ export default function SearchScreen() {
           placeholder="Search products..."
           value={searchText}
           onChangeText={handleSearchTextChange}
-          style={styles.searchInput}
+          containerStyle={styles.searchInput}
+          inputStyle={{ color: '#1A1A1A' }}
           autoFocus
         />
         <TouchableOpacity
@@ -501,6 +502,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
+    marginBottom: 0,
   },
   filterButton: {
     paddingHorizontal: 16,

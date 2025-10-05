@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
+import { CategoriesService } from './categories.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
@@ -25,7 +26,10 @@ import { ProductStatus } from '../database/entities/product.entity';
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly categoriesService: CategoriesService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -43,6 +47,37 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
   findAll(@Query() query: ProductQueryDto) {
     return this.productsService.findAll(query);
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Search products' })
+  @ApiResponse({ status: 200, description: 'Products search results' })
+  searchProducts(@Query() query: ProductQueryDto) {
+    return this.productsService.findAll(query);
+  }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all product categories' })
+  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  getCategories() {
+    return this.categoriesService.findAll();
+  }
+
+  @Get('trending')
+  @ApiOperation({ summary: 'Get trending products' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Trending products retrieved successfully' })
+  async getTrending(@Query('limit') limit?: number) {
+    const queryLimit = limit || 20;
+    const result = await this.productsService.findAll({
+      limit: queryLimit,
+      page: 1,
+      sortBy: 'viewsCount',
+      sortOrder: 'DESC',
+    });
+
+    // Return just the products array, not the paginated response
+    return result.data;
   }
 
   @Get('stats')

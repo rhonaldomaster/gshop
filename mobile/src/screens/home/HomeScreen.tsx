@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -6,59 +6,102 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useProducts } from '../../hooks/useProducts';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import { Ionicons } from '@expo/vector-icons';
+import { HomeStackParamList } from '../../navigation/HomeNavigator';
+import { Product, Category } from '../../services/products.service';
+
+type HomeScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
 const { width } = Dimensions.get('window');
 
-const featuredProducts = [
-  {
-    id: '1',
-    name: 'iPhone 15 Pro Max',
-    price: 1299999.99,
-    image: '/api/placeholder/200/200',
-    rating: 4.8,
-    reviews: 234,
-  },
-  {
-    id: '2',
-    name: 'MacBook Air M3',
-    price: 1749999.99,
-    image: '/api/placeholder/200/200',
-    rating: 4.9,
-    reviews: 145,
-  },
-];
+// Icon mapping for categories
+const categoryIcons: Record<string, string> = {
+  electronics: '📱',
+  fashion: '👕',
+  home: '🏠',
+  sports: '⚽',
+  'home & garden': '🏠',
+  smartphones: '📱',
+  laptops: '💻',
+  "men's clothing": '👔',
+  "women's clothing": '👗',
+};
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const {
+    trendingProducts,
+    categories: allCategories,
+    isLoading: productsLoading,
+    loadTrendingProducts,
+    loadCategories,
+    formatPrice,
+  } = useProducts();
 
-  // Mock data with theme colors
-  const categories = [
-    { id: '1', name: 'Electronics', icon: '📱', color: theme.colors.primary },
-    { id: '2', name: 'Fashion', icon: '👕', color: theme.colors.accent },
-    { id: '3', name: 'Home', icon: '🏠', color: theme.colors.warning },
-    { id: '4', name: 'Sports', icon: '⚽', color: theme.colors.info },
-  ];
+  // Local state
+  const [refreshing, setRefreshing] = useState(false);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
+  // Load data on mount
+  useEffect(() => {
+    loadHomeData();
+  }, []);
+
+  const loadHomeData = async () => {
+    await Promise.all([
+      loadTrendingProducts(true),
+      loadCategories(true),
+    ]);
   };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadHomeData();
+    setRefreshing(false);
+  };
+
+  // Get first 4 categories for display
+  const categories = allCategories.slice(0, 4);
+  const featuredProducts = trendingProducts;
+
+  const getCategoryIcon = (category: Category) => {
+    const lowerName = category.name.toLowerCase();
+    return categoryIcons[lowerName] || categoryIcons[category.slug] || '📦';
+  };
+
+  // Show loading only on first load (not on refresh)
+  if (productsLoading && !refreshing && trendingProducts.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <GSText variant="body" style={styles.loadingText}>Loading...</GSText>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -70,7 +113,10 @@ export default function HomeScreen() {
             </GSText>
           </View>
 
-          <TouchableOpacity style={styles.searchButton}>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => navigation.navigate('Search')}
+          >
             <Ionicons name="search" size={24} color="#6B7280" />
           </TouchableOpacity>
         </View>
@@ -90,6 +136,7 @@ export default function HomeScreen() {
               size="medium"
               fullWidth={false}
               style={styles.heroButton}
+              onPress={() => navigation.navigate('Trending')}
             />
           </View>
           <View style={styles.heroImage}>
@@ -103,7 +150,7 @@ export default function HomeScreen() {
             <GSText variant="h4" weight="bold">
               Categories
             </GSText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Categories' as any)}>
               <GSText variant="body" style={{ color: theme.colors.primary }}>
                 View All
               </GSText>
@@ -111,16 +158,35 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.categoriesGrid}>
-            {categories.map((category) => (
-              <TouchableOpacity key={category.id} style={styles.categoryCard}>
-                <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-                  <GSText variant="h3">{category.icon}</GSText>
-                </View>
-                <GSText variant="caption" style={styles.categoryName}>
-                  {category.name}
-                </GSText>
-              </TouchableOpacity>
-            ))}
+            {categories.map((category, index) => {
+              const colors = [
+                theme.colors.primary,
+                theme.colors.accent,
+                theme.colors.warning,
+                theme.colors.info,
+              ];
+              const color = colors[index % colors.length];
+
+              return (
+                <TouchableOpacity
+                  key={category.id}
+                  style={styles.categoryCard}
+                  onPress={() =>
+                    navigation.navigate('CategoryProducts', {
+                      categoryId: category.id,
+                      categoryName: category.name,
+                    })
+                  }
+                >
+                  <View style={[styles.categoryIcon, { backgroundColor: color + '20' }]}>
+                    <GSText variant="h3">{getCategoryIcon(category)}</GSText>
+                  </View>
+                  <GSText variant="caption" style={styles.categoryName}>
+                    {category.name}
+                  </GSText>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -130,7 +196,7 @@ export default function HomeScreen() {
             <GSText variant="h4" weight="bold">
               Featured Products
             </GSText>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Trending')}>
               <GSText variant="body" style={{ color: theme.colors.primary }}>
                 View All
               </GSText>
@@ -140,9 +206,18 @@ export default function HomeScreen() {
           <FlatList
             data={featuredProducts}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.productCard}>
+              <TouchableOpacity
+                style={styles.productCard}
+                onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+              >
                 <View style={styles.productImage}>
-                  <GSText variant="h1">📱</GSText>
+                  {item.images && item.images.length > 0 ? (
+                    <GSText variant="body" color="textSecondary">
+                      IMG
+                    </GSText>
+                  ) : (
+                    <GSText variant="h1">📱</GSText>
+                  )}
                 </View>
                 <View style={styles.productInfo}>
                   <GSText variant="h6" weight="semiBold" numberOfLines={2}>
@@ -155,7 +230,7 @@ export default function HomeScreen() {
                     <View style={styles.rating}>
                       <Ionicons name="star" size={14} color="#FFB800" />
                       <GSText variant="caption" color="#6B7280">
-                        {item.rating} ({item.reviews})
+                        {item.rating || 0} ({item.reviewCount || 0})
                       </GSText>
                     </View>
                   </View>
@@ -166,6 +241,13 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.productsContainer}
             ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <GSText variant="body" color="textSecondary">
+                  No products available
+                </GSText>
+              </View>
+            }
           />
         </View>
 
@@ -176,21 +258,30 @@ export default function HomeScreen() {
           </GSText>
 
           <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('Profile' as any, { screen: 'Orders' })}
+            >
               <Ionicons name="bag-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
                 My Orders
               </GSText>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('Wishlist')}
+            >
               <Ionicons name="heart-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
                 Wishlist
               </GSText>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.quickAction}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('PaymentMethods')}
+            >
               <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
                 Payments
@@ -345,5 +436,18 @@ const styles = StyleSheet.create({
   quickActionText: {
     marginTop: 8,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
   },
 });

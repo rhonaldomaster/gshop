@@ -323,10 +323,13 @@ class ProductsService {
     // Add all filter parameters
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
+        // Map 'query' to 'search' for backend compatibility
+        const paramKey = key === 'query' ? 'search' : key;
+
         if (Array.isArray(value)) {
-          params[key] = value.join(',');
+          params[paramKey] = value.join(',');
         } else {
-          params[key] = value;
+          params[paramKey] = value;
         }
       }
     });

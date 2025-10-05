@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { CartProvider } from './src/contexts/CartContext';
+import { ProductsProvider } from './src/contexts/ProductsContext';
 import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -24,12 +25,14 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <CartProvider>
-            <NavigationContainer>
-              <StatusBar style="auto" />
-              <RootNavigator />
-            </NavigationContainer>
-          </CartProvider>
+          <ProductsProvider>
+            <CartProvider>
+              <NavigationContainer>
+                <StatusBar style="auto" />
+                <RootNavigator />
+              </NavigationContainer>
+            </CartProvider>
+          </ProductsProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

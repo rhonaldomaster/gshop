@@ -66,15 +66,15 @@ psql -d gshop_db -c "SELECT id, name, slug FROM category;"
 ## 📋 Checklist de Implementación
 
 ### 1. 🔍 Búsqueda Funcional
-**Status:** ⏳ Pendiente
+**Status:** ✅ Completado
 **Archivos:** `HomeScreen.tsx`, `SearchScreen.tsx`, `products.service.ts`
 
 #### Tareas:
-- [ ] Conectar botón de búsqueda con navegación a SearchScreen
-- [ ] Implementar servicio de búsqueda de productos en `products.service.ts`
-  - Endpoint: `GET /api/v1/products/search?q={query}`
+- [x] Conectar botón de búsqueda con navegación a SearchScreen
+- [x] Implementar servicio de búsqueda de productos en `products.service.ts`
+  - Endpoint: `GET /api/v1/products/search?search={query}`
   - Soporte para filtros (categoría, precio, rating)
-- [ ] Actualizar SearchScreen para:
+- [x] Actualizar SearchScreen para:
   - Mostrar resultados reales desde API
   - Implementar búsqueda en tiempo real (debounce 300ms)
   - Agregar filtros avanzados (precio, categoría, rating)
