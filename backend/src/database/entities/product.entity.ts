@@ -52,7 +52,7 @@ export class Product {
   comparePrice: number;
 
   @ApiProperty()
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  @Column('decimal', { precision: 10, scale: 2, nullable: true })
   costPerItem: number;
 
   @ApiProperty()

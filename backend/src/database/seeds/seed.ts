@@ -11,10 +11,19 @@ import { Commission, CommissionType } from '../entities/commission.entity';
 async function seed() {
   const configService = new ConfigService();
   const dataSource = new DataSource(typeOrmConfig(configService));
-  
+
   try {
     await dataSource.initialize();
     console.log('🌱 Starting database seeding...');
+
+    // Clear existing data
+    console.log('🧹 Clearing existing data...');
+    await dataSource.query('TRUNCATE TABLE "commissions" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "products" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "categories" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "categories_closure" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "users" CASCADE');
+    console.log('✅ Data cleared');
 
     // Seed Users
     const userRepository = dataSource.getRepository(User);
