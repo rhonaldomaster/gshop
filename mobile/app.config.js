@@ -82,15 +82,20 @@ export default ({ config }) => {
     experiments: {
       tsconfigPaths: true,
     },
+    updates: {
+      enabled: false,
+      checkAutomatically: 'ON_ERROR_RECOVERY',
+      fallbackToCacheTimeout: 0,
+    },
     extra: {
       eas: {
         projectId: process.env.EXPO_PROJECT_ID || '',
       },
       // Expose environment variables to the app
       ENV: process.env.ENV || 'development',
-      API_BASE_URL: process.env.API_BASE_URL || 'http://192.168.20.85:3000',
+      API_BASE_URL: process.env.API_BASE_URL || 'http://192.168.20.86:3000',
       API_VERSION: process.env.API_VERSION || '/api/v1',
-      WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'http://192.168.20.85:3000',
+      WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'http://192.168.20.86:3000',
       GSHOP_PIXEL_ID: process.env.GSHOP_PIXEL_ID || '',
       ANALYTICS_ENABLED: process.env.ANALYTICS_ENABLED === 'true',
       MERCAPAGO_PUBLIC_KEY: process.env.MERCAPAGO_PUBLIC_KEY || '',

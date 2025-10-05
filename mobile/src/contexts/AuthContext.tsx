@@ -96,26 +96,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (token && userString) {
         const user = JSON.parse(userString);
 
-        // Verify token is still valid by checking with server
-        try {
-          const isValid = await authService.isAuthenticated();
-          if (isValid) {
-            dispatch({
-              type: 'LOGIN_SUCCESS',
-              payload: { user, token },
-            });
-          } else {
-            // Token is invalid, clear auth data
-            dispatch({ type: 'LOGOUT' });
-          }
-        } catch (error) {
-          // If verification fails, clear auth data
-          console.warn('Token verification failed:', error);
-          dispatch({ type: 'LOGOUT' });
-        }
+        // Trust the stored token on startup
+        // Server will validate on first API call
+        dispatch({
+          type: 'LOGIN_SUCCESS',
+          payload: { user, token },
+        });
+      } else {
+        // No token stored, user not authenticated
+        dispatch({ type: 'LOGOUT' });
       }
     } catch (error) {
       console.error('Error checking auth state:', error);
+      dispatch({ type: 'LOGOUT' });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }

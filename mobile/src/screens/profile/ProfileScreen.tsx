@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Alert, Image, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -127,7 +127,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <View style={styles.header}>
           <GSText variant="h2" weight="bold">
@@ -235,7 +239,7 @@ export default function ProfileScreen() {
             style={styles.logoutButton}
           />
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -244,9 +248,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
+    paddingBottom: 40,
   },
   header: {
     flexDirection: 'row',
@@ -330,7 +337,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuSection: {
-    flex: 1,
     gap: 12,
   },
   menuItem: {

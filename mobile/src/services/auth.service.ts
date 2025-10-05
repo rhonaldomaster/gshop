@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient, ApiResponse } from './api.ts';
+import { apiClient, ApiResponse } from './api';
 import { API_CONFIG } from '../config/api.config';
 
 // Types for authentication

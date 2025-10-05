@@ -62,7 +62,12 @@ class ApiClient {
         }
 
         // Handle 401 - Unauthorized (token expired)
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Don't retry for login/register endpoints
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
+                               originalRequest.url?.includes('/auth/register') ||
+                               originalRequest.url?.includes('/auth/refresh');
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
