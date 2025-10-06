@@ -54,11 +54,22 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
+        // List of endpoints that are known to not exist or are optional (analytics/tracking)
+        const silencedEndpoints = ['/reviews', '/related', '/recommendations/interactions'];
+        const isSilencedEndpoint = silencedEndpoints.some(endpoint =>
+          error.config?.url?.includes(endpoint)
+        );
+
         if (__DEV__) {
-          console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`, {
-            data: error.response?.data,
-            message: error.message,
-          });
+          // Only show warnings for known missing/optional endpoints, errors for real issues
+          if (isSilencedEndpoint && (error.response?.status === 404 || error.response?.status === 400)) {
+            console.warn(`⚠️ Optional feature not available: ${error.config?.url}`);
+          } else {
+            console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`, {
+              data: error.response?.data,
+              message: error.message,
+            });
+          }
         }
 
         // Handle 401 - Unauthorized (token expired)

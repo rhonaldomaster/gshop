@@ -6,7 +6,9 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  shortDescription?: string;
   price: number;
+  comparePrice?: number;
   originalPrice?: number;
   discount?: number;
   images: string[];
@@ -236,11 +238,13 @@ class ProductsService {
       if (response.success && response.data) {
         return response.data;
       } else {
-        throw new Error(response.message || 'Failed to get reviews');
+        // Return empty response if endpoint doesn't exist
+        return { data: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } };
       }
     } catch (error: any) {
-      console.error('ProductsService: Get product reviews failed', error);
-      throw new Error(error.message || 'Failed to load reviews');
+      // Silently fail and return empty response if endpoint doesn't exist
+      console.warn('Product reviews not available:', error.message);
+      return { data: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } };
     }
   }
 
@@ -274,25 +278,32 @@ class ProductsService {
       if (response.success && response.data) {
         return response.data;
       } else {
-        throw new Error(response.message || 'Failed to get related products');
+        // Return empty array if endpoint doesn't exist
+        return [];
       }
     } catch (error: any) {
-      console.error('ProductsService: Get related products failed', error);
-      throw new Error(error.message || 'Failed to load related products');
+      // Silently fail and return empty array if endpoint doesn't exist
+      console.warn('Related products not available:', error.message);
+      return [];
     }
   }
 
   // Track product interaction for recommendations
-  async trackProductInteraction(productId: string, interactionType: 'view' | 'click' | 'add_to_cart' | 'purchase'): Promise<void> {
+  async trackProductInteraction(productId: string, interactionType: 'view' | 'click' | 'add_to_cart' | 'purchase', userId?: string): Promise<void> {
     try {
-      await apiClient.post(API_CONFIG.ENDPOINTS.RECOMMENDATIONS.INTERACTIONS, {
+      const payload: any = {
         productId,
         interactionType,
-        timestamp: new Date().toISOString(),
-      });
+      };
+
+      // Only add userId if provided
+      if (userId) {
+        payload.userId = userId;
+      }
+
+      await apiClient.post(API_CONFIG.ENDPOINTS.RECOMMENDATIONS.INTERACTIONS, payload);
     } catch (error) {
-      // Don't throw error for tracking failures
-      console.warn('ProductsService: Failed to track interaction', error);
+      // Silently fail - tracking is optional and shouldn't break user experience
     }
   }
 

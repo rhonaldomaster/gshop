@@ -38,11 +38,20 @@ export const API_CONFIG = {
 
     // Products
     PRODUCTS: {
+      BASE: '/products',
       LIST: '/products',
       DETAIL: '/products/:id',
       SEARCH: '/products/search',
       CATEGORIES: '/products/categories',
       TRENDING: '/products/trending',
+      BY_CATEGORY: '/products/category/:categoryId',
+    },
+
+    // Categories
+    CATEGORIES: {
+      LIST: '/categories',
+      DETAIL: '/categories/:id',
+      FLAT: '/categories/flat',
     },
 
     // Orders

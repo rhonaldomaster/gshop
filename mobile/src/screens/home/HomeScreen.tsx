@@ -8,6 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -212,11 +213,15 @@ export default function HomeScreen() {
               >
                 <View style={styles.productImage}>
                   {item.images && item.images.length > 0 ? (
-                    <GSText variant="body" color="textSecondary">
-                      IMG
-                    </GSText>
+                    <Image
+                      source={{ uri: item.images[0] }}
+                      style={styles.productImageView}
+                      resizeMode="cover"
+                    />
                   ) : (
-                    <GSText variant="h1">📱</GSText>
+                    <View style={styles.productImagePlaceholder}>
+                      <Ionicons name="image-outline" size={40} color="#9CA3AF" />
+                    </View>
                   )}
                 </View>
                 <View style={styles.productInfo}>
@@ -402,6 +407,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    backgroundColor: '#F3F4F6',
+    overflow: 'hidden',
+  },
+  productImageView: {
+    width: '100%',
+    height: '100%',
+  },
+  productImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
   },
   productInfo: {
     flex: 1,

@@ -40,7 +40,38 @@ export class CategoriesService {
   }
 
   async findAll(): Promise<Category[]> {
-    return this.categoryRepository.findTrees();
+    const trees = await this.categoryRepository.findTrees();
+
+    // Get product counts for all categories in a single query
+    const productCounts = await this.categoryRepository
+      .createQueryBuilder('category')
+      .leftJoin('category.products', 'product', 'product.status = :status', { status: 'active' })
+      .select('category.id', 'categoryId')
+      .addSelect('COUNT(product.id)', 'productCount')
+      .groupBy('category.id')
+      .getRawMany();
+
+    // Create a map for quick lookup
+    const countMap = new Map<string, number>();
+    productCounts.forEach(row => {
+      countMap.set(row.categoryId, parseInt(row.productCount) || 0);
+    });
+
+    // Add product count to each category and its children
+    return this.addProductCountToCategories(trees, countMap);
+  }
+
+  private addProductCountToCategories(categories: Category[], countMap: Map<string, number>): Category[] {
+    for (const category of categories) {
+      (category as any).productCount = countMap.get(category.id) || 0;
+
+      // Recursively add product count to children
+      if (category.children && category.children.length > 0) {
+        category.children = this.addProductCountToCategories(category.children, countMap);
+      }
+    }
+
+    return categories;
   }
 
   async findAllFlat(): Promise<Category[]> {

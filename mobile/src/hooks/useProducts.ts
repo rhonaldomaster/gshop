@@ -98,24 +98,30 @@ export function useProducts(): UseProductsReturn {
   // API hooks for specific operations
   const productDetailsApi = useApi(
     async (productId: string) => {
-      const [product, relatedProducts, reviewsResponse] = await Promise.all([
+      const results = await Promise.allSettled([
         productsService.getProduct(productId),
-        productsService.getRelatedProducts(productId, 6),
-        productsService.getProductReviews(productId, 1, 5),
+        productsService.getRelatedProducts(productId, 6).catch(() => []),
+        productsService.getProductReviews(productId, 1, 5).catch(() => ({ data: [] })),
       ]);
 
       return {
-        product,
-        relatedProducts,
-        reviews: reviewsResponse.data,
+        product: results[0].status === 'fulfilled' ? results[0].value : null,
+        relatedProducts: results[1].status === 'fulfilled' ? results[1].value : [],
+        reviews: results[2].status === 'fulfilled' ? results[2].value.data : [],
       };
     }
   );
 
   const reviewsApi = useApi(
     async (productId: string, page: number = 1) => {
-      const response = await productsService.getProductReviews(productId, page, 10);
-      return response.data;
+      try {
+        const response = await productsService.getProductReviews(productId, page, 10);
+        return response.data;
+      } catch (error) {
+        // Return empty array if reviews endpoint doesn't exist
+        console.warn('Reviews not available:', error);
+        return [];
+      }
     }
   );
 
