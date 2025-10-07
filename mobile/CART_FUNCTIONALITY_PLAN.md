@@ -122,14 +122,14 @@ export const cartService = new CartService();
 ---
 
 ### 2. 🖼️ Imágenes Reales de Productos
-**Status:** ⏳ Pendiente
+**Status:** ✅ Completado
 **Archivos:** `CartScreen.tsx`
 
 #### Tareas:
-- [ ] Reemplazar placeholders con imágenes reales
-- [ ] Usar `CachedImage` component para optimización
-- [ ] Agregar fallback images
-- [ ] Implementar lazy loading
+- [x] Reemplazar placeholders con imágenes reales
+- [ ] Usar `CachedImage` component para optimización (opcional)
+- [x] Agregar fallback images
+- [ ] Implementar lazy loading (opcional)
 
 #### Código Actualizado:
 ```typescript

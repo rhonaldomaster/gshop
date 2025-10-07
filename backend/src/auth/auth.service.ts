@@ -8,6 +8,7 @@ import { User, UserRole } from '../database/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -113,5 +114,43 @@ export class AuthService {
       token_type: 'Bearer',
       expires_in: '7d',
     };
+  }
+
+  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
+    const user = await this.findUserById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // If email is being updated, check if it's already in use
+    if (updateProfileDto.email && updateProfileDto.email.toLowerCase() !== user.email) {
+      const existingUser = await this.userRepository.findOne({
+        where: { email: updateProfileDto.email.toLowerCase() },
+      });
+
+      if (existingUser) {
+        throw new ConflictException('Email already in use');
+      }
+    }
+
+    // Update user fields
+    const updatedData: Partial<User> = {};
+    if (updateProfileDto.firstName) updatedData.firstName = updateProfileDto.firstName;
+    if (updateProfileDto.lastName) updatedData.lastName = updateProfileDto.lastName;
+    if (updateProfileDto.email) updatedData.email = updateProfileDto.email.toLowerCase();
+    if (updateProfileDto.phone !== undefined) updatedData.phone = updateProfileDto.phone;
+    if (updateProfileDto.avatar !== undefined) updatedData.avatar = updateProfileDto.avatar;
+    if (updateProfileDto.bio !== undefined) updatedData.bio = updateProfileDto.bio;
+
+    // Only update if there are changes
+    if (Object.keys(updatedData).length > 0) {
+      await this.userRepository.update(userId, updatedData);
+    }
+
+    // Fetch and return updated user
+    const updatedUser = await this.findUserById(userId);
+    const { password, ...userWithoutPassword } = updatedUser;
+
+    return userWithoutPassword;
   }
 }

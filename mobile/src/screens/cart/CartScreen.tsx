@@ -67,9 +67,11 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
       {/* Product Image */}
       <View style={styles.productImageContainer}>
         {item.product.images && item.product.images.length > 0 ? (
-          <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">IMG</GSText>
-          </View>
+          <Image
+            source={{ uri: item.product.images[0] }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
         ) : (
           <View style={styles.productImagePlaceholder}>
             <GSText variant="caption" color="textSecondary">No Image</GSText>
@@ -404,6 +406,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
   },
   productInfo: {
     flex: 1,

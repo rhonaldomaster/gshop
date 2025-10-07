@@ -38,8 +38,10 @@ export interface AuthResponse {
 export interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
+  email?: string;
   phone?: string;
   avatar?: string;
+  bio?: string;
 }
 
 class AuthService {

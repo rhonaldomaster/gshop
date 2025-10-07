@@ -47,12 +47,14 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
       <View key={item.id} style={styles.orderItem}>
         <View style={styles.orderItemImage}>
           {item.product?.images && item.product.images.length > 0 ? (
-            <View style={styles.productImagePlaceholder}>
-              <GSText variant="caption" color="textSecondary">IMG</GSText>
-            </View>
+            <Image
+              source={{ uri: item.product.images[0] }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
           ) : (
             <View style={styles.productImagePlaceholder}>
-              <GSText variant="caption" color="textSecondary">No Image</GSText>
+              <Ionicons name="image-outline" size={20} color="#9CA3AF" />
             </View>
           )}
         </View>
@@ -498,6 +500,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  productImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
   },
   orderItemInfo: {
     flex: 1,

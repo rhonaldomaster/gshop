@@ -6,16 +6,75 @@ import {
   Alert,
   TouchableOpacity,
   Modal,
+  ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
-import { GSText } from '../../components/common/GSText';
-import { GSButton } from '../../components/common/GSButton';
-import { GSInput } from '../../components/common/GSInput';
-import { LoadingOverlay } from '../../components/common/LoadingOverlay';
+import GSText from '../../components/ui/GSText';
+import GSButton from '../../components/ui/GSButton';
+
+// Simple Input Component
+interface InputProps {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  error?: string;
+  placeholder?: string;
+  keyboardType?: any;
+  multiline?: boolean;
+  numberOfLines?: number;
+}
+
+const GSInput: React.FC<InputProps> = ({
+  label,
+  value,
+  onChangeText,
+  error,
+  placeholder,
+  keyboardType,
+  multiline,
+  numberOfLines,
+}) => {
+  const { theme } = useTheme();
+
+  return (
+    <View>
+      <GSText variant="body" weight="semibold" style={{ marginBottom: 8 }}>
+        {label}
+      </GSText>
+      <TextInput
+        style={[
+          {
+            borderWidth: 1,
+            borderColor: error ? theme.colors.error : '#E5E7EB',
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 16,
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.text,
+          },
+          multiline && { height: 80, textAlignVertical: 'top' },
+        ]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.textSecondary}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
+      />
+      {error && (
+        <GSText variant="caption" color="error" style={{ marginTop: 4 }}>
+          {error}
+        </GSText>
+      )}
+    </View>
+  );
+};
 
 type RootStackParamList = {
   AddressBook: undefined;
@@ -444,7 +503,14 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
   });
 
   if (loading && addresses.length === 0) {
-    return <LoadingOverlay />;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <GSText variant="body" style={{ marginTop: 12 }}>Loading addresses...</GSText>
+        </View>
+      </SafeAreaView>
+    );
   }
 
   return (
@@ -702,7 +768,8 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {loading && <LoadingOverlay />}
     </SafeAreaView>
   );
 };
+
+export default AddressBookScreen;
