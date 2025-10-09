@@ -20,6 +20,7 @@ import { TokenModule } from './token/token.module';
 import { RecsysModule } from './recsys/recsys.module';
 import { ShippingModule } from './shipping/shipping.module';
 import { ReturnsModule } from './returns/returns.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -49,6 +50,7 @@ import { AppService } from './app.service';
     RecsysModule,
     ShippingModule,
     ReturnsModule,
+    WishlistModule,
   ],
   controllers: [AppController],
   providers: [AppService],

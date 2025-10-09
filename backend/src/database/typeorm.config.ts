@@ -8,6 +8,7 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { Payment } from './entities/payment.entity';
 import { Commission } from './entities/commission.entity';
+import { WishlistItem } from './entities/wishlist.entity';
 
 // Affiliates/Creator System Entities
 import { Affiliate } from '../affiliates/entities/affiliate.entity';
@@ -24,6 +25,9 @@ import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer } fr
 // Seller Entities
 import { Seller } from '../sellers/entities/seller.entity';
 
+// Payment V2 Entities
+import { PaymentMethodEntity } from '../payments/payments-v2.entity';
+
 export const typeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -33,9 +37,11 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
   database: configService.get('DB_DATABASE', 'gshop_db'),
   entities: [
     // Core entities
-    User, Product, Category, Order, OrderItem, Payment, Commission,
+    User, Product, Category, Order, OrderItem, Payment, Commission, WishlistItem,
     // Seller entities
     Seller,
+    // Payment V2 entities
+    PaymentMethodEntity,
     // Live streaming entities
     LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer,
     // Affiliates/Creator system entities

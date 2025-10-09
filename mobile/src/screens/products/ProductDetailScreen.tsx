@@ -20,6 +20,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import { Product } from '../../services/products.service';
+import { wishlistService } from '../../services/wishlist.service';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,6 +53,8 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
   // Load product details
   useEffect(() => {
@@ -67,6 +71,11 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       if (result?.product) {
         setProduct(result.product);
         setRelatedProducts(result.relatedProducts || []);
+
+        // Check if product is in wishlist (only if authenticated)
+        if (isAuthenticated) {
+          checkWishlistStatus();
+        }
       } else {
         setError('Product not found');
       }
@@ -74,6 +83,48 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       setError(err.message || 'Failed to load product');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const checkWishlistStatus = async () => {
+    try {
+      const inWishlist = await wishlistService.isInWishlist(productId);
+      setIsInWishlist(inWishlist);
+    } catch (error) {
+      console.error('Failed to check wishlist status:', error);
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        'Login Required',
+        'Please login to add items to your wishlist',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => navigation.navigate('Auth' as any) },
+        ]
+      );
+      return;
+    }
+
+    try {
+      setIsTogglingWishlist(true);
+
+      if (isInWishlist) {
+        await wishlistService.removeFromWishlist(productId);
+        setIsInWishlist(false);
+        Alert.alert('Removed', 'Product removed from wishlist');
+      } else {
+        await wishlistService.addToWishlist(productId);
+        setIsInWishlist(true);
+        Alert.alert('Added', 'Product added to wishlist');
+      }
+    } catch (error: any) {
+      console.error('Toggle wishlist failed:', error);
+      Alert.alert('Error', error.message || 'Failed to update wishlist');
+    } finally {
+      setIsTogglingWishlist(false);
     }
   };
 
@@ -201,6 +252,19 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
               <GSText variant="body" color="textSecondary">No Image</GSText>
             </View>
           )}
+
+          {/* Wishlist Button */}
+          <TouchableOpacity
+            style={[styles.wishlistButton, { backgroundColor: 'rgba(255, 255, 255, 0.9)' }]}
+            onPress={toggleWishlist}
+            disabled={isTogglingWishlist}
+          >
+            <MaterialIcons
+              name={isInWishlist ? 'favorite' : 'favorite-border'}
+              size={24}
+              color={isInWishlist ? '#ef4444' : '#6b7280'}
+            />
+          </TouchableOpacity>
 
           {/* Discount Badge */}
           {discountPercentage > 0 && (
@@ -378,6 +442,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
+  },
+  wishlistButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   discountBadge: {
     position: 'absolute',

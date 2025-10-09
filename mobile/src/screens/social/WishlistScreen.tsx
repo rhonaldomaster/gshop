@@ -12,27 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-
-interface WishlistItem {
-  id: string;
-  productId: string;
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    images: string[];
-    isAvailable: boolean;
-    seller: {
-      businessName: string;
-    };
-  };
-  addedAt: string;
-}
+import { wishlistService, WishlistItem } from '../../services/wishlist.service';
+import { useCart } from '../../contexts/CartContext';
 
 export default function WishlistScreen({ navigation }: any) {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { addToCart: addItemToCart } = useCart();
 
   useEffect(() => {
     fetchWishlist();
@@ -40,14 +27,11 @@ export default function WishlistScreen({ navigation }: any) {
 
   const fetchWishlist = async () => {
     try {
-      // In a real app, this would be an API call
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/wishlist`);
-      if (response.ok) {
-        const data = await response.json();
-        setWishlistItems(data);
-      }
+      const items = await wishlistService.getWishlist();
+      setWishlistItems(items);
     } catch (error) {
       console.error('Failed to fetch wishlist:', error);
+      Alert.alert('Error', 'Failed to load wishlist');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -59,7 +43,7 @@ export default function WishlistScreen({ navigation }: any) {
     fetchWishlist();
   };
 
-  const removeFromWishlist = async (itemId: string) => {
+  const removeFromWishlist = async (productId: string) => {
     Alert.alert(
       'Remove Item',
       'Are you sure you want to remove this item from your wishlist?',
@@ -71,23 +55,15 @@ export default function WishlistScreen({ navigation }: any) {
           onPress: async () => {
             try {
               // Optimistically update UI
-              setWishlistItems(prev => prev.filter(item => item.id !== itemId));
+              setWishlistItems(prev => prev.filter(item => item.productId !== productId));
 
-              // In a real app, make API call
-              const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/wishlist/${itemId}`,
-                { method: 'DELETE' }
-              );
-
-              if (!response.ok) {
-                // If API fails, revert the change
-                fetchWishlist();
-                Alert.alert('Error', 'Failed to remove item from wishlist');
-              }
+              // Remove from backend
+              await wishlistService.removeFromWishlist(productId);
             } catch (error) {
               console.error('Failed to remove from wishlist:', error);
-              fetchWishlist();
               Alert.alert('Error', 'Failed to remove item from wishlist');
+              // Reload wishlist on error to sync with backend
+              fetchWishlist();
             }
           }
         }
@@ -102,9 +78,11 @@ export default function WishlistScreen({ navigation }: any) {
     }
 
     try {
-      // In a real app, use cart context
-      console.log('Adding to cart:', product.id);
-      Alert.alert('Success', 'Product added to cart!');
+      await addItemToCart(product, 1);
+      Alert.alert('Success', 'Product added to cart!', [
+        { text: 'Continue Shopping', style: 'cancel' },
+        { text: 'View Cart', onPress: () => navigation.navigate('Cart') }
+      ]);
     } catch (error) {
       console.error('Failed to add to cart:', error);
       Alert.alert('Error', 'Failed to add product to cart');
@@ -135,8 +113,10 @@ export default function WishlistScreen({ navigation }: any) {
         <Text style={styles.productName} numberOfLines={2}>
           {item.product.name}
         </Text>
-        <Text style={styles.sellerName}>by {item.product.seller.businessName}</Text>
-        <Text style={styles.price}>${item.product.price.toFixed(2)}</Text>
+        <Text style={styles.sellerName}>
+          by {item.product.seller?.businessName || 'Unknown Seller'}
+        </Text>
+        <Text style={styles.price}>${Number(item.product.price).toFixed(2)}</Text>
         <Text style={styles.addedDate}>
           Added {new Date(item.addedAt).toLocaleDateString()}
         </Text>
@@ -145,7 +125,7 @@ export default function WishlistScreen({ navigation }: any) {
       <View style={styles.itemActions}>
         <TouchableOpacity
           style={styles.removeButton}
-          onPress={() => removeFromWishlist(item.id)}
+          onPress={() => removeFromWishlist(item.productId)}
         >
           <MaterialIcons name="favorite" size={24} color="#ef4444" />
         </TouchableOpacity>

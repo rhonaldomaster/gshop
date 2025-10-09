@@ -6,6 +6,8 @@ import {
   Body,
   Patch,
   Param,
+  Delete,
+  Put,
   UseGuards,
   Request,
   Headers,
@@ -14,6 +16,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { PaymentsService } from './payments.service';
 import { MercadoPagoService } from './mercadopago.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { AddPaymentMethodDto } from './dto/add-payment-method.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -67,6 +70,46 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Payment statistics retrieved successfully' })
   getStats() {
     return this.paymentsService.getPaymentStats();
+  }
+
+  @Get('methods')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user payment methods' })
+  @ApiResponse({ status: 200, description: 'Payment methods retrieved successfully' })
+  getPaymentMethods(@Request() req) {
+    return this.paymentsService.getUserPaymentMethods(req.user.id);
+  }
+
+  @Post('methods')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Add new payment method' })
+  @ApiResponse({ status: 201, description: 'Payment method added successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid payment method data' })
+  addPaymentMethod(@Request() req, @Body() addPaymentMethodDto: AddPaymentMethodDto) {
+    return this.paymentsService.addPaymentMethod(req.user.id, addPaymentMethodDto);
+  }
+
+  @Put('methods/:id/default')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Set payment method as default' })
+  @ApiResponse({ status: 200, description: 'Default payment method updated' })
+  @ApiResponse({ status: 404, description: 'Payment method not found' })
+  setDefaultPaymentMethod(@Request() req, @Param('id') id: string) {
+    return this.paymentsService.setDefaultPaymentMethod(req.user.id, id);
+  }
+
+  @Delete('methods/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete payment method' })
+  @ApiResponse({ status: 200, description: 'Payment method deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Payment method not found' })
+  async deletePaymentMethod(@Request() req, @Param('id') id: string) {
+    await this.paymentsService.deletePaymentMethod(req.user.id, id);
+    return { message: 'Payment method deleted successfully' };
   }
 
   @Get(':id')

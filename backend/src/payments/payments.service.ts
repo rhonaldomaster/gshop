@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod } from '../database/entities/payment.entity';
 import { Order, OrderStatus } from '../database/entities/order.entity';
 import { Commission, CommissionType } from '../database/entities/commission.entity';
+import { PaymentMethodEntity } from './payments-v2.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { MercadoPagoService } from './mercadopago.service';
 
@@ -17,6 +18,8 @@ export class PaymentsService {
     private orderRepository: Repository<Order>,
     @InjectRepository(Commission)
     private commissionRepository: Repository<Commission>,
+    @InjectRepository(PaymentMethodEntity)
+    private paymentMethodRepository: Repository<PaymentMethodEntity>,
     private mercadoPagoService: MercadoPagoService,
   ) {}
 
@@ -303,5 +306,82 @@ export class PaymentsService {
     const timestamp = Date.now().toString();
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `${prefix}${timestamp}${random}`;
+  }
+
+  async getUserPaymentMethods(userId: string): Promise<PaymentMethodEntity[]> {
+    return this.paymentMethodRepository.find({
+      where: { userId, isActive: true },
+      order: { isDefault: 'DESC', createdAt: 'DESC' },
+    });
+  }
+
+  async addPaymentMethod(userId: string, dto: any): Promise<PaymentMethodEntity> {
+    // If setAsDefault is true, unset all other default methods
+    if (dto.setAsDefault) {
+      await this.paymentMethodRepository.update(
+        { userId, isDefault: true },
+        { isDefault: false }
+      );
+    }
+
+    // Generate display name based on type
+    let displayName = '';
+    if (dto.type === 'stripe_card' || dto.type === 'card') {
+      displayName = `${dto.details.brand || 'Card'} •••• ${dto.details.last4}`;
+    } else if (dto.type === 'usdc_polygon') {
+      displayName = `USDC ${dto.details.polygonAddress?.substring(0, 6)}...${dto.details.polygonAddress?.substring(38)}`;
+    } else {
+      displayName = dto.type;
+    }
+
+    const paymentMethod = this.paymentMethodRepository.create({
+      userId,
+      type: dto.type,
+      displayName,
+      stripePaymentMethodId: dto.details.stripePaymentMethodId,
+      polygonAddress: dto.details.polygonAddress,
+      lastFourDigits: dto.details.last4,
+      brand: dto.details.brand,
+      expiryMonth: dto.details.expiryMonth,
+      expiryYear: dto.details.expiryYear,
+      isDefault: dto.setAsDefault || false,
+      isActive: true,
+    });
+
+    return this.paymentMethodRepository.save(paymentMethod);
+  }
+
+  async setDefaultPaymentMethod(userId: string, id: string): Promise<PaymentMethodEntity> {
+    const paymentMethod = await this.paymentMethodRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!paymentMethod) {
+      throw new NotFoundException('Payment method not found');
+    }
+
+    // Unset all other default methods
+    await this.paymentMethodRepository.update(
+      { userId, isDefault: true },
+      { isDefault: false }
+    );
+
+    // Set this one as default
+    paymentMethod.isDefault = true;
+    return this.paymentMethodRepository.save(paymentMethod);
+  }
+
+  async deletePaymentMethod(userId: string, id: string): Promise<void> {
+    const paymentMethod = await this.paymentMethodRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!paymentMethod) {
+      throw new NotFoundException('Payment method not found');
+    }
+
+    // Soft delete by setting isActive to false
+    paymentMethod.isActive = false;
+    await this.paymentMethodRepository.save(paymentMethod);
   }
 }

@@ -56,7 +56,7 @@ export const API_CONFIG = {
 
     // Orders
     ORDERS: {
-      LIST: '/orders',
+      LIST: '/orders/my-orders',
       CREATE: '/orders',
       DETAIL: '/orders/:id',
       GUEST: '/orders/guest',

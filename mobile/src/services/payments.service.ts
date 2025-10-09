@@ -108,12 +108,13 @@ class PaymentsService {
   // Get user payment methods
   async getPaymentMethods(): Promise<PaymentMethod[]> {
     try {
-      const response = await apiClient.get<PaymentMethod[]>(
+      const response = await apiClient.get<any[]>(
         API_CONFIG.ENDPOINTS.PAYMENTS.METHODS
       );
 
       if (response.success && response.data) {
-        return response.data;
+        // Transform backend response to match frontend interface
+        return response.data.map(method => this.transformPaymentMethod(method));
       } else {
         throw new Error(response.message || 'Failed to get payment methods');
       }
@@ -121,6 +122,37 @@ class PaymentsService {
       console.error('PaymentsService: Get payment methods failed', error);
       throw new Error(error.message || 'Failed to load payment methods');
     }
+  }
+
+  // Transform backend payment method to frontend format
+  private transformPaymentMethod(backendMethod: any): PaymentMethod {
+    return {
+      id: backendMethod.id,
+      type: this.mapPaymentTypeToFrontend(backendMethod.type),
+      provider: backendMethod.displayName || backendMethod.type,
+      details: {
+        last4: backendMethod.lastFourDigits,
+        brand: backendMethod.brand,
+        expiryMonth: backendMethod.expiryMonth,
+        expiryYear: backendMethod.expiryYear,
+        holderName: backendMethod.holderName,
+        walletAddress: backendMethod.polygonAddress,
+      },
+      isDefault: backendMethod.isDefault,
+      createdAt: backendMethod.createdAt,
+    };
+  }
+
+  // Map backend payment types to frontend enum
+  private mapPaymentTypeToFrontend(type: string): PaymentMethod['type'] {
+    const typeMap: Record<string, PaymentMethod['type']> = {
+      stripe_card: 'card',
+      mercadopago: 'mercadopago',
+      usdc_polygon: 'crypto',
+      stripe_bank: 'card',
+    };
+
+    return typeMap[type] || 'card';
   }
 
   // Create new payment
@@ -270,13 +302,20 @@ class PaymentsService {
     setAsDefault?: boolean;
   }): Promise<PaymentMethod> {
     try {
-      const response = await apiClient.post<PaymentMethod>(
+      // Map frontend types to backend types
+      const backendType = this.mapPaymentTypeToBackend(methodData.type);
+
+      const response = await apiClient.post<any>(
         '/payments/methods',
-        methodData
+        {
+          ...methodData,
+          type: backendType,
+        }
       );
 
       if (response.success && response.data) {
-        return response.data;
+        // Transform backend response to match frontend interface
+        return this.transformPaymentMethod(response.data);
       } else {
         throw new Error(response.message || 'Failed to add payment method');
       }
@@ -284,6 +323,18 @@ class PaymentsService {
       console.error('PaymentsService: Add payment method failed', error);
       throw new Error(error.message || 'Failed to save payment method');
     }
+  }
+
+  // Map frontend payment types to backend enum values
+  private mapPaymentTypeToBackend(type: PaymentMethod['type']): string {
+    const typeMap: Record<PaymentMethod['type'], string> = {
+      card: 'stripe_card',
+      mercadopago: 'mercadopago',
+      crypto: 'usdc_polygon',
+      gshop_tokens: 'stripe_card', // Use stripe_card for token topups
+    };
+
+    return typeMap[type] || 'stripe_card';
   }
 
   // Remove payment method
@@ -305,8 +356,9 @@ class PaymentsService {
   // Set default payment method
   async setDefaultPaymentMethod(methodId: string): Promise<boolean> {
     try {
-      const response = await apiClient.patch<{ success: boolean }>(
-        `/payments/methods/${methodId}/default`
+      const response = await apiClient.put<{ success: boolean }>(
+        `/payments/methods/${methodId}/default`,
+        {}
       );
 
       if (response.success && response.data) {
