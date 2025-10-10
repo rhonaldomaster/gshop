@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +15,7 @@ import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApi } from '../../hooks/useApi';
 import { ordersService, CreateOrderRequest, ShippingAddress, ShippingOption } from '../../services/orders.service';
+import { addressesService, Address } from '../../services/addresses.service';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
@@ -77,6 +79,15 @@ interface ShippingFormProps {
 
 const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, isLoading }) => {
   const { theme } = useTheme();
+  const hasDefaultAddress = address.address && address.city && address.state;
+  const [showDocTypeModal, setShowDocTypeModal] = useState(false);
+
+  const documentTypes = [
+    { value: 'CC', label: 'Cédula de Ciudadanía (CC)' },
+    { value: 'CE', label: 'Cédula de Extranjería (CE)' },
+    { value: 'PA', label: 'Pasaporte (PA)' },
+    { value: 'TI', label: 'Tarjeta de Identidad (TI)' },
+  ];
 
   const handleFieldChange = (field: keyof ShippingAddress, value: string) => {
     onUpdate({ ...address, [field]: value });
@@ -106,6 +117,14 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
         Shipping Address
       </GSText>
+
+      {hasDefaultAddress && (
+        <View style={[styles.defaultAddressBadge, { backgroundColor: theme.colors.success + '20' }]}>
+          <GSText variant="caption" color="success" weight="medium">
+            ✓ Using your default address
+          </GSText>
+        </View>
+      )}
 
       <View style={styles.formRow}>
         <GSInput
@@ -161,6 +180,14 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
       </View>
 
       <View style={styles.formRow}>
+        <TouchableOpacity
+          style={[styles.halfInput, styles.docTypeSelector, { borderColor: theme.colors.border }]}
+          onPress={() => setShowDocTypeModal(true)}
+        >
+          <GSText variant="body" color={address.documentType ? 'text' : 'textSecondary'}>
+            {address.documentType || 'Type'}
+          </GSText>
+        </TouchableOpacity>
         <GSInput
           placeholder="Document Number"
           value={address.document || ''}
@@ -168,13 +195,6 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           containerStyle={styles.halfInput}
           keyboardType="numeric"
         />
-        <View style={[styles.halfInput, styles.pickerContainer]}>
-          <TouchableOpacity style={styles.picker}>
-            <GSText variant="body" color={address.documentType ? 'text' : 'textSecondary'}>
-              {address.documentType || 'Document Type'}
-            </GSText>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <GSButton
@@ -183,6 +203,41 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
         style={styles.nextButton}
         loading={isLoading}
       />
+
+      {/* Document Type Modal */}
+      <Modal
+        visible={showDocTypeModal}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+              <GSText variant="h4" weight="bold">Select Document Type</GSText>
+              <TouchableOpacity onPress={() => setShowDocTypeModal(false)}>
+                <GSText variant="body" color="primary">✕</GSText>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.docTypeList}>
+              {documentTypes.map((docType) => (
+                <TouchableOpacity
+                  key={docType.value}
+                  style={[styles.docTypeOption, { borderBottomColor: theme.colors.border }]}
+                  onPress={() => {
+                    handleFieldChange('documentType', docType.value);
+                    setShowDocTypeModal(false);
+                  }}
+                >
+                  <GSText variant="body">{docType.label}</GSText>
+                  {address.documentType === docType.value && (
+                    <GSText variant="body" color="primary">✓</GSText>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -407,10 +462,53 @@ export default function CheckoutScreen() {
   });
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
+  const [loadingAddress, setLoadingAddress] = useState(true);
 
   // API hooks
   const shippingOptionsApi = useApi(ordersService.getShippingOptions);
   const createOrderApi = useApi(ordersService.createOrder);
+
+  // Helper function to map Address to ShippingAddress
+  const mapAddressToShipping = (address: Address): ShippingAddress => {
+    const [firstName, ...lastNameParts] = address.fullName.split(' ');
+    return {
+      firstName: firstName || '',
+      lastName: lastNameParts.join(' ') || '',
+      address: address.address,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      phone: address.phoneNumber,
+      document: '',
+      documentType: 'CC',
+    };
+  };
+
+  // Load default address on mount
+  useEffect(() => {
+    const loadDefaultAddress = async () => {
+      if (!user) {
+        setLoadingAddress(false);
+        return;
+      }
+
+      try {
+        setLoadingAddress(true);
+        const defaultAddress = await addressesService.getDefaultAddress();
+
+        if (defaultAddress) {
+          const shippingAddr = mapAddressToShipping(defaultAddress);
+          setShippingAddress(shippingAddr);
+        }
+      } catch (error) {
+        console.error('Failed to load default address:', error);
+      } finally {
+        setLoadingAddress(false);
+      }
+    };
+
+    loadDefaultAddress();
+  }, [user]);
 
   // Check if cart is empty
   useEffect(() => {
@@ -537,12 +635,21 @@ export default function CheckoutScreen() {
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {currentStep === 0 && (
-          <ShippingForm
-            address={shippingAddress}
-            onUpdate={setShippingAddress}
-            onNext={handleShippingAddressNext}
-            isLoading={shippingOptionsApi.isLoading}
-          />
+          loadingAddress ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <GSText variant="body" color="textSecondary" style={styles.loadingText}>
+                Loading your address...
+              </GSText>
+            </View>
+          ) : (
+            <ShippingForm
+              address={shippingAddress}
+              onUpdate={setShippingAddress}
+              onNext={handleShippingAddressNext}
+              isLoading={shippingOptionsApi.isLoading}
+            />
+          )
         )}
 
         {currentStep === 1 && (
@@ -618,11 +725,28 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+    minHeight: 200,
+  },
+  loadingText: {
+    marginTop: 12,
+  },
   formSection: {
     padding: 16,
   },
   sectionTitle: {
     marginBottom: 20,
+  },
+  defaultAddressBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignSelf: 'flex-start',
   },
   formRow: {
     flexDirection: 'row',
@@ -635,18 +759,45 @@ const styles = StyleSheet.create({
   halfInput: {
     flex: 1,
   },
-  pickerContainer: {
-    justifyContent: 'center',
-  },
-  picker: {
-    padding: 12,
+  docTypeSelector: {
+    height: 48,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.2)',
     borderRadius: 8,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
   nextButton: {
     marginTop: 20,
     flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+  },
+  docTypeList: {
+    maxHeight: 300,
+  },
+  docTypeOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
   },
   shippingOption: {
     flexDirection: 'row',

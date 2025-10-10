@@ -13,6 +13,41 @@ export class ShippingService {
     private easyPostService: EasyPostService,
   ) {}
 
+  async calculateRates(ratesDto: GetShippingRatesDto): Promise<ShippingOptionDto[]> {
+    // Use provided dimensions or defaults
+    const parcel = {
+      length: ratesDto.packageDimensions?.length || 10,
+      width: ratesDto.packageDimensions?.width || 8,
+      height: ratesDto.packageDimensions?.height || 6,
+      weight: ratesDto.packageDimensions?.weight || 0.5, // Default weight in kg
+    };
+
+    // Default from address (seller's warehouse)
+    const fromAddress = {
+      name: 'GSHOP Fulfillment Center',
+      street1: 'Calle 72 #10-07',
+      city: 'Bogotá',
+      state: 'Cundinamarca',
+      zip: '110111',
+      country: 'CO',
+      phone: '+57 1 234 5678',
+    };
+
+    const toAddress = {
+      name: `${ratesDto.shippingAddress.firstName} ${ratesDto.shippingAddress.lastName}`,
+      street1: ratesDto.shippingAddress.address1,
+      street2: ratesDto.shippingAddress.address2,
+      city: ratesDto.shippingAddress.city,
+      state: ratesDto.shippingAddress.state,
+      zip: ratesDto.shippingAddress.postalCode,
+      country: ratesDto.shippingAddress.country,
+      phone: ratesDto.shippingAddress.phone,
+    };
+
+    const rates = await this.easyPostService.getShippingRates(fromAddress, toAddress, parcel);
+    return rates;
+  }
+
   async getShippingOptions(orderId: string, ratesDto: GetShippingRatesDto): Promise<ShippingOptionDto[]> {
     const order = await this.orderRepository.findOne({
       where: { id: orderId },

@@ -8,6 +8,7 @@ import { productsService } from '../services/products.service';
 interface UseCartReturn {
   // Cart state
   items: CartItem[];
+  savedItems: CartItem[];
   totalItems: number;
   subtotal: number;
   isLoading: boolean;
@@ -20,6 +21,11 @@ interface UseCartReturn {
   clearCart: (showAlert?: boolean) => Promise<boolean>;
   incrementQuantity: (productId: string) => Promise<boolean>;
   decrementQuantity: (productId: string) => Promise<boolean>;
+
+  // Save for later actions
+  saveForLater: (productId: string) => Promise<void>;
+  moveToCart: (itemId: string) => Promise<void>;
+  getSavedItems: () => Promise<void>;
 
   // Cart queries
   getCartItem: (productId: string) => CartItem | undefined;
@@ -472,6 +478,7 @@ export function useCart(): UseCartReturn {
     () => ({
       // Cart state from context
       items: cartContext.items,
+      savedItems: cartContext.savedItems || [],
       totalItems: cartContext.totalItems,
       subtotal: cartContext.subtotal,
       isLoading: cartContext.isLoading,
@@ -489,6 +496,11 @@ export function useCart(): UseCartReturn {
       clearCart,
       incrementQuantity,
       decrementQuantity,
+
+      // Save for later actions
+      saveForLater: cartContext.saveForLater,
+      moveToCart: cartContext.moveToCart,
+      getSavedItems: cartContext.getSavedItems,
 
       // Cart queries
       getCartItem: cartContext.getCartItem,

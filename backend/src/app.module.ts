@@ -22,6 +22,7 @@ import { ShippingModule } from './shipping/shipping.module';
 import { ReturnsModule } from './returns/returns.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CartModule } from './cart/cart.module';
+import { CouponsModule } from './coupons/coupons.module';
 import { DatabaseModule } from './database/database.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -53,6 +54,7 @@ import { AppService } from './app.service';
     ReturnsModule,
     WishlistModule,
     CartModule,
+    CouponsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

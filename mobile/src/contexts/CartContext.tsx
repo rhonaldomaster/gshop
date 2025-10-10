@@ -4,6 +4,7 @@ import { API_CONFIG } from '../config/api.config';
 import { Product } from '../services/products.service';
 import { cartService, CartResponse, CartItem as BackendCartItem } from '../services/cart.service';
 import { useAuth } from './AuthContext';
+import { analyticsService } from '../services/analytics.service';
 
 // Cart item interface
 export interface CartItem {
@@ -20,6 +21,7 @@ export interface CartItem {
 // Cart state interface
 interface CartState {
   items: CartItem[];
+  savedItems: CartItem[];
   totalItems: number;
   subtotal: number;
   shippingCost: number;
@@ -51,12 +53,16 @@ interface CartContextType extends CartState {
   removeCoupon: () => Promise<void>;
   validateStock: () => Promise<boolean>;
   refreshCart: () => Promise<void>;
+  saveForLater: (productId: string) => Promise<void>;
+  moveToCart: (itemId: string) => Promise<void>;
+  getSavedItems: () => Promise<void>;
 }
 
 // Cart actions
 type CartAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_CART'; payload: CartResponse }
+  | { type: 'SET_SAVED_ITEMS'; payload: CartItem[] }
   | { type: 'SET_LOCAL_CART'; payload: CartItem[] }
   | { type: 'ADD_ITEM'; payload: CartItem }
   | { type: 'REMOVE_ITEM'; payload: string }
@@ -97,6 +103,13 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         couponDiscount: backendCart.couponDiscount,
         isLoading: false,
         lastUpdated: new Date().toISOString(),
+      };
+    }
+
+    case 'SET_SAVED_ITEMS': {
+      return {
+        ...state,
+        savedItems: action.payload,
       };
     }
 
@@ -282,6 +295,7 @@ export function CartProvider({ children }: CartProviderProps) {
   const { isAuthenticated } = useAuth();
   const [state, dispatch] = useReducer(cartReducer, {
     items: [],
+    savedItems: [],
     totalItems: 0,
     subtotal: 0,
     shippingCost: 0,
@@ -364,6 +378,8 @@ export function CartProvider({ children }: CartProviderProps) {
       dispatch({ type: 'SET_LOADING', payload: true });
       const cart = await cartService.getCart();
       dispatch({ type: 'SET_CART', payload: cart });
+      // Also load saved items
+      await getSavedItems();
     } catch (error) {
       console.error('CartContext: Failed to refresh cart', error);
       // Fallback to local storage if backend fails
@@ -419,6 +435,16 @@ export function CartProvider({ children }: CartProviderProps) {
         };
         dispatch({ type: 'ADD_ITEM', payload: cartItem });
       }
+
+      // Track analytics
+      await analyticsService.trackAddToCart({
+        productId: product.id,
+        productName: product.name,
+        category: product.category,
+        price: product.price,
+        currency: 'USD',
+        quantity,
+      });
     } catch (error) {
       console.error('CartContext: Add to cart failed', error);
       throw error;
@@ -428,14 +454,27 @@ export function CartProvider({ children }: CartProviderProps) {
   // Remove product from cart
   const removeFromCart = async (productId: string): Promise<void> => {
     try {
+      const item = state.items.find((i) => i.productId === productId);
+
       if (isAuthenticated === true) {
-        const item = state.items.find((i) => i.productId === productId);
         if (item) {
           const cart = await cartService.removeItem(item.id);
           dispatch({ type: 'SET_CART', payload: cart });
         }
       } else {
         dispatch({ type: 'REMOVE_ITEM', payload: productId });
+      }
+
+      // Track analytics
+      if (item) {
+        await analyticsService.trackRemoveFromCart({
+          productId: item.product.id,
+          productName: item.product.name,
+          category: item.product.category,
+          price: item.price,
+          currency: 'USD',
+          quantity: item.quantity,
+        });
       }
     } catch (error) {
       console.error('CartContext: Remove from cart failed', error);
@@ -470,6 +509,13 @@ export function CartProvider({ children }: CartProviderProps) {
   // Clear entire cart
   const clearCart = async (): Promise<void> => {
     try {
+      // Track analytics before clearing
+      await analyticsService.track('CUSTOM' as any, {
+        eventName: 'clear_cart',
+        item_count: state.totalItems,
+        cart_value: state.total,
+      });
+
       if (isAuthenticated === true) {
         const cart = await cartService.clearCart();
         dispatch({ type: 'SET_CART', payload: cart });
@@ -491,6 +537,13 @@ export function CartProvider({ children }: CartProviderProps) {
     try {
       const cart = await cartService.applyCoupon({ code });
       dispatch({ type: 'SET_CART', payload: cart });
+
+      // Track analytics
+      await analyticsService.track('CUSTOM' as any, {
+        eventName: 'apply_coupon',
+        coupon_code: code,
+        discount_amount: cart.couponDiscount,
+      });
     } catch (error) {
       console.error('CartContext: Apply coupon failed', error);
       throw error;
@@ -520,6 +573,21 @@ export function CartProvider({ children }: CartProviderProps) {
 
     try {
       const validation = await cartService.validateStock();
+
+      // Track checkout initiation if valid
+      if (validation.valid) {
+        await analyticsService.trackBeginCheckout({
+          value: state.total,
+          currency: 'USD',
+          items: state.items.map(item => ({
+            productId: item.product.id,
+            productName: item.product.name,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+        });
+      }
+
       return validation.valid;
     } catch (error) {
       console.error('CartContext: Validate stock failed', error);
@@ -562,6 +630,69 @@ export function CartProvider({ children }: CartProviderProps) {
     };
   };
 
+  // Save for later
+  const saveForLater = async (productId: string): Promise<void> => {
+    if (isAuthenticated !== true) {
+      throw new Error('Must be logged in to save items for later');
+    }
+
+    try {
+      const cartItem = state.items.find((item) => item.productId === productId);
+      if (!cartItem) {
+        throw new Error('Item not found in cart');
+      }
+
+      const cart = await cartService.saveForLater(cartItem.id);
+      dispatch({ type: 'SET_CART', payload: cart });
+      // Refresh saved items
+      await getSavedItems();
+    } catch (error) {
+      console.error('CartContext: Save for later failed', error);
+      throw error;
+    }
+  };
+
+  // Move item back to cart
+  const moveToCart = async (itemId: string): Promise<void> => {
+    if (isAuthenticated !== true) {
+      throw new Error('Must be logged in to move items to cart');
+    }
+
+    try {
+      const cart = await cartService.moveToCart(itemId);
+      dispatch({ type: 'SET_CART', payload: cart });
+      // Refresh saved items
+      await getSavedItems();
+    } catch (error) {
+      console.error('CartContext: Move to cart failed', error);
+      throw error;
+    }
+  };
+
+  // Get saved items from backend
+  const getSavedItems = async (): Promise<void> => {
+    if (isAuthenticated !== true) {
+      return;
+    }
+
+    try {
+      const savedItems = await cartService.getSavedItems();
+      const mappedItems: CartItem[] = savedItems.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price,
+        subtotal: item.subtotal,
+        addedAt: item.createdAt,
+        savedForLater: true,
+      }));
+      dispatch({ type: 'SET_SAVED_ITEMS', payload: mappedItems });
+    } catch (error) {
+      console.error('CartContext: Get saved items failed', error);
+    }
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -580,6 +711,9 @@ export function CartProvider({ children }: CartProviderProps) {
         removeCoupon,
         validateStock,
         refreshCart,
+        saveForLater,
+        moveToCart,
+        getSavedItems,
       }}
     >
       {children}

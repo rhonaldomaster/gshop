@@ -25,6 +25,7 @@ interface CartItemComponentProps {
   item: CartItem;
   onUpdateQuantity: (productId: string, quantity: number) => Promise<void>;
   onRemove: (productId: string) => Promise<void>;
+  onSaveForLater?: (productId: string) => Promise<void>;
   isUpdating: boolean;
 }
 
@@ -32,6 +33,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
   item,
   onUpdateQuantity,
   onRemove,
+  onSaveForLater,
   isUpdating,
 }) => {
   const { theme } = useTheme();
@@ -158,7 +160,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
             <GSText variant="body" weight="bold">+</GSText>
           </TouchableOpacity>
 
-          {/* Remove Button */}
+          {/* Remove & Save for Later Buttons */}
           <TouchableOpacity
             style={styles.removeButton}
             onPress={() => onRemove(item.productId)}
@@ -166,6 +168,16 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
           >
             <GSText variant="caption" color="error">Remove</GSText>
           </TouchableOpacity>
+
+          {onSaveForLater && (
+            <TouchableOpacity
+              style={styles.saveForLaterButton}
+              onPress={() => onSaveForLater(item.productId)}
+              disabled={isUpdating}
+            >
+              <GSText variant="caption" color="primary">Save for Later</GSText>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -186,6 +198,7 @@ export default function CartScreen() {
   const { isAuthenticated } = useAuth();
   const {
     items,
+    savedItems,
     totalItems,
     subtotal,
     shippingCost,
@@ -202,6 +215,8 @@ export default function CartScreen() {
     removeCoupon,
     validateStock,
     getCartSummary,
+    saveForLater,
+    moveToCart,
   } = useCart();
 
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
@@ -381,14 +396,118 @@ export default function CartScreen() {
     navigation.navigate('Home' as any);
   };
 
+  // Handle save for later
+  const handleSaveForLater = async (productId: string): Promise<void> => {
+    if (!isAuthenticated) {
+      Toast.show({
+        type: 'error',
+        text1: 'Login Required',
+        text2: 'Please login to save items for later',
+      });
+      return;
+    }
+
+    setUpdatingItems(prev => new Set(prev).add(productId));
+    try {
+      await saveForLater(productId);
+      Toast.show({
+        type: 'success',
+        text1: 'Saved for Later',
+        text2: 'Item moved to Saved Items',
+      });
+    } catch (error) {
+      console.error('Failed to save for later:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Save Failed',
+        text2: 'Failed to save item for later',
+      });
+    } finally {
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
+  };
+
+  // Handle move to cart
+  const handleMoveToCart = async (itemId: string): Promise<void> => {
+    setUpdatingItems(prev => new Set(prev).add(itemId));
+    try {
+      await moveToCart(itemId);
+      Toast.show({
+        type: 'success',
+        text1: 'Moved to Cart',
+        text2: 'Item added back to cart',
+      });
+    } catch (error) {
+      console.error('Failed to move to cart:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Move Failed',
+        text2: 'Failed to move item to cart',
+      });
+    } finally {
+      setUpdatingItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(itemId);
+        return newSet;
+      });
+    }
+  };
+
   // Render cart item
   const renderCartItem = ({ item }: { item: CartItem }) => (
     <CartItemComponent
       item={item}
       onUpdateQuantity={handleUpdateQuantity}
       onRemove={handleRemoveItem}
+      onSaveForLater={isAuthenticated ? handleSaveForLater : undefined}
       isUpdating={updatingItems.has(item.productId)}
     />
+  );
+
+  // Render saved item
+  const renderSavedItem = ({ item }: { item: CartItem }) => (
+    <View style={[styles.savedItem, { backgroundColor: theme.colors.surface }]}>
+      <View style={styles.productImageContainer}>
+        {item.product.images && item.product.images.length > 0 ? (
+          <Image
+            source={{ uri: item.product.images[0] }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.productImagePlaceholder}>
+            <GSText variant="caption" color="textSecondary">No Image</GSText>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.savedItemInfo}>
+        <GSText variant="body" weight="medium" numberOfLines={2}>
+          {item.product.name}
+        </GSText>
+        <GSText variant="body" weight="bold" color="primary">
+          {formatPrice(item.price)}
+        </GSText>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.moveToCartButton, { backgroundColor: theme.colors.primary }]}
+        onPress={() => handleMoveToCart(item.id)}
+        disabled={updatingItems.has(item.id)}
+      >
+        {updatingItems.has(item.id) ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <GSText variant="caption" color="white" weight="bold">
+            Move to Cart
+          </GSText>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 
   // Calculate summary
@@ -440,6 +559,25 @@ export default function CartScreen() {
           scrollEnabled={false}
           contentContainerStyle={styles.cartList}
         />
+
+        {/* Saved Items Section */}
+        {isAuthenticated && savedItems.length > 0 && (
+          <View style={styles.savedItemsSection}>
+            <View style={styles.savedItemsHeader}>
+              <GSText variant="h4" weight="bold">
+                Saved for Later ({savedItems.length} item{savedItems.length !== 1 ? 's' : ''})
+              </GSText>
+            </View>
+            <FlatList
+              data={savedItems}
+              keyExtractor={(item) => item.id}
+              renderItem={renderSavedItem}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              contentContainerStyle={styles.savedItemsList}
+            />
+          </View>
+        )}
 
         {/* Coupon Section */}
         {isAuthenticated && (
@@ -655,6 +793,41 @@ const styles = StyleSheet.create({
   removeButton: {
     marginLeft: 8,
     paddingVertical: 4,
+  },
+  saveForLaterButton: {
+    marginLeft: 8,
+    paddingVertical: 4,
+  },
+  savedItemsSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  savedItemsHeader: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginBottom: 12,
+  },
+  savedItemsList: {
+    gap: 12,
+  },
+  savedItem: {
+    flexDirection: 'row',
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 12,
+  },
+  savedItemInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  moveToCartButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: 'center',
   },
   subtotalContainer: {
     justifyContent: 'center',

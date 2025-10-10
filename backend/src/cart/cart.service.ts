@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Cart } from '../database/entities/cart.entity';
 import { CartItem } from '../database/entities/cart-item.entity';
 import { Product } from '../database/entities/product.entity';
+import { CouponsService } from '../coupons/coupons.service';
 
 interface AddToCartDto {
   productId: string;
@@ -41,6 +42,7 @@ export class CartService {
     private readonly cartItemRepository: Repository<CartItem>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    private readonly couponsService: CouponsService,
   ) {}
 
   /**
@@ -268,31 +270,27 @@ export class CartService {
   async applyCoupon(userId: string, dto: ApplyCouponDto): Promise<Cart> {
     const cart = await this.getCart(userId);
 
-    // TODO: Validate coupon with coupons service
-    // For now, implement basic validation
-    const validCoupons = {
-      SAVE10: { type: 'fixed', value: 10 },
-      SAVE20: { type: 'fixed', value: 20 },
-      PERCENT10: { type: 'percent', value: 10 },
-    };
+    // Validate coupon with coupons service
+    const validation = await this.couponsService.validateCoupon(
+      dto.code,
+      cart.subtotal,
+    );
 
-    const coupon = validCoupons[dto.code.toUpperCase()];
-
-    if (!coupon) {
-      throw new BadRequestException('Invalid coupon code');
-    }
-
-    let discount = 0;
-    if (coupon.type === 'fixed') {
-      discount = coupon.value;
-    } else if (coupon.type === 'percent') {
-      discount = (cart.subtotal * coupon.value) / 100;
+    if (!validation.valid) {
+      throw new BadRequestException(
+        validation.message || 'Invalid coupon code',
+      );
     }
 
     cart.couponCode = dto.code.toUpperCase();
-    cart.couponDiscount = discount;
+    cart.couponDiscount = validation.discount;
 
     await this.recalculateCart(cart);
+
+    // Increment coupon usage
+    if (validation.coupon) {
+      await this.couponsService.incrementUsage(validation.coupon.id);
+    }
 
     return this.getCart(userId);
   }

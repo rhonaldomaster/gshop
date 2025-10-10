@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCart } from '../contexts/CartContext';
 import HomeNavigator from './HomeNavigator';
 import CategoriesNavigator from './CategoriesNavigator';
 import CartNavigator from './CartNavigator';
@@ -21,6 +22,7 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 export default function AppNavigator() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { totalItems } = useCart();
 
   return (
     <Tab.Navigator
@@ -79,6 +81,17 @@ export default function AppNavigator() {
         component={CartNavigator}
         options={{
           tabBarLabel: 'Cart',
+          tabBarBadge: totalItems > 0 ? totalItems : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: theme.colors.error,
+            color: theme.colors.white,
+            fontSize: 10,
+            minWidth: 18,
+            height: 18,
+            borderRadius: 9,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
         }}
       />
       <Tab.Screen 

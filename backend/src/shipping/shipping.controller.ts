@@ -16,11 +16,26 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrderStatus } from '../database/entities/order.entity';
 
 @ApiTags('Shipping')
-@Controller('api/v1/orders')
+@Controller('api/v1')
 export class ShippingController {
   constructor(private shippingService: ShippingService) {}
 
-  @Post(':id/shipping-options')
+  // Calculates shipping rates before order creation
+  @Post('shipping/calculate-rates')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Calculate shipping rates without creating order' })
+  @ApiResponse({
+    status: 200,
+    description: 'Shipping rates calculated successfully',
+    type: [ShippingOptionDto],
+  })
+  async calculateShippingRates(
+    @Body() ratesDto: GetShippingRatesDto,
+  ): Promise<ShippingOptionDto[]> {
+    return this.shippingService.calculateRates(ratesDto);
+  }
+
+  @Post('orders/:id/shipping-options')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)

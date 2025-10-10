@@ -172,13 +172,45 @@ class OrdersService {
     shippingAddress: ShippingAddress;
   }): Promise<ShippingOption[]> {
     try {
-      const response = await apiClient.post<ShippingOption[]>(
-        '/orders/shipping-options',
-        orderData
+      // Map mobile ShippingAddress to backend format
+      const requestData = {
+        shippingAddress: {
+          firstName: orderData.shippingAddress.firstName,
+          lastName: orderData.shippingAddress.lastName,
+          address1: orderData.shippingAddress.address,
+          address2: '',
+          city: orderData.shippingAddress.city,
+          state: orderData.shippingAddress.state,
+          postalCode: orderData.shippingAddress.postalCode,
+          country: 'CO',
+          phone: orderData.shippingAddress.phone,
+        },
+        packageDimensions: {
+          length: 10,
+          width: 8,
+          height: 6,
+          weight: 0.5,
+        },
+      };
+
+      const response = await apiClient.post<any[]>(
+        '/shipping/calculate-rates',
+        requestData
       );
 
       if (response.success && response.data) {
-        return response.data;
+        // Map backend response to mobile format
+        const shippingOptions: ShippingOption[] = response.data.map((rate: any, index: number) => ({
+          id: rate.easypostRateId || `rate_${index}`,
+          name: `${rate.carrier} ${rate.service}`,
+          carrier: rate.carrier,
+          serviceName: rate.service,
+          price: rate.rate,
+          estimatedDays: parseInt(rate.deliveryTime) || 5,
+          description: `${rate.deliveryTime} delivery`,
+        }));
+
+        return shippingOptions;
       } else {
         throw new Error(response.message || 'Failed to get shipping options');
       }
