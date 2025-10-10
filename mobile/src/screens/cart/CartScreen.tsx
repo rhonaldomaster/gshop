@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -8,9 +7,12 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../contexts/AuthContext';
@@ -50,11 +52,16 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
   };
 
   const increaseQuantity = () => {
+    const stockQuantity = item.product.quantity ?? item.product.stock ?? 0;
     const newQuantity = localQuantity + 1;
-    if (newQuantity <= item.product.stock) {
+    if (newQuantity <= stockQuantity) {
       handleQuantityChange(newQuantity);
     } else {
-      Alert.alert('Stock Limit', `Only ${item.product.stock} items available`);
+      Toast.show({
+        type: 'error',
+        text1: 'Stock Limit',
+        text2: `Only ${stockQuantity} items available`,
+      });
     }
   };
 
@@ -110,7 +117,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
           color={inStock ? 'success' : 'error'}
           style={styles.stockStatus}
         >
-          {inStock ? `${item.product.stock} available` : 'Out of stock'}
+          {inStock ? `${item.product.quantity ?? item.product.stock ?? 0} available` : 'Out of stock'}
         </GSText>
 
         {/* Quantity Controls */}
@@ -146,7 +153,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
               }
             ]}
             onPress={increaseQuantity}
-            disabled={isUpdating || localQuantity >= item.product.stock}
+            disabled={isUpdating || localQuantity >= (item.product.quantity ?? item.product.stock ?? 0)}
           >
             <GSText variant="body" weight="bold">+</GSText>
           </TouchableOpacity>
@@ -181,26 +188,44 @@ export default function CartScreen() {
     items,
     totalItems,
     subtotal,
+    shippingCost,
+    taxAmount,
+    total,
+    couponCode,
+    couponDiscount,
     isLoading,
     updateQuantity,
     removeFromCart,
     clearCart,
     formatPrice,
+    applyCoupon,
+    removeCoupon,
+    validateStock,
     getCartSummary,
-    getShippingEstimate,
-    getTaxEstimate,
-    getTotalEstimate,
   } = useCart();
 
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [couponInput, setCouponInput] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [validatingStock, setValidatingStock] = useState(false);
 
   // Handle quantity update
   const handleUpdateQuantity = async (productId: string, quantity: number): Promise<void> => {
     setUpdatingItems(prev => new Set(prev).add(productId));
     try {
       await updateQuantity(productId, quantity);
+      Toast.show({
+        type: 'success',
+        text1: 'Quantity Updated',
+        text2: 'Cart has been updated',
+      });
     } catch (error) {
       console.error('Failed to update quantity:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Update Failed',
+        text2: 'Failed to update quantity',
+      });
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
@@ -215,8 +240,18 @@ export default function CartScreen() {
     setUpdatingItems(prev => new Set(prev).add(productId));
     try {
       await removeFromCart(productId);
+      Toast.show({
+        type: 'success',
+        text1: 'Item Removed',
+        text2: 'Item has been removed from cart',
+      });
     } catch (error) {
       console.error('Failed to remove item:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Remove Failed',
+        text2: 'Failed to remove item',
+      });
     } finally {
       setUpdatingItems(prev => {
         const newSet = new Set(prev);
@@ -228,11 +263,81 @@ export default function CartScreen() {
 
   // Handle clear cart
   const handleClearCart = async (): Promise<void> => {
-    await clearCart();
+    Alert.alert(
+      'Clear Cart',
+      'Are you sure you want to remove all items?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await clearCart();
+            Toast.show({
+              type: 'success',
+              text1: 'Cart Cleared',
+              text2: 'All items removed from cart',
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  // Handle apply coupon
+  const handleApplyCoupon = async (): Promise<void> => {
+    if (!couponInput.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Coupon',
+        text2: 'Please enter a coupon code',
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      Toast.show({
+        type: 'error',
+        text1: 'Login Required',
+        text2: 'Please login to use coupons',
+      });
+      return;
+    }
+
+    setApplyingCoupon(true);
+    try {
+      const success = await applyCoupon(couponInput.trim().toUpperCase());
+      if (success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Coupon Applied!',
+          text2: `You saved ${formatPrice(couponDiscount)}`,
+        });
+        setCouponInput('');
+      }
+    } catch (error) {
+      console.error('Failed to apply coupon:', error);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  // Handle remove coupon
+  const handleRemoveCoupon = async (): Promise<void> => {
+    try {
+      await removeCoupon();
+      Toast.show({
+        type: 'info',
+        text1: 'Coupon Removed',
+        text2: 'Coupon has been removed from cart',
+      });
+    } catch (error) {
+      console.error('Failed to remove coupon:', error);
+    }
   };
 
   // Handle checkout
-  const handleCheckout = (): void => {
+  const handleCheckout = async (): Promise<void> => {
     if (!isAuthenticated) {
       Alert.alert(
         'Login Required',
@@ -245,7 +350,30 @@ export default function CartScreen() {
       return;
     }
 
-    navigation.navigate('Checkout' as any);
+    // Validate stock before checkout
+    setValidatingStock(true);
+    try {
+      const isValid = await validateStock();
+      setValidatingStock(false);
+
+      if (!isValid) {
+        Alert.alert(
+          'Stock Updated',
+          'Some items in your cart have limited availability. Please review your cart.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      navigation.navigate('Checkout' as any);
+    } catch (error) {
+      setValidatingStock(false);
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Failed',
+        text2: 'Unable to validate cart. Please try again.',
+      });
+    }
   };
 
   // Handle continue shopping
@@ -263,11 +391,8 @@ export default function CartScreen() {
     />
   );
 
-  // Calculate totals
+  // Calculate summary
   const summary = getCartSummary();
-  const shipping = getShippingEstimate();
-  const tax = getTaxEstimate();
-  const total = getTotalEstimate();
 
   // Render empty cart
   if (items.length === 0) {
@@ -298,73 +423,147 @@ export default function CartScreen() {
       {/* Header */}
       <View style={styles.header}>
         <GSText variant="h3" weight="bold">
-          Shopping Cart ({totalItems} item{totalItems !== 1 ? 's' : ''})
+          Shopping Cart ({summary.itemCount} item{summary.itemCount !== 1 ? 's' : ''})
         </GSText>
         <TouchableOpacity onPress={handleClearCart}>
           <GSText variant="body" color="error">Clear All</GSText>
         </TouchableOpacity>
       </View>
 
-      {/* Cart Items */}
-      <FlatList
-        data={items}
-        keyExtractor={(item) => item.id}
-        renderItem={renderCartItem}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.cartList}
-      />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Cart Items */}
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.id}
+          renderItem={renderCartItem}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+          contentContainerStyle={styles.cartList}
+        />
 
-      {/* Cart Summary */}
-      <View style={[styles.cartSummary, { backgroundColor: theme.colors.surface }]}>
-        <View style={styles.summaryRow}>
-          <GSText variant="body">Subtotal ({summary.totalItems} items)</GSText>
-          <GSText variant="body" weight="medium">{formatPrice(summary.subtotal)}</GSText>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <GSText variant="body" color="textSecondary">Shipping</GSText>
-          <GSText variant="body" color="textSecondary">
-            {shipping === 0 ? 'Free' : formatPrice(shipping)}
-          </GSText>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <GSText variant="body" color="textSecondary">Tax (estimated)</GSText>
-          <GSText variant="body" color="textSecondary">{formatPrice(tax)}</GSText>
-        </View>
-
-        <View style={[styles.summaryRow, styles.totalRow]}>
-          <GSText variant="h4" weight="bold">Total</GSText>
-          <GSText variant="h4" weight="bold" color="primary">
-            {formatPrice(total)}
-          </GSText>
-        </View>
-
-        {/* Free shipping notice */}
-        {shipping > 0 && subtotal < 300000 && (
-          <View style={styles.freeShippingNotice}>
-            <GSText variant="caption" color="textSecondary">
-              Add {formatPrice(300000 - subtotal)} more for free shipping
+        {/* Coupon Section */}
+        {isAuthenticated && (
+          <View style={[styles.couponSection, { backgroundColor: theme.colors.surface }]}>
+            <GSText variant="body" weight="medium" style={styles.couponTitle}>
+              Have a coupon code?
             </GSText>
+
+            {couponCode ? (
+              <View style={styles.appliedCouponContainer}>
+                <View style={[styles.appliedCouponBadge, { backgroundColor: theme.colors.success }]}>
+                  <GSText variant="body" color="white" weight="bold">
+                    ✓ {couponCode}
+                  </GSText>
+                </View>
+                <TouchableOpacity onPress={handleRemoveCoupon}>
+                  <GSText variant="body" color="error">Remove</GSText>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.couponInputContainer}>
+                <TextInput
+                  style={[
+                    styles.couponInput,
+                    {
+                      borderColor: theme.colors.border,
+                      color: theme.colors.text,
+                      backgroundColor: theme.colors.background,
+                    }
+                  ]}
+                  placeholder="Enter coupon code"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={couponInput}
+                  onChangeText={setCouponInput}
+                  autoCapitalize="characters"
+                  editable={!applyingCoupon}
+                />
+                <GSButton
+                  title="Apply"
+                  onPress={handleApplyCoupon}
+                  loading={applyingCoupon}
+                  disabled={!couponInput.trim() || applyingCoupon}
+                  style={styles.applyCouponButton}
+                />
+              </View>
+            )}
+
+            {/* Sample coupons hint */}
+            {!couponCode && (
+              <GSText variant="caption" color="textSecondary" style={styles.couponHint}>
+                Try: SAVE10, SAVE20, or PERCENT10
+              </GSText>
+            )}
           </View>
         )}
 
-        {/* Checkout Button */}
-        <GSButton
-          title="Proceed to Checkout"
-          onPress={handleCheckout}
-          style={styles.checkoutButton}
-          loading={isLoading}
-        />
+        {/* Cart Summary */}
+        <View style={[styles.cartSummary, { backgroundColor: theme.colors.surface }]}>
+          <GSText variant="h4" weight="bold" style={styles.summaryTitle}>
+            Order Summary
+          </GSText>
 
-        {/* Continue Shopping */}
-        <TouchableOpacity
-          style={styles.continueShoppingButton}
-          onPress={handleContinueShopping}
-        >
-          <GSText variant="body" color="primary">Continue Shopping</GSText>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.summaryRow}>
+            <GSText variant="body">Subtotal ({summary.totalItems} items)</GSText>
+            <GSText variant="body" weight="medium">{formatPrice(subtotal)}</GSText>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <GSText variant="body" color="textSecondary">Shipping</GSText>
+            <GSText variant="body" color="textSecondary">
+              {shippingCost === 0 ? 'Free' : formatPrice(shippingCost)}
+            </GSText>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <GSText variant="body" color="textSecondary">Tax</GSText>
+            <GSText variant="body" color="textSecondary">{formatPrice(taxAmount)}</GSText>
+          </View>
+
+          {couponDiscount > 0 && (
+            <View style={styles.summaryRow}>
+              <GSText variant="body" color="success">Discount ({couponCode})</GSText>
+              <GSText variant="body" color="success" weight="bold">
+                -{formatPrice(couponDiscount)}
+              </GSText>
+            </View>
+          )}
+
+          <View style={[styles.summaryRow, styles.totalRow]}>
+            <GSText variant="h4" weight="bold">Total</GSText>
+            <GSText variant="h4" weight="bold" color="primary">
+              {formatPrice(total)}
+            </GSText>
+          </View>
+
+          {/* Free shipping notice */}
+          {shippingCost > 0 && subtotal < 300000 && (
+            <View style={styles.freeShippingNotice}>
+              <GSText variant="caption" color="textSecondary">
+                💰 Add {formatPrice(300000 - subtotal)} more for free shipping
+              </GSText>
+            </View>
+          )}
+
+          {/* Checkout Button */}
+          <GSButton
+            title="Proceed to Checkout"
+            onPress={handleCheckout}
+            style={styles.checkoutButton}
+            loading={validatingStock || isLoading}
+          />
+
+          {/* Continue Shopping */}
+          <TouchableOpacity
+            style={styles.continueShoppingButton}
+            onPress={handleContinueShopping}
+          >
+            <GSText variant="body" color="primary">Continue Shopping</GSText>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Toast Container */}
+      <Toast />
     </SafeAreaView>
   );
 }
@@ -462,10 +661,55 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginLeft: 8,
   },
-  cartSummary: {
+  couponSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 12,
+  },
+  couponTitle: {
+    marginBottom: 12,
+  },
+  couponInputContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  couponInput: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    minWidth: 0,
+  },
+  applyCouponButton: {
+    width: 100,
+    height: 48,
+  },
+  appliedCouponContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  appliedCouponBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  couponHint: {
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  cartSummary: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  summaryTitle: {
+    marginBottom: 16,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -474,16 +718,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   totalRow: {
-    paddingTop: 8,
-    marginTop: 8,
+    paddingTop: 12,
+    marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
     marginBottom: 16,
   },
   freeShippingNotice: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    padding: 8,
-    borderRadius: 6,
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 16,
     alignItems: 'center',
   },

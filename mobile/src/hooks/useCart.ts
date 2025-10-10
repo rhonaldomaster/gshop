@@ -46,6 +46,23 @@ interface UseCartReturn {
     issues: string[];
   };
   syncWithServer: () => Promise<void>;
+
+  // Backend integration
+  applyCoupon: (code: string) => Promise<boolean>;
+  removeCoupon: () => Promise<boolean>;
+  validateStock: () => Promise<boolean>;
+  refreshCart: () => Promise<void>;
+
+  // Extended state
+  shippingCost: number;
+  taxAmount: number;
+  total: number;
+  couponCode?: string;
+  couponDiscount: number;
+
+  // Helper utilities
+  getDiscountPercentage: (product: Product) => number;
+  isInStock: (product: Product) => boolean;
 }
 
 /**
@@ -255,16 +272,18 @@ export function useCart(): UseCartReturn {
         return { canAdd: false, reason: 'Quantity must be greater than 0' };
       }
 
-      if (quantity > product.stock) {
-        return { canAdd: false, reason: `Only ${product.stock} items available` };
+      const stockQuantity = product.quantity ?? product.stock ?? 0;
+
+      if (quantity > stockQuantity) {
+        return { canAdd: false, reason: `Only ${stockQuantity} items available` };
       }
 
       // Check current cart quantity
       const currentQuantity = getItemQuantity(product.id);
       const totalQuantity = currentQuantity + quantity;
 
-      if (totalQuantity > product.stock) {
-        const remaining = product.stock - currentQuantity;
+      if (totalQuantity > stockQuantity) {
+        const remaining = stockQuantity - currentQuantity;
         return {
           canAdd: false,
           reason: remaining > 0
@@ -339,8 +358,9 @@ export function useCart(): UseCartReturn {
       }
 
       // Check stock availability
-      if (item.quantity > item.product.stock) {
-        issues.push(`${item.product.name} - only ${item.product.stock} items available`);
+      const stockQuantity = item.product.quantity ?? item.product.stock ?? 0;
+      if (item.quantity > stockQuantity) {
+        issues.push(`${item.product.name} - only ${stockQuantity} items available`);
       }
 
       // Check for price changes (would require API call to get current price)
@@ -356,35 +376,96 @@ export function useCart(): UseCartReturn {
     };
   }, [cartContext.items]);
 
-  // Sync cart with server (placeholder for future implementation)
+  // Sync cart with server
   const syncWithServer = useCallback(async (): Promise<void> => {
     try {
-      // This would sync the local cart with server-side cart
-      // For now, just validate local cart items
-      console.log('Syncing cart with server...');
-
-      // Validate each item's current availability and price
-      for (const item of cartContext.items) {
-        try {
-          const currentProduct = await productsService.getProduct(item.productId);
-
-          // Update product info if it has changed
-          if (currentProduct && (
-            currentProduct.price !== item.price ||
-            currentProduct.stock !== item.product.stock ||
-            currentProduct.status !== item.product.status
-          )) {
-            // Update would need to be implemented in CartContext
-            console.log(`Product ${item.productId} has updated information`);
-          }
-        } catch (error) {
-          console.warn(`Failed to validate product ${item.productId}:`, error);
-        }
+      if (cartContext.syncWithBackend) {
+        await cartContext.syncWithBackend();
       }
     } catch (error) {
       console.error('Cart sync failed:', error);
     }
-  }, [cartContext.items]);
+  }, [cartContext]);
+
+  // Apply coupon code
+  const applyCoupon = useCallback(
+    async (code: string): Promise<boolean> => {
+      try {
+        if (!cartContext.applyCoupon) {
+          Alert.alert('Error', 'Coupon feature not available');
+          return false;
+        }
+        await cartContext.applyCoupon(code);
+        return true;
+      } catch (error: any) {
+        console.error('useCart: Apply coupon failed', error);
+        Alert.alert('Invalid Coupon', error.message || 'Failed to apply coupon');
+        return false;
+      }
+    },
+    [cartContext]
+  );
+
+  // Remove coupon
+  const removeCoupon = useCallback(
+    async (): Promise<boolean> => {
+      try {
+        if (!cartContext.removeCoupon) {
+          return false;
+        }
+        await cartContext.removeCoupon();
+        return true;
+      } catch (error: any) {
+        console.error('useCart: Remove coupon failed', error);
+        return false;
+      }
+    },
+    [cartContext]
+  );
+
+  // Validate stock before checkout
+  const validateStock = useCallback(
+    async (): Promise<boolean> => {
+      try {
+        if (!cartContext.validateStock) {
+          return getCartValidation().isValid;
+        }
+        return await cartContext.validateStock();
+      } catch (error: any) {
+        console.error('useCart: Validate stock failed', error);
+        return false;
+      }
+    },
+    [cartContext, getCartValidation]
+  );
+
+  // Refresh cart from backend
+  const refreshCart = useCallback(
+    async (): Promise<void> => {
+      try {
+        if (cartContext.refreshCart) {
+          await cartContext.refreshCart();
+        }
+      } catch (error: any) {
+        console.error('useCart: Refresh cart failed', error);
+      }
+    },
+    [cartContext]
+  );
+
+  // Get discount percentage
+  const getDiscountPercentage = useCallback((product: Product): number => {
+    if (product.originalPrice && product.originalPrice > product.price) {
+      return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+    }
+    return 0;
+  }, []);
+
+  // Check if product is in stock
+  const isInStock = useCallback((product: Product): boolean => {
+    const stockQuantity = product.quantity ?? product.stock ?? 0;
+    return stockQuantity > 0 && product.status === 'active';
+  }, []);
 
   // Memoized return object to prevent unnecessary re-renders
   return useMemo(
@@ -395,6 +476,11 @@ export function useCart(): UseCartReturn {
       subtotal: cartContext.subtotal,
       isLoading: cartContext.isLoading,
       lastUpdated: cartContext.lastUpdated,
+      shippingCost: cartContext.shippingCost || getShippingEstimate(),
+      taxAmount: cartContext.taxAmount || getTaxEstimate(),
+      total: cartContext.total || getTotalEstimate(),
+      couponCode: cartContext.couponCode,
+      couponDiscount: cartContext.couponDiscount || 0,
 
       // Enhanced cart actions
       addToCart,
@@ -420,6 +506,16 @@ export function useCart(): UseCartReturn {
       formatPrice,
       getCartValidation,
       syncWithServer,
+
+      // Backend integration
+      applyCoupon,
+      removeCoupon,
+      validateStock,
+      refreshCart,
+
+      // Helper utilities
+      getDiscountPercentage,
+      isInStock,
     }),
     [
       cartContext,
@@ -438,6 +534,12 @@ export function useCart(): UseCartReturn {
       formatPrice,
       getCartValidation,
       syncWithServer,
+      applyCoupon,
+      removeCoupon,
+      validateStock,
+      refreshCart,
+      getDiscountPercentage,
+      isInStock,
     ]
   );
 }

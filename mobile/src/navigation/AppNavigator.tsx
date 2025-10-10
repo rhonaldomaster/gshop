@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import HomeNavigator from './HomeNavigator';
 import CategoriesNavigator from './CategoriesNavigator';
-import CartScreen from '../screens/cart/CartScreen';
+import CartNavigator from './CartNavigator';
 import ProfileNavigator from './ProfileNavigator';
 
 export type AppTabParamList = {
@@ -76,7 +76,7 @@ export default function AppNavigator() {
       />
       <Tab.Screen
         name="Cart"
-        component={CartScreen}
+        component={CartNavigator}
         options={{
           tabBarLabel: 'Cart',
         }}

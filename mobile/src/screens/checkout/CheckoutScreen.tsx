@@ -112,13 +112,13 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           placeholder="First Name"
           value={address.firstName}
           onChangeText={(value) => handleFieldChange('firstName', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
         />
         <GSInput
           placeholder="Last Name"
           value={address.lastName}
           onChangeText={(value) => handleFieldChange('lastName', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
         />
       </View>
 
@@ -126,7 +126,6 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
         placeholder="Address"
         value={address.address}
         onChangeText={(value) => handleFieldChange('address', value)}
-        style={styles.input}
       />
 
       <View style={styles.formRow}>
@@ -134,13 +133,13 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           placeholder="City"
           value={address.city}
           onChangeText={(value) => handleFieldChange('city', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
         />
         <GSInput
           placeholder="State/Department"
           value={address.state}
           onChangeText={(value) => handleFieldChange('state', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
         />
       </View>
 
@@ -149,14 +148,14 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           placeholder="Postal Code"
           value={address.postalCode}
           onChangeText={(value) => handleFieldChange('postalCode', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
           keyboardType="numeric"
         />
         <GSInput
           placeholder="Phone"
           value={address.phone}
           onChangeText={(value) => handleFieldChange('phone', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
           keyboardType="phone-pad"
         />
       </View>
@@ -166,7 +165,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           placeholder="Document Number"
           value={address.document || ''}
           onChangeText={(value) => handleFieldChange('document', value)}
-          style={styles.halfInput}
+          containerStyle={styles.halfInput}
           keyboardType="numeric"
         />
         <View style={[styles.halfInput, styles.pickerContainer]}>

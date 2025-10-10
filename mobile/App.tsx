@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { CartProvider } from './src/contexts/CartContext';
@@ -31,6 +32,7 @@ export default function App() {
                 <StatusBar style="auto" />
                 <RootNavigator />
               </NavigationContainer>
+              <Toast />
             </CartProvider>
           </ProductsProvider>
         </AuthProvider>

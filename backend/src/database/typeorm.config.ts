@@ -9,6 +9,8 @@ import { OrderItem } from './entities/order-item.entity';
 import { Payment } from './entities/payment.entity';
 import { Commission } from './entities/commission.entity';
 import { WishlistItem } from './entities/wishlist.entity';
+import { Cart } from './entities/cart.entity';
+import { CartItem } from './entities/cart-item.entity';
 
 // Affiliates/Creator System Entities
 import { Affiliate } from '../affiliates/entities/affiliate.entity';
@@ -37,7 +39,7 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
   database: configService.get('DB_DATABASE', 'gshop_db'),
   entities: [
     // Core entities
-    User, Product, Category, Order, OrderItem, Payment, Commission, WishlistItem,
+    User, Product, Category, Order, OrderItem, Payment, Commission, WishlistItem, Cart, CartItem,
     // Seller entities
     Seller,
     // Payment V2 entities

@@ -16,7 +16,8 @@ export interface Product {
   subcategory?: string;
   brand?: string;
   sku: string;
-  stock: number;
+  quantity: number;
+  stock?: number; // Deprecated: use quantity instead (for backward compatibility)
   status: 'active' | 'inactive' | 'out_of_stock' | 'discontinued';
   sellerId: string;
   seller?: {
@@ -354,7 +355,8 @@ class ProductsService {
 
   // Check if product is in stock
   isInStock(product: Product): boolean {
-    return product.status === 'active' && product.stock > 0;
+    const stockQuantity = product.quantity ?? product.stock ?? 0;
+    return product.status === 'active' && stockQuantity > 0;
   }
 
   // Calculate discount percentage

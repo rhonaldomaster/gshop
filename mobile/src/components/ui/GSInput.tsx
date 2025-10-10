@@ -56,10 +56,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#D1D5DB',
+    minHeight: 48,
   },
   inputError: {
     borderColor: '#F44336',
@@ -69,7 +70,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#1A1A1A',
+    color: '#1F2937',
+    height: 48,
   },
   inputWithLeft: {
     paddingLeft: 8,

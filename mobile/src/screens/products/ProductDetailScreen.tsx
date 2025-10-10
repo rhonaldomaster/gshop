@@ -188,8 +188,11 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
 
   // Increase quantity
   const increaseQuantity = () => {
-    if (product && quantity < product.stock) {
-      setQuantity(prev => prev + 1);
+    if (product) {
+      const stockQuantity = product.quantity ?? product.stock ?? 0;
+      if (quantity < stockQuantity) {
+        setQuantity(prev => prev + 1);
+      }
     }
   };
 
@@ -235,6 +238,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
   const discountPercentage = getDiscountPercentage(product);
   const inStock = isInStock(product);
   const cartQuantity = getItemQuantity(product.id);
+  const stockQuantity = product.quantity ?? product.stock ?? 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -331,7 +335,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
               color={inStock ? 'success' : 'error'}
               weight="medium"
             >
-              {inStock ? `In Stock (${product.stock} available)` : 'Out of Stock'}
+              {inStock ? `In Stock (${stockQuantity} available)` : 'Out of Stock'}
             </GSText>
           </View>
 
@@ -360,7 +364,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
                 <TouchableOpacity
                   style={[styles.quantityButton, { borderColor: theme.colors.border }]}
                   onPress={increaseQuantity}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= stockQuantity}
                 >
                   <GSText variant="body" weight="bold">+</GSText>
                 </TouchableOpacity>
