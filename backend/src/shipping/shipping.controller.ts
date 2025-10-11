@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrderStatus } from '../database/entities/order.entity';
 
 @ApiTags('Shipping')
-@Controller('api/v1')
+@Controller()
 export class ShippingController {
   constructor(private shippingService: ShippingService) {}
 
@@ -52,7 +52,7 @@ export class ShippingController {
     return this.shippingService.getShippingOptions(orderId, ratesDto);
   }
 
-  @Post(':id/confirm-shipping')
+  @Post('orders/:id/confirm-shipping')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
@@ -68,7 +68,7 @@ export class ShippingController {
     return this.shippingService.confirmShipping(orderId, confirmDto);
   }
 
-  @Get(':id/tracking')
+  @Get('orders/:id/tracking')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get tracking information for an order' })
@@ -80,7 +80,7 @@ export class ShippingController {
     return this.shippingService.getTrackingInfo(orderId);
   }
 
-  @Put(':id/shipping-status')
+  @Put('orders/:id/shipping-status')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)

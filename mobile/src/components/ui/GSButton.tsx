@@ -36,15 +36,15 @@ export default function GSButton({
   const getVariantStyle = () => {
     switch (variant) {
       case 'primary':
-        return { backgroundColor: theme.colors.primary };
+        return { backgroundColor: theme.colors.primary, borderWidth: 1, borderColor: theme.colors.primary };
       case 'secondary':
-        return { backgroundColor: theme.colors.secondary };
+        return { backgroundColor: theme.colors.secondary, borderWidth: 1, borderColor: theme.colors.secondary };
       case 'outline':
         return { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary };
       case 'ghost':
-        return { backgroundColor: 'transparent' };
+        return { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'transparent' };
       default:
-        return { backgroundColor: theme.colors.primary };
+        return { backgroundColor: theme.colors.primary, borderWidth: 1, borderColor: theme.colors.primary };
     }
   };
 

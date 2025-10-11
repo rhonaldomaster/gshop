@@ -329,19 +329,23 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
       ))}
 
       <View style={styles.navigationButtons}>
-        <GSButton
-          title="Back"
-          onPress={onBack}
-          variant="outlined"
-          style={styles.backButton}
-        />
-        <GSButton
-          title="Continue to Payment"
-          onPress={onNext}
-          style={styles.nextButton}
-          disabled={!selectedOption}
-          loading={isLoading}
-        />
+        <View style={styles.buttonWrapper}>
+          <GSButton
+            title="Back"
+            onPress={onBack}
+            variant="outline"
+            style={styles.navBackButton}
+          />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <GSButton
+            title="Continue to Payment"
+            onPress={onNext}
+            style={styles.nextButton}
+            disabled={!selectedOption}
+            loading={isLoading}
+          />
+        </View>
       </View>
     </View>
   );
@@ -352,23 +356,30 @@ interface OrderSummaryProps {
   onBack: () => void;
   onPlaceOrder: () => void;
   isPlacingOrder?: boolean;
+  selectedShippingOption: ShippingOption | null;
 }
 
-const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder }) => {
+const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, selectedShippingOption }) => {
   const { theme } = useTheme();
   const {
     items,
     formatPrice,
     getCartSummary,
-    getShippingEstimate,
-    getTaxEstimate,
-    getTotalEstimate,
   } = useCart();
 
   const summary = getCartSummary();
-  const shipping = getShippingEstimate();
-  const tax = getTaxEstimate();
-  const total = getTotalEstimate();
+  const subtotal = Number(summary.subtotal) || 0;
+  const shipping = Number(selectedShippingOption?.price) || 0;
+  const tax = Number((subtotal * 0.19).toFixed(2));
+  const total = Number((subtotal + shipping + tax).toFixed(2));
+
+  console.log('OrderSummary calculations:', {
+    'summary.subtotal': summary.subtotal,
+    'subtotal': subtotal,
+    'shipping': shipping,
+    'tax': tax,
+    'total': total,
+  });
 
   return (
     <View style={styles.formSection}>
@@ -423,18 +434,22 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
       </View>
 
       <View style={styles.navigationButtons}>
-        <GSButton
-          title="Back"
-          onPress={onBack}
-          variant="outlined"
-          style={styles.backButton}
-        />
-        <GSButton
-          title="Place Order"
-          onPress={onPlaceOrder}
-          style={styles.nextButton}
-          loading={isPlacingOrder}
-        />
+        <View style={styles.buttonWrapper}>
+          <GSButton
+            title="Back"
+            onPress={onBack}
+            variant="outline"
+            style={styles.navBackButton}
+          />
+        </View>
+        <View style={styles.buttonWrapper}>
+          <GSButton
+            title="Place Order"
+            onPress={onPlaceOrder}
+            style={styles.nextButton}
+            loading={isPlacingOrder}
+          />
+        </View>
       </View>
     </View>
   );
@@ -667,6 +682,7 @@ export default function CheckoutScreen() {
             onBack={() => setCurrentStep(1)}
             onPlaceOrder={handlePlaceOrder}
             isPlacingOrder={createOrderApi.isLoading}
+            selectedShippingOption={selectedShippingOption}
           />
         )}
       </ScrollView>
@@ -709,6 +725,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   stepLine: {
     width: 40,
@@ -769,8 +786,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   nextButton: {
-    marginTop: 20,
-    flex: 1,
+    width: '100%',
   },
   modalOverlay: {
     flex: 1,
@@ -837,9 +853,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 20,
+    alignItems: 'center',
   },
-  backButton: {
+  buttonWrapper: {
     flex: 1,
+  },
+  navBackButton: {
+    width: '100%',
   },
   orderItems: {
     marginBottom: 20,

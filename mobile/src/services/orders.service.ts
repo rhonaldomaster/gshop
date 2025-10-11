@@ -227,7 +227,34 @@ class OrdersService {
         ? API_CONFIG.ENDPOINTS.ORDERS.GUEST
         : API_CONFIG.ENDPOINTS.ORDERS.CREATE;
 
-      const response = await apiClient.post<Order>(endpoint, orderData);
+      // Transform shippingAddress to backend format
+      const backendOrderData = {
+        items: orderData.items,
+        shippingAddress: {
+          firstName: orderData.shippingAddress.firstName,
+          lastName: orderData.shippingAddress.lastName,
+          address1: orderData.shippingAddress.address,
+          address2: '',
+          city: orderData.shippingAddress.city,
+          state: orderData.shippingAddress.state,
+          postalCode: orderData.shippingAddress.postalCode,
+          country: 'CO',
+          phone: orderData.shippingAddress.phone,
+        },
+        paymentMethodId: orderData.paymentMethodId,
+        liveSessionId: orderData.liveSessionId,
+        affiliateId: orderData.affiliateId,
+        notes: orderData.notes,
+        // Add document fields separately for guest orders
+        ...(orderData.shippingAddress.document && {
+          customerDocument: {
+            type: orderData.shippingAddress.documentType || 'CC',
+            number: orderData.shippingAddress.document,
+          },
+        }),
+      };
+
+      const response = await apiClient.post<Order>(endpoint, backendOrderData);
 
       if (response.success && response.data) {
         return response.data;
