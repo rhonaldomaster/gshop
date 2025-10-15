@@ -8,17 +8,30 @@ export interface OrderItem {
   productId: string;
   product?: Product;
   quantity: number;
-  price: number;
-  subtotal: number;
+  // Frontend names
+  price?: number | string; // Mapped from unitPrice
+  subtotal?: number | string; // Mapped from totalPrice
+  // Backend names (for raw response)
+  unitPrice?: number | string; // TypeORM decimal serialized as string
+  totalPrice?: number | string; // TypeORM decimal serialized as string
+  productSnapshot?: {
+    name: string;
+    sku: string;
+    image?: string;
+    variant?: any;
+  };
 }
 
 export interface ShippingAddress {
   firstName: string;
   lastName: string;
-  address: string;
+  address: string; // Frontend uses 'address'
+  address1?: string; // Backend uses 'address1'
+  address2?: string;
   city: string;
   state: string;
   postalCode: string;
+  country?: string;
   phone: string;
   document?: string;
   documentType?: 'CC' | 'CE' | 'PA' | 'TI';
@@ -47,11 +60,17 @@ export interface Order {
   userId?: string;
   status: OrderStatus;
   items: OrderItem[];
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  total: number;
-  currency: string;
+  subtotal: number | string; // TypeORM decimal serialized as string
+  // Frontend names
+  shipping?: number | string; // Mapped from shippingAmount
+  tax?: number | string; // Mapped from taxAmount
+  total?: number | string; // Mapped from totalAmount
+  // Backend names (for raw response)
+  shippingAmount?: number | string;
+  taxAmount?: number | string;
+  totalAmount?: number | string;
+  discountAmount?: number | string;
+  currency?: string;
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
   shippingAddress: ShippingAddress;
@@ -62,8 +81,8 @@ export interface Order {
   isGuestOrder: boolean;
   liveSessionId?: string;
   affiliateId?: string;
-  commissionRate?: number;
-  commissionAmount?: number;
+  commissionRate?: number | string; // TypeORM decimal serialized as string
+  commissionAmount?: number | string; // TypeORM decimal serialized as string
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -129,6 +148,34 @@ export interface ReturnRequest {
 }
 
 class OrdersService {
+  // Map backend order item to frontend format
+  private mapOrderItem(backendItem: any): OrderItem {
+    return {
+      ...backendItem,
+      // Map backend field names to frontend
+      price: backendItem.unitPrice ?? backendItem.price ?? 0,
+      subtotal: backendItem.totalPrice ?? backendItem.subtotal ?? 0,
+    };
+  }
+
+  // Map backend order response to frontend format
+  private mapOrder(backendOrder: any): Order {
+    return {
+      ...backendOrder,
+      // Map backend field names to frontend
+      shipping: backendOrder.shippingAmount ?? backendOrder.shipping ?? 0,
+      tax: backendOrder.taxAmount ?? backendOrder.tax ?? 0,
+      total: backendOrder.totalAmount ?? backendOrder.total ?? 0,
+      // Map order items
+      items: backendOrder.items?.map((item: any) => this.mapOrderItem(item)) ?? [],
+      // Normalize shippingAddress
+      shippingAddress: {
+        ...backendOrder.shippingAddress,
+        address: backendOrder.shippingAddress?.address1 || backendOrder.shippingAddress?.address || '',
+      },
+    };
+  }
+
   // Get user orders with pagination
   async getOrders(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Order>> {
     try {
@@ -138,7 +185,12 @@ class OrdersService {
       );
 
       if (response.success && response.data) {
-        return response.data;
+        // Map orders to normalize field names
+        const mappedData = {
+          ...response.data,
+          data: response.data.data.map(order => this.mapOrder(order)),
+        };
+        return mappedData;
       } else {
         throw new Error(response.message || 'Failed to get orders');
       }
@@ -156,7 +208,8 @@ class OrdersService {
       const response = await apiClient.get<Order>(url);
 
       if (response.success && response.data) {
-        return response.data;
+        // Map order to normalize field names
+        return this.mapOrder(response.data);
       } else {
         throw new Error(response.message || 'Order not found');
       }
@@ -453,27 +506,47 @@ class OrdersService {
     return `#${orderNumber}`;
   }
 
-  calculateOrderTotals(items: OrderItem[], shipping: number = 0, tax: number = 0): {
+  calculateOrderTotals(items: OrderItem[], shipping: number | string = 0, tax: number | string = 0): {
     subtotal: number;
     shipping: number;
     tax: number;
     total: number;
   } {
-    const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+    const subtotal = items.reduce((sum, item) => {
+      const itemSubtotal = typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal;
+      return sum + (isNaN(itemSubtotal) ? 0 : itemSubtotal);
+    }, 0);
+
+    const shippingNum = typeof shipping === 'string' ? parseFloat(shipping) : shipping;
+    const taxNum = typeof tax === 'string' ? parseFloat(tax) : tax;
+
+    const finalShipping = isNaN(shippingNum) ? 0 : shippingNum;
+    const finalTax = isNaN(taxNum) ? 0 : taxNum;
 
     return {
       subtotal,
-      shipping,
-      tax,
-      total: subtotal + shipping + tax,
+      shipping: finalShipping,
+      tax: finalTax,
+      total: subtotal + finalShipping + finalTax,
     };
   }
 
-  formatPrice(price: number, currency: string = 'COP'): string {
+  formatPrice(price: number | string, currency: string = 'COP'): string {
+    // Convert string to number if needed (TypeORM decimal fields are serialized as strings)
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+    // Return NaN-safe formatting
+    if (isNaN(numericPrice)) {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency,
+      }).format(0);
+    }
+
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency,
-    }).format(price);
+    }).format(numericPrice);
   }
 }
 

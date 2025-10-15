@@ -270,6 +270,9 @@ class ApiClient {
 // Create singleton instance
 export const apiClient = new ApiClient();
 
+// Export as 'api' for backward compatibility
+export const api = apiClient;
+
 // Export types
 export type { ApiResponse, ApiError };
 export { ApiClient };

@@ -4,8 +4,8 @@ import { Repository } from 'typeorm';
 import {
   UserInteraction,
   UserPreference,
-  ProductSimilarity,
-  RecommendationResult,
+  SimilarityMatrix,
+  Recommendation,
   InteractionType,
   PreferenceType
 } from './recsys.entity';
@@ -18,16 +18,19 @@ export class RecsysService {
     private interactionRepository: Repository<UserInteraction>,
     @InjectRepository(UserPreference)
     private preferenceRepository: Repository<UserPreference>,
-    @InjectRepository(ProductSimilarity)
-    private similarityRepository: Repository<ProductSimilarity>,
-    @InjectRepository(RecommendationResult)
-    private recommendationRepository: Repository<RecommendationResult>,
+    @InjectRepository(SimilarityMatrix)
+    private similarityRepository: Repository<SimilarityMatrix>,
+    @InjectRepository(Recommendation)
+    private recommendationRepository: Repository<Recommendation>,
   ) {}
 
   // Interaction Tracking
   async trackInteraction(trackingDto: TrackInteractionDto): Promise<UserInteraction> {
+    const { metadata, ...rest } = trackingDto;
+
     const interaction = this.interactionRepository.create({
-      ...trackingDto,
+      ...rest,
+      context: metadata, // Map metadata to context field in entity
       timestamp: new Date(),
     });
 
@@ -53,132 +56,165 @@ export class RecsysService {
 
     let recommendations: any[] = [];
 
-    switch (algorithm) {
-      case 'collaborative':
-        recommendations = await this.collaborativeFiltering(userId, limit, categoryId);
-        break;
-      case 'content':
-        recommendations = await this.contentBasedFiltering(userId, limit, categoryId);
-        break;
-      case 'popular':
-        recommendations = await this.popularityBasedRecommendations(limit, categoryId);
-        break;
-      case 'hybrid':
-      default:
-        recommendations = await this.hybridRecommendations(userId, limit, categoryId);
-        break;
+    try {
+      switch (algorithm) {
+        case 'collaborative':
+          recommendations = await this.collaborativeFiltering(userId, limit, categoryId);
+          break;
+        case 'content':
+          recommendations = await this.contentBasedFiltering(userId, limit, categoryId);
+          break;
+        case 'popular':
+          recommendations = await this.popularityBasedRecommendations(limit, categoryId);
+          break;
+        case 'hybrid':
+        default:
+          recommendations = await this.hybridRecommendations(userId, limit, categoryId);
+          break;
+      }
+
+      if (excludeViewed && recommendations.length > 0) {
+        recommendations = await this.excludeViewedProducts(userId, recommendations);
+      }
+
+      // Store recommendation results only if we have recommendations
+      if (recommendations.length > 0) {
+        await this.storeRecommendationResults(userId, algorithm, recommendations);
+      }
+
+      return recommendations;
+    } catch (error) {
+      console.error('Error generating recommendations:', error);
+      // Return empty array instead of throwing error
+      return [];
     }
-
-    if (excludeViewed) {
-      recommendations = await this.excludeViewedProducts(userId, recommendations);
-    }
-
-    // Store recommendation results
-    await this.storeRecommendationResults(userId, algorithm, recommendations);
-
-    return recommendations;
   }
 
   // Collaborative Filtering Algorithm
   private async collaborativeFiltering(userId: string, limit: number, categoryId?: string): Promise<any[]> {
-    // Find users with similar preferences
-    const userPrefs = await this.getUserPreferences(userId);
-    const similarUsers = await this.findSimilarUsers(userId, userPrefs);
+    try {
+      // Find users with similar preferences
+      const userPrefs = await this.getUserPreferences(userId);
+      const similarUsers = await this.findSimilarUsers(userId, userPrefs);
 
-    if (similarUsers.length === 0) {
-      return this.popularityBasedRecommendations(limit, categoryId);
+      if (similarUsers.length === 0) {
+        return this.popularityBasedRecommendations(limit, categoryId);
+      }
+
+      // Get products liked by similar users
+      const recommendedProducts = await this.interactionRepository
+        .createQueryBuilder('interaction')
+        .select('interaction.productId, COUNT(*) as score')
+        .where('interaction.userId IN (:...userIds)', { userIds: similarUsers.map(u => u.userId) })
+        .andWhere('interaction.interactionType IN (:...types)', {
+          types: [InteractionType.PURCHASE, InteractionType.ADD_TO_CART, InteractionType.LIKE]
+        })
+        .andWhere('interaction.userId != :userId', { userId })
+        .groupBy('interaction.productId')
+        .orderBy('score', 'DESC')
+        .limit(limit)
+        .getRawMany();
+
+      return this.enrichProductRecommendations(recommendedProducts, 'collaborative');
+    } catch (error) {
+      console.error('Error in collaborativeFiltering:', error);
+      return [];
     }
-
-    // Get products liked by similar users
-    const recommendedProducts = await this.interactionRepository
-      .createQueryBuilder('interaction')
-      .select('interaction.productId, COUNT(*) as score')
-      .where('interaction.userId IN (:...userIds)', { userIds: similarUsers.map(u => u.userId) })
-      .andWhere('interaction.interactionType IN (:...types)', {
-        types: [InteractionType.PURCHASE, InteractionType.ADD_TO_CART, InteractionType.LIKE]
-      })
-      .andWhere('interaction.userId != :userId', { userId })
-      .groupBy('interaction.productId')
-      .orderBy('score', 'DESC')
-      .limit(limit)
-      .getRawMany();
-
-    return this.enrichProductRecommendations(recommendedProducts, 'collaborative');
   }
 
   // Content-Based Filtering Algorithm
   private async contentBasedFiltering(userId: string, limit: number, categoryId?: string): Promise<any[]> {
-    const userPrefs = await this.getUserPreferences(userId);
+    try {
+      const userPrefs = await this.getUserPreferences(userId);
 
-    if (userPrefs.length === 0) {
-      return this.popularityBasedRecommendations(limit, categoryId);
+      if (userPrefs.length === 0) {
+        return this.popularityBasedRecommendations(limit, categoryId);
+      }
+
+      // Find products similar to user's preferred categories/attributes
+      const preferredCategories = userPrefs
+        .filter(p => p.preferenceType === PreferenceType.CATEGORY)
+        .map(p => p.preferenceValue);
+
+      const preferredPriceRange = userPrefs.find(p => p.preferenceType === PreferenceType.PRICE_RANGE);
+
+      // Query similar products (this would integrate with your product service)
+      const recommendations = await this.findSimilarProductsByPreferences(
+        preferredCategories,
+        preferredPriceRange?.preferenceValue,
+        limit,
+        categoryId
+      );
+
+      return this.enrichProductRecommendations(recommendations, 'content');
+    } catch (error) {
+      console.error('Error in contentBasedFiltering:', error);
+      return [];
     }
-
-    // Find products similar to user's preferred categories/attributes
-    const preferredCategories = userPrefs
-      .filter(p => p.preferenceType === PreferenceType.CATEGORY)
-      .map(p => p.preferenceValue);
-
-    const preferredPriceRange = userPrefs.find(p => p.preferenceType === PreferenceType.PRICE_RANGE);
-
-    // Query similar products (this would integrate with your product service)
-    const recommendations = await this.findSimilarProductsByPreferences(
-      preferredCategories,
-      preferredPriceRange?.preferenceValue,
-      limit,
-      categoryId
-    );
-
-    return this.enrichProductRecommendations(recommendations, 'content');
   }
 
   // Popularity-Based Recommendations
   private async popularityBasedRecommendations(limit: number, categoryId?: string): Promise<any[]> {
-    const queryBuilder = this.interactionRepository
-      .createQueryBuilder('interaction')
-      .select(['interaction.productId', 'COUNT(*) as popularity'])
-      .where('interaction.interactionType IN (:...types)', {
-        types: [InteractionType.VIEW, InteractionType.PURCHASE, InteractionType.ADD_TO_CART]
-      })
-      .andWhere('interaction.timestamp > :date', {
-        date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
-      });
+    try {
+      const queryBuilder = this.interactionRepository
+        .createQueryBuilder('interaction')
+        .select(['interaction.productId', 'COUNT(*) as popularity'])
+        .where('interaction.interactionType IN (:...types)', {
+          types: [InteractionType.VIEW, InteractionType.PURCHASE, InteractionType.ADD_TO_CART]
+        })
+        .andWhere('interaction.timestamp > :date', {
+          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) // Last 30 days
+        });
 
-    if (categoryId) {
-      queryBuilder.andWhere('interaction.metadata->>"categoryId" = :categoryId', { categoryId });
+      if (categoryId) {
+        queryBuilder.andWhere('interaction.context->>\'categoryId\' = :categoryId', { categoryId });
+      }
+
+      const popularProducts = await queryBuilder
+        .groupBy('interaction.productId')
+        .orderBy('popularity', 'DESC')
+        .limit(limit)
+        .getRawMany();
+
+      if (!popularProducts || popularProducts.length === 0) {
+        console.log('No popular products found, returning empty array');
+        return [];
+      }
+
+      return this.enrichProductRecommendations(popularProducts, 'popular');
+    } catch (error) {
+      console.error('Error in popularityBasedRecommendations:', error);
+      return [];
     }
-
-    const popularProducts = await queryBuilder
-      .groupBy('interaction.productId')
-      .orderBy('popularity', 'DESC')
-      .limit(limit)
-      .getRawMany();
-
-    return this.enrichProductRecommendations(popularProducts, 'popular');
   }
 
   // Hybrid Algorithm (combines multiple approaches)
   private async hybridRecommendations(userId: string, limit: number, categoryId?: string): Promise<any[]> {
-    const collaborativeLimit = Math.ceil(limit * 0.4); // 40% collaborative
-    const contentLimit = Math.ceil(limit * 0.4);       // 40% content-based
-    const popularLimit = Math.ceil(limit * 0.2);       // 20% popularity
+    try {
+      const collaborativeLimit = Math.ceil(limit * 0.4); // 40% collaborative
+      const contentLimit = Math.ceil(limit * 0.4);       // 40% content-based
+      const popularLimit = Math.ceil(limit * 0.2);       // 20% popularity
 
-    const [collaborative, content, popular] = await Promise.all([
-      this.collaborativeFiltering(userId, collaborativeLimit, categoryId),
-      this.contentBasedFiltering(userId, contentLimit, categoryId),
-      this.popularityBasedRecommendations(popularLimit, categoryId),
-    ]);
+      const [collaborative, content, popular] = await Promise.all([
+        this.collaborativeFiltering(userId, collaborativeLimit, categoryId),
+        this.contentBasedFiltering(userId, contentLimit, categoryId),
+        this.popularityBasedRecommendations(popularLimit, categoryId),
+      ]);
 
-    // Combine and deduplicate results
-    const combined = [...collaborative, ...content, ...popular];
-    const unique = combined.reduce((acc, curr) => {
-      if (!acc.find(item => item.productId === curr.productId)) {
-        acc.push(curr);
-      }
-      return acc;
-    }, []);
+      // Combine and deduplicate results
+      const combined = [...collaborative, ...content, ...popular];
+      const unique = combined.reduce((acc, curr) => {
+        if (!acc.find(item => item.productId === curr.productId)) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []);
 
-    return unique.slice(0, limit);
+      return unique.slice(0, limit);
+    } catch (error) {
+      console.error('Error in hybridRecommendations:', error);
+      return [];
+    }
   }
 
   // Helper Methods
@@ -338,7 +374,7 @@ export class RecsysService {
     });
   }
 
-  async getRecommendationHistory(userId: string, limit = 50): Promise<RecommendationResult[]> {
+  async getRecommendationHistory(userId: string, limit = 50): Promise<Recommendation[]> {
     return this.recommendationRepository.find({
       where: { userId },
       order: { generatedAt: 'DESC' },

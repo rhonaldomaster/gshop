@@ -17,6 +17,7 @@ import { useCart } from '../../hooks/useCart';
 import GSText from '../../components/ui/GSText';
 import GSInput from '../../components/ui/GSInput';
 import GSButton from '../../components/ui/GSButton';
+import { CachedImage } from '../../components/ui/CachedImage';
 import { Product, ProductSearchFilters } from '../../services/products.service';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -249,9 +250,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
       {/* Product Image */}
       <View style={styles.productImageContainer}>
         {product.images && product.images.length > 0 ? (
-          <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">IMG</GSText>
-          </View>
+          <CachedImage
+            uri={product.images[0]}
+            style={styles.productImage}
+            cacheKey={`product-${product.id}-0`}
+            fallbackIcon="image"
+          />
         ) : (
           <View style={styles.productImagePlaceholder}>
             <GSText variant="caption" color="textSecondary">No Image</GSText>
@@ -583,6 +587,12 @@ const styles = StyleSheet.create({
   productImageContainer: {
     position: 'relative',
     marginBottom: 8,
+  },
+  productImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
   },
   productImagePlaceholder: {
     width: '100%',

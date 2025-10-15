@@ -46,12 +46,14 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder
     <View style={[styles.orderItemCard, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.orderItemImage}>
         {item.product?.images && item.product.images.length > 0 ? (
-          <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">IMG</GSText>
-          </View>
+          <Image
+            source={{ uri: item.product.images[0] }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
         ) : (
           <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">No Image</GSText>
+            <Ionicons name="image-outline" size={24} color="#9CA3AF" />
           </View>
         )}
       </View>
@@ -447,7 +449,7 @@ export default function OrderDetailScreen() {
           <View style={styles.summaryRow}>
             <GSText variant="body">Shipping</GSText>
             <GSText variant="body">
-              {order.shipping === 0 ? 'Free' : ordersService.formatPrice(order.shipping)}
+              {parseFloat(String(order.shipping)) === 0 ? 'Free' : ordersService.formatPrice(order.shipping)}
             </GSText>
           </View>
 
@@ -660,6 +662,11 @@ const styles = StyleSheet.create({
   },
   orderItemImage: {
     marginRight: 12,
+  },
+  productImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
   },
   productImagePlaceholder: {
     width: 60,

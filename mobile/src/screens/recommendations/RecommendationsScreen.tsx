@@ -146,6 +146,7 @@ export const RecommendationsScreen = () => {
 
     try {
       await recommendationsService.trackInteraction({
+        userId: user.id,
         productId,
         interactionType: type,
         metadata: {

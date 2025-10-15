@@ -36,7 +36,7 @@ export class UserInteraction {
   @Column('uuid')
   userId: string;
 
-  @Column('uuid')
+  @Column('varchar', { length: 255 })
   productId: string;
 
   @Column({ type: 'enum', enum: InteractionType })
@@ -150,7 +150,7 @@ export class Recommendation {
   @Column('uuid')
   userId: string;
 
-  @Column('uuid')
+  @Column('varchar', { length: 255 })
   productId: string;
 
   @Column({ type: 'enum', enum: RecommendationType })

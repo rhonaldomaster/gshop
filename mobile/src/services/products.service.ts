@@ -368,11 +368,22 @@ class ProductsService {
   }
 
   // Format product price with currency
-  formatPrice(price: number, currency: string = 'COP'): string {
+  formatPrice(price: number | string, currency: string = 'COP'): string {
+    // Convert string to number if needed (TypeORM decimal fields are serialized as strings)
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+    // Return NaN-safe formatting
+    if (isNaN(numericPrice)) {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency,
+      }).format(0);
+    }
+
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency,
-    }).format(price);
+    }).format(numericPrice);
   }
 
   // Get product display images

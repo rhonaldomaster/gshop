@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 interface EmptyStateProps {
-  icon?: keyof typeof MaterialIcons.glyphMap;
+  icon?: keyof typeof MaterialIcons.glyphMap | string;
   title: string;
   message?: string;
+  description?: string; // Alias for message
   actionText?: string;
   onAction?: () => void;
   fullScreen?: boolean;
@@ -13,20 +14,30 @@ interface EmptyStateProps {
 
 /**
  * Empty state component with optional CTA
+ * Supports both MaterialIcons and emoji strings
  */
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon = 'inbox',
   title,
   message,
+  description,
   actionText,
   onAction,
   fullScreen = false,
 }) => {
+  // Check if icon is an emoji (more than 1 char or contains non-ASCII)
+  const isEmoji = icon.length > 1 || /[\u{1F300}-\u{1F9FF}]/u.test(icon);
+  const displayMessage = message || description;
+
   return (
     <View style={[styles.container, fullScreen && styles.fullScreen]}>
-      <MaterialIcons name={icon} size={64} color="#ccc" />
+      {isEmoji ? (
+        <Text style={styles.emoji}>{icon}</Text>
+      ) : (
+        <MaterialIcons name={icon as keyof typeof MaterialIcons.glyphMap} size={64} color="#ccc" />
+      )}
       <Text style={styles.title}>{title}</Text>
-      {message && <Text style={styles.message}>{message}</Text>}
+      {displayMessage && <Text style={styles.message}>{displayMessage}</Text>}
       {actionText && onAction && (
         <TouchableOpacity style={styles.button} onPress={onAction}>
           <Text style={styles.buttonText}>{actionText}</Text>
@@ -45,6 +56,10 @@ const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  emoji: {
+    fontSize: 64,
+    textAlign: 'center',
   },
   title: {
     marginTop: 16,

@@ -30,6 +30,9 @@ import { Seller } from '../sellers/entities/seller.entity';
 // Payment V2 Entities
 import { PaymentMethodEntity } from '../payments/payments-v2.entity';
 
+// Recommendation System Entities
+import { UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics } from '../recsys/recsys.entity';
+
 export const typeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -49,7 +52,9 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     // Affiliates/Creator system entities
     Affiliate, AffiliateLink, AffiliateClick, AffiliateFollower,
     AffiliateVideo, AffiliateVideoProduct, VideoInteraction,
-    AffiliateProduct, AffiliateNotification
+    AffiliateProduct, AffiliateNotification,
+    // Recommendation system entities
+    UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics
   ],
   migrations: ['dist/database/migrations/*.js'],
   synchronize: configService.get('NODE_ENV') !== 'production',

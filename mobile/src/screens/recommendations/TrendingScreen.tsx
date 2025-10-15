@@ -110,17 +110,23 @@ export const TrendingScreen = () => {
         setFeaturedProduct(validProducts[0]);
       }
 
-      // Track interaction
+      // Track interaction only if user is authenticated
       if (user?.id) {
-        await recommendationsService.trackInteraction({
-          productId: 'trending_view',
-          interactionType: 'view',
-          metadata: {
-            source: 'trending_screen',
-            timeframe: selectedTimeframe,
-            category: selectedCategory,
-          },
-        });
+        try {
+          await recommendationsService.trackInteraction({
+            userId: user.id,
+            productId: 'trending_view',
+            interactionType: 'view',
+            metadata: {
+              source: 'trending_screen',
+              timeframe: selectedTimeframe,
+              category: selectedCategory,
+            },
+          });
+        } catch (error) {
+          console.warn('Failed to track trending view:', error);
+          // Non-critical, continue loading products
+        }
       }
     } catch (error) {
       console.error('Error loading trending products:', error);
@@ -139,6 +145,7 @@ export const TrendingScreen = () => {
   const handleProductPress = useCallback((product: TrendingProduct) => {
     if (user?.id) {
       recommendationsService.trackInteraction({
+        userId: user.id,
         productId: product.id,
         interactionType: 'click',
         metadata: {
@@ -146,7 +153,7 @@ export const TrendingScreen = () => {
           rank: product.trendingRank,
           timeframe: selectedTimeframe,
         },
-      });
+      }).catch(err => console.warn('Failed to track click:', err));
     }
     // Navigate to product detail
     // navigation.navigate('ProductDetail', { productId: product.id });

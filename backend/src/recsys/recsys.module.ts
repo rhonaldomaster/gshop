@@ -5,8 +5,8 @@ import { RecsysService } from './recsys.service';
 import {
   UserInteraction,
   UserPreference,
-  ProductSimilarity,
-  RecommendationResult
+  SimilarityMatrix,
+  Recommendation
 } from './recsys.entity';
 
 @Module({
@@ -14,8 +14,8 @@ import {
     TypeOrmModule.forFeature([
       UserInteraction,
       UserPreference,
-      ProductSimilarity,
-      RecommendationResult,
+      SimilarityMatrix,
+      Recommendation,
     ]),
   ],
   controllers: [RecsysController],

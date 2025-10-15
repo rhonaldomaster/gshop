@@ -426,15 +426,34 @@ class PaymentsService {
     return texts[status] || status;
   }
 
-  formatPrice(price: number, currency: string = 'COP'): string {
+  formatPrice(price: number | string, currency: string = 'COP'): string {
+    // Convert string to number if needed (TypeORM decimal fields are serialized as strings)
+    const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
+
+    // Return NaN-safe formatting
+    if (isNaN(numericPrice)) {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency,
+      }).format(0);
+    }
+
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency,
-    }).format(price);
+    }).format(numericPrice);
   }
 
-  formatTokenAmount(amount: number): string {
-    return `${amount.toFixed(2)} GSHOP`;
+  formatTokenAmount(amount: number | string): string {
+    // Convert string to number if needed
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+
+    // Return NaN-safe formatting
+    if (isNaN(numericAmount)) {
+      return `0.00 GSHOP`;
+    }
+
+    return `${numericAmount.toFixed(2)} GSHOP`;
   }
 
   // Validate card number using Luhn algorithm

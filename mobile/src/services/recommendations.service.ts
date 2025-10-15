@@ -1,6 +1,7 @@
 import { api } from './api';
 
 export interface UserInteraction {
+  userId?: string; // Optional for backward compatibility, but recommended to include
   productId: string;
   interactionType: 'view' | 'click' | 'purchase' | 'cart_add' | 'cart_remove' | 'like' | 'share';
   metadata?: any;
