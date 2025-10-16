@@ -1,0 +1,28 @@
+{
+  "order": {
+    "created": "Pedido creado exitosamente",
+    "updated": "Pedido actualizado exitosamente",
+    "cancelled": "Pedido cancelado",
+    "confirmed": "Pedido confirmado",
+    "processing": "Pedido en proceso",
+    "shipped": "Pedido enviado",
+    "delivered": "Pedido entregado",
+    "not_found": "Pedido no encontrado",
+    "cannot_cancel": "No se puede cancelar el pedido en este estado",
+    "payment_pending": "Pago pendiente"
+  },
+  "shipping": {
+    "options_fetched": "Opciones de envío obtenidas",
+    "confirmed": "Envío confirmado",
+    "tracking_updated": "Información de rastreo actualizada",
+    "no_options": "No hay opciones de envío disponibles",
+    "invalid_address": "Dirección de envío inválida"
+  },
+  "validation": {
+    "items_required": "Los artículos del pedido son requeridos",
+    "address_required": "La dirección de envío es requerida",
+    "payment_method_required": "El método de pago es requerido",
+    "invalid_quantity": "Cantidad inválida",
+    "shipping_option_required": "Seleccione una opción de envío"
+  }
+}

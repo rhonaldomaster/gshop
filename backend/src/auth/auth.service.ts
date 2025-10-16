@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import { I18nContext, I18nService } from 'nestjs-i18n';
 import { User, UserRole } from '../database/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
@@ -17,6 +18,7 @@ export class AuthService {
     private userRepository: Repository<User>,
     private usersService: UsersService,
     private jwtService: JwtService,
+    private readonly i18n: I18nService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -34,7 +36,9 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.validateUser(loginDto.email, loginDto.password);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(
+        this.i18n.t('auth.login.invalid_credentials', { lang: I18nContext.current()?.lang || 'es' })
+      );
     }
 
     // Update last login
@@ -62,7 +66,9 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email already registered');
+      throw new ConflictException(
+        this.i18n.t('auth.register.email_exists', { lang: I18nContext.current()?.lang || 'es' })
+      );
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
@@ -98,7 +104,9 @@ export class AuthService {
   async refreshToken(userId: string) {
     const user = await this.findUserById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException(
+        this.i18n.t('auth.profile.not_found', { lang: I18nContext.current()?.lang || 'es' })
+      );
     }
 
     const { password, ...userWithoutPassword } = user;
@@ -119,7 +127,9 @@ export class AuthService {
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
     const user = await this.findUserById(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException(
+        this.i18n.t('auth.profile.not_found', { lang: I18nContext.current()?.lang || 'es' })
+      );
     }
 
     // If email is being updated, check if it's already in use
@@ -129,7 +139,9 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new ConflictException('Email already in use');
+        throw new ConflictException(
+          this.i18n.t('auth.profile.email_in_use', { lang: I18nContext.current()?.lang || 'es' })
+        );
       }
     }
 

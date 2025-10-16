@@ -1,0 +1,41 @@
+{
+  "payment": {
+    "processing": "Procesando pago",
+    "success": "Pago exitoso",
+    "failed": "Pago fallido",
+    "pending": "Pago pendiente",
+    "refunded": "Pago reembolsado",
+    "not_found": "Pago no encontrado",
+    "already_processed": "Pago ya procesado"
+  },
+  "stripe": {
+    "payment_intent_created": "Intento de pago creado",
+    "payment_confirmed": "Pago confirmado por Stripe",
+    "payment_failed": "Pago rechazado por Stripe",
+    "refund_success": "Reembolso procesado exitosamente",
+    "refund_failed": "Error al procesar reembolso"
+  },
+  "crypto": {
+    "payment_initiated": "Pago en criptomonedas iniciado",
+    "transaction_verified": "Transacción blockchain verificada",
+    "transaction_failed": "Transacción blockchain fallida",
+    "insufficient_balance": "Saldo insuficiente en la wallet",
+    "invalid_address": "Dirección de wallet inválida"
+  },
+  "mercadopago": {
+    "preference_created": "Preferencia de pago creada",
+    "payment_approved": "Pago aprobado por MercadoPago",
+    "payment_rejected": "Pago rechazado por MercadoPago"
+  },
+  "invoice": {
+    "generated": "Factura generada exitosamente",
+    "not_found": "Factura no encontrada",
+    "error_generating": "Error al generar factura"
+  },
+  "validation": {
+    "amount_required": "El monto es requerido",
+    "amount_invalid": "El monto debe ser mayor a 0",
+    "method_required": "El método de pago es requerido",
+    "method_invalid": "Método de pago no soportado"
+  }
+}

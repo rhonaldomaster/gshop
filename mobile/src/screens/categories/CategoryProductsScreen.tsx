@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, Touchabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import categoriesService, { CategoryProductsParams } from '../../services/categories.service';
@@ -20,6 +21,7 @@ type CategoryProductsRouteProp = RouteProp<{
 type CategoryProductsNavigationProp = StackNavigationProp<any>;
 
 export default function CategoryProductsScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const navigation = useNavigation<CategoryProductsNavigationProp>();
   const route = useRoute<CategoryProductsRouteProp>();
@@ -116,7 +118,7 @@ export default function CategoryProductsScreen() {
       </View>
 
       <View style={styles.productInfo}>
-        <GSText variant="body" weight="semibold" numberOfLines={2} style={styles.productName}>
+        <GSText variant="body" weight="semiBold" numberOfLines={2} style={styles.productName}>
           {item.name}
         </GSText>
 
@@ -138,18 +140,18 @@ export default function CategoryProductsScreen() {
         </View>
 
         <View style={styles.productFooter}>
-          {item.stock > 0 ? (
+          {(item?.stock ?? 0) > 0 ? (
             <View style={styles.stockBadge}>
               <Ionicons name="checkmark-circle" size={14} color="#10B981" />
               <GSText variant="caption" style={{ color: '#10B981', marginLeft: 4 }}>
-                In Stock
+                {t('products.inStock')}
               </GSText>
             </View>
           ) : (
             <View style={styles.stockBadge}>
               <Ionicons name="close-circle" size={14} color="#EF4444" />
               <GSText variant="caption" style={{ color: '#EF4444', marginLeft: 4 }}>
-                Out of Stock
+                {t('products.outOfStock')}
               </GSText>
             </View>
           )}
@@ -172,7 +174,7 @@ export default function CategoryProductsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <GSText variant="body" style={styles.loadingText}>Loading products...</GSText>
+          <GSText variant="body" style={styles.loadingText}>{t('common.loading')}</GSText>
         </View>
       </SafeAreaView>
     );
@@ -184,7 +186,7 @@ export default function CategoryProductsScreen() {
       <View style={styles.header}>
         <GSText variant="h3" weight="bold">{categoryName}</GSText>
         <GSText variant="caption" color="textSecondary">
-          {totalProducts} {totalProducts === 1 ? 'product' : 'products'}
+          {totalProducts} {t('categories.productsCount')}
         </GSText>
       </View>
 
@@ -214,7 +216,7 @@ export default function CategoryProductsScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="search-outline" size={64} color={theme.colors.textSecondary} />
             <GSText variant="body" color="textSecondary" style={styles.emptyText}>
-              No products found in this category
+              {t('products.noProductsFound')}
             </GSText>
           </View>
         }

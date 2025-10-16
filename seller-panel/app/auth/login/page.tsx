@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
+  const t = useTranslations('auth.login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -28,12 +30,12 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Invalid credentials')
+        setError(t('invalidCredentials'))
       } else {
         router.push('/dashboard')
       }
     } catch (error) {
-      setError('Something went wrong')
+      setError(t('somethingWentWrong'))
     } finally {
       setIsLoading(false)
     }
@@ -47,7 +49,7 @@ export default function LoginPage() {
             🏪 GSHOP Seller
           </CardTitle>
           <p className="text-center text-white/90">
-            Welcome back! Sign in to your seller account
+            {t('subtitle')}
           </p>
         </CardHeader>
 
@@ -61,7 +63,7 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
-                  placeholder="Email address"
+                  placeholder={t('email')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12"
@@ -74,7 +76,7 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  placeholder="Password"
+                  placeholder={t('password')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-12"
@@ -93,18 +95,18 @@ export default function LoginPage() {
               disabled={isLoading}
               className="w-full h-12 gshop-button-primary text-lg font-semibold"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? t('signingIn') : t('signIn')}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
+              {t('noAccount')}{' '}
               <Link
                 href="/auth/register"
                 className="font-medium text-primary hover:text-primary/80 transition-colors"
               >
-                Create seller account
+                {t('createAccount')}
               </Link>
             </p>
           </div>

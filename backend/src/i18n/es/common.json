@@ -1,0 +1,59 @@
+{
+  "errors": {
+    "internal_server_error": "Error interno del servidor",
+    "bad_request": "Solicitud inválida",
+    "unauthorized": "No autorizado",
+    "forbidden": "Acceso denegado",
+    "not_found": "Recurso no encontrado",
+    "conflict": "Conflicto con el estado actual del recurso",
+    "validation_failed": "Error de validación",
+    "database_error": "Error de base de datos",
+    "network_error": "Error de red"
+  },
+  "success": {
+    "created": "Creado exitosamente",
+    "updated": "Actualizado exitosamente",
+    "deleted": "Eliminado exitosamente",
+    "operation_success": "Operación completada exitosamente"
+  },
+  "validation": {
+    "required": "Este campo es requerido",
+    "invalid_format": "Formato inválido",
+    "too_short": "Valor muy corto",
+    "too_long": "Valor muy largo",
+    "invalid_email": "Correo electrónico inválido",
+    "invalid_phone": "Número de teléfono inválido",
+    "invalid_url": "URL inválida",
+    "min_value": "Valor mínimo es",
+    "max_value": "Valor máximo es"
+  },
+  "status": {
+    "pending": "Pendiente",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "approved": "Aprobado",
+    "rejected": "Rechazado",
+    "cancelled": "Cancelado",
+    "completed": "Completado"
+  },
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "view": "Ver",
+    "create": "Crear",
+    "update": "Actualizar",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "back": "Volver"
+  },
+  "pagination": {
+    "page": "Página",
+    "of": "de",
+    "showing": "Mostrando",
+    "to": "a",
+    "results": "resultados",
+    "no_results": "No hay resultados"
+  }
+}

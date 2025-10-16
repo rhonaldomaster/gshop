@@ -1,0 +1,25 @@
+{
+  "product": {
+    "created": "Producto creado exitosamente",
+    "updated": "Producto actualizado exitosamente",
+    "deleted": "Producto eliminado exitosamente",
+    "not_found": "Producto no encontrado",
+    "out_of_stock": "Producto sin stock disponible",
+    "insufficient_stock": "Stock insuficiente"
+  },
+  "category": {
+    "created": "Categoría creada exitosamente",
+    "updated": "Categoría actualizada exitosamente",
+    "deleted": "Categoría eliminada exitosamente",
+    "not_found": "Categoría no encontrada",
+    "has_products": "No se puede eliminar categoría con productos asociados"
+  },
+  "validation": {
+    "name_required": "El nombre del producto es requerido",
+    "price_required": "El precio es requerido",
+    "price_invalid": "El precio debe ser mayor a 0",
+    "category_required": "La categoría es requerida",
+    "description_required": "La descripción es requerida",
+    "stock_invalid": "El stock debe ser mayor o igual a 0"
+  }
+}

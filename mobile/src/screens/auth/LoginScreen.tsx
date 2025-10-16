@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -21,6 +22,7 @@ import GSInput from '../../components/ui/GSInput';
 type LoginNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const navigation = useNavigation<LoginNavigationProp>();
   const { login } = useAuth();
   const { theme } = useTheme();
@@ -73,18 +75,18 @@ export default function LoginScreen() {
               </GSText>
             </View>
             <GSText variant="h1" style={styles.title}>
-              Welcome Back
+              {t('auth.welcomeBack')}
             </GSText>
             <GSText variant="body" color="#6B7280" style={styles.subtitle}>
-              Sign in to your account
+              {t('auth.signInToAccount')}
             </GSText>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
             <GSInput
-              label="Email"
-              placeholder="Enter your email"
+              label={t('auth.email')}
+              placeholder={t('auth.enterEmail')}
               value={formData.email}
               onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
               keyboardType="email-address"
@@ -93,8 +95,8 @@ export default function LoginScreen() {
             />
 
             <GSInput
-              label="Password"
-              placeholder="Enter your password"
+              label={t('auth.password')}
+              placeholder={t('auth.enterPassword')}
               value={formData.password}
               onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
               secureTextEntry={!showPassword}
@@ -112,12 +114,12 @@ export default function LoginScreen() {
 
             <TouchableOpacity style={styles.forgotPassword}>
               <GSText variant="body" style={{ color: theme.colors.primary }}>
-                Forgot Password?
+                {t('auth.forgotPassword')}
               </GSText>
             </TouchableOpacity>
 
             <GSButton
-              title="Sign In"
+              title={t('auth.signIn')}
               onPress={handleLogin}
               loading={isLoading}
               style={styles.signInButton}
@@ -126,7 +128,7 @@ export default function LoginScreen() {
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <GSText variant="caption" color="#6B7280" style={styles.dividerText}>
-                Or continue with
+                {t('auth.continueWith')}
               </GSText>
               <View style={styles.dividerLine} />
             </View>
@@ -136,14 +138,14 @@ export default function LoginScreen() {
               <TouchableOpacity style={styles.socialButton}>
                 <GSText variant="body">🔵</GSText>
                 <GSText variant="body" weight="semiBold">
-                  Facebook
+                  {t('auth.facebook')}
                 </GSText>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.socialButton}>
                 <GSText variant="body">🔴</GSText>
                 <GSText variant="body" weight="semiBold">
-                  Google
+                  {t('auth.google')}
                 </GSText>
               </TouchableOpacity>
             </View>
@@ -157,9 +159,9 @@ export default function LoginScreen() {
             style={styles.signUpLink}
           >
             <GSText variant="body" color="#6B7280">
-              Don't have an account?{' '}
+              {t('auth.noAccount')}{' '}
               <GSText variant="body" style={{ color: theme.colors.primary }}>
-                Sign Up
+                {t('auth.signUp')}
               </GSText>
             </GSText>
           </TouchableOpacity>

@@ -1,0 +1,34 @@
+{
+  "stream": {
+    "created": "Transmisión en vivo creada",
+    "started": "Transmisión en vivo iniciada",
+    "ended": "Transmisión en vivo finalizada",
+    "not_found": "Transmisión no encontrada",
+    "already_active": "Ya existe una transmisión activa",
+    "cannot_start": "No se puede iniciar la transmisión",
+    "cannot_end": "No se puede finalizar la transmisión"
+  },
+  "product": {
+    "added": "Producto agregado a la transmisión",
+    "removed": "Producto removido de la transmisión",
+    "toggled": "Visibilidad del producto actualizada",
+    "not_found": "Producto no encontrado en la transmisión"
+  },
+  "chat": {
+    "message_sent": "Mensaje enviado",
+    "user_joined": "Usuario se unió a la transmisión",
+    "user_left": "Usuario salió de la transmisión",
+    "blocked": "Usuario bloqueado del chat"
+  },
+  "viewers": {
+    "count_updated": "Contador de espectadores actualizado",
+    "peak_reached": "Nuevo pico de espectadores alcanzado"
+  },
+  "validation": {
+    "title_required": "El título de la transmisión es requerido",
+    "host_type_required": "El tipo de anfitrión es requerido",
+    "host_type_invalid": "Tipo de anfitrión inválido (seller/affiliate)",
+    "seller_required": "El vendedor es requerido",
+    "affiliate_required": "El afiliado es requerido para transmisiones de afiliado"
+  }
+}

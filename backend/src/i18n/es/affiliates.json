@@ -1,0 +1,33 @@
+{
+  "affiliate": {
+    "registered": "Afiliado registrado exitosamente",
+    "approved": "Afiliado aprobado",
+    "suspended": "Afiliado suspendido",
+    "not_found": "Afiliado no encontrado",
+    "code_generated": "Código de afiliado generado"
+  },
+  "link": {
+    "created": "Enlace de afiliado creado",
+    "not_found": "Enlace no encontrado",
+    "click_tracked": "Click registrado exitosamente",
+    "expired": "Enlace expirado"
+  },
+  "commission": {
+    "calculated": "Comisión calculada",
+    "paid": "Comisión pagada",
+    "pending": "Comisión pendiente",
+    "rate_updated": "Tasa de comisión actualizada"
+  },
+  "stats": {
+    "clicks": "Clicks totales",
+    "conversions": "Conversiones",
+    "revenue": "Ingresos generados",
+    "commission_earned": "Comisión ganada"
+  },
+  "validation": {
+    "url_required": "La URL es requerida",
+    "url_invalid": "La URL no es válida",
+    "product_required": "El producto es requerido",
+    "commission_rate_invalid": "La tasa de comisión debe estar entre 0 y 100"
+  }
+}

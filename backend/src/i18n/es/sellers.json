@@ -1,0 +1,36 @@
+{
+  "seller": {
+    "registered": "Vendedor registrado exitosamente",
+    "approved": "Vendedor aprobado",
+    "rejected": "Vendedor rechazado",
+    "suspended": "Vendedor suspendido",
+    "not_found": "Vendedor no encontrado",
+    "already_registered": "Ya existe una cuenta de vendedor con este correo"
+  },
+  "kyc": {
+    "pending": "Verificación KYC pendiente",
+    "approved": "Verificación KYC aprobada",
+    "rejected": "Verificación KYC rechazada",
+    "documents_required": "Documentos de verificación requeridos",
+    "invalid_document": "Documento inválido"
+  },
+  "withdrawal": {
+    "requested": "Solicitud de retiro creada",
+    "approved": "Retiro aprobado",
+    "rejected": "Retiro rechazado",
+    "processing": "Retiro en proceso",
+    "completed": "Retiro completado",
+    "insufficient_balance": "Saldo insuficiente para retiro",
+    "minimum_amount": "El monto mínimo de retiro es",
+    "not_found": "Solicitud de retiro no encontrada"
+  },
+  "stats": {
+    "fetched": "Estadísticas obtenidas exitosamente"
+  },
+  "validation": {
+    "business_name_required": "El nombre del negocio es requerido",
+    "document_required": "El documento de identidad es requerido",
+    "bank_account_required": "La cuenta bancaria es requerida",
+    "owner_name_required": "El nombre del propietario es requerido"
+  }
+}
