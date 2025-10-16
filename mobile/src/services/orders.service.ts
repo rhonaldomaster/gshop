@@ -177,7 +177,7 @@ class OrdersService {
   }
 
   // Get user orders with pagination
-  async getOrders(page: number = 1, limit: number = 10): Promise<PaginatedResponse<Order>> {
+  getOrders = async (page: number = 1, limit: number = 10): Promise<PaginatedResponse<Order>> => {
     try {
       const response = await apiClient.get<PaginatedResponse<Order>>(
         API_CONFIG.ENDPOINTS.ORDERS.LIST,
@@ -201,7 +201,7 @@ class OrdersService {
   }
 
   // Get single order by ID
-  async getOrder(orderId: string): Promise<Order> {
+  getOrder = async (orderId: string): Promise<Order> => {
     try {
       const url = buildEndpointUrl(API_CONFIG.ENDPOINTS.ORDERS.DETAIL, { id: orderId });
 
@@ -220,10 +220,10 @@ class OrdersService {
   }
 
   // Get shipping options for order
-  async getShippingOptions(orderData: {
+  getShippingOptions = async (orderData: {
     items: { productId: string; quantity: number }[];
     shippingAddress: ShippingAddress;
-  }): Promise<ShippingOption[]> {
+  }): Promise<ShippingOption[]> => {
     try {
       // Map mobile ShippingAddress to backend format
       const requestData = {
@@ -274,11 +274,17 @@ class OrdersService {
   }
 
   // Create new order
-  async createOrder(orderData: CreateOrderRequest): Promise<Order> {
+  createOrder = async (orderData: CreateOrderRequest): Promise<Order> => {
     try {
-      const endpoint = orderData.isGuestOrder
-        ? API_CONFIG.ENDPOINTS.ORDERS.GUEST
-        : API_CONFIG.ENDPOINTS.ORDERS.CREATE;
+      // Use the same endpoint for both guest and regular orders
+      const endpoint = API_CONFIG.ENDPOINTS.ORDERS.CREATE;
+
+      // Build notes with document info for guest orders
+      let notes = orderData.notes || '';
+      if (orderData.isGuestOrder && orderData.shippingAddress.document) {
+        const docInfo = `Document: ${orderData.shippingAddress.documentType || 'CC'} ${orderData.shippingAddress.document}`;
+        notes = notes ? `${notes}\n${docInfo}` : docInfo;
+      }
 
       // Transform shippingAddress to backend format
       const backendOrderData = {
@@ -297,20 +303,16 @@ class OrdersService {
         paymentMethodId: orderData.paymentMethodId,
         liveSessionId: orderData.liveSessionId,
         affiliateId: orderData.affiliateId,
-        notes: orderData.notes,
-        // Add document fields separately for guest orders
-        ...(orderData.shippingAddress.document && {
-          customerDocument: {
-            type: orderData.shippingAddress.documentType || 'CC',
-            number: orderData.shippingAddress.document,
-          },
-        }),
+        notes: notes,
+        // Note: customerDocument is NOT supported by backend CreateOrderDto
+        // Document info is stored in notes field instead for guest orders
       };
 
       const response = await apiClient.post<Order>(endpoint, backendOrderData);
 
       if (response.success && response.data) {
-        return response.data;
+        // Map the response to normalize field names
+        return this.mapOrder(response.data);
       } else {
         throw new Error(response.message || 'Failed to create order');
       }
@@ -321,7 +323,7 @@ class OrdersService {
   }
 
   // Confirm shipping method for order
-  async confirmShipping(orderId: string, shippingOptionId: string): Promise<Order> {
+  confirmShipping = async (orderId: string, shippingOptionId: string): Promise<Order> => {
     try {
       const url = buildEndpointUrl(API_CONFIG.ENDPOINTS.ORDERS.CONFIRM_SHIPPING, { id: orderId });
 
@@ -341,7 +343,7 @@ class OrdersService {
   }
 
   // Get order tracking information
-  async getOrderTracking(orderId: string): Promise<OrderTrackingInfo> {
+  getOrderTracking = async (orderId: string): Promise<OrderTrackingInfo> => {
     try {
       const url = buildEndpointUrl(API_CONFIG.ENDPOINTS.ORDERS.TRACKING, { id: orderId });
 
@@ -359,11 +361,11 @@ class OrdersService {
   }
 
   // Process payment for order
-  async processPayment(orderId: string, paymentData: {
+  processPayment = async (orderId: string, paymentData: {
     paymentMethodId: string;
     amount: number;
     currency?: string;
-  }): Promise<{ success: boolean; paymentId: string; redirectUrl?: string }> {
+  }): Promise<{ success: boolean; paymentId: string; redirectUrl?: string }> => {
     try {
       const response = await apiClient.post<{
         success: boolean;
@@ -383,7 +385,7 @@ class OrdersService {
   }
 
   // Cancel order
-  async cancelOrder(orderId: string, reason?: string): Promise<Order> {
+  cancelOrder = async (orderId: string, reason?: string): Promise<Order> => {
     try {
       const response = await apiClient.patch<Order>(`/orders/${orderId}/cancel`, {
         reason,
@@ -401,7 +403,7 @@ class OrdersService {
   }
 
   // Request return for delivered order
-  async requestReturn(returnData: ReturnRequest): Promise<{ success: boolean; returnId: string }> {
+  requestReturn = async (returnData: ReturnRequest): Promise<{ success: boolean; returnId: string }> => {
     try {
       const response = await apiClient.post<{ success: boolean; returnId: string }>(
         `/orders/${returnData.orderId}/return`,
@@ -420,12 +422,12 @@ class OrdersService {
   }
 
   // Get return details for order
-  async getReturnDetails(orderId: string): Promise<{
+  getReturnDetails = async (orderId: string): Promise<{
     canReturn: boolean;
     returnWindow: number;
     returnReason?: string;
     returnStatus?: string;
-  }> {
+  }> => {
     try {
       const response = await apiClient.get<{
         canReturn: boolean;
@@ -513,7 +515,7 @@ class OrdersService {
     total: number;
   } {
     const subtotal = items.reduce((sum, item) => {
-      const itemSubtotal = typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal;
+      const itemSubtotal = typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : (item.subtotal ?? 0);
       return sum + (isNaN(itemSubtotal) ? 0 : itemSubtotal);
     }, 0);
 
@@ -552,16 +554,3 @@ class OrdersService {
 
 // Create singleton instance
 export const ordersService = new OrdersService();
-
-// Export types
-export type {
-  Order,
-  OrderItem,
-  ShippingAddress,
-  ShippingOption,
-  PaymentMethod,
-  CreateOrderRequest,
-  OrderTrackingInfo,
-  TrackingEvent,
-  ReturnRequest,
-};

@@ -7,17 +7,17 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useCart } from '../../hooks/useCart';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
-import { ordersService } from '../../services/orders.service';
+import { ordersService, CreateOrderRequest } from '../../services/orders.service';
 
 interface CustomerInfo {
   firstName: string;
@@ -59,6 +59,7 @@ const colombianStates = [
 export default function GuestCheckoutScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { items, clearCart } = useCart();
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
     lastName: '',
@@ -203,6 +204,12 @@ export default function GuestCheckoutScreen() {
 
     setLoading(true);
     try {
+      // Check if cart has items
+      if (!items || items.length === 0) {
+        Alert.alert('Error', 'Tu carrito está vacío');
+        return;
+      }
+
       // Sanitize and prepare data
       const sanitizedCustomerInfo = {
         firstName: customerInfo.firstName.trim(),
@@ -215,32 +222,40 @@ export default function GuestCheckoutScreen() {
         },
       };
 
+      // Prepare shipping address with mobile format (address not address1)
       const sanitizedShippingAddress = {
-        ...shippingAddress,
-        address1: shippingAddress.address1.trim(),
-        address2: shippingAddress.address2.trim(),
-        city: shippingAddress.city.trim(),
-        postalCode: shippingAddress.postalCode.trim(),
         firstName: sanitizedCustomerInfo.firstName,
         lastName: sanitizedCustomerInfo.lastName,
+        address: shippingAddress.address1.trim(), // Mobile uses 'address'
+        city: shippingAddress.city.trim(),
+        state: shippingAddress.state,
+        postalCode: shippingAddress.postalCode.trim(),
         phone: sanitizedCustomerInfo.phone,
+        document: sanitizedCustomerInfo.document.number,
+        documentType: sanitizedCustomerInfo.document.type as 'CC' | 'CE' | 'PA' | 'TI',
       };
 
-      const { orderId } = await ordersService.createGuestOrder({
-        customerInfo: sanitizedCustomerInfo,
+      // Create order request using the correct format
+      const orderRequest: CreateOrderRequest = {
+        items: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
         shippingAddress: sanitizedShippingAddress,
-      });
+        isGuestOrder: true,
+        notes: shippingAddress.address2.trim() || '', // Use address2 as notes
+      };
 
-      navigation.navigate('ShippingOptions' as never, {
-        orderId,
-        shippingAddress: sanitizedShippingAddress,
-        packageDimensions: {
-          length: 20,
-          width: 15,
-          height: 10,
-          weight: 0.5, // Default weight in kg
-        },
-      } as never);
+      // Create the order (it will be mapped automatically by the service)
+      const order = await ordersService.createOrder(orderRequest);
+
+      if (order) {
+        // Clear cart after successful order
+        await clearCart(false);
+
+        // Navigate directly to order detail
+        (navigation as any).navigate('OrderDetail', { orderId: order.id });
+      }
     } catch (error: any) {
       console.error('Error creating guest order:', error);
       Alert.alert(
@@ -350,12 +365,12 @@ export default function GuestCheckoutScreen() {
             {/* Document Type and Number */}
             <View style={styles.documentContainer}>
               <View style={styles.documentTypeContainer}>
-                <GSText variant="body" weight="medium" style={styles.inputLabel}>
+                <GSText variant="body" weight="semiBold" style={styles.inputLabel}>
                   Tipo de Documento
                 </GSText>
                 <View style={[
                   styles.pickerContainer,
-                  { backgroundColor: theme.colors.background, borderColor: theme.colors.border }
+                  { backgroundColor: theme.colors.background, borderColor: theme.colors.gray300 }
                 ]}>
                   <Picker
                     selectedValue={customerInfo.document.type}
@@ -391,66 +406,72 @@ export default function GuestCheckoutScreen() {
           </View>
 
           {/* Shipping Address Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Dirección de Envío</Text>
+          <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
+            <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+              Dirección de Envío
+            </GSText>
 
-            {renderInput(
-              'Dirección Principal',
-              shippingAddress.address1,
-              (text) => setShippingAddress({ ...shippingAddress, address1: text }),
-              'Calle 123 #45-67',
-              'default',
-              'address1'
-            )}
+            <GSInput
+              label="Dirección Principal"
+              value={shippingAddress.address1}
+              onChangeText={(text) => setShippingAddress({ ...shippingAddress, address1: text })}
+              placeholder="Calle 123 #45-67"
+              error={errors.address1}
+              style={styles.input}
+            />
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Complemento (Opcional)</Text>
-              <TextInput
+            <GSInput
+              label="Complemento (Opcional)"
+              value={shippingAddress.address2}
+              onChangeText={(text) => setShippingAddress({ ...shippingAddress, address2: text })}
+              placeholder="Apartamento, oficina, etc."
+              style={styles.input}
+            />
+
+            <View style={styles.rowContainer}>
+              <GSInput
+                label="Ciudad"
+                value={shippingAddress.city}
+                onChangeText={(text) => setShippingAddress({ ...shippingAddress, city: text })}
+                placeholder="Bogotá"
+                error={errors.city}
+                containerStyle={styles.halfWidth}
                 style={styles.input}
-                value={shippingAddress.address2}
-                onChangeText={(text) => setShippingAddress({ ...shippingAddress, address2: text })}
-                placeholder="Apartamento, oficina, etc."
+              />
+
+              <GSInput
+                label="Código Postal"
+                value={shippingAddress.postalCode}
+                onChangeText={handlePostalCodeChange}
+                placeholder="110111"
+                keyboardType="numeric"
+                error={errors.postalCode}
+                containerStyle={styles.halfWidth}
+                style={styles.input}
               />
             </View>
 
-            <View style={styles.rowContainer}>
-              <View style={styles.halfWidth}>
-                {renderInput(
-                  'Ciudad',
-                  shippingAddress.city,
-                  (text) => setShippingAddress({ ...shippingAddress, city: text }),
-                  'Bogotá',
-                  'default',
-                  'city'
-                )}
-              </View>
-
-              <View style={styles.halfWidth}>
-                {renderInput(
-                  'Código Postal',
-                  shippingAddress.postalCode,
-                  (text) => setShippingAddress({ ...shippingAddress, postalCode: text }),
-                  '110111',
-                  'numeric',
-                  'postalCode'
-                )}
-              </View>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Departamento *</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={shippingAddress.state}
-                  onValueChange={(value) =>
-                    setShippingAddress({ ...shippingAddress, state: value })
-                  }
-                  style={styles.picker}
-                >
-                  {colombianStates.map((state) => (
-                    <Picker.Item key={state} label={state} value={state} />
-                  ))}
-                </Picker>
+            <View style={styles.documentContainer}>
+              <View style={styles.documentTypeContainer}>
+                <GSText variant="body" weight="bold" style={styles.inputLabel}>
+                  Departamento
+                </GSText>
+                <View style={[
+                  styles.pickerContainer,
+                  { backgroundColor: theme.colors.background, borderColor: '#E5E7EB' }
+                ]}>
+                  <Picker
+                    selectedValue={shippingAddress.state}
+                    onValueChange={(value) =>
+                      setShippingAddress({ ...shippingAddress, state: value })
+                    }
+                    style={[styles.picker, { color: theme.colors.text }]}
+                  >
+                    {colombianStates.map((state) => (
+                      <Picker.Item key={state} label={state} value={state} />
+                    ))}
+                  </Picker>
+                </View>
               </View>
             </View>
           </View>

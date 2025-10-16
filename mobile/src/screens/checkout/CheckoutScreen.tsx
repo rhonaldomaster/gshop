@@ -41,7 +41,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, totalSteps }
                   ? theme.colors.primary
                   : index === currentStep
                   ? theme.colors.primary
-                  : theme.colors.border,
+                  : theme.colors.gray300,
               },
             ]}
           >
@@ -58,7 +58,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, totalSteps }
               style={[
                 styles.stepLine,
                 {
-                  backgroundColor: index < currentStep ? theme.colors.primary : theme.colors.border,
+                  backgroundColor: index < currentStep ? theme.colors.primary : theme.colors.gray300,
                 },
               ]}
             />
@@ -120,7 +120,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
 
       {hasDefaultAddress && (
         <View style={[styles.defaultAddressBadge, { backgroundColor: theme.colors.success + '20' }]}>
-          <GSText variant="caption" color="success" weight="medium">
+          <GSText variant="caption" color="success" weight="semiBold">
             ✓ Using your default address
           </GSText>
         </View>
@@ -181,7 +181,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
 
       <View style={styles.formRow}>
         <TouchableOpacity
-          style={[styles.halfInput, styles.docTypeSelector, { borderColor: theme.colors.border }]}
+          style={[styles.halfInput, styles.docTypeSelector, { borderColor: theme.colors.gray300 }]}
           onPress={() => setShowDocTypeModal(true)}
         >
           <GSText variant="body" color={address.documentType ? 'text' : 'textSecondary'}>
@@ -212,7 +212,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.colors.gray300 }]}>
               <GSText variant="h4" weight="bold">Select Document Type</GSText>
               <TouchableOpacity onPress={() => setShowDocTypeModal(false)}>
                 <GSText variant="body" color="primary">✕</GSText>
@@ -222,7 +222,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
               {documentTypes.map((docType) => (
                 <TouchableOpacity
                   key={docType.value}
-                  style={[styles.docTypeOption, { borderBottomColor: theme.colors.border }]}
+                  style={[styles.docTypeOption, { borderBottomColor: theme.colors.gray300 }]}
                   onPress={() => {
                     handleFieldChange('documentType', docType.value);
                     setShowDocTypeModal(false);
@@ -277,7 +277,7 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
             {
               borderColor: selectedOption?.id === option.id
                 ? theme.colors.primary
-                : theme.colors.border,
+                : theme.colors.gray300,
               backgroundColor: selectedOption?.id === option.id
                 ? theme.colors.primary + '10'
                 : theme.colors.surface,
@@ -287,7 +287,7 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
         >
           <View style={styles.shippingOptionContent}>
             <View style={styles.shippingOptionHeader}>
-              <GSText variant="body" weight="medium">
+              <GSText variant="body" weight="semiBold">
                 {option.carrier} - {option.serviceName}
               </GSText>
               <GSText variant="body" weight="bold" color="primary">
@@ -312,7 +312,7 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
               {
                 borderColor: selectedOption?.id === option.id
                   ? theme.colors.primary
-                  : theme.colors.border,
+                  : theme.colors.gray300,
               },
             ]}
           >
@@ -360,7 +360,6 @@ interface OrderSummaryProps {
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, selectedShippingOption }) => {
-  const { theme } = useTheme();
   const {
     items,
     formatPrice,
@@ -392,14 +391,14 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
         {items.map((item) => (
           <View key={item.id} style={styles.orderItem}>
             <View style={styles.orderItemInfo}>
-              <GSText variant="body" weight="medium" numberOfLines={1}>
+              <GSText variant="body" weight="semiBold" numberOfLines={1}>
                 {item.product.name}
               </GSText>
               <GSText variant="caption" color="textSecondary">
                 Qty: {item.quantity} × {formatPrice(item.price)}
               </GSText>
             </View>
-            <GSText variant="body" weight="medium">
+            <GSText variant="body" weight="semiBold">
               {formatPrice(item.subtotal)}
             </GSText>
           </View>
@@ -590,17 +589,8 @@ export default function CheckoutScreen() {
         // Clear cart after successful order
         await clearCart(false);
 
-        // Navigate to order confirmation
-        Alert.alert(
-          'Order Placed!',
-          `Your order #${order.orderNumber} has been placed successfully.`,
-          [
-            {
-              text: 'View Order',
-              onPress: () => navigation.navigate('OrderDetail' as any, { orderId: order.id }),
-            },
-          ]
-        );
+        // Navigate directly to order detail
+        (navigation as any).navigate('OrderDetail', { orderId: order.id });
       }
     } catch (error: any) {
       Alert.alert('Order Failed', error.message || 'Failed to place order. Please try again.');
@@ -638,7 +628,7 @@ export default function CheckoutScreen() {
               key={step}
               variant="caption"
               color={index <= currentStep ? 'primary' : 'textSecondary'}
-              weight={index === currentStep ? 'medium' : 'normal'}
+              weight={index === currentStep ? 'semiBold' : 'normal'}
               style={styles.stepLabel}
             >
               {step}
