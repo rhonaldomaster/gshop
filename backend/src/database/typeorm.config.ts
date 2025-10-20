@@ -28,7 +28,7 @@ import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer } fr
 import { Seller } from '../sellers/entities/seller.entity';
 
 // Payment V2 Entities
-import { PaymentMethodEntity } from '../payments/payments-v2.entity';
+import { PaymentMethodEntity, PaymentV2, Invoice, CryptoTransaction } from '../payments/payments-v2.entity';
 
 // Recommendation System Entities
 import { UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics } from '../recsys/recsys.entity';
@@ -46,7 +46,7 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     // Seller entities
     Seller,
     // Payment V2 entities
-    PaymentMethodEntity,
+    PaymentMethodEntity, PaymentV2, Invoice, CryptoTransaction,
     // Live streaming entities
     LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer,
     // Affiliates/Creator system entities

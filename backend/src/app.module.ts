@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { I18nModule, AcceptLanguageResolver, QueryResolver, HeaderResolver } from 'nestjs-i18n';
 import * as path from 'path';
 import { AuthModule } from './auth/auth.module';
@@ -35,6 +36,7 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: '../.env',
     }),
+    ScheduleModule.forRoot(),
     I18nModule.forRoot({
       fallbackLanguage: 'es',
       loaderOptions: {

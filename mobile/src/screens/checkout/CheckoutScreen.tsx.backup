@@ -1,0 +1,177 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useCart } from '../../hooks/useCart';
+import GSText from '../../components/ui/GSText';
+import GSButton from '../../components/ui/GSButton';
+import PaymentMethodSelection from '../../components/checkout/PaymentMethodSelection';
+import { PaymentMethod } from '../../services/payments.service';
+
+export default function CheckoutScreen() {
+  const { theme } = useTheme();
+  const navigation = useNavigation();
+  const { items } = useCart();
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+
+  const steps = ['Shipping', 'Delivery', 'Payment', 'Review'];
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <GSText variant="body" color="primary">← Back</GSText>
+        </TouchableOpacity>
+        <GSText variant="h4" weight="bold">Checkout</GSText>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      {/* Step Indicator */}
+      <View style={styles.stepContainer}>
+        <GSText variant="body" weight="semiBold">
+          Step {currentStep + 1} of {steps.length}: {steps[currentStep]}
+        </GSText>
+      </View>
+
+      {/* Content */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {currentStep === 0 && (
+          <View style={styles.formSection}>
+            <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+              Shipping Address
+            </GSText>
+            <GSText variant="body">Step 1: Shipping form goes here</GSText>
+            <GSButton
+              title="Continue to Delivery"
+              onPress={() => setCurrentStep(1)}
+              style={styles.nextButton}
+            />
+          </View>
+        )}
+
+        {currentStep === 1 && (
+          <View style={styles.formSection}>
+            <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+              Delivery Options
+            </GSText>
+            <GSText variant="body">Step 2: Delivery options go here</GSText>
+            <View style={styles.navigationButtons}>
+              <View style={styles.buttonWrapper}>
+                <GSButton
+                  title="Back"
+                  onPress={() => setCurrentStep(0)}
+                  variant="outline"
+                  style={styles.navButton}
+                />
+              </View>
+              <View style={styles.buttonWrapper}>
+                <GSButton
+                  title="Continue to Payment"
+                  onPress={() => setCurrentStep(2)}
+                  style={styles.navButton}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
+        {currentStep === 2 && (
+          <PaymentMethodSelection
+            orderTotal={100}
+            selectedMethod={selectedPaymentMethod}
+            onSelectMethod={setSelectedPaymentMethod}
+            onNext={() => setCurrentStep(3)}
+            onBack={() => setCurrentStep(1)}
+          />
+        )}
+
+        {currentStep === 3 && (
+          <View style={styles.formSection}>
+            <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
+              Order Review
+            </GSText>
+            <GSText variant="body">Step 4: Review and place order</GSText>
+            <View style={styles.navigationButtons}>
+              <View style={styles.buttonWrapper}>
+                <GSButton
+                  title="Back"
+                  onPress={() => setCurrentStep(2)}
+                  variant="outline"
+                  style={styles.navButton}
+                />
+              </View>
+              <View style={styles.buttonWrapper}>
+                <GSButton
+                  title="Place Order"
+                  onPress={() => console.log('Order placed!')}
+                  style={styles.navButton}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  backButton: {
+    minWidth: 60,
+  },
+  headerSpacer: {
+    minWidth: 60,
+  },
+  stepContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  content: {
+    flex: 1,
+  },
+  formSection: {
+    padding: 16,
+  },
+  sectionTitle: {
+    marginBottom: 20,
+  },
+  nextButton: {
+    width: '100%',
+    marginTop: 20,
+  },
+  navigationButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  buttonWrapper: {
+    flex: 1,
+  },
+  navButton: {
+    width: '100%',
+  },
+});

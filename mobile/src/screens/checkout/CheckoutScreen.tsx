@@ -16,9 +16,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useApi } from '../../hooks/useApi';
 import { ordersService, CreateOrderRequest, ShippingAddress, ShippingOption } from '../../services/orders.service';
 import { addressesService, Address } from '../../services/addresses.service';
+import { paymentsService, PaymentMethod } from '../../services/payments.service';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
+import PaymentMethodSelection from '../../components/checkout/PaymentMethodSelection';
 
 // Step indicator component
 interface StepIndicatorProps {
@@ -357,9 +359,11 @@ interface OrderSummaryProps {
   onPlaceOrder: () => void;
   isPlacingOrder?: boolean;
   selectedShippingOption: ShippingOption | null;
+  selectedPaymentMethod: PaymentMethod | null;
 }
 
-const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, selectedShippingOption }) => {
+const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, selectedShippingOption, selectedPaymentMethod }) => {
+  const { theme } = useTheme();
   const {
     items,
     formatPrice,
@@ -404,6 +408,28 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
           </View>
         ))}
       </View>
+
+      {/* Payment Method Summary */}
+      {selectedPaymentMethod && (
+        <View style={[styles.paymentSummary, { backgroundColor: theme.colors.surface, borderColor: theme.colors.gray300 }]}>
+          <GSText variant="body" weight="semiBold" style={styles.paymentSummaryTitle}>
+            Payment Method
+          </GSText>
+          <View style={styles.paymentSummaryContent}>
+            <GSText variant="body">
+              {selectedPaymentMethod.type === 'card' ? '💳' :
+               selectedPaymentMethod.type === 'mercadopago' ? '💵' : '₿'}
+              {' '}
+              {selectedPaymentMethod.provider}
+            </GSText>
+            {selectedPaymentMethod.details.last4 && (
+              <GSText variant="caption" color="textSecondary">
+                •••• {selectedPaymentMethod.details.last4}
+              </GSText>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* Order Totals */}
       <View style={styles.orderTotals}>
@@ -476,11 +502,13 @@ export default function CheckoutScreen() {
   });
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [loadingAddress, setLoadingAddress] = useState(true);
 
   // API hooks
   const shippingOptionsApi = useApi(ordersService.getShippingOptions);
   const createOrderApi = useApi(ordersService.createOrder);
+  const createPaymentApi = useApi(paymentsService.createPayment);
 
   // Helper function to map Address to ShippingAddress
   const mapAddressToShipping = (address: Address): ShippingAddress => {
@@ -565,6 +593,13 @@ export default function CheckoutScreen() {
     }
   };
 
+  // Handle payment method next
+  const handlePaymentMethodNext = () => {
+    if (selectedPaymentMethod) {
+      setCurrentStep(3);
+    }
+  };
+
   // Handle place order
   const handlePlaceOrder = async () => {
     try {
@@ -573,6 +608,12 @@ export default function CheckoutScreen() {
         return;
       }
 
+      if (!selectedPaymentMethod) {
+        Alert.alert('Error', 'Please select a payment method');
+        return;
+      }
+
+      // Step 1: Create the order
       const orderRequest: CreateOrderRequest = {
         items: items.map(item => ({
           productId: item.productId,
@@ -585,14 +626,60 @@ export default function CheckoutScreen() {
 
       const order = await createOrderApi.execute(orderRequest);
 
-      if (order) {
-        // Clear cart after successful order
-        await clearCart(false);
-
-        // Navigate directly to order detail
-        (navigation as any).navigate('OrderDetail', { orderId: order.id });
+      if (!order) {
+        throw new Error('Failed to create order');
       }
+
+      // Step 2: Calculate order total
+      const summary = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
+      const shipping = Number(selectedShippingOption.price || 0);
+      const tax = Number((summary * 0.19).toFixed(2));
+      const total = Number((summary + shipping + tax).toFixed(2));
+
+      // Step 3: Map payment method to backend enum
+      const paymentMethodMap: Record<string, string> = {
+        'mercadopago': 'mercadopago',
+        'card': 'stripe_card',
+        'crypto': 'usdc_polygon',
+        'gshop_tokens': 'gshop_tokens',
+      };
+
+      const paymentMethod = paymentMethodMap[selectedPaymentMethod.type] || 'mercadopago';
+
+      // Step 4: Create payment record (with 30-minute expiration)
+      const paymentRequest = {
+        orderId: order.id,
+        userId: user?.id || order.userId,
+        paymentMethod: paymentMethod,
+        amount: total,
+        currency: 'COP',
+      };
+
+      const payment = await createPaymentApi.execute(paymentRequest);
+
+      if (!payment) {
+        throw new Error('Failed to create payment');
+      }
+
+      // Step 5: Clear cart and navigate to order detail
+      // Payment expires in 30 minutes (set by backend)
+      await clearCart(false);
+
+      Alert.alert(
+        'Order Placed!',
+        `Your order has been placed successfully! Please complete your payment within 30 minutes.\n\nOrder #${order.orderNumber}`,
+        [
+          {
+            text: 'View Order',
+            onPress: () => {
+              (navigation as any).navigate('OrderDetail', { orderId: order.id });
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     } catch (error: any) {
+      console.error('Order placement error:', error);
       Alert.alert('Order Failed', error.message || 'Failed to place order. Please try again.');
     }
   };
@@ -606,7 +693,7 @@ export default function CheckoutScreen() {
     }
   };
 
-  const steps = ['Shipping', 'Delivery', 'Review'];
+  const steps = ['Shipping', 'Delivery', 'Payment', 'Review'];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -668,11 +755,27 @@ export default function CheckoutScreen() {
         )}
 
         {currentStep === 2 && (
-          <OrderSummary
+          <PaymentMethodSelection
+            orderTotal={(() => {
+              const summary = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
+              const shipping = Number(selectedShippingOption?.price || 0);
+              const tax = Number((summary * 0.19).toFixed(2));
+              return Number((summary + shipping + tax).toFixed(2));
+            })()}
+            selectedMethod={selectedPaymentMethod}
+            onSelectMethod={setSelectedPaymentMethod}
+            onNext={handlePaymentMethodNext}
             onBack={() => setCurrentStep(1)}
+          />
+        )}
+
+        {currentStep === 3 && (
+          <OrderSummary
+            onBack={() => setCurrentStep(2)}
             onPlaceOrder={handlePlaceOrder}
             isPlacingOrder={createOrderApi.isLoading}
             selectedShippingOption={selectedShippingOption}
+            selectedPaymentMethod={selectedPaymentMethod}
           />
         )}
       </ScrollView>
@@ -865,6 +968,20 @@ const styles = StyleSheet.create({
   orderItemInfo: {
     flex: 1,
     marginRight: 12,
+  },
+  paymentSummary: {
+    padding: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  paymentSummaryTitle: {
+    marginBottom: 8,
+  },
+  paymentSummaryContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   orderTotals: {
     paddingTop: 16,

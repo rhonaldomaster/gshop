@@ -933,3 +933,41 @@ socket.emit('streamPurchase', {
 - 📦 Hermes engine enabled (2x faster startup)
 - 🔄 Smart navigation with deferred loading
 - 📊 Performance monitoring built-in
+## 🔮 Pending Features & Future Implementation
+
+### GSHOP Token Economy System (Phase 3 - Partially Implemented)
+**Status**: Backend implemented, mobile integration pending
+
+**What's Implemented**:
+- Backend token service with wallet management (`backend/src/token/`)
+- Database entities: `gshop_wallets`, `gshop_transactions`, `token_rewards`
+- API endpoints for wallet creation, balance queries, and transfers
+- Token circulation metrics and analytics
+
+**What's Pending**:
+- Mobile app wallet integration removed temporarily due to:
+  - Missing `token_metrics` database table causing 500 errors
+  - Incomplete entity relations in `GshopWallet` (transactions, rewards, topups)
+  - Need for proper error handling and fallback mechanisms
+- Payment flow integration for GSHOP tokens in checkout
+- Token rewards and cashback system activation
+- Wallet top-up functionality via fiat/crypto
+
+**Implementation Notes**:
+- `PaymentMethodSelection` component updated to exclude GSHOP tokens option
+- Backend wallet auto-creation works but fails on circulation metrics update
+- Fixed with try-catch in `updateCirculation()` method but table still needs migration
+- Payment expiration system (30 minutes) implemented and working
+
+**To Resume Development**:
+1. Create missing `token_metrics` table migration
+2. Add proper relations to `GshopWallet` entity (OneToMany with transactions, rewards, topups)
+3. Re-enable GSHOP tokens in `PaymentMethodSelection.tsx`
+4. Integrate token payment processing in checkout flow
+5. Test wallet balance updates and transaction history
+
+**Related Files**:
+- Backend: `backend/src/token/token.service.ts`, `backend/src/token/token.entity.ts`
+- Mobile: `mobile/src/components/checkout/PaymentMethodSelection.tsx` (tokens section commented out)
+- Migration needed: Create `1704XXXXX-CreateTokenMetricsTable.ts`
+

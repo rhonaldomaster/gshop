@@ -58,7 +58,8 @@ export class TokenService {
   async getUserWallet(userId: string): Promise<GshopWallet> {
     const wallet = await this.walletRepository.findOne({
       where: { userId, isActive: true },
-      relations: ['transactions', 'rewards', 'topups'],
+      // Removed relations that don't exist in entity
+      // relations: ['transactions', 'rewards', 'topups'],
     });
 
     if (!wallet) {
@@ -324,32 +325,37 @@ export class TokenService {
   }
 
   private async updateCirculation(event: string, amount: number): Promise<void> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    let circulation = await this.circulationRepository.findOne({
-      where: { date: today },
-    });
-
-    if (!circulation) {
-      circulation = this.circulationRepository.create({
-        date: today,
-        totalSupply: 0,
-        totalWallets: 0,
-        totalTransactions: 0,
-        dailyVolume: 0,
+      let circulation = await this.circulationRepository.findOne({
+        where: { date: today },
       });
+
+      if (!circulation) {
+        circulation = this.circulationRepository.create({
+          date: today,
+          totalSupply: 0,
+          totalWallets: 0,
+          totalTransactions: 0,
+          dailyVolume: 0,
+        });
+      }
+
+      circulation.totalSupply += amount;
+      circulation.totalTransactions += 1;
+      circulation.dailyVolume += Math.abs(amount);
+
+      if (event === 'WALLET_CREATED') {
+        circulation.totalWallets += 1;
+      }
+
+      await this.circulationRepository.save(circulation);
+    } catch (error) {
+      // Log error but don't fail the main operation
+      console.warn('Failed to update token circulation metrics:', error.message);
     }
-
-    circulation.totalSupply += amount;
-    circulation.totalTransactions += 1;
-    circulation.dailyVolume += Math.abs(amount);
-
-    if (event === 'WALLET_CREATED') {
-      circulation.totalWallets += 1;
-    }
-
-    await this.circulationRepository.save(circulation);
   }
 
   // Admin functions

@@ -76,7 +76,8 @@ export class CartService {
   async getCart(userId: string): Promise<Cart> {
     const cart = await this.getOrCreateCart(userId);
     await this.recalculateCart(cart);
-    return cart;
+    // Reload cart to get updated totals from DB
+    return this.getOrCreateCart(userId);
   }
 
   /**

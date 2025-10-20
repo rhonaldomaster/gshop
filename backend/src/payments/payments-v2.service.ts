@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { PaymentV2, Invoice, PaymentMethodEntity, CryptoTransaction, PaymentMethod, PaymentStatus, InvoiceStatus } from './payments-v2.entity';
 import { CreatePaymentV2Dto, CreateInvoiceDto, CreatePaymentMethodDto, ProcessCryptoPaymentDto } from './dto';
+import { Order, OrderStatus } from '../database/entities/order.entity';
 import Stripe from 'stripe';
 import { ethers } from 'ethers';
 
@@ -21,6 +22,8 @@ export class PaymentsV2Service {
     private paymentMethodRepository: Repository<PaymentMethodEntity>,
     @InjectRepository(CryptoTransaction)
     private cryptoTransactionRepository: Repository<CryptoTransaction>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
       apiVersion: '2025-08-27.basil',
@@ -34,6 +37,12 @@ export class PaymentsV2Service {
   // Payment Processing
   async createPayment(createPaymentDto: CreatePaymentV2Dto): Promise<PaymentV2> {
     const payment = this.paymentRepository.create(createPaymentDto);
+
+    // Set expiration time: 30 minutes from now for pending payments
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 30);
+    payment.expiresAt = expirationTime;
+
     return this.paymentRepository.save(payment);
   }
 
@@ -201,10 +210,16 @@ export class PaymentsV2Service {
   }
 
   async getUserPaymentMethods(userId: string): Promise<PaymentMethodEntity[]> {
-    return this.paymentMethodRepository.find({
-      where: { userId, isActive: true },
-      order: { createdAt: 'DESC' },
-    });
+    try {
+      return await this.paymentMethodRepository.find({
+        where: { userId, isActive: true },
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
+      // Return empty array if table doesn't exist or other DB errors
+      console.warn('Could not load payment methods:', error.message);
+      return [];
+    }
   }
 
   async deletePaymentMethod(paymentMethodId: string, userId: string): Promise<void> {
@@ -320,5 +335,46 @@ export class PaymentsV2Service {
         mercadopago: payments.filter(p => p.paymentMethod === PaymentMethod.MERCADOPAGO).length,
       },
     };
+  }
+
+  // Auto-cancel expired payments
+  async cancelExpiredPayments(): Promise<{ cancelledPayments: number; cancelledOrders: number }> {
+    const now = new Date();
+
+    // Find all pending payments that have expired
+    const expiredPayments = await this.paymentRepository.find({
+      where: {
+        status: PaymentStatus.PENDING,
+        expiresAt: LessThan(now),
+      },
+    });
+
+    let cancelledPayments = 0;
+    let cancelledOrders = 0;
+
+    for (const payment of expiredPayments) {
+      // Cancel the payment
+      payment.status = PaymentStatus.CANCELLED;
+      payment.failureReason = 'Payment expired - not completed within 30 minutes';
+      await this.paymentRepository.save(payment);
+      cancelledPayments++;
+
+      // Cancel the associated order if it's still pending
+      try {
+        const order = await this.orderRepository.findOne({
+          where: { id: payment.orderId },
+        });
+
+        if (order && order.status === OrderStatus.PENDING) {
+          order.status = OrderStatus.CANCELLED;
+          await this.orderRepository.save(order);
+          cancelledOrders++;
+        }
+      } catch (error) {
+        console.error(`Failed to cancel order ${payment.orderId}:`, error);
+      }
+    }
+
+    return { cancelledPayments, cancelledOrders };
   }
 }

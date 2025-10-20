@@ -76,10 +76,10 @@ export const API_CONFIG = {
 
     // Payments
     PAYMENTS: {
-      CREATE: '/payments',
-      PROCESS_STRIPE: '/payments/:id/process/stripe',
-      PROCESS_CRYPTO: '/payments/:id/process/crypto',
-      METHODS: '/payments/methods',
+      CREATE: '/payments-v2',
+      PROCESS_STRIPE: '/payments-v2/:id/process/stripe',
+      PROCESS_CRYPTO: '/payments-v2/:id/process/crypto',
+      METHODS: '/payments-v2/methods',
     },
 
     // Live Streams

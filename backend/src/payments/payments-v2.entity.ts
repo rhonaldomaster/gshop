@@ -5,7 +5,8 @@ export enum PaymentMethod {
   STRIPE_CARD = 'stripe_card',
   STRIPE_BANK = 'stripe_bank',
   USDC_POLYGON = 'usdc_polygon',
-  MERCADOPAGO = 'mercadopago'
+  MERCADOPAGO = 'mercadopago',
+  GSHOP_TOKENS = 'gshop_tokens'
 }
 
 export enum PaymentStatus {
@@ -87,6 +88,9 @@ export class PaymentV2 {
 
   @Column({ type: 'timestamp', nullable: true })
   refundedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  expiresAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
