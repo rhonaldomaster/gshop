@@ -50,12 +50,7 @@ export class PaymentsV2Controller {
     return { message: 'Transaction verification initiated' };
   }
 
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  async getPayment(@Param('id') paymentId: string) {
-    return this.paymentsV2Service.getPayment(paymentId);
-  }
-
+  // Specific routes MUST come before generic :id route
   @Get('user/payments')
   @UseGuards(JwtAuthGuard)
   async getUserPayments(@Request() req) {
@@ -80,6 +75,13 @@ export class PaymentsV2Controller {
   async deletePaymentMethod(@Request() req, @Param('id') paymentMethodId: string) {
     await this.paymentsV2Service.deletePaymentMethod(paymentMethodId, req.user.id);
     return { message: 'Payment method removed successfully' };
+  }
+
+  // Generic :id route MUST come after all specific routes
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getPayment(@Param('id') paymentId: string) {
+    return this.paymentsV2Service.getPayment(paymentId);
   }
 
   // Invoice Management
