@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -25,6 +26,7 @@ export default function RegisterScreen() {
   const navigation = useNavigation<RegisterNavigationProp>();
   const { theme } = useTheme();
   const { register } = useAuth();
+  const { t } = useTranslation('translation');
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -89,10 +91,10 @@ export default function RegisterScreen() {
               </GSText>
             </View>
             <GSText variant="h1" style={styles.title}>
-              Create Account
+              {t('auth.createAccount')}
             </GSText>
             <GSText variant="body" color="textSecondary" style={styles.subtitle}>
-              Join GSHOP and start shopping
+              {t('register.subtitle')}
             </GSText>
           </View>
 
@@ -100,15 +102,15 @@ export default function RegisterScreen() {
           <View style={styles.form}>
             <View style={styles.nameRow}>
               <GSInput
-                label="First Name"
-                placeholder="Enter your first name"
+                label={t('auth.firstName')}
+                placeholder={t('auth.enterName')}
                 value={formData.firstName}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, firstName: text }))}
                 containerStyle={styles.halfInput}
               />
               <GSInput
-                label="Last Name"
-                placeholder="Enter your last name"
+                label={t('auth.lastName')}
+                placeholder={t('register.enterLastName')}
                 value={formData.lastName}
                 onChangeText={(text) => setFormData(prev => ({ ...prev, lastName: text }))}
                 containerStyle={styles.halfInput}
@@ -116,8 +118,8 @@ export default function RegisterScreen() {
             </View>
 
             <GSInput
-              label="Email"
-              placeholder="Enter your email"
+              label={t('auth.email')}
+              placeholder={t('auth.enterEmail')}
               value={formData.email}
               onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
               keyboardType="email-address"
@@ -126,8 +128,8 @@ export default function RegisterScreen() {
             />
 
             <GSInput
-              label="Phone Number"
-              placeholder="Enter your phone number"
+              label={t('auth.phone')}
+              placeholder={t('register.enterPhone')}
               value={formData.phone}
               onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
               keyboardType="phone-pad"
@@ -135,17 +137,17 @@ export default function RegisterScreen() {
             />
 
             <GSInput
-              label="Password"
-              placeholder="Create a password"
+              label={t('auth.password')}
+              placeholder={t('register.createPassword')}
               value={formData.password}
               onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
               secureTextEntry={!showPassword}
               rightIcon={
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons 
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                    size={20} 
-                    color={theme.colors.textSecondary} 
+                  <Ionicons
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={theme.colors.textSecondary}
                   />
                 </TouchableOpacity>
               }
@@ -153,8 +155,8 @@ export default function RegisterScreen() {
             />
 
             <GSInput
-              label="Confirm Password"
-              placeholder="Confirm your password"
+              label={t('auth.confirmPassword')}
+              placeholder={t('register.confirmYourPassword')}
               value={formData.confirmPassword}
               onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
               secureTextEntry={!showConfirmPassword}
@@ -171,7 +173,7 @@ export default function RegisterScreen() {
             />
 
             <GSButton
-              title="Create Account"
+              title={t('auth.createAccount')}
               onPress={handleRegister}
               loading={isLoading}
               style={styles.registerButton}
@@ -179,13 +181,13 @@ export default function RegisterScreen() {
 
             <View style={styles.terms}>
               <GSText variant="caption" color="textSecondary" style={styles.termsText}>
-                By creating an account, you agree to our{' '}
+                {t('register.termsAgree')}{' '}
                 <GSText variant="caption" style={{ color: theme.colors.primary }}>
-                  Terms of Service
+                  {t('register.termsOfService')}
                 </GSText>{' '}
-                and{' '}
+                {t('register.and')}{' '}
                 <GSText variant="caption" style={{ color: theme.colors.primary }}>
-                  Privacy Policy
+                  {t('register.privacyPolicy')}
                 </GSText>
               </GSText>
             </View>
@@ -199,9 +201,9 @@ export default function RegisterScreen() {
             style={styles.signInLink}
           >
             <GSText variant="body" color="textSecondary">
-              Already have an account?{' '}
+              {t('auth.hasAccount')}{' '}
               <GSText variant="body" style={{ color: theme.colors.primary }}>
-                Sign In
+                {t('auth.signIn')}
               </GSText>
             </GSText>
           </TouchableOpacity>

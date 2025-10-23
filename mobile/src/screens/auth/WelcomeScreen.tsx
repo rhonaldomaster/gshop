@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import GSText from '../../components/ui/GSText';
@@ -23,6 +24,7 @@ const { width, height } = Dimensions.get('window');
 export default function WelcomeScreen() {
   const navigation = useNavigation<WelcomeNavigationProp>();
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
 
   return (
     <ScrollView 
@@ -47,7 +49,7 @@ export default function WelcomeScreen() {
             GSHOP
           </GSText>
           <GSText variant="body" style={styles.tagline} color="white">
-            Your Social Shopping Experience
+            {t('welcome.tagline')}
           </GSText>
         </View>
       </LinearGradient>
@@ -55,10 +57,10 @@ export default function WelcomeScreen() {
       {/* Features Section */}
       <View style={styles.featuresSection}>
         <GSText variant="h2" style={styles.welcomeTitle}>
-          Welcome to GSHOP
+          {t('welcome.title')}
         </GSText>
         <GSText variant="body" style={styles.welcomeSubtitle} color="textSecondary">
-          Discover amazing products, connect with sellers, and enjoy seamless shopping
+          {t('welcome.subtitle')}
         </GSText>
 
         <View style={styles.featuresGrid}>
@@ -66,9 +68,9 @@ export default function WelcomeScreen() {
             <View style={[styles.featureIcon, { backgroundColor: theme.colors.primary + '20' }]}>
               <GSText variant="h2" style={{ color: theme.colors.primary }}>🛍️</GSText>
             </View>
-            <GSText variant="h6" style={styles.featureTitle}>Shop Easily</GSText>
+            <GSText variant="h6" style={styles.featureTitle}>{t('welcome.features.shopEasily.title')}</GSText>
             <GSText variant="caption" color="textSecondary" style={styles.featureDescription}>
-              Browse thousands of products from verified sellers
+              {t('welcome.features.shopEasily.description')}
             </GSText>
           </View>
 
@@ -76,9 +78,9 @@ export default function WelcomeScreen() {
             <View style={[styles.featureIcon, { backgroundColor: theme.colors.accent + '20' }]}>
               <GSText variant="h2" style={{ color: theme.colors.accent }}>🚚</GSText>
             </View>
-            <GSText variant="h6" style={styles.featureTitle}>Fast Delivery</GSText>
+            <GSText variant="h6" style={styles.featureTitle}>{t('welcome.features.fastDelivery.title')}</GSText>
             <GSText variant="caption" color="textSecondary" style={styles.featureDescription}>
-              Get your orders delivered quickly and safely
+              {t('welcome.features.fastDelivery.description')}
             </GSText>
           </View>
 
@@ -86,9 +88,9 @@ export default function WelcomeScreen() {
             <View style={[styles.featureIcon, { backgroundColor: theme.colors.primary + '20' }]}>
               <GSText variant="h2" style={{ color: theme.colors.primary }}>💳</GSText>
             </View>
-            <GSText variant="h6" style={styles.featureTitle}>Secure Payments</GSText>
+            <GSText variant="h6" style={styles.featureTitle}>{t('welcome.features.securePayments.title')}</GSText>
             <GSText variant="caption" color="textSecondary" style={styles.featureDescription}>
-              Safe and secure payments with multiple options
+              {t('welcome.features.securePayments.description')}
             </GSText>
           </View>
 
@@ -96,9 +98,9 @@ export default function WelcomeScreen() {
             <View style={[styles.featureIcon, { backgroundColor: theme.colors.accent + '20' }]}>
               <GSText variant="h2" style={{ color: theme.colors.accent }}>🤝</GSText>
             </View>
-            <GSText variant="h6" style={styles.featureTitle}>Social Shopping</GSText>
+            <GSText variant="h6" style={styles.featureTitle}>{t('welcome.features.socialShopping.title')}</GSText>
             <GSText variant="caption" color="textSecondary" style={styles.featureDescription}>
-              Connect with friends and share your favorite finds
+              {t('welcome.features.socialShopping.description')}
             </GSText>
           </View>
         </View>
@@ -107,19 +109,19 @@ export default function WelcomeScreen() {
       {/* Action Buttons */}
       <View style={styles.actionSection}>
         <GSButton
-          title="Get Started"
+          title={t('welcome.getStarted')}
           onPress={() => navigation.navigate('Register')}
           style={styles.primaryButton}
         />
-        
+
         <TouchableOpacity
           onPress={() => navigation.navigate('Login')}
           style={styles.loginLink}
         >
           <GSText variant="body" color="textSecondary">
-            Already have an account?{' '}
+            {t('auth.hasAccount')}{' '}
             <GSText variant="body" style={{ color: theme.colors.primary }}>
-              Sign In
+              {t('auth.signIn')}
             </GSText>
           </GSText>
         </TouchableOpacity>

@@ -28,6 +28,7 @@
     "signIn": "Iniciar sesión",
     "signUp": "Registrarse",
     "signOut": "Cerrar sesión",
+    "login": "Iniciar sesión",
     "email": "Correo electrónico",
     "password": "Contraseña",
     "confirmPassword": "Confirmar contraseña",
@@ -51,11 +52,52 @@
     "logoutSuccess": "Sesión cerrada",
     "emailRequired": "El correo electrónico es requerido",
     "passwordRequired": "La contraseña es requerida",
-    "nameRequired": "El nombre es requerido"
+    "nameRequired": "El nombre es requerido",
+    "loginRequired": "Inicio de sesión requerido",
+    "loginToAddWishlist": "Por favor inicia sesión para agregar artículos a tu lista de deseos",
+    "loginToAddCart": "Por favor inicia sesión para agregar artículos a tu carrito",
+    "loginToPurchase": "Por favor inicia sesión para realizar una compra"
+  },
+  "welcome": {
+    "tagline": "Tu experiencia de compra social",
+    "title": "Bienvenido a GSHOP",
+    "subtitle": "Descubre productos increíbles, conéctate con vendedores y disfruta de compras sin problemas",
+    "getStarted": "Comenzar",
+    "features": {
+      "shopEasily": {
+        "title": "Compra fácilmente",
+        "description": "Explora miles de productos de vendedores verificados"
+      },
+      "fastDelivery": {
+        "title": "Entrega rápida",
+        "description": "Recibe tus pedidos de forma rápida y segura"
+      },
+      "securePayments": {
+        "title": "Pagos seguros",
+        "description": "Pagos seguros y confiables con múltiples opciones"
+      },
+      "socialShopping": {
+        "title": "Compra social",
+        "description": "Conéctate con amigos y comparte tus productos favoritos"
+      }
+    }
+  },
+  "register": {
+    "subtitle": "Únete a GSHOP y comienza a comprar",
+    "enterLastName": "Ingresa tu apellido",
+    "enterPhone": "Ingresa tu número de teléfono",
+    "createPassword": "Crea una contraseña",
+    "confirmYourPassword": "Confirma tu contraseña",
+    "termsAgree": "Al crear una cuenta, aceptas nuestros",
+    "termsOfService": "Términos de servicio",
+    "and": "y",
+    "privacyPolicy": "Política de privacidad"
   },
   "home": {
     "title": "Inicio",
     "hello": "Hola",
+    "welcomeBack": "Bienvenido de nuevo",
+    "user": "Usuario",
     "searchProducts": "Buscar productos...",
     "categories": "Categorías",
     "trending": "Tendencias",
@@ -65,7 +107,14 @@
     "flashSale": "Oferta relámpago",
     "liveNow": "En vivo ahora",
     "browseCategories": "Explorar categorías",
-    "viewAllCategories": "Ver todas las categorías"
+    "viewAllCategories": "Ver todas las categorías",
+    "summerSale": "Venta de verano",
+    "saleDescription": "Hasta 50% de descuento en productos seleccionados",
+    "shopNow": "Comprar ahora",
+    "featuredProducts": "Productos destacados",
+    "noProducts": "No hay productos disponibles",
+    "quickActions": "Acciones rápidas",
+    "payments": "Pagos"
   },
   "products": {
     "title": "Productos",
@@ -99,7 +148,10 @@
     "sortByNewest": "Más recientes",
     "sortByPriceLowToHigh": "Precio: menor a mayor",
     "sortByPriceHighToLow": "Precio: mayor a menor",
-    "sortByPopular": "Más populares"
+    "sortByPopular": "Más populares",
+    "loadingProduct": "Cargando producto...",
+    "quantity": "Cantidad",
+    "itemsInCart": "{{count}} artículo{{count, plural, =1 {} other {s}}} en el carrito"
   },
   "cart": {
     "title": "Carrito",
@@ -193,7 +245,16 @@
     "noOrders": "No tienes pedidos",
     "noOrdersMessage": "Comienza a comprar ahora",
     "inTransit": "En tránsito",
-    "outForDelivery": "En camino"
+    "outForDelivery": "En camino",
+    "moreItems": "más artículos",
+    "track": "Rastrear",
+    "return": "Devolver",
+    "details": "Detalles",
+    "loadError": "Error al cargar pedidos",
+    "loginToView": "Inicia sesión para ver tu historial de pedidos y rastrear tus compras",
+    "loadingOrders": "Cargando tus pedidos...",
+    "loadingMore": "Cargando más pedidos...",
+    "orderCount": "{{count}} pedido{{count, plural, =1 {} other {s}}}"
   },
   "profile": {
     "title": "Perfil",
@@ -237,7 +298,12 @@
     "addedToWishlist": "Agregado a lista de deseos",
     "removedFromWishlist": "Quitado de lista de deseos",
     "moveToCart": "Mover al carrito",
-    "shareWishlist": "Compartir lista"
+    "shareWishlist": "Compartir lista",
+    "removed": "Eliminado",
+    "removedMessage": "Producto eliminado de la lista de deseos",
+    "added": "Agregado",
+    "addedMessage": "Producto agregado a la lista de deseos",
+    "updateFailed": "No se pudo actualizar la lista de deseos"
   },
   "live": {
     "title": "En vivo",
@@ -346,7 +412,11 @@
     "viewProducts": "Ver productos",
     "productsCount": "productos",
     "featuredCategories": "Categorías destacadas",
-    "topCategories": "Categorías principales"
+    "topCategories": "Categorías principales",
+    "loadingCategories": "Cargando categorías...",
+    "searchPlaceholder": "Buscar categorías...",
+    "noResults": "No se encontraron categorías",
+    "noCategories": "No hay categorías disponibles"
   },
   "reviews": {
     "title": "Reseñas",

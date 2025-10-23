@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
@@ -40,6 +41,7 @@ interface Props {
 
 export default function ProductDetailScreen({ route, navigation }: Props) {
   const { productId } = route.params;
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
   const { getProductDetails, formatPrice, isInStock, getDiscountPercentage } = useProducts();
@@ -98,11 +100,11 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
   const toggleWishlist = async () => {
     if (!isAuthenticated) {
       Alert.alert(
-        'Login Required',
-        'Please login to add items to your wishlist',
+        t('auth.loginRequired'),
+        t('auth.loginToAddWishlist'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Login', onPress: () => navigation.navigate('Auth' as any) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('auth.login'), onPress: () => navigation.navigate('Auth' as any) },
         ]
       );
       return;
@@ -114,15 +116,15 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       if (isInWishlist) {
         await wishlistService.removeFromWishlist(productId);
         setIsInWishlist(false);
-        Alert.alert('Removed', 'Product removed from wishlist');
+        Alert.alert(t('wishlist.removed'), t('wishlist.removedMessage'));
       } else {
         await wishlistService.addToWishlist(productId);
         setIsInWishlist(true);
-        Alert.alert('Added', 'Product added to wishlist');
+        Alert.alert(t('wishlist.added'), t('wishlist.addedMessage'));
       }
     } catch (error: any) {
       console.error('Toggle wishlist failed:', error);
-      Alert.alert('Error', error.message || 'Failed to update wishlist');
+      Alert.alert(t('common.error'), error.message || t('wishlist.updateFailed'));
     } finally {
       setIsTogglingWishlist(false);
     }
@@ -137,11 +139,11 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
 
       if (!isAuthenticated) {
         Alert.alert(
-          'Login Required',
-          'Please login to add items to your cart',
+          t('auth.loginRequired'),
+          t('auth.loginToAddCart'),
           [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Login', onPress: () => navigation.navigate('Auth' as any) },
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('auth.login'), onPress: () => navigation.navigate('Auth' as any) },
           ]
         );
         return;
@@ -169,11 +171,11 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
 
     if (!isAuthenticated) {
       Alert.alert(
-        'Login Required',
-        'Please login to make a purchase',
+        t('auth.loginRequired'),
+        t('auth.loginToPurchase'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Login', onPress: () => navigation.navigate('Auth' as any) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('auth.login'), onPress: () => navigation.navigate('Auth' as any) },
         ]
       );
       return;
@@ -209,7 +211,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <GSText variant="body" style={styles.loadingText}>Loading product...</GSText>
+          <GSText variant="body" style={styles.loadingText}>{t('products.loadingProduct')}</GSText>
         </View>
       </SafeAreaView>
     );
@@ -221,10 +223,10 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.errorContainer}>
           <GSText variant="h3" weight="bold" color="error" style={styles.errorTitle}>
-            {error || 'Product not found'}
+            {error || t('errors.notFound')}
           </GSText>
           <GSButton
-            title="Go Back"
+            title={t('common.back')}
             onPress={() => navigation.goBack()}
             style={styles.errorButton}
           />
@@ -335,7 +337,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
               color={inStock ? 'success' : 'error'}
               weight="medium"
             >
-              {inStock ? `In Stock (${stockQuantity} available)` : 'Out of Stock'}
+              {inStock ? t('products.inStock') : t('products.outOfStock')}
             </GSText>
           </View>
 
@@ -348,7 +350,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
           {inStock && (
             <View style={styles.quantityContainer}>
               <GSText variant="body" weight="medium" style={styles.quantityLabel}>
-                Quantity:
+                {t('products.quantity')}:
               </GSText>
               <View style={styles.quantitySelector}>
                 <TouchableOpacity
@@ -376,7 +378,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
           {cartQuantity > 0 && (
             <View style={styles.cartStatus}>
               <GSText variant="body" color="primary" weight="medium">
-                {cartQuantity} item{cartQuantity > 1 ? 's' : ''} in cart
+                {t('products.itemsInCart', { count: cartQuantity })}
               </GSText>
             </View>
           )}
@@ -387,14 +389,14 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       {inStock && (
         <View style={[styles.bottomActions, { backgroundColor: theme.colors.background }]}>
           <GSButton
-            title="Add to Cart"
+            title={t('products.addToCart')}
             onPress={handleAddToCart}
             loading={isAddingToCart}
             style={[styles.actionButton, styles.addToCartButton]}
             variant="outlined"
           />
           <GSButton
-            title="Buy Now"
+            title={t('products.buyNow')}
             onPress={handleBuyNow}
             style={[styles.actionButton, styles.buyNowButton]}
           />

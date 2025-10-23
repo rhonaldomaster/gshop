@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -27,6 +28,7 @@ interface OrderCardProps {
 
 const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
 
   const renderOrderItem = (item: any, index: number) => {
     const showMore = index === 2 && order.items.length > 3;
@@ -35,7 +37,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
       return (
         <View key={`more-${index}`} style={styles.orderItemMore}>
           <GSText variant="caption" color="textSecondary">
-            +{order.items.length - 2} more items
+            +{order.items.length - 2} {t('orders.moreItems')}
           </GSText>
         </View>
       );
@@ -60,10 +62,10 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
         </View>
         <View style={styles.orderItemInfo}>
           <GSText variant="caption" numberOfLines={1}>
-            {item.product?.name || `Product ${item.productId}`}
+            {item.product?.name || `${t('products.product')} ${item.productId}`}
           </GSText>
           <GSText variant="caption" color="textSecondary">
-            Qty: {item.quantity} × {ordersService.formatPrice(item.price)}
+            {t('cart.quantity')}: {item.quantity} × {ordersService.formatPrice(item.price)}
           </GSText>
         </View>
       </View>
@@ -116,7 +118,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
       <View style={styles.orderFooter}>
         <View style={styles.orderTotal}>
           <GSText variant="caption" color="textSecondary">
-            Total:
+            {t('cart.total')}:
           </GSText>
           <GSText variant="body" weight="medium" color="primary">
             {ordersService.formatPrice(order.total)}
@@ -155,7 +157,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
           >
             <Ionicons name="location-outline" size={16} color={theme.colors.primary} />
             <GSText variant="caption" color="primary" style={{ marginLeft: 4 }}>
-              Track
+              {t('orders.track')}
             </GSText>
           </TouchableOpacity>
         )}
@@ -166,7 +168,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
           >
             <Ionicons name="return-down-back-outline" size={16} color={theme.colors.warning} />
             <GSText variant="caption" color="warning" style={{ marginLeft: 4 }}>
-              Return
+              {t('orders.return')}
             </GSText>
           </TouchableOpacity>
         )}
@@ -177,7 +179,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
         >
           <Ionicons name="chevron-forward" size={16} color={theme.colors.textSecondary} />
           <GSText variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
-            Details
+            {t('orders.details')}
           </GSText>
         </TouchableOpacity>
       </View>
@@ -189,6 +191,7 @@ export default function OrdersScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation('translation');
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,10 +221,10 @@ export default function OrdersScreen() {
       setCurrentPage(response.currentPage);
     } catch (err: any) {
       console.error('Failed to load orders:', err);
-      setError(err.message || 'Failed to load orders');
+      setError(err.message || t('orders.loadError'));
 
       if (!append) {
-        Alert.alert('Error', err.message || 'Failed to load orders');
+        Alert.alert(t('common.error'), err.message || t('orders.loadError'));
       }
     } finally {
       setLoading(false);
@@ -272,13 +275,13 @@ export default function OrdersScreen() {
             <Ionicons name="person-outline" size={60} color={theme.colors.textSecondary} />
           </View>
           <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-            Sign in Required
+            {t('auth.loginRequired')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-            Sign in to view your order history and track your purchases
+            {t('orders.loginToView')}
           </GSText>
           <GSButton
-            title="Sign In"
+            title={t('auth.signIn')}
             onPress={() => navigation.navigate('Auth' as any)}
             style={styles.signInButton}
           />
@@ -293,13 +296,13 @@ export default function OrdersScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <GSText variant="h3" weight="bold">
-            My Orders
+            {t('orders.myOrders')}
           </GSText>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Loading your orders...
+            {t('orders.loadingOrders')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -312,7 +315,7 @@ export default function OrdersScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <GSText variant="h3" weight="bold">
-            My Orders
+            {t('orders.myOrders')}
           </GSText>
         </View>
         <View style={styles.emptyContainer}>
@@ -320,13 +323,13 @@ export default function OrdersScreen() {
             <Ionicons name="bag-outline" size={60} color={theme.colors.textSecondary} />
           </View>
           <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-            No Orders Yet
+            {t('orders.noOrders')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-            Start shopping to see your orders here
+            {t('orders.noOrdersMessage')}
           </GSText>
           <GSButton
-            title="Start Shopping"
+            title={t('cart.empty.action')}
             onPress={handleStartShopping}
             style={styles.startShoppingButton}
           />
@@ -348,7 +351,7 @@ export default function OrdersScreen() {
       <View style={styles.loadingFooter}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
         <GSText variant="caption" color="textSecondary" style={{ marginLeft: 8 }}>
-          Loading more orders...
+          {t('orders.loadingMore')}
         </GSText>
       </View>
     );
@@ -359,10 +362,10 @@ export default function OrdersScreen() {
       {/* Header */}
       <View style={styles.header}>
         <GSText variant="h3" weight="bold">
-          My Orders
+          {t('orders.myOrders')}
         </GSText>
         <GSText variant="caption" color="textSecondary">
-          {orders.length} order{orders.length !== 1 ? 's' : ''}
+          {t('orders.orderCount', { count: orders.length })}
         </GSText>
       </View>
 
@@ -373,7 +376,7 @@ export default function OrdersScreen() {
             {error}
           </GSText>
           <GSButton
-            title="Retry"
+            title={t('common.tryAgain')}
             variant="outlined"
             onPress={() => loadOrders(1, false)}
             style={styles.retryButton}

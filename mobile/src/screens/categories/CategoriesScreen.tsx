@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, Touchabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import GSInput from '../../components/ui/GSInput';
@@ -16,6 +17,7 @@ type CategoriesNavigationProp = StackNavigationProp<any>;
 export default function CategoriesScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation<CategoriesNavigationProp>();
+  const { t } = useTranslation('translation');
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredCategories, setFeaturedCategories] = useState<Category[]>([]);
@@ -91,7 +93,7 @@ export default function CategoriesScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <GSText variant="body" style={styles.loadingText}>Loading categories...</GSText>
+          <GSText variant="body" style={styles.loadingText}>{t('categories.loadingCategories')}</GSText>
         </View>
       </SafeAreaView>
     );
@@ -101,7 +103,7 @@ export default function CategoriesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <GSText variant="h2" weight="bold">Categories</GSText>
+        <GSText variant="h2" weight="bold">{t('categories.title')}</GSText>
         <TouchableOpacity
           onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
           style={styles.viewModeButton}
@@ -117,7 +119,7 @@ export default function CategoriesScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <GSInput
-          placeholder="Search categories..."
+          placeholder={t('categories.searchPlaceholder')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}
@@ -159,7 +161,7 @@ export default function CategoriesScreen() {
           !searchQuery && featuredCategories.length > 0 ? (
             <View style={styles.featuredSection}>
               <GSText variant="h3" weight="semibold" style={styles.sectionTitle}>
-                Featured Categories
+                {t('categories.featuredCategories')}
               </GSText>
               <View style={styles.featuredGrid}>
                 {featuredCategories.map((category) => (
@@ -172,7 +174,7 @@ export default function CategoriesScreen() {
                 ))}
               </View>
               <GSText variant="h3" weight="semibold" style={styles.sectionTitle}>
-                All Categories
+                {t('categories.allCategories')}
               </GSText>
             </View>
           ) : null
@@ -181,7 +183,7 @@ export default function CategoriesScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="albums-outline" size={64} color={theme.colors.textSecondary} />
             <GSText variant="body" color="textSecondary" style={styles.emptyText}>
-              {searchQuery ? 'No categories found' : 'No categories available'}
+              {searchQuery ? t('categories.noResults') : t('categories.noCategories')}
             </GSText>
           </View>
         }

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import Toast from 'react-native-toast-message';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
@@ -193,6 +194,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
 
 // Main Cart Screen Component
 export default function CartScreen() {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
@@ -522,13 +524,13 @@ export default function CartScreen() {
             <GSText variant="h1">🛒</GSText>
           </View>
           <GSText variant="h3" weight="bold" style={styles.emptyCartTitle}>
-            Your cart is empty
+            {t('cart.empty.title')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptyCartSubtitle}>
-            Start shopping to add items to your cart
+            {t('cart.empty.message')}
           </GSText>
           <GSButton
-            title="Start Shopping"
+            title={t('cart.empty.action')}
             onPress={handleContinueShopping}
             style={styles.startShoppingButton}
           />
@@ -542,10 +544,10 @@ export default function CartScreen() {
       {/* Header */}
       <View style={styles.header}>
         <GSText variant="h3" weight="bold">
-          Shopping Cart ({summary.itemCount} item{summary.itemCount !== 1 ? 's' : ''})
+          {t('cart.title')} ({summary.itemCount} {t('cart.summary.items')})
         </GSText>
         <TouchableOpacity onPress={handleClearCart}>
-          <GSText variant="body" color="error">Clear All</GSText>
+          <GSText variant="body" color="error">{t('cart.actions.clearCart')}</GSText>
         </TouchableOpacity>
       </View>
 
@@ -684,7 +686,7 @@ export default function CartScreen() {
 
           {/* Checkout Button */}
           <GSButton
-            title="Proceed to Checkout"
+            title={t('cart.summary.checkout')}
             onPress={handleCheckout}
             style={styles.checkoutButton}
             loading={validatingStock || isLoading}
@@ -695,7 +697,7 @@ export default function CartScreen() {
             style={styles.continueShoppingButton}
             onPress={handleContinueShopping}
           >
-            <GSText variant="body" color="primary">Continue Shopping</GSText>
+            <GSText variant="body" color="primary">{t('cart.continueShopping')}</GSText>
           </TouchableOpacity>
         </View>
       </ScrollView>

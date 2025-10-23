@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../contexts/AuthContext';
@@ -80,6 +81,7 @@ interface ShippingFormProps {
 }
 
 const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, isLoading }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const hasDefaultAddress = address.address && address.city && address.state;
   const [showDocTypeModal, setShowDocTypeModal] = useState(false);
@@ -100,7 +102,10 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
 
     for (const field of required) {
       if (!address[field as keyof ShippingAddress]?.trim()) {
-        Alert.alert('Missing Information', `Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
+        Alert.alert(
+          t('checkout.validation.missingInfo'),
+          t('checkout.validation.pleaseFill', { field: field.replace(/([A-Z])/g, ' $1').toLowerCase() })
+        );
         return false;
       }
     }
@@ -130,13 +135,13 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
 
       <View style={styles.formRow}>
         <GSInput
-          placeholder="First Name"
+          placeholder={t('checkout.fullName')}
           value={address.firstName}
           onChangeText={(value) => handleFieldChange('firstName', value)}
           containerStyle={styles.halfInput}
         />
         <GSInput
-          placeholder="Last Name"
+          placeholder={t('auth.lastName')}
           value={address.lastName}
           onChangeText={(value) => handleFieldChange('lastName', value)}
           containerStyle={styles.halfInput}
@@ -144,20 +149,20 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
       </View>
 
       <GSInput
-        placeholder="Address"
+        placeholder={t('checkout.address')}
         value={address.address}
         onChangeText={(value) => handleFieldChange('address', value)}
       />
 
       <View style={styles.formRow}>
         <GSInput
-          placeholder="City"
+          placeholder={t('checkout.city')}
           value={address.city}
           onChangeText={(value) => handleFieldChange('city', value)}
           containerStyle={styles.halfInput}
         />
         <GSInput
-          placeholder="State/Department"
+          placeholder={t('checkout.state')}
           value={address.state}
           onChangeText={(value) => handleFieldChange('state', value)}
           containerStyle={styles.halfInput}
@@ -166,14 +171,14 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
 
       <View style={styles.formRow}>
         <GSInput
-          placeholder="Postal Code"
+          placeholder={t('checkout.zipCode')}
           value={address.postalCode}
           onChangeText={(value) => handleFieldChange('postalCode', value)}
           containerStyle={styles.halfInput}
           keyboardType="numeric"
         />
         <GSInput
-          placeholder="Phone"
+          placeholder={t('auth.phone')}
           value={address.phone}
           onChangeText={(value) => handleFieldChange('phone', value)}
           containerStyle={styles.halfInput}
@@ -191,7 +196,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           </GSText>
         </TouchableOpacity>
         <GSInput
-          placeholder="Document Number"
+          placeholder={t('checkout.documentNumber')}
           value={address.document || ''}
           onChangeText={(value) => handleFieldChange('document', value)}
           containerStyle={styles.halfInput}
@@ -200,7 +205,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
       </View>
 
       <GSButton
-        title="Continue to Shipping"
+        title={t('checkout.selectShippingMethod')}
         onPress={handleNext}
         style={styles.nextButton}
         loading={isLoading}
@@ -262,13 +267,14 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
   onBack,
   isLoading
 }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const { formatPrice } = useCart();
 
   return (
     <View style={styles.formSection}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-        Shipping Options
+        {t('checkout.shippingOptions')}
       </GSText>
 
       {options.map((option) => (
@@ -341,7 +347,7 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
         </View>
         <View style={styles.buttonWrapper}>
           <GSButton
-            title="Continue to Payment"
+            title={t('checkout.selectPaymentMethod')}
             onPress={onNext}
             style={styles.nextButton}
             disabled={!selectedOption}
@@ -363,6 +369,7 @@ interface OrderSummaryProps {
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, selectedShippingOption, selectedPaymentMethod }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const {
     items,
@@ -469,7 +476,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
         </View>
         <View style={styles.buttonWrapper}>
           <GSButton
-            title="Place Order"
+            title={t('checkout.placeOrder')}
             onPress={onPlaceOrder}
             style={styles.nextButton}
             loading={isPlacingOrder}
@@ -482,6 +489,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
 
 // Main checkout screen component
 export default function CheckoutScreen() {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { user } = useAuth();
@@ -556,12 +564,12 @@ export default function CheckoutScreen() {
   useEffect(() => {
     if (items.length === 0) {
       Alert.alert(
-        'Empty Cart',
-        'Your cart is empty. Please add items before checkout.',
+        t('checkout.alerts.emptyCart'),
+        t('checkout.alerts.emptyCartMessage'),
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [items.length, navigation]);
+  }, [items.length, navigation, t]);
 
   // Handle shipping address next
   const handleShippingAddressNext = async () => {
@@ -579,10 +587,10 @@ export default function CheckoutScreen() {
         setShippingOptions(options);
         setCurrentStep(1);
       } else {
-        Alert.alert('Error', 'No shipping options available for this address');
+        Alert.alert(t('common.error'), t('checkout.shippingOptions.errorLoading'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to load shipping options');
+      Alert.alert(t('common.error'), t('checkout.shippingOptions.errorLoading'));
     }
   };
 
@@ -604,12 +612,12 @@ export default function CheckoutScreen() {
   const handlePlaceOrder = async () => {
     try {
       if (!selectedShippingOption) {
-        Alert.alert('Error', 'Please select a shipping option');
+        Alert.alert(t('common.error'), t('checkout.alerts.pleaseSelectShipping'));
         return;
       }
 
       if (!selectedPaymentMethod) {
-        Alert.alert('Error', 'Please select a payment method');
+        Alert.alert(t('common.error'), t('checkout.alerts.pleaseSelectPayment'));
         return;
       }
 
@@ -678,11 +686,11 @@ export default function CheckoutScreen() {
       } else {
         // Fallback: show alert and navigate to order detail
         Alert.alert(
-          'Order Placed!',
-          `Your order has been placed successfully! Please complete your payment within 30 minutes.\n\nOrder #${order.orderNumber}`,
+          t('checkout.alerts.orderPlaced'),
+          t('checkout.alerts.orderPlacedMessage', { orderNumber: order.orderNumber }),
           [
             {
-              text: 'View Order',
+              text: t('checkout.alerts.viewOrder'),
               onPress: () => {
                 (navigation as any).navigate('OrderDetail', { orderId: order.id });
               },
@@ -693,7 +701,7 @@ export default function CheckoutScreen() {
       }
     } catch (error: any) {
       console.error('Order placement error:', error);
-      Alert.alert('Order Failed', error.message || 'Failed to place order. Please try again.');
+      Alert.alert(t('checkout.alerts.orderFailed'), error.message || t('errors.tryAgain'));
     }
   };
 

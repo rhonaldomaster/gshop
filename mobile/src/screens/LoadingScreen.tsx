@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import GSText from '../components/ui/GSText';
 
@@ -10,13 +10,15 @@ export default function LoadingScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.content}>
-        <View style={[styles.logo, { backgroundColor: theme.colors.primary }]}>
-          <GSText style={styles.logoText} variant="h2" color="white">G</GSText>
-        </View>
+        <Image
+          source={require('../../assets/adaptive-icon.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <GSText variant="h3" style={styles.title}>GSHOP</GSText>
-        <ActivityIndicator 
-          size="large" 
-          color={theme.colors.primary} 
+        <ActivityIndicator
+          size="large"
+          color={theme.colors.primary}
           style={styles.loader}
         />
       </View>
@@ -34,15 +36,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 120,
+    height: 120,
     marginBottom: 16,
-  },
-  logoText: {
-    fontWeight: 'bold',
   },
   title: {
     marginBottom: 32,

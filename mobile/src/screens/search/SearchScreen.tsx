@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
@@ -40,6 +41,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
   categories,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
   const [localFilters, setLocalFilters] = useState<ProductSearchFilters>(currentFilters);
 
   useEffect(() => {
@@ -58,21 +60,21 @@ const FilterModal: React.FC<FilterModalProps> = ({
   };
 
   const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'oldest', label: 'Oldest First' },
-    { value: 'price_asc', label: 'Price: Low to High' },
-    { value: 'price_desc', label: 'Price: High to Low' },
-    { value: 'rating', label: 'Best Rated' },
-    { value: 'popularity', label: 'Most Popular' },
+    { value: 'newest', label: t('products.sortByNewest') },
+    { value: 'oldest', label: t('search.oldestFirst') },
+    { value: 'price_asc', label: t('products.sortByPriceLowToHigh') },
+    { value: 'price_desc', label: t('products.sortByPriceHighToLow') },
+    { value: 'rating', label: t('search.bestRated') },
+    { value: 'popularity', label: t('products.sortByPopular') },
   ];
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={[styles.filterModal, { backgroundColor: theme.colors.background }]}>
         <View style={styles.filterHeader}>
-          <GSText variant="h3" weight="bold">Filters</GSText>
+          <GSText variant="h3" weight="bold">{t('search.filters')}</GSText>
           <TouchableOpacity onPress={onClose}>
-            <GSText variant="body" color="primary">Done</GSText>
+            <GSText variant="body" color="primary">{t('common.done')}</GSText>
           </TouchableOpacity>
         </View>
 
@@ -86,11 +88,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
               {/* Price Range */}
               <View style={styles.filterSection}>
                 <GSText variant="body" weight="medium" style={styles.filterTitle}>
-                  Price Range
+                  {t('search.priceRange')}
                 </GSText>
                 <View style={styles.priceInputs}>
                   <GSInput
-                    placeholder="Min Price"
+                    placeholder={t('search.minPrice')}
                     value={localFilters.minPrice?.toString() || ''}
                     onChangeText={(text) => setLocalFilters(prev => ({
                       ...prev,
@@ -99,9 +101,9 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     keyboardType="numeric"
                     style={styles.priceInput}
                   />
-                  <GSText variant="body" style={styles.priceInputSeparator}>to</GSText>
+                  <GSText variant="body" style={styles.priceInputSeparator}>{t('search.to')}</GSText>
                   <GSInput
-                    placeholder="Max Price"
+                    placeholder={t('search.maxPrice')}
                     value={localFilters.maxPrice?.toString() || ''}
                     onChangeText={(text) => setLocalFilters(prev => ({
                       ...prev,
@@ -116,7 +118,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               {/* Categories */}
               <View style={styles.filterSection}>
                 <GSText variant="body" weight="medium" style={styles.filterTitle}>
-                  Category
+                  {t('search.category')}
                 </GSText>
                 <FlatList
                   data={categories}
@@ -151,7 +153,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               {/* Sort By */}
               <View style={styles.filterSection}>
                 <GSText variant="body" weight="medium" style={styles.filterTitle}>
-                  Sort By
+                  {t('products.sortBy')}
                 </GSText>
                 {sortOptions.map((option) => (
                   <TouchableOpacity

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProducts } from '../../hooks/useProducts';
@@ -43,6 +44,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { theme } = useTheme();
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { t } = useTranslation('translation');
   const {
     trendingProducts,
     categories: allCategories,
@@ -88,7 +90,7 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <GSText variant="body" style={styles.loadingText}>Loading...</GSText>
+          <GSText variant="body" style={styles.loadingText}>{t('common.loading')}</GSText>
         </View>
       </SafeAreaView>
     );
@@ -107,10 +109,10 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <GSText variant="body" color="#6B7280">
-              Welcome back,
+              {t('home.welcomeBack')},
             </GSText>
             <GSText variant="h3" weight="bold">
-              {user?.firstName || 'User'}!
+              {user?.firstName || t('home.user')}!
             </GSText>
           </View>
 
@@ -126,13 +128,13 @@ export default function HomeScreen() {
         <View style={[styles.heroBanner, { backgroundColor: theme.colors.primary }]}>
           <View style={styles.heroContent}>
             <GSText variant="h2" color="white" weight="bold">
-              Summer Sale
+              {t('home.summerSale')}
             </GSText>
             <GSText variant="body" color="white" style={styles.heroSubtext}>
-              Up to 50% off on selected items
+              {t('home.saleDescription')}
             </GSText>
             <GSButton
-              title="Shop Now"
+              title={t('home.shopNow')}
               variant="secondary"
               size="medium"
               fullWidth={false}
@@ -149,11 +151,11 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <GSText variant="h4" weight="bold">
-              Categories
+              {t('home.categories')}
             </GSText>
             <TouchableOpacity onPress={() => navigation.navigate('Categories' as any)}>
               <GSText variant="body" style={{ color: theme.colors.primary }}>
-                View All
+                {t('common.viewAll')}
               </GSText>
             </TouchableOpacity>
           </View>
@@ -195,11 +197,11 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <GSText variant="h4" weight="bold">
-              Featured Products
+              {t('home.featuredProducts')}
             </GSText>
             <TouchableOpacity onPress={() => navigation.navigate('Trending')}>
               <GSText variant="body" style={{ color: theme.colors.primary }}>
-                View All
+                {t('common.viewAll')}
               </GSText>
             </TouchableOpacity>
           </View>
@@ -249,7 +251,7 @@ export default function HomeScreen() {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <GSText variant="body" color="textSecondary">
-                  No products available
+                  {t('home.noProducts')}
                 </GSText>
               </View>
             }
@@ -259,7 +261,7 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <View style={[styles.section, styles.lastSection]}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Quick Actions
+            {t('home.quickActions')}
           </GSText>
 
           <View style={styles.quickActions}>
@@ -269,7 +271,7 @@ export default function HomeScreen() {
             >
               <Ionicons name="bag-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
-                My Orders
+                {t('orders.myOrders')}
               </GSText>
             </TouchableOpacity>
 
@@ -279,7 +281,7 @@ export default function HomeScreen() {
             >
               <Ionicons name="heart-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
-                Wishlist
+                {t('wishlist.title')}
               </GSText>
             </TouchableOpacity>
 
@@ -289,7 +291,7 @@ export default function HomeScreen() {
             >
               <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
               <GSText variant="caption" style={styles.quickActionText}>
-                Payments
+                {t('home.payments')}
               </GSText>
             </TouchableOpacity>
           </View>

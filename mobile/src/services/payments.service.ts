@@ -30,11 +30,18 @@ export interface PaymentRequest {
 
 export interface PaymentResponse {
   success: boolean;
+  id?: string;
   paymentId: string;
   status: PaymentStatus;
   redirectUrl?: string;
+  paymentUrl?: string;
   transactionId?: string;
   receipt?: PaymentReceipt;
+  paymentMetadata?: {
+    mercadopago_init_point?: string;
+    mercadopago_preference_id?: string;
+    [key: string]: any;
+  };
 }
 
 export interface PaymentReceipt {

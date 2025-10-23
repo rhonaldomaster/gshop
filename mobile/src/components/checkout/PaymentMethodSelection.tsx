@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApi } from '../../hooks/useApi';
@@ -34,6 +35,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   onBack,
   isLoading,
 }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const { user } = useAuth();
 
@@ -108,7 +110,10 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
 
   const handleNext = () => {
     if (!selectedMethod) {
-      Alert.alert('Payment Method Required', 'Please select a payment method to continue');
+      Alert.alert(
+        t('checkout.paymentMethod'),
+        t('checkout.alerts.pleaseSelectPayment')
+      );
       return;
     }
     onNext();
@@ -119,7 +124,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <GSText variant="body" color="textSecondary" style={styles.loadingText}>
-          Loading payment options...
+          {t('common.loading')}
         </GSText>
       </View>
     );
@@ -128,7 +133,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   return (
     <View style={styles.container}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-        Select Payment Method
+        {t('checkout.payment.title')}
       </GSText>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -136,7 +141,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
         {paymentMethods.length > 0 && (
           <>
             <GSText variant="body" weight="semiBold" style={styles.subsectionTitle}>
-              Saved Payment Methods
+              {t('checkout.payment.savedMethods')}
             </GSText>
             {paymentMethods.map((method) => (
               <TouchableOpacity
@@ -264,7 +269,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
       <View style={styles.navigationButtons}>
         <View style={styles.buttonWrapper}>
           <GSButton
-            title="Back"
+            title={t('common.back')}
             onPress={onBack}
             variant="outline"
             style={styles.navButton}
@@ -272,7 +277,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
         </View>
         <View style={styles.buttonWrapper}>
           <GSButton
-            title="Continue to Review"
+            title={t('checkout.payment.continueToReview')}
             onPress={handleNext}
             style={styles.navButton}
             disabled={!selectedMethod}
