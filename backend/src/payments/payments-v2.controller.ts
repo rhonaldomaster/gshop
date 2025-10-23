@@ -9,14 +9,21 @@ import {
   Query,
   UseGuards,
   Request,
+  Headers,
 } from '@nestjs/common';
 import { PaymentsV2Service } from './payments-v2.service';
+import { MercadoPagoService } from './mercadopago.service';
 import { CreatePaymentV2Dto, ProcessCryptoPaymentDto, CreatePaymentMethodDto, CreateInvoiceDto, UpdateInvoiceStatusDto, PaymentStatsQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaymentStatus } from './payments-v2.entity';
+import { OrderStatus } from '../database/entities/order.entity';
 
 @Controller('payments-v2')
 export class PaymentsV2Controller {
-  constructor(private readonly paymentsV2Service: PaymentsV2Service) {}
+  constructor(
+    private readonly paymentsV2Service: PaymentsV2Service,
+    private readonly mercadopagoService: MercadoPagoService,
+  ) {}
 
   // Payment Processing
   @Post()
@@ -137,6 +144,84 @@ export class PaymentsV2Controller {
     // This could be used for real-time transaction confirmations
     console.log('Polygon webhook received:', body);
     return { received: true };
+  }
+
+  @Post('webhooks/mercadopago')
+  async handleMercadoPagoWebhook(@Body() body: any, @Headers() headers: any) {
+    console.log('MercadoPago Webhook received:', body);
+
+    try {
+      // MercadoPago sends different types of notifications
+      // We're interested in 'payment' type
+      if (body.type === 'payment' || body.topic === 'payment') {
+        const paymentId = body.data?.id || body.id;
+
+        if (!paymentId) {
+          console.warn('No payment ID in webhook body');
+          return { received: true, status: 'no_payment_id' };
+        }
+
+        // Get payment details from MercadoPago
+        const mpPayment = await this.mercadopagoService.getPayment(paymentId);
+
+        // Find our payment by external_reference
+        const payment = await this.paymentsV2Service.getPaymentByExternalRef(
+          mpPayment.external_reference
+        );
+
+        if (!payment) {
+          console.warn('Payment not found for external_reference:', mpPayment.external_reference);
+          return { received: true, status: 'payment_not_found' };
+        }
+
+        // Update payment status based on MercadoPago status
+        switch (mpPayment.status) {
+          case 'approved':
+            payment.status = PaymentStatus.COMPLETED;
+            payment.processedAt = new Date();
+            payment.mercadopagoPaymentId = String(paymentId);
+
+            // Update order to confirmed
+            const order = await this.paymentsV2Service['orderRepository'].findOne({
+              where: { id: payment.orderId },
+            });
+
+            if (order) {
+              order.status = OrderStatus.CONFIRMED;
+              await this.paymentsV2Service['orderRepository'].save(order);
+              console.log('Order status updated to CONFIRMED:', order.id);
+            }
+            break;
+
+          case 'rejected':
+          case 'cancelled':
+            payment.status = PaymentStatus.FAILED;
+            payment.failureReason = mpPayment.status_detail || mpPayment.status;
+            break;
+
+          case 'in_process':
+          case 'pending':
+            payment.status = PaymentStatus.PROCESSING;
+            break;
+
+          case 'refunded':
+          case 'charged_back':
+            payment.status = PaymentStatus.REFUNDED;
+            payment.refundedAt = new Date();
+            break;
+        }
+
+        await this.paymentsV2Service['paymentRepository'].save(payment);
+        console.log('Payment status updated:', payment.id, payment.status);
+
+        return { received: true, status: 'processed', paymentId: payment.id };
+      }
+
+      return { received: true, status: 'ignored_event_type' };
+    } catch (error) {
+      console.error('Error processing MercadoPago webhook:', error);
+      return { received: true, status: 'error', message: error.message };
+    }
   }
 
   // Utility endpoints

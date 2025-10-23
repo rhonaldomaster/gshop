@@ -71,6 +71,12 @@ export class PaymentV2 {
   @Column({ nullable: true })
   polygonToAddress: string;
 
+  @Column({ nullable: true })
+  mercadopagoPreferenceId: string;
+
+  @Column({ nullable: true })
+  mercadopagoPaymentId: string;
+
   @Column('json', { nullable: true })
   paymentMetadata: any;
 

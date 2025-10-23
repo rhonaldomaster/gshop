@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentsV2Controller } from './payments-v2.controller';
 import { PaymentsV2Service } from './payments-v2.service';
 import { PaymentSchedulerService } from './payment-scheduler.service';
+import { MercadoPagoService } from './mercadopago.service';
 import { PaymentV2, Invoice, PaymentMethodEntity, CryptoTransaction } from './payments-v2.entity';
 import { Order } from '../database/entities/order.entity';
 
@@ -17,7 +18,7 @@ import { Order } from '../database/entities/order.entity';
     ]),
   ],
   controllers: [PaymentsV2Controller],
-  providers: [PaymentsV2Service, PaymentSchedulerService],
+  providers: [PaymentsV2Service, PaymentSchedulerService, MercadoPagoService],
   exports: [PaymentsV2Service],
 })
 export class PaymentsV2Module {}

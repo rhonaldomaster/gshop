@@ -4,6 +4,7 @@ import { Repository, LessThan } from 'typeorm';
 import { PaymentV2, Invoice, PaymentMethodEntity, CryptoTransaction, PaymentMethod, PaymentStatus, InvoiceStatus } from './payments-v2.entity';
 import { CreatePaymentV2Dto, CreateInvoiceDto, CreatePaymentMethodDto, ProcessCryptoPaymentDto } from './dto';
 import { Order, OrderStatus } from '../database/entities/order.entity';
+import { MercadoPagoService } from './mercadopago.service';
 import Stripe from 'stripe';
 import { ethers } from 'ethers';
 
@@ -24,6 +25,7 @@ export class PaymentsV2Service {
     private cryptoTransactionRepository: Repository<CryptoTransaction>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    private mercadopagoService: MercadoPagoService,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
       apiVersion: '2025-08-27.basil',
@@ -36,6 +38,13 @@ export class PaymentsV2Service {
 
   // Payment Processing
   async createPayment(createPaymentDto: CreatePaymentV2Dto): Promise<PaymentV2> {
+    // Validar que solo se use MercadoPago (Colombia)
+    if (createPaymentDto.paymentMethod !== PaymentMethod.MERCADOPAGO) {
+      throw new BadRequestException(
+        'Solo MercadoPago está disponible en este momento. Otros métodos de pago estarán disponibles próximamente.'
+      );
+    }
+
     const payment = this.paymentRepository.create(createPaymentDto);
 
     // Set expiration time: 30 minutes from now for pending payments
@@ -43,7 +52,14 @@ export class PaymentsV2Service {
     expirationTime.setMinutes(expirationTime.getMinutes() + 30);
     payment.expiresAt = expirationTime;
 
-    return this.paymentRepository.save(payment);
+    const savedPayment = await this.paymentRepository.save(payment);
+
+    // Initiate payment flow based on method
+    if (createPaymentDto.paymentMethod === PaymentMethod.MERCADOPAGO) {
+      await this.initiateMercadoPagoPayment(savedPayment);
+    }
+
+    return this.paymentRepository.findOne({ where: { id: savedPayment.id } });
   }
 
   async processStripePayment(paymentId: string, paymentMethodId: string): Promise<PaymentV2> {
@@ -179,6 +195,47 @@ export class PaymentsV2Service {
     }
   }
 
+  async initiateMercadoPagoPayment(payment: PaymentV2): Promise<string> {
+    try {
+      // Create MercadoPago preference
+      const preference = await this.mercadopagoService.createPreference({
+        items: [{
+          title: `Order ${payment.orderId}`,
+          quantity: 1,
+          currency_id: 'COP',
+          unit_price: Number(payment.amount),
+        }],
+        back_urls: {
+          success: `${process.env.APP_URL}/payment/success?paymentId=${payment.id}`,
+          failure: `${process.env.APP_URL}/payment/failure?paymentId=${payment.id}`,
+          pending: `${process.env.APP_URL}/payment/pending?paymentId=${payment.id}`,
+        },
+        auto_return: 'approved',
+        external_reference: payment.id,
+        notification_url: `${process.env.API_URL}/api/v1/payments-v2/webhooks/mercadopago`,
+      });
+
+      // Save MercadoPago preference data
+      payment.mercadopagoPreferenceId = preference.id;
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        mercadopago_preference_id: preference.id,
+        mercadopago_init_point: preference.init_point,
+        mercadopago_sandbox_init_point: preference.sandbox_init_point,
+      };
+
+      await this.paymentRepository.save(payment);
+
+      return preference.init_point;
+    } catch (error) {
+      console.error('Failed to initiate MercadoPago payment:', error);
+      payment.status = PaymentStatus.FAILED;
+      payment.failureReason = `MercadoPago initialization failed: ${error.message}`;
+      await this.paymentRepository.save(payment);
+      throw error;
+    }
+  }
+
   async getPayment(paymentId: string): Promise<PaymentV2> {
     const payment = await this.paymentRepository.findOne({
       where: { id: paymentId },
@@ -188,6 +245,15 @@ export class PaymentsV2Service {
     if (!payment) {
       throw new NotFoundException('Payment not found');
     }
+
+    return payment;
+  }
+
+  async getPaymentByExternalRef(externalRef: string): Promise<PaymentV2 | null> {
+    const payment = await this.paymentRepository.findOne({
+      where: { id: externalRef },
+      relations: ['user'],
+    });
 
     return payment;
   }

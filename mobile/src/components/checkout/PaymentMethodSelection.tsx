@@ -71,30 +71,14 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     loadPaymentOptions();
   }, [user]);
 
-  // Payment method options (always available for new cards)
+  // Payment method options (Solo MercadoPago para Colombia)
   const availablePaymentOptions = [
     {
       id: 'mercadopago_new',
       type: 'mercadopago' as const,
       label: 'MercadoPago',
-      description: 'Pay securely with MercadoPago',
-      icon: '💳',
-      isNew: true,
-    },
-    {
-      id: 'stripe_new',
-      type: 'card' as const,
-      label: 'Credit/Debit Card',
-      description: 'Visa, Mastercard, Amex',
-      icon: '💎',
-      isNew: true,
-    },
-    {
-      id: 'crypto_new',
-      type: 'crypto' as const,
-      label: 'USDC (Polygon)',
-      description: 'Pay with cryptocurrency',
-      icon: '₿',
+      description: 'Paga con tarjeta de crédito/débito, PSE o efectivo',
+      icon: '💵',
       isNew: true,
     },
   ];

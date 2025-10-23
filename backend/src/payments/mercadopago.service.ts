@@ -152,12 +152,61 @@ export class MercadoPagoService {
     return mockPaymentResponse;
   }
 
+  async createPreference(preferenceData: {
+    items: Array<{
+      title: string;
+      quantity: number;
+      currency_id: string;
+      unit_price: number;
+    }>;
+    back_urls: {
+      success: string;
+      failure: string;
+      pending: string;
+    };
+    auto_return?: string;
+    external_reference?: string;
+    notification_url?: string;
+  }): Promise<any> {
+    console.log('Creating MercadoPago preference:', preferenceData);
+
+    if (!this.accessToken) {
+      throw new BadRequestException('MercadoPago access token is missing');
+    }
+
+    try {
+      const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`,
+        },
+        body: JSON.stringify(preferenceData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('MercadoPago API error:', errorData);
+        throw new Error(`MercadoPago API error: ${response.statusText}`);
+      }
+
+      const preference = await response.json();
+      console.log('MercadoPago preference created:', preference.id);
+
+      return preference;
+    } catch (error) {
+      console.error('MercadoPago preference creation error:', error);
+      throw new BadRequestException('Failed to create MercadoPago preference');
+    }
+  }
+
   async getPayment(paymentId: string): Promise<any> {
-    // PLACEHOLDER IMPLEMENTATION
     console.log('Getting MercadoPago payment:', paymentId);
 
-    // In a real implementation:
-    /*
+    if (!this.accessToken) {
+      throw new BadRequestException('MercadoPago access token is missing');
+    }
+
     try {
       const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: {
@@ -166,6 +215,8 @@ export class MercadoPagoService {
       });
 
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error('MercadoPago API error:', errorData);
         throw new Error(`MercadoPago API error: ${response.statusText}`);
       }
 
@@ -174,17 +225,6 @@ export class MercadoPagoService {
       console.error('MercadoPago get payment error:', error);
       throw new BadRequestException('Failed to get payment');
     }
-    */
-
-    // Mock response
-    return {
-      id: paymentId,
-      status: 'approved',
-      status_detail: 'accredited',
-      transaction_amount: 999.99,
-      currency_id: 'ARS',
-      date_approved: new Date().toISOString(),
-    };
   }
 
   async refundPayment(paymentId: string, amount: number): Promise<any> {

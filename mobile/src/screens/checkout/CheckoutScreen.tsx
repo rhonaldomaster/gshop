@@ -661,23 +661,36 @@ export default function CheckoutScreen() {
         throw new Error('Failed to create payment');
       }
 
-      // Step 5: Clear cart and navigate to order detail
+      // Step 5: Clear cart and navigate to payment or order detail
       // Payment expires in 30 minutes (set by backend)
       await clearCart(false);
 
-      Alert.alert(
-        'Order Placed!',
-        `Your order has been placed successfully! Please complete your payment within 30 minutes.\n\nOrder #${order.orderNumber}`,
-        [
-          {
-            text: 'View Order',
-            onPress: () => {
-              (navigation as any).navigate('OrderDetail', { orderId: order.id });
+      // Check if payment has a URL (MercadoPago preference)
+      const paymentUrl = payment.paymentMetadata?.mercadopago_init_point || payment.paymentUrl;
+
+      if (paymentUrl) {
+        // Navigate to WebView for payment
+        (navigation as any).navigate('PaymentWebView', {
+          paymentUrl,
+          orderId: order.id,
+          paymentId: payment.id,
+        });
+      } else {
+        // Fallback: show alert and navigate to order detail
+        Alert.alert(
+          'Order Placed!',
+          `Your order has been placed successfully! Please complete your payment within 30 minutes.\n\nOrder #${order.orderNumber}`,
+          [
+            {
+              text: 'View Order',
+              onPress: () => {
+                (navigation as any).navigate('OrderDetail', { orderId: order.id });
+              },
             },
-          },
-        ],
-        { cancelable: false }
-      );
+          ],
+          { cancelable: false }
+        );
+      }
     } catch (error: any) {
       console.error('Order placement error:', error);
       Alert.alert('Order Failed', error.message || 'Failed to place order. Please try again.');
