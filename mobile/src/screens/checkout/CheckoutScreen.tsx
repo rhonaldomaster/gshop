@@ -122,13 +122,13 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
   return (
     <View style={styles.formSection}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-        Shipping Address
+        {t('checkout.shippingAddress')}
       </GSText>
 
       {hasDefaultAddress && (
         <View style={[styles.defaultAddressBadge, { backgroundColor: theme.colors.success + '20' }]}>
           <GSText variant="caption" color="success" weight="semiBold">
-            ✓ Using your default address
+            ✓ {t('checkout.usingDefaultAddress')}
           </GSText>
         </View>
       )}
@@ -192,7 +192,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
           onPress={() => setShowDocTypeModal(true)}
         >
           <GSText variant="body" color={address.documentType ? 'text' : 'textSecondary'}>
-            {address.documentType || 'Type'}
+            {address.documentType || t('checkout.documentType')}
           </GSText>
         </TouchableOpacity>
         <GSInput
@@ -220,7 +220,7 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
             <View style={[styles.modalHeader, { borderBottomColor: theme.colors.gray300 }]}>
-              <GSText variant="h4" weight="bold">Select Document Type</GSText>
+              <GSText variant="h4" weight="bold">{t('checkout.selectDocumentType')}</GSText>
               <TouchableOpacity onPress={() => setShowDocTypeModal(false)}>
                 <GSText variant="body" color="primary">✕</GSText>
               </TouchableOpacity>
@@ -299,12 +299,12 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
                 {option.carrier} - {option.serviceName}
               </GSText>
               <GSText variant="body" weight="bold" color="primary">
-                {option.price === 0 ? 'Free' : formatPrice(option.price)}
+                {option.price === 0 ? t('checkout.free') : formatPrice(option.price)}
               </GSText>
             </View>
 
             <GSText variant="caption" color="textSecondary">
-              Delivery in {option.estimatedDays} business day{option.estimatedDays !== 1 ? 's' : ''}
+              {t('checkout.deliveryIn', { days: option.estimatedDays })}
             </GSText>
 
             {option.description && (
@@ -339,7 +339,7 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
       <View style={styles.navigationButtons}>
         <View style={styles.buttonWrapper}>
           <GSButton
-            title="Back"
+            title={t('common.back')}
             onPress={onBack}
             variant="outline"
             style={styles.navBackButton}
@@ -394,7 +394,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
   return (
     <View style={styles.formSection}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-        Order Summary
+        {t('checkout.orderSummary')}
       </GSText>
 
       {/* Cart Items */}
@@ -406,7 +406,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
                 {item.product.name}
               </GSText>
               <GSText variant="caption" color="textSecondary">
-                Qty: {item.quantity} × {formatPrice(item.price)}
+                {t('checkout.quantity')}: {item.quantity} × {formatPrice(item.price)}
               </GSText>
             </View>
             <GSText variant="body" weight="semiBold">
@@ -420,7 +420,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
       {selectedPaymentMethod && (
         <View style={[styles.paymentSummary, { backgroundColor: theme.colors.surface, borderColor: theme.colors.gray300 }]}>
           <GSText variant="body" weight="semiBold" style={styles.paymentSummaryTitle}>
-            Payment Method
+            {t('checkout.paymentMethod')}
           </GSText>
           <View style={styles.paymentSummaryContent}>
             <GSText variant="body">
@@ -441,24 +441,24 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
       {/* Order Totals */}
       <View style={styles.orderTotals}>
         <View style={styles.totalRow}>
-          <GSText variant="body">Subtotal ({summary.totalItems} items)</GSText>
+          <GSText variant="body">{t('checkout.subtotal', { count: summary.totalItems })}</GSText>
           <GSText variant="body">{formatPrice(summary.subtotal)}</GSText>
         </View>
 
         <View style={styles.totalRow}>
-          <GSText variant="body" color="textSecondary">Shipping</GSText>
+          <GSText variant="body" color="textSecondary">{t('checkout.shipping')}</GSText>
           <GSText variant="body" color="textSecondary">
-            {shipping === 0 ? 'Free' : formatPrice(shipping)}
+            {shipping === 0 ? t('checkout.free') : formatPrice(shipping)}
           </GSText>
         </View>
 
         <View style={styles.totalRow}>
-          <GSText variant="body" color="textSecondary">Tax (estimated)</GSText>
+          <GSText variant="body" color="textSecondary">{t('checkout.taxEstimated')}</GSText>
           <GSText variant="body" color="textSecondary">{formatPrice(tax)}</GSText>
         </View>
 
         <View style={[styles.totalRow, styles.finalTotal]}>
-          <GSText variant="h4" weight="bold">Total</GSText>
+          <GSText variant="h4" weight="bold">{t('checkout.total')}</GSText>
           <GSText variant="h4" weight="bold" color="primary">
             {formatPrice(total)}
           </GSText>
@@ -468,7 +468,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
       <View style={styles.navigationButtons}>
         <View style={styles.buttonWrapper}>
           <GSButton
-            title="Back"
+            title={t('common.back')}
             onPress={onBack}
             variant="outline"
             style={styles.navBackButton}
@@ -714,16 +714,21 @@ export default function CheckoutScreen() {
     }
   };
 
-  const steps = ['Shipping', 'Delivery', 'Payment', 'Review'];
+  const steps = [
+    t('checkout.steps.shipping'),
+    t('checkout.steps.delivery'),
+    t('checkout.steps.payment'),
+    t('checkout.steps.review')
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <GSText variant="body" color="primary">← Back</GSText>
+          <GSText variant="body" color="primary">← {t('common.back')}</GSText>
         </TouchableOpacity>
-        <GSText variant="h4" weight="bold">Checkout</GSText>
+        <GSText variant="h4" weight="bold">{t('checkout.title')}</GSText>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -752,7 +757,7 @@ export default function CheckoutScreen() {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <GSText variant="body" color="textSecondary" style={styles.loadingText}>
-                Loading your address...
+                {t('checkout.loadingAddress')}
               </GSText>
             </View>
           ) : (

@@ -203,7 +203,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     variant="body"
                     color={localFilters.inStock ? 'primary' : 'text'}
                   >
-                    In Stock Only
+                    {t('search.inStockOnly')}
                   </GSText>
                 </TouchableOpacity>
               </View>
@@ -213,13 +213,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
         <View style={styles.filterActions}>
           <GSButton
-            title="Clear All"
+            title={t('search.clearAll')}
             onPress={handleClear}
-            variant="outlined"
+            variant="outline"
             style={styles.filterActionButton}
           />
           <GSButton
-            title="Apply Filters"
+            title={t('search.applyFilters')}
             onPress={handleApply}
             style={styles.filterActionButton}
           />
@@ -238,6 +238,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
   const { formatPrice, getDiscountPercentage, isInStock } = useProducts();
 
   const discountPercentage = getDiscountPercentage(product);
@@ -260,7 +261,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           />
         ) : (
           <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">No Image</GSText>
+            <GSText variant="caption" color="textSecondary">{t('search.noImage')}</GSText>
           </View>
         )}
 
@@ -306,7 +307,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           color={inStock ? 'success' : 'error'}
           style={styles.stockStatus}
         >
-          {inStock ? 'In Stock' : 'Out of Stock'}
+          {inStock ? t('products.inStock') : t('products.outOfStock')}
         </GSText>
 
         {/* Add to Cart Button */}
@@ -325,7 +326,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
             color={inStock ? 'white' : 'textSecondary'}
             weight="medium"
           >
-            Add to Cart
+            {t('products.addToCart')}
           </GSText>
         </TouchableOpacity>
       </View>
@@ -337,6 +338,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
 export default function SearchScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const { t } = useTranslation('translation');
   const {
     searchResults,
     searchQuery,
@@ -401,7 +403,7 @@ export default function SearchScreen() {
       {/* Search Header */}
       <View style={styles.searchHeader}>
         <GSInput
-          placeholder="Search products..."
+          placeholder={t('home.searchProducts')}
           value={searchText}
           onChangeText={handleSearchTextChange}
           containerStyle={styles.searchInput}
@@ -412,7 +414,7 @@ export default function SearchScreen() {
           style={[styles.filterButton, { borderColor: theme.colors.border }]}
           onPress={() => setIsFilterModalVisible(true)}
         >
-          <GSText variant="body">Filters</GSText>
+          <GSText variant="body">{t('search.filters')}</GSText>
           {activeFilterCount > 0 && (
             <View style={[styles.filterBadge, { backgroundColor: theme.colors.primary }]}>
               <GSText variant="caption" color="white" weight="bold">
@@ -430,7 +432,7 @@ export default function SearchScreen() {
             style={styles.clearFiltersButton}
             onPress={clearFilters}
           >
-            <GSText variant="caption" color="primary">Clear All</GSText>
+            <GSText variant="caption" color="primary">{t('search.clearAll')}</GSText>
           </TouchableOpacity>
         </View>
       )}
@@ -440,12 +442,12 @@ export default function SearchScreen() {
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <GSText variant="body" style={styles.loadingText}>Searching...</GSText>
+            <GSText variant="body" style={styles.loadingText}>{t('search.searching')}</GSText>
           </View>
         ) : searchResults.length > 0 ? (
           <>
             <GSText variant="body" color="textSecondary" style={styles.resultsCount}>
-              {searchResults.length} results found
+              {t('search.resultsFound', { count: searchResults.length })}
             </GSText>
             <FlatList
               data={searchResults}
@@ -466,19 +468,19 @@ export default function SearchScreen() {
         ) : searchText.trim() ? (
           <View style={styles.noResultsContainer}>
             <GSText variant="h3" weight="bold" color="textSecondary">
-              No products found
+              {t('search.noProductsFound')}
             </GSText>
             <GSText variant="body" color="textSecondary" style={styles.noResultsText}>
-              Try adjusting your search terms or filters
+              {t('search.tryAdjusting')}
             </GSText>
           </View>
         ) : (
           <View style={styles.emptyStateContainer}>
             <GSText variant="h3" weight="bold" color="textSecondary">
-              Search for products
+              {t('search.searchForProducts')}
             </GSText>
             <GSText variant="body" color="textSecondary" style={styles.emptyStateText}>
-              Enter a product name, brand, or category
+              {t('search.enterProductName')}
             </GSText>
           </View>
         )}

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 interface Review {
   id: string;
@@ -35,6 +36,7 @@ interface Review {
 }
 
 export default function ReviewsScreen({ navigation, route }: any) {
+  const { t } = useTranslation('translation');
   const { productId, mode = 'view' } = route.params || {};
 
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -76,7 +78,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
 
   const submitReview = async () => {
     if (!newReview.comment.trim()) {
-      Alert.alert('Error', 'Please write a review comment');
+      Alert.alert(t('common.error'), t('reviews.pleaseWriteComment'));
       return;
     }
 
@@ -97,13 +99,13 @@ export default function ReviewsScreen({ navigation, route }: any) {
         setShowWriteReview(false);
         setNewReview({ rating: 5, comment: '' });
         fetchReviews();
-        Alert.alert('Success', 'Your review has been submitted!');
+        Alert.alert(t('common.success'), t('reviews.reviewSubmitted'));
       } else {
-        Alert.alert('Error', 'Failed to submit review');
+        Alert.alert(t('common.error'), t('reviews.failedToSubmit'));
       }
     } catch (error) {
       console.error('Failed to submit review:', error);
-      Alert.alert('Error', 'Failed to submit review');
+      Alert.alert(t('common.error'), t('reviews.failedToSubmit'));
     }
   };
 
@@ -211,7 +213,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
             color={item.isHelpful ? "#8b5cf6" : "#6b7280"}
           />
           <Text style={[styles.helpfulText, item.isHelpful && styles.helpfulActiveText]}>
-            Helpful ({item.helpful})
+            {t('reviews.helpful')} ({item.helpful})
           </Text>
         </TouchableOpacity>
       </View>
@@ -221,16 +223,16 @@ export default function ReviewsScreen({ navigation, route }: any) {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <MaterialIcons name="rate-review" size={80} color="#d1d5db" />
-      <Text style={styles.emptyTitle}>No Reviews Yet</Text>
+      <Text style={styles.emptyTitle}>{t('reviews.noReviewsYet')}</Text>
       <Text style={styles.emptySubtitle}>
-        {productId ? 'Be the first to review this product!' : 'No reviews to display'}
+        {productId ? t('reviews.beTheFirst') : t('reviews.noReviewsToDisplay')}
       </Text>
       {productId && (
         <TouchableOpacity
           style={styles.writeReviewButton}
           onPress={() => setShowWriteReview(true)}
         >
-          <Text style={styles.writeReviewButtonText}>Write a Review</Text>
+          <Text style={styles.writeReviewButtonText}>{t('reviews.writeReview')}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -247,30 +249,30 @@ export default function ReviewsScreen({ navigation, route }: any) {
           <TouchableOpacity onPress={() => setShowWriteReview(false)}>
             <MaterialIcons name="close" size={24} color="#374151" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Write Review</Text>
+          <Text style={styles.modalTitle}>{t('reviews.writeReview')}</Text>
           <TouchableOpacity onPress={submitReview}>
-            <Text style={styles.submitButton}>Submit</Text>
+            <Text style={styles.submitButton}>{t('reviews.submit')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.modalContent}>
-          <Text style={styles.ratingLabel}>Your Rating</Text>
+          <Text style={styles.ratingLabel}>{t('reviews.yourRating')}</Text>
           {renderStars(newReview.rating, 32, true, (rating) =>
             setNewReview(prev => ({ ...prev, rating }))
           )}
 
-          <Text style={styles.commentLabel}>Your Review</Text>
+          <Text style={styles.commentLabel}>{t('reviews.yourReview')}</Text>
           <TextInput
             style={styles.commentInput}
             value={newReview.comment}
             onChangeText={(text) => setNewReview(prev => ({ ...prev, comment: text }))}
-            placeholder="Share your thoughts about this product..."
+            placeholder={t('reviews.sharePlaceholder')}
             multiline
             maxLength={500}
             textAlignVertical="top"
           />
           <Text style={styles.characterCount}>
-            {newReview.comment.length}/500 characters
+            {newReview.comment.length}/500 {t('reviews.characters')}
           </Text>
         </View>
       </SafeAreaView>
@@ -281,7 +283,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={styles.loadingText}>Loading reviews...</Text>
+        <Text style={styles.loadingText}>{t('reviews.loadingReviews')}</Text>
       </View>
     );
   }
@@ -290,10 +292,10 @@ export default function ReviewsScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {productId ? 'Product Reviews' : 'All Reviews'}
+          {productId ? t('reviews.productReviews') : t('reviews.allReviews')}
         </Text>
         <View style={styles.headerRight}>
-          <Text style={styles.reviewCount}>{reviews.length} reviews</Text>
+          <Text style={styles.reviewCount}>{reviews.length} {t('reviews.reviewsCount')}</Text>
           {productId && (
             <TouchableOpacity
               style={styles.writeButton}

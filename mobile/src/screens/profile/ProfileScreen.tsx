@@ -4,6 +4,7 @@ import { View, StyleSheet, TouchableOpacity, Alert, Image, ScrollView } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../hooks/useCart';
@@ -13,6 +14,7 @@ import GSButton from '../../components/ui/GSButton';
 export default function ProfileScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
+  const { t } = useTranslation('translation');
   const { user, logout, isAuthenticated } = useAuth();
   const { totalItems, getCartSummary } = useCart();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -22,12 +24,12 @@ export default function ProfileScreen() {
   // Handle logout with confirmation
   const handleLogout = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      t('auth.signOut'),
+      t('profile.confirmSignOut'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Sign Out',
+          text: t('auth.signOut'),
           style: 'destructive',
           onPress: async () => {
             setIsLoggingOut(true);
@@ -53,50 +55,50 @@ export default function ProfileScreen() {
   const menuItems = [
     {
       icon: 'bag-outline',
-      title: 'My Orders',
-      subtitle: 'View your order history',
+      title: t('orders.myOrders'),
+      subtitle: t('profile.viewOrderHistory'),
       onPress: () => handleNavigation('Orders'),
       showChevron: true,
     },
     {
       icon: 'heart-outline',
-      title: 'Wishlist',
-      subtitle: 'Your saved items',
+      title: t('wishlist.title'),
+      subtitle: t('profile.savedItems'),
       onPress: () => handleNavigation('Wishlist'),
       showChevron: true,
     },
     {
       icon: 'card-outline',
-      title: 'Payment Methods',
-      subtitle: 'Manage payment options',
+      title: t('profile.paymentMethods'),
+      subtitle: t('profile.managePaymentOptions'),
       onPress: () => handleNavigation('PaymentMethods'),
       showChevron: true,
     },
     {
       icon: 'location-outline',
-      title: 'Addresses',
-      subtitle: 'Manage shipping addresses',
+      title: t('profile.addresses'),
+      subtitle: t('profile.manageShippingAddresses'),
       onPress: () => handleNavigation('Addresses'),
       showChevron: true,
     },
     {
       icon: 'notifications-outline',
-      title: 'Notifications',
-      subtitle: 'Manage your preferences',
+      title: t('profile.notifications'),
+      subtitle: t('profile.managePreferences'),
       onPress: () => handleNavigation('Notifications'),
       showChevron: true,
     },
     {
       icon: 'help-circle-outline',
-      title: 'Help & Support',
-      subtitle: 'Get help with your orders',
+      title: t('profile.helpSupport'),
+      subtitle: t('profile.getHelp'),
       onPress: () => handleNavigation('Support'),
       showChevron: true,
     },
     {
       icon: 'settings-outline',
-      title: 'Settings',
-      subtitle: 'App preferences',
+      title: t('profile.settings'),
+      subtitle: t('profile.appPreferences'),
       onPress: () => handleNavigation('Settings'),
       showChevron: true,
     },
@@ -110,13 +112,13 @@ export default function ProfileScreen() {
             <Ionicons name="person-outline" size={60} color={theme.colors.textSecondary} />
           </View>
           <GSText variant="h3" weight="bold" style={styles.guestTitle}>
-            Welcome to GSHOP
+            {t('welcome.title')}
           </GSText>
           <GSText variant="body" color={theme.colors.textSecondary} style={styles.guestSubtitle}>
-            Sign in to access your profile, orders, and more
+            {t('profile.signInToAccess')}
           </GSText>
           <GSButton
-            title="Sign In"
+            title={t('auth.signIn')}
             onPress={() => navigation.navigate('Auth' as any)}
             style={styles.signInButton}
           />
@@ -135,7 +137,7 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <GSText variant="h2" weight="bold">
-            Profile
+            {t('profile.title')}
           </GSText>
           <TouchableOpacity
             style={styles.editButton}
@@ -181,7 +183,7 @@ export default function ProfileScreen() {
                 {cartSummary.itemCount}
               </GSText>
               <GSText variant="caption" color={theme.colors.textSecondary}>
-                Cart Items
+                {t('profile.cartItems')}
               </GSText>
             </View>
             <View style={styles.statItem}>
@@ -189,7 +191,7 @@ export default function ProfileScreen() {
                 0
               </GSText>
               <GSText variant="caption" color={theme.colors.textSecondary}>
-                Orders
+                {t('orders.title')}
               </GSText>
             </View>
             <View style={styles.statItem}>
@@ -197,7 +199,7 @@ export default function ProfileScreen() {
                 0
               </GSText>
               <GSText variant="caption" color={theme.colors.textSecondary}>
-                Wishlist
+                {t('wishlist.title')}
               </GSText>
             </View>
           </View>
@@ -232,7 +234,7 @@ export default function ProfileScreen() {
         {/* Logout Button */}
         <View style={styles.footer}>
           <GSButton
-            title="Sign Out"
+            title={t('auth.signOut')}
             variant="outline"
             onPress={handleLogout}
             loading={isLoggingOut}

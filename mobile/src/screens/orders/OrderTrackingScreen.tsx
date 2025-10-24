@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -59,23 +60,24 @@ interface Props {
   route: OrderTrackingScreenRouteProp;
 }
 
-const statusMap: Record<string, { label: string; color: string; icon: string }> = {
-  pending: { label: 'Pendiente', color: '#F59E0B', icon: 'time-outline' },
-  confirmed: { label: 'Confirmado', color: '#3B82F6', icon: 'checkmark-circle-outline' },
-  processing: { label: 'Procesando', color: '#8B5CF6', icon: 'cog-outline' },
-  in_transit: { label: 'En Tránsito', color: '#F97316', icon: 'car-outline' },
-  shipped: { label: 'Enviado', color: '#10B981', icon: 'airplane-outline' },
-  delivered: { label: 'Entregado', color: '#059669', icon: 'checkmark-circle' },
-  cancelled: { label: 'Cancelado', color: '#EF4444', icon: 'close-circle-outline' },
-  return_requested: { label: 'Devolución Solicitada', color: '#F59E0B', icon: 'return-up-back-outline' },
-  refunded: { label: 'Reembolsado', color: '#6B7280', icon: 'card-outline' },
-};
-
 export default function OrderTrackingScreen({ route }: Props) {
+  const { t } = useTranslation('translation');
   const navigation = useNavigation();
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
   const { orderId } = route.params;
+
+  const statusMap: Record<string, { label: string; color: string; icon: string }> = {
+    pending: { label: t('orders.pending'), color: '#F59E0B', icon: 'time-outline' },
+    confirmed: { label: t('orders.confirmed'), color: '#3B82F6', icon: 'checkmark-circle-outline' },
+    processing: { label: t('orders.processing'), color: '#8B5CF6', icon: 'cog-outline' },
+    in_transit: { label: t('orders.inTransit'), color: '#F97316', icon: 'car-outline' },
+    shipped: { label: t('orders.shipped'), color: '#10B981', icon: 'airplane-outline' },
+    delivered: { label: t('orders.delivered'), color: '#059669', icon: 'checkmark-circle' },
+    cancelled: { label: t('orders.cancelled'), color: '#EF4444', icon: 'close-circle-outline' },
+    return_requested: { label: t('orders.returnRequested'), color: '#F59E0B', icon: 'return-up-back-outline' },
+    refunded: { label: t('orders.refunded'), color: '#6B7280', icon: 'card-outline' },
+  };
 
   const [trackingInfo, setTrackingInfo] = useState<TrackingInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,7 +160,7 @@ export default function OrderTrackingScreen({ route }: Props) {
 
       // Only show error if it's not a background refresh
       if (!isRefresh) {
-        Alert.alert('Error', error.message || 'No se pudo cargar la información de seguimiento');
+        Alert.alert(t('common.error'), error.message || t('orders.errorLoadingTracking'));
       }
 
       // Mock data for development when API fails
@@ -240,12 +242,12 @@ export default function OrderTrackingScreen({ route }: Props) {
         trackingUrl = `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
         break;
       default:
-        Alert.alert('Información', 'No hay enlace de seguimiento disponible para esta transportadora');
+        Alert.alert(t('common.info'), t('orders.noTrackingAvailable'));
         return;
     }
 
     Linking.openURL(trackingUrl).catch(() => {
-      Alert.alert('Error', 'No se pudo abrir el enlace de seguimiento');
+      Alert.alert(t('common.error'), t('orders.errorOpeningTracking'));
     });
   };
 
@@ -258,12 +260,12 @@ export default function OrderTrackingScreen({ route }: Props) {
     if (!trackingInfo) return;
 
     Alert.alert(
-      'Solicitar Devolución',
-      '¿Estás seguro de que quieres solicitar una devolución para este pedido? Una vez solicitada, recibirás instrucciones por email.',
+      t('orders.requestReturn'),
+      t('orders.requestReturnConfirm'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Solicitar Devolución',
+          text: t('orders.requestReturn'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -272,12 +274,12 @@ export default function OrderTrackingScreen({ route }: Props) {
               });
 
               Alert.alert(
-                'Devolución Solicitada',
-                'Tu solicitud de devolución ha sido enviada. Te contactaremos pronto.',
+                t('orders.returnRequested'),
+                t('orders.returnRequestedMessage'),
                 [{ text: 'OK', onPress: () => fetchTrackingInfo() }]
               );
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'No se pudo procesar la solicitud de devolución');
+              Alert.alert(t('common.error'), error.message || t('orders.errorProcessingReturn'));
             }
           }
         }
@@ -296,7 +298,7 @@ export default function OrderTrackingScreen({ route }: Props) {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Seguimiento de Pedido
+            {t('orders.orderTracking')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -304,7 +306,7 @@ export default function OrderTrackingScreen({ route }: Props) {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Cargando información de seguimiento...
+            {t('orders.loadingTracking')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -322,7 +324,7 @@ export default function OrderTrackingScreen({ route }: Props) {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Seguimiento de Pedido
+            {t('orders.orderTracking')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -330,13 +332,13 @@ export default function OrderTrackingScreen({ route }: Props) {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color={theme.colors.textSecondary} />
           <GSText variant="h3" weight="bold" style={{ marginTop: 16, textAlign: 'center' }}>
-            Error de Conexión
+            {t('orders.connectionError')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
-            No se pudo cargar la información del pedido
+            {t('orders.errorLoadingOrder')}
           </GSText>
           <GSButton
-            title="Reintentar"
+            title={t('orders.retry')}
             onPress={() => fetchTrackingInfo()}
             style={{ marginTop: 24 }}
           />
@@ -359,11 +361,11 @@ export default function OrderTrackingScreen({ route }: Props) {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <GSText variant="h3" weight="bold">
-            Seguimiento de Pedido
+            {t('orders.orderTracking')}
           </GSText>
           {lastUpdate && (
             <GSText variant="caption" color="textSecondary">
-              Actualizado: {lastUpdate}
+              {t('orders.updated')}: {lastUpdate}
             </GSText>
           )}
         </View>
@@ -415,7 +417,7 @@ export default function OrderTrackingScreen({ route }: Props) {
                 <View style={styles.liveIndicator}>
                   <View style={[styles.liveDot, { backgroundColor: theme.colors.success }]} />
                   <GSText variant="caption" color="success" weight="medium">
-                    Actualizaciones en tiempo real
+                    {t('orders.realTimeUpdates')}
                   </GSText>
                 </View>
               )}
@@ -425,7 +427,7 @@ export default function OrderTrackingScreen({ route }: Props) {
           {trackingInfo.trackingNumber && (
             <View style={styles.trackingContainer}>
               <View style={styles.trackingInfo}>
-                <Text style={styles.trackingLabel}>Número de Seguimiento:</Text>
+                <Text style={styles.trackingLabel}>{t('orders.trackingNumber')}:</Text>
                 <Text style={styles.trackingNumber}>{trackingInfo.trackingNumber}</Text>
                 <Text style={styles.carrier}>{trackingInfo.carrier} - {trackingInfo.service}</Text>
               </View>
@@ -434,14 +436,14 @@ export default function OrderTrackingScreen({ route }: Props) {
                 onPress={openCarrierTracking}
               >
                 <Ionicons name="open-outline" size={16} color="#007AFF" />
-                <Text style={styles.trackButtonText}>Rastrear</Text>
+                <Text style={styles.trackButtonText}>{t('orders.track')}</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {trackingInfo.estimatedDelivery && (
             <View style={styles.deliveryInfo}>
-              <Text style={styles.deliveryLabel}>Entrega Estimada:</Text>
+              <Text style={styles.deliveryLabel}>{t('orders.estimatedDelivery')}:</Text>
               <Text style={styles.deliveryDate}>
                 {new Date(trackingInfo.estimatedDelivery).toLocaleDateString('es-CO', {
                   weekday: 'long',
@@ -457,7 +459,7 @@ export default function OrderTrackingScreen({ route }: Props) {
         {/* Tracking Events */}
         {trackingInfo.trackingInfo?.events && (
           <View style={styles.eventsCard}>
-            <Text style={styles.sectionTitle}>Historial de Envío</Text>
+            <Text style={styles.sectionTitle}>{t('orders.shippingHistory')}</Text>
             {trackingInfo.trackingInfo.events.map((event, index) => (
               <View key={index} style={styles.eventItem}>
                 <View style={styles.eventIcon}>
@@ -482,13 +484,13 @@ export default function OrderTrackingScreen({ route }: Props) {
 
         {/* Order Items */}
         <View style={styles.itemsCard}>
-          <Text style={styles.sectionTitle}>Productos del Pedido</Text>
+          <Text style={styles.sectionTitle}>{t('orders.orderProducts')}</Text>
           {trackingInfo.items.map((item, index) => (
             <View key={index} style={styles.itemRow}>
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.product.name}</Text>
                 <Text style={styles.itemDetails}>
-                  Cantidad: {item.quantity} • ${item.price.toLocaleString('es-CO')} c/u
+                  {t('orders.quantity')}: {item.quantity} • ${item.price.toLocaleString('es-CO')} c/u
                 </Text>
               </View>
               <Text style={styles.itemTotal}>
@@ -498,7 +500,7 @@ export default function OrderTrackingScreen({ route }: Props) {
           ))}
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total del Pedido:</Text>
+            <Text style={styles.totalLabel}>{t('orders.orderTotal')}:</Text>
             <Text style={styles.totalAmount}>
               ${trackingInfo.totalAmount.toLocaleString('es-CO')}
             </Text>
@@ -509,7 +511,7 @@ export default function OrderTrackingScreen({ route }: Props) {
         {['delivered', 'shipped'].includes(trackingInfo.status) && (
           <View style={[styles.actionsCard, { backgroundColor: theme.colors.surface }]}>
             <GSButton
-              title="Solicitar Devolución"
+              title={t('orders.requestReturn')}
               onPress={requestReturn}
               variant="outline"
               style={styles.returnButton}
@@ -522,17 +524,17 @@ export default function OrderTrackingScreen({ route }: Props) {
           <View style={styles.infoHeader}>
             <Ionicons name="information-circle-outline" size={20} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginLeft: 8 }}>
-              Información de Seguimiento
+              {t('orders.trackingInfo')}
             </GSText>
           </View>
           <GSText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
-            • Las actualizaciones se sincronizan automáticamente cada 30 segundos
+            • {t('orders.autoSync')}
           </GSText>
           <GSText variant="caption" color="textSecondary">
-            • Puedes deslizar hacia abajo para actualizar manualmente
+            • {t('orders.pullToRefresh')}
           </GSText>
           <GSText variant="caption" color="textSecondary">
-            • El seguimiento externo abre en el navegador
+            • {t('orders.externalTracking')}
           </GSText>
         </View>
       </ScrollView>

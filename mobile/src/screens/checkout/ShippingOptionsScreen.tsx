@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -55,6 +56,7 @@ interface Props {
 }
 
 export default function ShippingOptionsScreen({ route }: Props) {
+  const { t } = useTranslation('translation');
   const navigation = useNavigation();
   const { theme } = useTheme();
   const { getToken } = useAuth();
@@ -86,7 +88,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
       }
     } catch (error: any) {
       console.error('Error fetching shipping options:', error);
-      Alert.alert('Error', error.message || 'No se pudieron cargar las opciones de envío');
+      Alert.alert(t('common.error'), error.message || t('checkout.shippingOptions.errorLoading'));
 
       // Mock data for development when API fails
       const mockOptions: ShippingOption[] = [
@@ -138,7 +140,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
 
   const handleConfirmShipping = useCallback(async () => {
     if (!selectedOption) {
-      Alert.alert('Error', 'Por favor selecciona una opción de envío');
+      Alert.alert(t('common.error'), t('checkout.shippingOptions.pleaseSelect'));
       return;
     }
 
@@ -156,8 +158,8 @@ export default function ShippingOptionsScreen({ route }: Props) {
       });
 
       Alert.alert(
-        'Envío Confirmado',
-        `Tu pedido será enviado por ${selectedOption.carrier}. Recibirás un número de seguimiento pronto.`,
+        t('checkout.shippingOptions.confirmed'),
+        t('checkout.shippingOptions.confirmedMessage', { carrier: selectedOption.carrier }),
         [
           {
             text: 'OK',
@@ -167,7 +169,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
       );
     } catch (error: any) {
       console.error('Error confirming shipping:', error);
-      Alert.alert('Error', error.message || 'No se pudo confirmar el envío. Intenta nuevamente.');
+      Alert.alert(t('common.error'), error.message || t('checkout.shippingOptions.errorConfirming'));
     } finally {
       setConfirming(false);
     }
@@ -213,7 +215,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Opciones de Envío
+            {t('checkout.shippingOptions.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -221,7 +223,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Calculando opciones de envío...
+            {t('checkout.shippingOptions.calculating')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -239,7 +241,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <GSText variant="h3" weight="bold">
-          Opciones de Envío
+          {t('checkout.shippingOptions.title')}
         </GSText>
         <View style={{ width: 24 }} />
       </View>
@@ -258,7 +260,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
         {/* Shipping Address */}
         <View style={[styles.addressContainer, { backgroundColor: theme.colors.surface }]}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Dirección de Envío
+            {t('checkout.shippingAddress')}
           </GSText>
           <GSText variant="body" weight="medium" style={styles.addressText}>
             {shippingAddress.firstName} {shippingAddress.lastName}
@@ -280,7 +282,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
         </View>
 
         <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-          Selecciona tu Opción de Envío
+          {t('checkout.shippingOptions.selectYourOption')}
         </GSText>
 
         {shippingOptions.map((option, index) => {
@@ -335,7 +337,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
                 <View style={styles.selectedIndicator}>
                   <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
                   <GSText variant="caption" color="success" weight="medium" style={{ marginLeft: 8 }}>
-                    Seleccionado
+                    {t('checkout.shippingOptions.selected')}
                   </GSText>
                 </View>
               )}
@@ -348,7 +350,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
       <View style={[styles.footer, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.totalContainer}>
           <GSText variant="body" weight="medium">
-            Costo de Envío:
+            {t('checkout.shippingCost')}:
           </GSText>
           <GSText variant="h3" weight="bold" color="success">
             ${selectedOption?.rate.toLocaleString('es-CO') || '0'}
@@ -356,7 +358,7 @@ export default function ShippingOptionsScreen({ route }: Props) {
         </View>
 
         <GSButton
-          title="Confirmar Envío"
+          title={t('checkout.shippingOptions.confirmShipping')}
           onPress={handleConfirmShipping}
           loading={confirming}
           disabled={!selectedOption}

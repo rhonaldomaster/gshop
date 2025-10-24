@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 
 interface LiveStream {
   id: string;
@@ -43,6 +44,7 @@ interface LiveStream {
 }
 
 export default function LiveStreamsScreen({ navigation }: any) {
+  const { t } = useTranslation('translation');
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,11 +96,11 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'live':
-        return 'LIVE';
+        return t('live.liveNow');
       case 'scheduled':
-        return 'SCHEDULED';
+        return t('live.scheduled');
       case 'ended':
-        return 'ENDED';
+        return t('live.ended');
       default:
         return status.toUpperCase();
     }
@@ -115,7 +117,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
       style={styles.streamCard}
       onPress={() => {
         if (item.status === 'ended') {
-          Alert.alert('Stream Ended', 'This live stream has ended. Check for replays or upcoming streams!');
+          Alert.alert(t('live.streamEnded'), t('live.streamEndedMessage'));
           return;
         }
         navigation.navigate('LiveStream', { streamId: item.id });
@@ -192,12 +194,12 @@ export default function LiveStreamsScreen({ navigation }: any) {
                 backgroundColor: item.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
               }]}>
                 <Text style={styles.hostTypeText}>
-                  {item.hostType === 'seller' ? 'SELLER' : 'AFFILIATE'}
+                  {item.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
                 </Text>
               </View>
             </View>
             <Text style={styles.productCount}>
-              {item.products.length} product{item.products.length !== 1 ? 's' : ''}
+              {t('live.productCount', { count: item.products.length })}
             </Text>
           </View>
         </View>
@@ -206,7 +208,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
           <View style={styles.scheduleInfo}>
             <MaterialIcons name="schedule" size={14} color="#6b7280" />
             <Text style={styles.scheduleText}>
-              Starts at {formatTime(item.scheduledAt)}
+              {t('live.startsAt', { time: formatTime(item.scheduledAt) })}
             </Text>
           </View>
         )}
@@ -217,9 +219,9 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <MaterialIcons name="live-tv" size={64} color="#d1d5db" />
-      <Text style={styles.emptyTitle}>No Live Streams</Text>
+      <Text style={styles.emptyTitle}>{t('live.noActiveStreams')}</Text>
       <Text style={styles.emptySubtitle}>
-        Check back later for live shopping sessions from your favorite sellers.
+        {t('live.checkBackLater')}
       </Text>
     </View>
   );
@@ -228,7 +230,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={styles.loadingText}>Loading live streams...</Text>
+        <Text style={styles.loadingText}>{t('live.loadingStreams')}</Text>
       </View>
     );
   }
@@ -236,7 +238,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Live Shopping</Text>
+        <Text style={styles.headerTitle}>{t('live.liveShoppingTitle')}</Text>
         <TouchableOpacity onPress={onRefresh} disabled={refreshing}>
           <MaterialIcons
             name="refresh"

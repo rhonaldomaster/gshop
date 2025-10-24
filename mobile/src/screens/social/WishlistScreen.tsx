@@ -12,10 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { wishlistService, WishlistItem } from '../../services/wishlist.service';
 import { useCart } from '../../contexts/CartContext';
 
 export default function WishlistScreen({ navigation }: any) {
+  const { t } = useTranslation('translation');
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,7 +33,7 @@ export default function WishlistScreen({ navigation }: any) {
       setWishlistItems(items);
     } catch (error) {
       console.error('Failed to fetch wishlist:', error);
-      Alert.alert('Error', 'Failed to load wishlist');
+      Alert.alert(t('common.error'), t('wishlist.errorLoading'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -45,12 +47,12 @@ export default function WishlistScreen({ navigation }: any) {
 
   const removeFromWishlist = async (productId: string) => {
     Alert.alert(
-      'Remove Item',
-      'Are you sure you want to remove this item from your wishlist?',
+      t('wishlist.removeItem'),
+      t('wishlist.removeConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('wishlist.remove'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -61,7 +63,7 @@ export default function WishlistScreen({ navigation }: any) {
               await wishlistService.removeFromWishlist(productId);
             } catch (error) {
               console.error('Failed to remove from wishlist:', error);
-              Alert.alert('Error', 'Failed to remove item from wishlist');
+              Alert.alert(t('common.error'), t('wishlist.errorRemoving'));
               // Reload wishlist on error to sync with backend
               fetchWishlist();
             }
@@ -73,19 +75,19 @@ export default function WishlistScreen({ navigation }: any) {
 
   const addToCart = async (product: WishlistItem['product']) => {
     if (!product.isAvailable) {
-      Alert.alert('Unavailable', 'This product is currently out of stock.');
+      Alert.alert(t('wishlist.unavailable'), t('wishlist.outOfStock'));
       return;
     }
 
     try {
       await addItemToCart(product, 1);
-      Alert.alert('Success', 'Product added to cart!', [
-        { text: 'Continue Shopping', style: 'cancel' },
-        { text: 'View Cart', onPress: () => navigation.navigate('Cart') }
+      Alert.alert(t('common.success'), t('wishlist.addedToCart'), [
+        { text: t('wishlist.continueShopping'), style: 'cancel' },
+        { text: t('wishlist.viewCart'), onPress: () => navigation.navigate('Cart') }
       ]);
     } catch (error) {
       console.error('Failed to add to cart:', error);
-      Alert.alert('Error', 'Failed to add product to cart');
+      Alert.alert(t('common.error'), t('wishlist.errorAddingToCart'));
     }
   };
 
@@ -104,7 +106,7 @@ export default function WishlistScreen({ navigation }: any) {
         />
         {!item.product.isAvailable && (
           <View style={styles.unavailableBadge}>
-            <Text style={styles.unavailableText}>Out of Stock</Text>
+            <Text style={styles.unavailableText}>{t('wishlist.outOfStock')}</Text>
           </View>
         )}
       </View>
@@ -114,11 +116,11 @@ export default function WishlistScreen({ navigation }: any) {
           {item.product.name}
         </Text>
         <Text style={styles.sellerName}>
-          by {item.product.seller?.businessName || 'Unknown Seller'}
+          {t('social.by')} {item.product.seller?.businessName || t('wishlist.unknownSeller')}
         </Text>
         <Text style={styles.price}>${Number(item.product.price).toFixed(2)}</Text>
         <Text style={styles.addedDate}>
-          Added {new Date(item.addedAt).toLocaleDateString()}
+          {t('wishlist.added')} {new Date(item.addedAt).toLocaleDateString()}
         </Text>
       </View>
 
@@ -147,7 +149,7 @@ export default function WishlistScreen({ navigation }: any) {
             styles.addToCartText,
             !item.product.isAvailable && styles.disabledText
           ]}>
-            Add to Cart
+            {t('wishlist.addToCart')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -157,15 +159,15 @@ export default function WishlistScreen({ navigation }: any) {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <MaterialIcons name="favorite-border" size={80} color="#d1d5db" />
-      <Text style={styles.emptyTitle}>Your Wishlist is Empty</Text>
+      <Text style={styles.emptyTitle}>{t('wishlist.empty')}</Text>
       <Text style={styles.emptySubtitle}>
-        Start adding products you love to your wishlist by tapping the heart icon.
+        {t('wishlist.emptyMessage')}
       </Text>
       <TouchableOpacity
         style={styles.browseButton}
         onPress={() => navigation.navigate('Home')}
       >
-        <Text style={styles.browseButtonText}>Browse Products</Text>
+        <Text style={styles.browseButtonText}>{t('wishlist.browseProducts')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -174,7 +176,7 @@ export default function WishlistScreen({ navigation }: any) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={styles.loadingText}>Loading your wishlist...</Text>
+        <Text style={styles.loadingText}>{t('wishlist.loading')}</Text>
       </View>
     );
   }
@@ -182,9 +184,9 @@ export default function WishlistScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Wishlist</Text>
+        <Text style={styles.headerTitle}>{t('wishlist.myWishlist')}</Text>
         <View style={styles.headerRight}>
-          <Text style={styles.itemCount}>{wishlistItems.length} items</Text>
+          <Text style={styles.itemCount}>{wishlistItems.length} {t('wishlist.items')}</Text>
           <TouchableOpacity onPress={onRefresh} disabled={refreshing}>
             <MaterialIcons
               name="refresh"

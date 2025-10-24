@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Video } from 'expo-av';
 import io, { Socket } from 'socket.io-client';
+import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../../components/live/ProductCard';
 import { ChatMessage } from '../../components/live/ChatMessage';
 
@@ -55,6 +56,7 @@ interface Message {
 const { width, height } = Dimensions.get('window');
 
 export default function LiveStreamScreen({ route, navigation }: any) {
+  const { t } = useTranslation('translation');
   const { streamId } = route.params;
   const [stream, setStream] = useState<LiveStreamData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -88,7 +90,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       }
     } catch (error) {
       console.error('Failed to fetch stream data:', error);
-      Alert.alert('Error', 'Failed to load stream');
+      Alert.alert(t('common.error'), t('live.failedToLoadStream'));
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -124,7 +126,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
     socketRef.current.on('streamStatusUpdate', (data) => {
       if (data.status === 'ended') {
-        Alert.alert('Stream Ended', 'This live stream has ended.');
+        Alert.alert(t('live.streamEnded'), t('live.streamHasEnded'));
         navigation.goBack();
       }
     });
@@ -170,12 +172,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   const quickBuyProduct = (product: any) => {
     Alert.alert(
-      'Quick Buy',
-      `Add "${product.product.name}" to cart?`,
+      t('live.quickBuy'),
+      t('live.addToCartQuestion', { product: product.product.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Add to Cart',
+          text: t('products.addToCart'),
           onPress: () => {
             // Add to cart with live stream context
             // In a real app, use cart context here
@@ -186,7 +188,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               specialPrice: product.specialPrice
             });
 
-            Alert.alert('Success', 'Product added to cart!');
+            Alert.alert(t('common.success'), t('live.productAddedToCart'));
           }
         }
       ]
@@ -216,7 +218,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading stream...</Text>
+        <Text>{t('live.loadingStream')}</Text>
       </View>
     );
   }
@@ -224,7 +226,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   if (!stream) {
     return (
       <View style={styles.errorContainer}>
-        <Text>Stream not found</Text>
+        <Text>{t('live.streamNotFound')}</Text>
       </View>
     );
   }
@@ -265,7 +267,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
                   backgroundColor: stream.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
                 }]}>
                   <Text style={styles.hostTypeText}>
-                    {stream.hostType === 'seller' ? 'SELLER' : 'AFFILIATE'}
+                    {stream.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
                   </Text>
                 </View>
               </View>
@@ -284,7 +286,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               onPress={toggleProducts}
             >
               <MaterialIcons name="shopping-bag" size={20} color="white" />
-              <Text style={styles.controlText}>Products</Text>
+              <Text style={styles.controlText}>{t('live.products')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -292,7 +294,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               onPress={toggleChat}
             >
               <MaterialIcons name="chat" size={20} color="white" />
-              <Text style={styles.controlText}>Chat</Text>
+              <Text style={styles.controlText}>{t('live.chat')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -302,7 +304,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       {showProducts && (
         <View style={styles.productsPanel}>
           <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Featured Products</Text>
+            <Text style={styles.panelTitle}>{t('live.featuredProducts')}</Text>
             <TouchableOpacity onPress={() => setShowProducts(false)}>
               <MaterialIcons name="close" size={24} color="#374151" />
             </TouchableOpacity>
@@ -322,7 +324,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       {showChat && (
         <View style={styles.chatPanel}>
           <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Live Chat</Text>
+            <Text style={styles.panelTitle}>{t('live.liveChat')}</Text>
             <TouchableOpacity onPress={() => setShowChat(false)}>
               <MaterialIcons name="close" size={24} color="#374151" />
             </TouchableOpacity>
@@ -342,7 +344,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               style={styles.textInput}
               value={newMessage}
               onChangeText={setNewMessage}
-              placeholder="Type a message..."
+              placeholder={t('live.typeMessage')}
               multiline
               maxLength={200}
               onSubmitEditing={sendMessage}

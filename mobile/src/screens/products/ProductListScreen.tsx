@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
@@ -47,6 +48,7 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, onAddToCart }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const { formatPrice, getDiscountPercentage, isInStock } = useProducts();
 
@@ -67,7 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
           </View>
         ) : (
           <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">No Image</GSText>
+            <GSText variant="caption" color="textSecondary">{t('products.noImage')}</GSText>
           </View>
         )}
 
@@ -84,7 +86,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
         {!inStock && (
           <View style={[styles.stockBadge, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}>
             <GSText variant="caption" color="white" weight="medium">
-              Out of Stock
+              {t('products.outOfStock')}
             </GSText>
           </View>
         )}
@@ -142,7 +144,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
             color={inStock ? 'white' : 'textSecondary'}
             weight="medium"
           >
-            {inStock ? 'Add to Cart' : 'Unavailable'}
+            {inStock ? t('cart.addToCart') : t('products.unavailable')}
           </GSText>
         </TouchableOpacity>
       </View>
@@ -159,16 +161,17 @@ interface SortModalProps {
 }
 
 const SortModal: React.FC<SortModalProps> = ({ visible, onClose, onSelect, currentSort }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
 
   const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'oldest', label: 'Oldest First' },
-    { value: 'price_asc', label: 'Price: Low to High' },
-    { value: 'price_desc', label: 'Price: High to Low' },
-    { value: 'rating', label: 'Best Rated' },
-    { value: 'popularity', label: 'Most Popular' },
-    { value: 'sales', label: 'Best Sellers' },
+    { value: 'newest', label: t('products.newestFirst') },
+    { value: 'oldest', label: t('products.oldestFirst') },
+    { value: 'price_asc', label: t('products.priceLowToHigh') },
+    { value: 'price_desc', label: t('products.priceHighToLow') },
+    { value: 'rating', label: t('products.bestRated') },
+    { value: 'popularity', label: t('products.mostPopular') },
+    { value: 'sales', label: t('products.bestSellers') },
   ];
 
   if (!visible) return null;
@@ -178,9 +181,9 @@ const SortModal: React.FC<SortModalProps> = ({ visible, onClose, onSelect, curre
       <TouchableOpacity style={styles.sortModalBackdrop} onPress={onClose} />
       <View style={[styles.sortModal, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.sortModalHeader}>
-          <GSText variant="h4" weight="bold">Sort By</GSText>
+          <GSText variant="h4" weight="bold">{t('products.sortBy')}</GSText>
           <TouchableOpacity onPress={onClose}>
-            <GSText variant="body" color="primary">Done</GSText>
+            <GSText variant="body" color="primary">{t('common.done')}</GSText>
           </TouchableOpacity>
         </View>
 
@@ -219,6 +222,7 @@ const SortModal: React.FC<SortModalProps> = ({ visible, onClose, onSelect, curre
 
 // Main ProductListScreen Component
 export default function ProductListScreen({ route, navigation }: Props) {
+  const { t } = useTranslation('translation');
   const { title, categoryId, sellerId, filters: initialFilters } = route.params || {};
   const { theme } = useTheme();
   const {
@@ -330,27 +334,27 @@ export default function ProductListScreen({ route, navigation }: Props) {
       <View style={styles.loadingFooter}>
         <ActivityIndicator size="small" color={theme.colors.primary} />
         <GSText variant="body" color="textSecondary" style={styles.loadingFooterText}>
-          Loading more products...
+          {t('products.loadingMore')}
         </GSText>
       </View>
     );
-  }, [isLoadingMore, theme.colors.primary]);
+  }, [isLoadingMore, theme.colors.primary, t]);
 
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyStateContainer}>
       <GSText variant="h3" weight="bold" color="textSecondary">
-        No products found
+        {t('products.noProductsFound')}
       </GSText>
       <GSText variant="body" color="textSecondary" style={styles.emptyStateText}>
         {categoryId
-          ? 'No products in this category yet'
+          ? t('products.noCategoryProducts')
           : sellerId
-          ? 'This seller has no products yet'
-          : 'No products match your criteria'}
+          ? t('products.noSellerProducts')
+          : t('products.noMatchingProducts')}
       </GSText>
       <GSButton
-        title="Refresh"
+        title={t('products.refresh')}
         onPress={handleRefresh}
         style={styles.refreshButton}
         variant="outlined"
@@ -364,7 +368,7 @@ export default function ProductListScreen({ route, navigation }: Props) {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <GSText variant="body" style={styles.loadingText}>Loading products...</GSText>
+          <GSText variant="body" style={styles.loadingText}>{t('products.loadingProducts')}</GSText>
         </View>
       </SafeAreaView>
     );
@@ -375,13 +379,13 @@ export default function ProductListScreen({ route, navigation }: Props) {
       {/* Header with results count and sort */}
       <View style={styles.header}>
         <GSText variant="body" color="textSecondary">
-          {totalProducts} product{totalProducts !== 1 ? 's' : ''} found
+          {t('products.productsFound', { count: totalProducts })}
         </GSText>
         <TouchableOpacity
           style={[styles.sortButton, { borderColor: theme.colors.border }]}
           onPress={() => setShowSortModal(true)}
         >
-          <GSText variant="body">Sort</GSText>
+          <GSText variant="body">{t('products.sort')}</GSText>
           <GSText variant="body" color="textSecondary">⌄</GSText>
         </TouchableOpacity>
       </View>

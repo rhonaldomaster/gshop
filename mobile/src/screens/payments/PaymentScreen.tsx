@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -46,17 +47,18 @@ interface PaymentMethodCardProps {
 
 const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelected, onSelect }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
 
   const getMethodDisplay = () => {
     switch (method.type) {
       case 'card':
         return `•••• ${method.details.last4} (${method.details.brand?.toUpperCase()})`;
       case 'mercadopago':
-        return 'MercadoPago Wallet';
+        return t('payments.mercadoPagoWallet');
       case 'crypto':
-        return `Crypto Wallet (${method.details.walletAddress?.slice(0, 6)}...${method.details.walletAddress?.slice(-4)})`;
+        return `${t('payments.cryptoWallet')} (${method.details.walletAddress?.slice(0, 6)}...${method.details.walletAddress?.slice(-4)})`;
       case 'gshop_tokens':
-        return `GSHOP Tokens (${method.details.tokenBalance || 0} available)`;
+        return `${t('wallet.tokens')} (${method.details.tokenBalance || 0} ${t('payments.available')})`;
       default:
         return method.provider;
     }
@@ -91,7 +93,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
           </GSText>
           {method.isDefault && (
             <GSText variant="caption" color="primary">
-              Default
+              {t('payments.default')}
             </GSText>
           )}
         </View>
@@ -122,6 +124,7 @@ interface NewCardFormProps {
 
 const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvc, setCvc] = useState('');
@@ -148,23 +151,23 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
     const fullYear = year ? 2000 + year : 0;
 
     if (!paymentsService.validateCardNumber(cardNumber)) {
-      Alert.alert('Invalid Card', 'Please enter a valid card number');
+      Alert.alert(t('payments.invalidCard'), t('payments.enterValidCardNumber'));
       return;
     }
 
     if (!paymentsService.validateExpiryDate(month, fullYear)) {
-      Alert.alert('Invalid Expiry', 'Please enter a valid expiry date');
+      Alert.alert(t('payments.invalidExpiry'), t('payments.enterValidExpiryDate'));
       return;
     }
 
     const cardBrand = paymentsService.getCardBrand(cardNumber);
     if (!paymentsService.validateCVC(cvc, cardBrand)) {
-      Alert.alert('Invalid CVC', 'Please enter a valid security code');
+      Alert.alert(t('payments.invalidCVC'), t('payments.enterValidSecurityCode'));
       return;
     }
 
     if (!holderName.trim()) {
-      Alert.alert('Missing Name', 'Please enter the cardholder name');
+      Alert.alert(t('payments.missingName'), t('payments.enterCardholderName'));
       return;
     }
 
@@ -181,11 +184,11 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
   return (
     <View style={styles.newCardForm}>
       <GSText variant="h4" weight="bold" style={styles.formTitle}>
-        Add New Card
+        {t('payments.addNewCard')}
       </GSText>
 
       <GSInput
-        label="Card Number"
+        label={t('payments.cardNumber')}
         value={cardNumber}
         onChangeText={handleCardNumberChange}
         placeholder="1234 5678 9012 3456"
@@ -195,7 +198,7 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
 
       <View style={styles.formRow}>
         <GSInput
-          label="Expiry Date"
+          label={t('payments.expiryDate')}
           value={expiryDate}
           onChangeText={handleExpiryChange}
           placeholder="MM/YY"
@@ -203,7 +206,7 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
           style={[styles.formInput, { flex: 1, marginRight: 8 }]}
         />
         <GSInput
-          label="CVC"
+          label={t('payments.cvv')}
           value={cvc}
           onChangeText={setCvc}
           placeholder="123"
@@ -214,7 +217,7 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
       </View>
 
       <GSInput
-        label="Cardholder Name"
+        label={t('payments.cardholderName')}
         value={holderName}
         onChangeText={setHolderName}
         placeholder="John Doe"
@@ -239,12 +242,12 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
           )}
         </View>
         <GSText variant="body" style={{ marginLeft: 12 }}>
-          Save this card for future purchases
+          {t('payments.saveCard')}
         </GSText>
       </TouchableOpacity>
 
       <GSButton
-        title="Pay with Card"
+        title={t('payments.payWithCard')}
         onPress={handleSubmit}
         loading={isLoading}
         style={styles.payButton}
@@ -255,6 +258,7 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
 
 export default function PaymentScreen() {
   const { theme } = useTheme();
+  const { t } = useTranslation('translation');
   const route = useRoute<PaymentScreenRouteProp>();
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
@@ -292,7 +296,7 @@ export default function PaymentScreen() {
       }
     } catch (error: any) {
       console.error('Failed to load payment data:', error);
-      Alert.alert('Error', error.message || 'Failed to load payment methods');
+      Alert.alert(t('common.error'), error.message || t('payments.failedToLoadPaymentMethods'));
     } finally {
       setLoading(false);
     }
@@ -367,11 +371,11 @@ export default function PaymentScreen() {
       // Handle payment result
       if (result.success && result.status === PaymentStatus.COMPLETED) {
         Alert.alert(
-          'Payment Successful',
-          'Your payment has been processed successfully!',
+          t('payments.paymentSuccessful'),
+          t('payments.paymentProcessedSuccessfully'),
           [
             {
-              text: 'View Order',
+              text: t('payments.viewOrder'),
               onPress: () => navigation.navigate('OrderDetail' as any, { orderId }),
             },
           ]
@@ -379,11 +383,11 @@ export default function PaymentScreen() {
       } else if (result.redirectUrl) {
         // Handle redirect for external payment processors
         Alert.alert(
-          'Complete Payment',
-          'You will be redirected to complete your payment',
+          t('payments.completePayment'),
+          t('payments.redirectToCompletePayment'),
           [
             {
-              text: 'Continue',
+              text: t('common.continue'),
               onPress: () => {
                 // Handle redirect - could open web browser or in-app browser
               },
@@ -391,11 +395,11 @@ export default function PaymentScreen() {
           ]
         );
       } else {
-        throw new Error('Payment failed');
+        throw new Error(t('payments.paymentFailed'));
       }
     } catch (error: any) {
       console.error('Payment processing failed:', error);
-      Alert.alert('Payment Failed', error.message || 'Payment could not be processed');
+      Alert.alert(t('payments.paymentFailed'), error.message || t('payments.paymentCouldNotBeProcessed'));
     } finally {
       setProcessing(false);
     }
@@ -431,12 +435,12 @@ export default function PaymentScreen() {
   const handleProceedPayment = useCallback(() => {
     const selectedMethod = paymentMethods.find(m => m.id === selectedMethodId);
     if (!selectedMethod) {
-      Alert.alert('No Payment Method', 'Please select a payment method');
+      Alert.alert(t('payments.noPaymentMethod'), t('payments.pleaseSelectPaymentMethod'));
       return;
     }
 
     processPayment(selectedMethod);
-  }, [selectedMethodId, paymentMethods, processPayment]);
+  }, [selectedMethodId, paymentMethods, processPayment, t]);
 
   // Show loading state
   if (loading) {
@@ -445,7 +449,7 @@ export default function PaymentScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Loading payment methods...
+            {t('payments.loadingPaymentMethods')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -464,7 +468,7 @@ export default function PaymentScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Payment
+            {t('payments.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -472,7 +476,7 @@ export default function PaymentScreen() {
         {/* Order Summary */}
         <View style={[styles.orderSummary, { backgroundColor: theme.colors.surface }]}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Order Summary
+            {t('checkout.orderSummary')}
           </GSText>
           <View style={styles.summaryRow}>
             <GSText variant="body">Order #{orderId.slice(0, 8)}</GSText>
@@ -489,10 +493,10 @@ export default function PaymentScreen() {
               <Ionicons name="diamond-outline" size={24} color={theme.colors.primary} />
               <View style={styles.walletInfo}>
                 <GSText variant="body" weight="medium">
-                  GSHOP Tokens
+                  {t('wallet.tokens')}
                 </GSText>
                 <GSText variant="caption" color="textSecondary">
-                  {paymentsService.formatTokenAmount(walletBalance.tokenBalance)} available
+                  {paymentsService.formatTokenAmount(walletBalance.tokenBalance)} {t('payments.available')}
                 </GSText>
               </View>
               <GSText variant="body" weight="bold" color="primary">
@@ -506,7 +510,7 @@ export default function PaymentScreen() {
                 onPress={() => setShowTokensModal(true)}
               >
                 <GSText variant="body" color="primary" weight="medium">
-                  Use GSHOP Tokens
+                  {t('payments.useTokens')}
                 </GSText>
               </TouchableOpacity>
             )}
@@ -516,7 +520,7 @@ export default function PaymentScreen() {
         {/* Payment Methods */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Payment Methods
+            {t('profile.paymentMethods')}
           </GSText>
 
           {paymentMethods.map((method) => (
@@ -541,7 +545,7 @@ export default function PaymentScreen() {
           >
             <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" color="primary" style={{ marginLeft: 12 }}>
-              Add New Card
+              {t('payments.addNewCard')}
             </GSText>
           </TouchableOpacity>
 
@@ -558,7 +562,7 @@ export default function PaymentScreen() {
         {!showNewCardForm && (
           <View style={styles.paymentActions}>
             <GSButton
-              title={`Pay ${paymentsService.formatPrice(amount, currency)}`}
+              title={`${t('payments.pay')} ${paymentsService.formatPrice(amount, currency)}`}
               onPress={handleProceedPayment}
               loading={processing}
               disabled={!selectedMethodId}
@@ -570,7 +574,7 @@ export default function PaymentScreen() {
               onPress={() => navigation.goBack()}
             >
               <GSText variant="body" color="textSecondary">
-                Cancel Payment
+                {t('payments.cancelPayment')}
               </GSText>
             </TouchableOpacity>
           </View>
@@ -587,18 +591,18 @@ export default function PaymentScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
             <GSText variant="h4" weight="bold" style={styles.modalTitle}>
-              Use GSHOP Tokens
+              {t('payments.useTokens')}
             </GSText>
 
             <GSText variant="body" style={styles.modalText}>
-              Available: {paymentsService.formatTokenAmount(walletBalance?.tokenBalance || 0)}
+              {t('payments.available')}: {paymentsService.formatTokenAmount(walletBalance?.tokenBalance || 0)}
             </GSText>
             <GSText variant="body" style={styles.modalText}>
-              Order Total: {paymentsService.formatPrice(amount, currency)}
+              {t('payments.orderTotal')}: {paymentsService.formatPrice(amount, currency)}
             </GSText>
 
             <GSInput
-              label="Token Amount"
+              label={t('payments.tokenAmount')}
               value={tokenAmount.toString()}
               onChangeText={(text) => setTokenAmount(Number(text))}
               keyboardType="numeric"
@@ -608,13 +612,13 @@ export default function PaymentScreen() {
 
             <View style={styles.modalActions}>
               <GSButton
-                title="Cancel"
-                variant="outlined"
+                title={t('common.cancel')}
+                variant="outline"
                 onPress={() => setShowTokensModal(false)}
                 style={styles.modalButton}
               />
               <GSButton
-                title="Use Tokens"
+                title={t('payments.useTokens')}
                 onPress={() => {
                   setShowTokensModal(false);
                   const tokenMethod = paymentMethods.find(m => m.type === 'gshop_tokens');

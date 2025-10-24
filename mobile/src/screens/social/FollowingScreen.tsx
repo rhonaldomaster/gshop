@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 interface Following {
   id: string;
@@ -38,6 +39,7 @@ interface Following {
 }
 
 export default function FollowingScreen({ navigation }: any) {
+  const { t } = useTranslation('translation');
   const [following, setFollowing] = useState<Following[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,12 +72,12 @@ export default function FollowingScreen({ navigation }: any) {
 
   const unfollowUser = async (followingId: string, name: string) => {
     Alert.alert(
-      'Unfollow',
-      `Are you sure you want to unfollow ${name}?`,
+      t('social.unfollow'),
+      t('social.unfollowConfirm', { name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Unfollow',
+          text: t('social.unfollow'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -90,12 +92,12 @@ export default function FollowingScreen({ navigation }: any) {
               if (!response.ok) {
                 // If API fails, revert the change
                 fetchFollowing();
-                Alert.alert('Error', 'Failed to unfollow user');
+                Alert.alert(t('common.error'), t('social.unfollowError'));
               }
             } catch (error) {
               console.error('Failed to unfollow:', error);
               fetchFollowing();
-              Alert.alert('Error', 'Failed to unfollow user');
+              Alert.alert(t('common.error'), t('social.unfollowError'));
             }
           }
         }
@@ -127,7 +129,7 @@ export default function FollowingScreen({ navigation }: any) {
             ? { ...item, notifications: currentState }
             : item
         ));
-        Alert.alert('Error', 'Failed to update notification settings');
+        Alert.alert(t('common.error'), t('social.notificationError'));
       }
     } catch (error) {
       console.error('Failed to toggle notifications:', error);
@@ -219,7 +221,7 @@ export default function FollowingScreen({ navigation }: any) {
                 backgroundColor: isSeller ? '#3b82f6' : '#f59e0b'
               }]}>
                 <Text style={styles.typeText}>
-                  {isSeller ? 'SELLER' : 'AFFILIATE'}
+                  {isSeller ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
                 </Text>
               </View>
             </View>
@@ -229,31 +231,31 @@ export default function FollowingScreen({ navigation }: any) {
                 <>
                   <View style={styles.stat}>
                     <Text style={styles.statValue}>{item.seller?.productCount}</Text>
-                    <Text style={styles.statLabel}>products</Text>
+                    <Text style={styles.statLabel}>{t('social.products')}</Text>
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.stat}>
                     {renderStars(item.seller?.rating || 0)}
-                    <Text style={styles.statLabel}>rating</Text>
+                    <Text style={styles.statLabel}>{t('social.rating')}</Text>
                   </View>
                 </>
               ) : (
                 <>
                   <View style={styles.stat}>
                     <Text style={styles.statValue}>{item.affiliate?.followerCount}</Text>
-                    <Text style={styles.statLabel}>followers</Text>
+                    <Text style={styles.statLabel}>{t('social.followers')}</Text>
                   </View>
                   <View style={styles.statDivider} />
                   <View style={styles.stat}>
                     <Text style={styles.statValue}>{item.affiliate?.commissionRate}%</Text>
-                    <Text style={styles.statLabel}>commission</Text>
+                    <Text style={styles.statLabel}>{t('social.commission')}</Text>
                   </View>
                 </>
               )}
             </View>
 
             <Text style={styles.followedDate}>
-              Following since {new Date(item.followedAt).toLocaleDateString()}
+              {t('social.followingSince', { date: new Date(item.followedAt).toLocaleDateString() })}
             </Text>
           </View>
         </View>
@@ -284,15 +286,15 @@ export default function FollowingScreen({ navigation }: any) {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <MaterialIcons name="people-outline" size={80} color="#d1d5db" />
-      <Text style={styles.emptyTitle}>Not Following Anyone</Text>
+      <Text style={styles.emptyTitle}>{t('social.notFollowingAnyone')}</Text>
       <Text style={styles.emptySubtitle}>
-        Discover and follow your favorite sellers and affiliates to stay updated with their latest products and live streams.
+        {t('social.discoverAndFollow')}
       </Text>
       <TouchableOpacity
         style={styles.exploreButton}
         onPress={() => navigation.navigate('Discover')}
       >
-        <Text style={styles.exploreButtonText}>Explore Users</Text>
+        <Text style={styles.exploreButtonText}>{t('social.exploreUsers')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -300,9 +302,9 @@ export default function FollowingScreen({ navigation }: any) {
   const renderTabs = () => (
     <View style={styles.tabContainer}>
       {[
-        { key: 'all', label: 'All', count: following.length },
-        { key: 'sellers', label: 'Sellers', count: following.filter(f => f.type === 'seller').length },
-        { key: 'affiliates', label: 'Affiliates', count: following.filter(f => f.type === 'affiliate').length },
+        { key: 'all', label: t('social.all'), count: following.length },
+        { key: 'sellers', label: t('social.sellers'), count: following.filter(f => f.type === 'seller').length },
+        { key: 'affiliates', label: t('social.affiliates'), count: following.filter(f => f.type === 'affiliate').length },
       ].map((tab) => (
         <TouchableOpacity
           key={tab.key}
@@ -321,7 +323,7 @@ export default function FollowingScreen({ navigation }: any) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={styles.loadingText}>Loading following...</Text>
+        <Text style={styles.loadingText}>{t('social.loadingFollowing')}</Text>
       </View>
     );
   }
@@ -331,7 +333,7 @@ export default function FollowingScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Following</Text>
+        <Text style={styles.headerTitle}>{t('social.following')}</Text>
         <TouchableOpacity onPress={onRefresh} disabled={refreshing}>
           <MaterialIcons
             name="refresh"
@@ -348,7 +350,7 @@ export default function FollowingScreen({ navigation }: any) {
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Search following..."
+          placeholder={t('social.searchFollowing')}
           placeholderTextColor="#9ca3af"
         />
         {searchQuery.length > 0 && (

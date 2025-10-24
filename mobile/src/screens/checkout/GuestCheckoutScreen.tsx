@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
@@ -57,6 +58,7 @@ const colombianStates = [
 ];
 
 export default function GuestCheckoutScreen() {
+  const { t } = useTranslation('translation');
   const navigation = useNavigation();
   const { theme } = useTheme();
   const { items, clearCart } = useCart();
@@ -130,38 +132,38 @@ export default function GuestCheckoutScreen() {
     const lastName = customerInfo.lastName.trim();
 
     if (!firstName) {
-      newErrors.firstName = 'El nombre es obligatorio';
+      newErrors.firstName = t('checkout.guestCheckout.validation.firstNameRequired');
     } else if (firstName.length < 2) {
-      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+      newErrors.firstName = t('checkout.guestCheckout.validation.firstNameMinLength');
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(firstName)) {
-      newErrors.firstName = 'El nombre solo puede contener letras';
+      newErrors.firstName = t('checkout.guestCheckout.validation.firstNameLettersOnly');
     }
 
     if (!lastName) {
-      newErrors.lastName = 'El apellido es obligatorio';
+      newErrors.lastName = t('checkout.guestCheckout.validation.lastNameRequired');
     } else if (lastName.length < 2) {
-      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+      newErrors.lastName = t('checkout.guestCheckout.validation.lastNameMinLength');
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(lastName)) {
-      newErrors.lastName = 'El apellido solo puede contener letras';
+      newErrors.lastName = t('checkout.guestCheckout.validation.lastNameLettersOnly');
     }
 
     if (!customerInfo.email.trim()) {
-      newErrors.email = 'El email es obligatorio';
+      newErrors.email = t('checkout.guestCheckout.validation.emailRequired');
     } else if (!validateEmail(customerInfo.email)) {
-      newErrors.email = 'Formato de email inválido';
+      newErrors.email = t('checkout.guestCheckout.validation.emailInvalid');
     }
 
     if (!customerInfo.phone.trim()) {
-      newErrors.phone = 'El teléfono es obligatorio';
+      newErrors.phone = t('checkout.guestCheckout.validation.phoneRequired');
     } else if (!validatePhone(customerInfo.phone)) {
-      newErrors.phone = 'Formato de teléfono inválido (ej: +57 300 123 4567)';
+      newErrors.phone = t('checkout.guestCheckout.validation.phoneInvalid');
     }
 
     if (!customerInfo.document.number.trim()) {
-      newErrors.documentNumber = 'El número de documento es obligatorio';
+      newErrors.documentNumber = t('checkout.guestCheckout.validation.documentRequired');
     } else if (!validateDocumentNumber(customerInfo.document.type, customerInfo.document.number)) {
       const docTypeName = documentTypes.find(d => d.value === customerInfo.document.type)?.label;
-      newErrors.documentNumber = `Número de ${docTypeName} inválido`;
+      newErrors.documentNumber = t('checkout.guestCheckout.validation.documentInvalid', { docType: docTypeName });
     }
 
     // Shipping address validation
@@ -169,23 +171,23 @@ export default function GuestCheckoutScreen() {
     const city = shippingAddress.city.trim();
 
     if (!address1) {
-      newErrors.address1 = 'La dirección es obligatoria';
+      newErrors.address1 = t('checkout.guestCheckout.validation.addressRequired');
     } else if (address1.length < 10) {
-      newErrors.address1 = 'La dirección debe ser más específica';
+      newErrors.address1 = t('checkout.guestCheckout.validation.addressTooShort');
     }
 
     if (!city) {
-      newErrors.city = 'La ciudad es obligatoria';
+      newErrors.city = t('checkout.guestCheckout.validation.cityRequired');
     } else if (city.length < 2) {
-      newErrors.city = 'El nombre de la ciudad debe tener al menos 2 caracteres';
+      newErrors.city = t('checkout.guestCheckout.validation.cityMinLength');
     } else if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(city)) {
-      newErrors.city = 'La ciudad solo puede contener letras';
+      newErrors.city = t('checkout.guestCheckout.validation.cityLettersOnly');
     }
 
     if (!shippingAddress.postalCode.trim()) {
-      newErrors.postalCode = 'El código postal es obligatorio';
+      newErrors.postalCode = t('checkout.guestCheckout.validation.postalCodeRequired');
     } else if (!validatePostalCode(shippingAddress.postalCode)) {
-      newErrors.postalCode = 'Código postal inválido (5-6 dígitos)';
+      newErrors.postalCode = t('checkout.guestCheckout.validation.postalCodeInvalid');
     }
 
     setErrors(newErrors);
@@ -195,8 +197,8 @@ export default function GuestCheckoutScreen() {
   const handleContinueToShipping = useCallback(async () => {
     if (!validateForm()) {
       Alert.alert(
-        'Datos incompletos',
-        'Por favor revisa y corrige los errores en el formulario',
+        t('checkout.guestCheckout.validation.incompleteData'),
+        t('checkout.guestCheckout.validation.pleaseReviewErrors'),
         [{ text: 'OK' }]
       );
       return;
@@ -206,7 +208,7 @@ export default function GuestCheckoutScreen() {
     try {
       // Check if cart has items
       if (!items || items.length === 0) {
-        Alert.alert('Error', 'Tu carrito está vacío');
+        Alert.alert(t('common.error'), t('checkout.alerts.emptyCartMessage'));
         return;
       }
 
@@ -259,14 +261,14 @@ export default function GuestCheckoutScreen() {
     } catch (error: any) {
       console.error('Error creating guest order:', error);
       Alert.alert(
-        'Error',
-        error.message || 'No se pudo procesar la información. Intenta nuevamente.',
+        t('common.error'),
+        error.message || t('checkout.guestCheckout.errorProcessing'),
         [{ text: 'OK' }]
       );
     } finally {
       setLoading(false);
     }
-  }, [customerInfo, shippingAddress, validateForm, navigation]);
+  }, [customerInfo, shippingAddress, validateForm, navigation, t]);
 
   // Clean input handlers
   const handlePhoneChange = useCallback((text: string) => {
@@ -305,7 +307,7 @@ export default function GuestCheckoutScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <GSText variant="h3" weight="bold">
-          Comprar como Invitado
+          {t('checkout.guestCheckout.title')}
         </GSText>
         <View style={{ width: 24 }} />
       </View>
@@ -318,34 +320,34 @@ export default function GuestCheckoutScreen() {
           {/* Customer Information Section */}
           <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
             <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-              Información Personal
+              {t('checkout.guestCheckout.personalInfo')}
             </GSText>
 
             <GSInput
-              label="Nombres"
+              label={t('checkout.guestCheckout.firstName')}
               value={customerInfo.firstName}
               onChangeText={(text) => setCustomerInfo({ ...customerInfo, firstName: text })}
-              placeholder="Ingresa tus nombres"
+              placeholder={t('checkout.guestCheckout.firstNamePlaceholder')}
               autoCapitalize="words"
               error={errors.firstName}
               style={styles.input}
             />
 
             <GSInput
-              label="Apellidos"
+              label={t('checkout.guestCheckout.lastName')}
               value={customerInfo.lastName}
               onChangeText={(text) => setCustomerInfo({ ...customerInfo, lastName: text })}
-              placeholder="Ingresa tus apellidos"
+              placeholder={t('checkout.guestCheckout.lastNamePlaceholder')}
               autoCapitalize="words"
               error={errors.lastName}
               style={styles.input}
             />
 
             <GSInput
-              label="Email"
+              label={t('auth.email')}
               value={customerInfo.email}
               onChangeText={(text) => setCustomerInfo({ ...customerInfo, email: text })}
-              placeholder="ejemplo@correo.com"
+              placeholder={t('checkout.guestCheckout.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
               error={errors.email}
@@ -353,10 +355,10 @@ export default function GuestCheckoutScreen() {
             />
 
             <GSInput
-              label="Teléfono"
+              label={t('checkout.guestCheckout.phone')}
               value={customerInfo.phone}
               onChangeText={handlePhoneChange}
-              placeholder="+57 300 123 4567"
+              placeholder={t('checkout.guestCheckout.phonePlaceholder')}
               keyboardType="phone-pad"
               error={errors.phone}
               style={styles.input}
@@ -366,7 +368,7 @@ export default function GuestCheckoutScreen() {
             <View style={styles.documentContainer}>
               <View style={styles.documentTypeContainer}>
                 <GSText variant="body" weight="semiBold" style={styles.inputLabel}>
-                  Tipo de Documento
+                  {t('checkout.documentType')}
                 </GSText>
                 <View style={[
                   styles.pickerContainer,
@@ -391,10 +393,10 @@ export default function GuestCheckoutScreen() {
 
               <View style={styles.documentNumberContainer}>
                 <GSInput
-                  label="Número de Documento"
+                  label={t('checkout.documentNumber')}
                   value={customerInfo.document.number}
                   onChangeText={handleDocumentNumberChange}
-                  placeholder="12345678"
+                  placeholder={t('checkout.guestCheckout.documentNumberPlaceholder')}
                   keyboardType={customerInfo.document.type === 'PA' ? 'default' : 'numeric'}
                   autoCapitalize={customerInfo.document.type === 'PA' ? 'characters' : 'none'}
                   error={errors.documentNumber}
@@ -408,42 +410,42 @@ export default function GuestCheckoutScreen() {
           {/* Shipping Address Section */}
           <View style={[styles.section, { backgroundColor: theme.colors.surface }]}>
             <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-              Dirección de Envío
+              {t('checkout.shippingAddress')}
             </GSText>
 
             <GSInput
-              label="Dirección Principal"
+              label={t('checkout.guestCheckout.mainAddress')}
               value={shippingAddress.address1}
               onChangeText={(text) => setShippingAddress({ ...shippingAddress, address1: text })}
-              placeholder="Calle 123 #45-67"
+              placeholder={t('checkout.guestCheckout.mainAddressPlaceholder')}
               error={errors.address1}
               style={styles.input}
             />
 
             <GSInput
-              label="Complemento (Opcional)"
+              label={t('checkout.guestCheckout.addressComplement')}
               value={shippingAddress.address2}
               onChangeText={(text) => setShippingAddress({ ...shippingAddress, address2: text })}
-              placeholder="Apartamento, oficina, etc."
+              placeholder={t('checkout.guestCheckout.addressComplementPlaceholder')}
               style={styles.input}
             />
 
             <View style={styles.rowContainer}>
               <GSInput
-                label="Ciudad"
+                label={t('checkout.city')}
                 value={shippingAddress.city}
                 onChangeText={(text) => setShippingAddress({ ...shippingAddress, city: text })}
-                placeholder="Bogotá"
+                placeholder={t('checkout.guestCheckout.cityPlaceholder')}
                 error={errors.city}
                 containerStyle={styles.halfWidth}
                 style={styles.input}
               />
 
               <GSInput
-                label="Código Postal"
+                label={t('checkout.zipCode')}
                 value={shippingAddress.postalCode}
                 onChangeText={handlePostalCodeChange}
-                placeholder="110111"
+                placeholder={t('checkout.guestCheckout.postalCodePlaceholder')}
                 keyboardType="numeric"
                 error={errors.postalCode}
                 containerStyle={styles.halfWidth}
@@ -454,7 +456,7 @@ export default function GuestCheckoutScreen() {
             <View style={styles.documentContainer}>
               <View style={styles.documentTypeContainer}>
                 <GSText variant="body" weight="bold" style={styles.inputLabel}>
-                  Departamento
+                  {t('checkout.state')}
                 </GSText>
                 <View style={[
                   styles.pickerContainer,
@@ -480,7 +482,7 @@ export default function GuestCheckoutScreen() {
         {/* Footer */}
         <View style={[styles.footer, { backgroundColor: theme.colors.surface }]}>
           <GSButton
-            title="Continuar al Envío"
+            title={t('checkout.guestCheckout.continueToShipping')}
             onPress={handleContinueToShipping}
             loading={loading}
             disabled={loading}

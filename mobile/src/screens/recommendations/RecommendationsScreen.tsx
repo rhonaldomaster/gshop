@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { recommendationsService, Recommendation } from '../../services/recommendations.service';
 import { productsService } from '../../services/products.service';
@@ -30,37 +31,38 @@ interface RecommendationSection {
 }
 
 export const RecommendationsScreen = () => {
+  const { t } = useTranslation('translation');
   const { user } = useAuth();
   const [sections, setSections] = useState<RecommendationSection[]>([
     {
-      title: 'For You',
+      title: t('recommendations.forYou'),
       algorithm: 'hybrid',
       icon: '✨',
-      description: 'Personalized picks based on your activity',
+      description: t('recommendations.personalizedPicks'),
       recommendations: [],
       loading: true,
     },
     {
-      title: 'People Also Bought',
+      title: t('recommendations.peopleAlsoBought'),
       algorithm: 'collaborative',
       icon: '👥',
-      description: 'Popular among users like you',
+      description: t('recommendations.popularAmongUsers'),
       recommendations: [],
       loading: true,
     },
     {
-      title: 'Similar to Your Purchases',
+      title: t('recommendations.similarToYourPurchases'),
       algorithm: 'content',
       icon: '🔍',
-      description: 'Products similar to what you liked',
+      description: t('recommendations.productsSimilar'),
       recommendations: [],
       loading: true,
     },
     {
-      title: 'Trending Now',
+      title: t('recommendations.trendingNow'),
       algorithm: 'popular',
       icon: '🔥',
-      description: 'What everyone is buying',
+      description: t('recommendations.everyoneBuying'),
       recommendations: [],
       loading: true,
     },
@@ -71,12 +73,12 @@ export const RecommendationsScreen = () => {
 
   // Categories for filtering
   const categories = [
-    { id: null, name: 'All', icon: '🌟' },
-    { id: 'electronics', name: 'Electronics', icon: '📱' },
-    { id: 'fashion', name: 'Fashion', icon: '👕' },
-    { id: 'home', name: 'Home', icon: '🏠' },
-    { id: 'sports', name: 'Sports', icon: '⚽' },
-    { id: 'beauty', name: 'Beauty', icon: '💄' },
+    { id: null, name: t('recommendations.all'), icon: '🌟' },
+    { id: 'electronics', name: t('recommendations.electronics'), icon: '📱' },
+    { id: 'fashion', name: t('recommendations.fashion'), icon: '👕' },
+    { id: 'home', name: t('recommendations.home'), icon: '🏠' },
+    { id: 'sports', name: t('recommendations.sports'), icon: '⚽' },
+    { id: 'beauty', name: t('recommendations.beauty'), icon: '💄' },
   ];
 
   const loadRecommendations = useCallback(async () => {
@@ -130,9 +132,9 @@ export const RecommendationsScreen = () => {
       setSections(updatedSections);
     } catch (error) {
       console.error('Error loading recommendations:', error);
-      Alert.alert('Error', 'Failed to load recommendations. Please try again.');
+      Alert.alert(t('common.error'), t('recommendations.failedToLoad'));
     }
-  }, [user?.id, selectedCategory]);
+  }, [user?.id, selectedCategory, t]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -178,8 +180,8 @@ export const RecommendationsScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <EmptyState
-          title="Sign in Required"
-          description="Please sign in to see personalized recommendations"
+          title={t('auth.loginRequired')}
+          description={t('recommendations.signInToSee')}
           icon="🔐"
         />
       </SafeAreaView>
@@ -239,7 +241,7 @@ export const RecommendationsScreen = () => {
             <Text style={styles.sectionIcon}>{section.icon}</Text>
             <View>
               <Text style={styles.sectionTitle}>{section.title}</Text>
-              <Text style={styles.sectionDescription}>No recommendations found</Text>
+              <Text style={styles.sectionDescription}>{t('recommendations.noRecommendationsFound')}</Text>
             </View>
           </View>
         </View>
@@ -255,7 +257,7 @@ export const RecommendationsScreen = () => {
             <Text style={styles.sectionDescription}>{section.description}</Text>
           </View>
           <Text style={styles.sectionCount}>
-            {section.recommendations.length} items
+            {t('recommendations.itemsCount', { count: section.recommendations.length })}
           </Text>
         </View>
 
@@ -279,7 +281,7 @@ export const RecommendationsScreen = () => {
               {product.recommendationScore && (
                 <View style={styles.scoreContainer}>
                   <Text style={styles.scoreText}>
-                    {Math.round(product.recommendationScore * 100)}% match
+                    {Math.round(product.recommendationScore * 100)}% {t('recommendations.match')}
                   </Text>
                 </View>
               )}
@@ -293,8 +295,8 @@ export const RecommendationsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Recommendations</Text>
-        <Text style={styles.headerSubtitle}>Discover products you'll love</Text>
+        <Text style={styles.headerTitle}>{t('recommendations.title')}</Text>
+        <Text style={styles.headerSubtitle}>{t('recommendations.discoverProducts')}</Text>
       </View>
 
       {renderCategoryTabs()}

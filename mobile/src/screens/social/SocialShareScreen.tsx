@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useTranslation } from 'react-i18next';
 
 interface Product {
   id: string;
@@ -34,6 +35,7 @@ interface ShareOption {
 }
 
 export default function SocialShareScreen({ route, navigation }: any) {
+  const { t } = useTranslation('translation');
   const { productId, product: initialProduct } = route.params || {};
 
   const [product, setProduct] = useState<Product | null>(initialProduct || null);
@@ -57,7 +59,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
       }
     } catch (error) {
       console.error('Failed to fetch product:', error);
-      Alert.alert('Error', 'Failed to load product details');
+      Alert.alert(t('common.error'), t('social.errorLoadingProduct'));
     } finally {
       setLoading(false);
     }
@@ -81,7 +83,11 @@ export default function SocialShareScreen({ route, navigation }: any) {
   const generateShareMessage = () => {
     if (!product) return '';
 
-    const defaultMessage = `Check out this amazing product: ${product.name} for $${product.price} from ${product.seller.businessName}!`;
+    const defaultMessage = t('social.defaultShareMessage', {
+      name: product.name,
+      price: product.price,
+      seller: product.seller.businessName
+    });
     const url = generateShareUrl(true);
     const message = customMessage.trim() || defaultMessage;
 
@@ -91,10 +97,10 @@ export default function SocialShareScreen({ route, navigation }: any) {
   const copyToClipboard = async (text: string, label: string) => {
     try {
       await Clipboard.setStringAsync(text);
-      Alert.alert('Copied!', `${label} copied to clipboard`);
+      Alert.alert(t('social.copied'), t('social.copiedToClipboard', { label }));
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
-      Alert.alert('Error', 'Failed to copy to clipboard');
+      Alert.alert(t('common.error'), t('social.errorCopying'));
     }
   };
 
@@ -104,7 +110,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
 
       const result = await Share.share({
         message,
-        title: `Check out ${product?.name}`,
+        title: t('social.checkOut', { name: product?.name }),
       });
 
       if (result.action === Share.sharedAction) {
@@ -113,13 +119,13 @@ export default function SocialShareScreen({ route, navigation }: any) {
       }
     } catch (error) {
       console.error('Failed to share:', error);
-      Alert.alert('Error', 'Failed to share product');
+      Alert.alert(t('common.error'), t('social.errorSharing'));
     }
   };
 
   const openSocialApp = (url: string, appName: string) => {
     Linking.openURL(url).catch(() => {
-      Alert.alert('Error', `Unable to open ${appName}. Please make sure the app is installed.`);
+      Alert.alert(t('common.error'), t('social.unableToOpen', { appName }));
     });
   };
 
@@ -160,7 +166,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
       color: '#0088cc',
       action: () => {
         const message = encodeURIComponent(generateShareMessage());
-        const url = `tg://msg_url?url=${generateShareUrl(true)}&text=${encodeURIComponent(customMessage || `Check out ${product?.name}!`)}`;
+        const url = `tg://msg_url?url=${generateShareUrl(true)}&text=${encodeURIComponent(customMessage || t('social.checkOut', { name: product?.name }))}`;
         openSocialApp(url, 'Telegram');
         trackShare('telegram');
       }
@@ -171,7 +177,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
       icon: 'alternate-email',
       color: '#1DA1F2',
       action: () => {
-        const text = encodeURIComponent(customMessage || `Check out ${product?.name}!`);
+        const text = encodeURIComponent(customMessage || t('social.checkOut', { name: product?.name }));
         const url = encodeURIComponent(generateShareUrl(true));
         const twitterUrl = `twitter://post?message=${text}&url=${url}`;
         openSocialApp(twitterUrl, 'Twitter');
@@ -184,11 +190,11 @@ export default function SocialShareScreen({ route, navigation }: any) {
       icon: 'photo-camera',
       color: '#E4405F',
       action: () => {
-        Alert.alert('Instagram', 'Copy the link and share it in your Instagram story or post!', [
-          { text: 'Cancel', style: 'cancel' },
+        Alert.alert('Instagram', t('social.instagramMessage'), [
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Copy Link',
-            onPress: () => copyToClipboard(generateShareUrl(true), 'Product link')
+            text: t('social.copyLink'),
+            onPress: () => copyToClipboard(generateShareUrl(true), t('social.productLink'))
           }
         ]);
         trackShare('instagram');
@@ -212,7 +218,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
       icon: 'email',
       color: '#EA4335',
       action: () => {
-        const subject = encodeURIComponent(`Check out ${product?.name}`);
+        const subject = encodeURIComponent(t('social.checkOut', { name: product?.name }));
         const body = encodeURIComponent(generateShareMessage());
         const emailUrl = `mailto:?subject=${subject}&body=${body}`;
         openSocialApp(emailUrl, 'Email');
@@ -224,7 +230,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading product...</Text>
+        <Text>{t('social.loadingProduct')}</Text>
       </View>
     );
   }
@@ -232,7 +238,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
   if (!product) {
     return (
       <View style={styles.errorContainer}>
-        <Text>Product not found</Text>
+        <Text>{t('social.productNotFound')}</Text>
       </View>
     );
   }
@@ -243,7 +249,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialIcons name="close" size={24} color="#374151" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Share Product</Text>
+        <Text style={styles.headerTitle}>{t('social.shareProduct')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -259,41 +265,41 @@ export default function SocialShareScreen({ route, navigation }: any) {
               {product.name}
             </Text>
             <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
-            <Text style={styles.sellerName}>by {product.seller.businessName}</Text>
+            <Text style={styles.sellerName}>{t('social.by')} {product.seller.businessName}</Text>
           </View>
         </View>
 
         {/* Custom Message */}
         <View style={styles.messageSection}>
-          <Text style={styles.sectionTitle}>Custom Message</Text>
+          <Text style={styles.sectionTitle}>{t('social.customMessage')}</Text>
           <TextInput
             style={styles.messageInput}
             value={customMessage}
             onChangeText={setCustomMessage}
-            placeholder={`Amazing product from ${product.seller.businessName}! Check it out...`}
+            placeholder={t('social.customMessagePlaceholder', { seller: product.seller.businessName })}
             multiline
             maxLength={280}
             textAlignVertical="top"
           />
           <Text style={styles.characterCount}>
-            {customMessage.length}/280 characters
+            {customMessage.length}/280 {t('reviews.characters')}
           </Text>
         </View>
 
         {/* Share Links */}
         <View style={styles.linksSection}>
-          <Text style={styles.sectionTitle}>Share Links</Text>
+          <Text style={styles.sectionTitle}>{t('social.shareLinks')}</Text>
 
           <View style={styles.linkItem}>
             <View style={styles.linkInfo}>
-              <Text style={styles.linkLabel}>Product Link</Text>
+              <Text style={styles.linkLabel}>{t('social.productLink')}</Text>
               <Text style={styles.linkUrl} numberOfLines={1}>
                 {generateShareUrl(false)}
               </Text>
             </View>
             <TouchableOpacity
               style={styles.copyButton}
-              onPress={() => copyToClipboard(generateShareUrl(false), 'Product link')}
+              onPress={() => copyToClipboard(generateShareUrl(false), t('social.productLink'))}
             >
               <MaterialIcons name="content-copy" size={20} color="#8b5cf6" />
             </TouchableOpacity>
@@ -301,14 +307,14 @@ export default function SocialShareScreen({ route, navigation }: any) {
 
           <View style={styles.linkItem}>
             <View style={styles.linkInfo}>
-              <Text style={styles.linkLabel}>Affiliate Link</Text>
+              <Text style={styles.linkLabel}>{t('social.affiliateLink')}</Text>
               <Text style={styles.linkUrl} numberOfLines={1}>
                 {generateShareUrl(true)}
               </Text>
             </View>
             <TouchableOpacity
               style={styles.copyButton}
-              onPress={() => copyToClipboard(generateShareUrl(true), 'Affiliate link')}
+              onPress={() => copyToClipboard(generateShareUrl(true), t('social.affiliateLink'))}
             >
               <MaterialIcons name="content-copy" size={20} color="#8b5cf6" />
             </TouchableOpacity>
@@ -317,7 +323,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
 
         {/* Share Options */}
         <View style={styles.shareSection}>
-          <Text style={styles.sectionTitle}>Share On</Text>
+          <Text style={styles.sectionTitle}>{t('social.shareOn')}</Text>
 
           <View style={styles.shareGrid}>
             {shareOptions.map((option) => (
@@ -339,14 +345,14 @@ export default function SocialShareScreen({ route, navigation }: any) {
         {/* System Share */}
         <TouchableOpacity style={styles.systemShareButton} onPress={shareViaSystem}>
           <MaterialIcons name="share" size={24} color="white" />
-          <Text style={styles.systemShareText}>More Sharing Options</Text>
+          <Text style={styles.systemShareText}>{t('social.moreSharingOptions')}</Text>
         </TouchableOpacity>
 
         {/* Affiliate Info */}
         <View style={styles.affiliateInfo}>
           <MaterialIcons name="info-outline" size={20} color="#6b7280" />
           <Text style={styles.affiliateText}>
-            Using affiliate links helps you earn commissions when people make purchases!
+            {t('social.affiliateInfo')}
           </Text>
         </View>
       </ScrollView>
