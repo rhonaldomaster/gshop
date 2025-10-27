@@ -1,23 +1,15 @@
 {
-  "version": 2,
-  "builds": [
+  "buildCommand": "npm run build",
+  "rewrites": [
     {
-      "src": "dist/serverless.js",
-      "use": "@vercel/node"
+      "source": "/(.*)",
+      "destination": "/api"
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "dist/serverless.js"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "functions": {
-    "dist/serverless.js": {
-      "maxDuration": 60
+    "api/index.js": {
+      "maxDuration": 60,
+      "memory": 1024
     }
   }
 }
