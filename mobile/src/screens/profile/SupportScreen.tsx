@@ -36,7 +36,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ faq, isExpanded, onToggle }) => {
       activeOpacity={0.7}
     >
       <View style={styles.faqHeader}>
-        <GSText variant="body" weight="semibold" style={styles.faqQuestion}>
+        <GSText variant="body" weight="semiBold" style={styles.faqQuestion}>
           {faq.question}
         </GSText>
         <Ionicons
@@ -76,7 +76,7 @@ const ContactOption: React.FC<ContactOptionProps> = ({ icon, title, description,
       </View>
 
       <View style={styles.contactInfo}>
-        <GSText variant="body" weight="semibold">
+        <GSText variant="body" weight="semiBold">
           {title}
         </GSText>
         <GSText variant="caption" color="textSecondary">
@@ -273,7 +273,7 @@ export default function SupportScreen() {
             </TouchableOpacity>
           ) : (
             <View style={[styles.ticketForm, { backgroundColor: theme.colors.surface }]}>
-              <GSText variant="body" weight="semibold" style={styles.formLabel}>
+              <GSText variant="body" weight="semiBold" style={styles.formLabel}>
                 Subject
               </GSText>
               <TextInput
@@ -291,7 +291,7 @@ export default function SupportScreen() {
                 onChangeText={setTicketSubject}
               />
 
-              <GSText variant="body" weight="semibold" style={styles.formLabel}>
+              <GSText variant="body" weight="semiBold" style={styles.formLabel}>
                 Message
               </GSText>
               <TextInput

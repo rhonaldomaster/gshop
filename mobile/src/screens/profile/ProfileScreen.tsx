@@ -16,7 +16,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('translation');
   const { user, logout, isAuthenticated } = useAuth();
-  const { totalItems, getCartSummary } = useCart();
+  const { getCartSummary } = useCart();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const cartSummary = getCartSummary();
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
 
   // Handle navigation to different screens
   const handleNavigation = (screen: string, params?: any) => {
-    navigation.navigate(screen as any, params);
+    (navigation as any).navigate(screen, params);
   };
 
   // Menu items configuration
@@ -119,7 +119,7 @@ export default function ProfileScreen() {
           </GSText>
           <GSButton
             title={t('auth.signIn')}
-            onPress={() => navigation.navigate('Auth' as any)}
+            onPress={() => (navigation as any).navigate('Auth')}
             style={styles.signInButton}
           />
         </View>

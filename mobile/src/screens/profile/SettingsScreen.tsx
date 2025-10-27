@@ -42,7 +42,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
       </View>
 
       <View style={styles.settingContent}>
-        <GSText variant="body" weight="semibold">
+        <GSText variant="body" weight="semiBold">
           {title}
         </GSText>
         {subtitle && (
@@ -79,7 +79,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
 
 export default function SettingsScreen() {
   const { theme } = useTheme();
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const navigation = useNavigation();
 
   // Notification Settings
@@ -148,7 +148,7 @@ export default function SettingsScreen() {
               icon="person-outline"
               title="Edit Profile"
               subtitle="Update your personal information"
-              onPress={() => navigation.navigate('EditProfile' as any)}
+              onPress={() => (navigation as any).navigate('EditProfile')}
             />
 
             <SettingItem
