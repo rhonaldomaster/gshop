@@ -18,7 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
-import { ordersService, Order, OrderStatus, PaymentStatus } from '../../services/orders.service';
+import { ordersService, Order, PaymentStatus } from '../../services/orders.service';
 import { PaginatedResponse } from '../../config/api.config';
 
 interface OrderCardProps {
@@ -80,7 +80,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
       {/* Order Header */}
       <View style={styles.orderHeader}>
         <View style={styles.orderHeaderLeft}>
-          <GSText variant="body" weight="medium">
+          <GSText variant="body" weight="semiBold">
             {ordersService.formatOrderNumber(order.orderNumber)}
           </GSText>
           <GSText variant="caption" color="textSecondary">
@@ -100,7 +100,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
           >
             <GSText
               variant="caption"
-              weight="medium"
+              weight="semiBold"
               style={{ color: ordersService.getOrderStatusColor(order.status) }}
             >
               {ordersService.getOrderStatusText(order.status)}
@@ -120,8 +120,8 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
           <GSText variant="caption" color="textSecondary">
             {t('cart.total')}:
           </GSText>
-          <GSText variant="body" weight="medium" color="primary">
-            {ordersService.formatPrice(order.total)}
+          <GSText variant="body" weight="semiBold" color="primary">
+            {ordersService.formatPrice(order.total || 0)}
           </GSText>
         </View>
 
@@ -217,8 +217,8 @@ export default function OrdersScreen() {
         setOrders(response.data);
       }
 
-      setHasMorePages(response.hasNext);
-      setCurrentPage(response.currentPage);
+      setHasMorePages(response.pagination.page < response.pagination.totalPages);
+      setCurrentPage(response.pagination.page);
     } catch (err: any) {
       console.error('Failed to load orders:', err);
       setError(err.message || t('orders.loadError'));
@@ -258,12 +258,12 @@ export default function OrdersScreen() {
 
   // Handle order press
   const handleOrderPress = useCallback((order: Order) => {
-    navigation.navigate('OrderDetail' as any, { orderId: order.id });
+    (navigation as any).navigate('OrderDetail', { orderId: order.id });
   }, [navigation]);
 
   // Handle navigation to shopping
   const handleStartShopping = useCallback(() => {
-    navigation.navigate('Home' as any);
+    (navigation as any).navigate('Home');
   }, [navigation]);
 
   // Show login prompt for guests
@@ -282,7 +282,7 @@ export default function OrdersScreen() {
           </GSText>
           <GSButton
             title={t('auth.signIn')}
-            onPress={() => navigation.navigate('Auth' as any)}
+            onPress={() => (navigation as any).navigate('Auth')}
             style={styles.signInButton}
           />
         </View>
@@ -377,7 +377,7 @@ export default function OrdersScreen() {
           </GSText>
           <GSButton
             title={t('common.tryAgain')}
-            variant="outlined"
+            variant="outline"
             onPress={() => loadOrders(1, false)}
             style={styles.retryButton}
           />

@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { affiliatesService } from '../../services/affiliates.service';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -43,6 +44,7 @@ interface ShareAnalytics {
 }
 
 export const ShareToolsScreen = () => {
+  const { t } = useTranslation('translation');
   const { user } = useAuth();
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [generatedContent, setGeneratedContent] = useState('');
@@ -111,58 +113,58 @@ export const ShareToolsScreen = () => {
   const shareTemplates: ShareTemplate[] = [
     {
       id: 'product_recommendation',
-      title: '🌟 Product Recommendation',
-      description: 'Share a product with personal recommendation',
-      template: '🌟 Just found this amazing {{productName}}! Perfect for {{audience}}. Check it out: {{link}} #affiliate #recommendation',
+      title: t('affiliate.templates.productRecommendation.title'),
+      description: t('affiliate.templates.productRecommendation.description'),
+      template: t('affiliate.templates.productRecommendation.template'),
       category: 'product',
     },
     {
       id: 'deal_alert',
-      title: '🔥 Deal Alert',
-      description: 'Highlight special offers and discounts',
-      template: '🔥 DEAL ALERT! Amazing {{productName}} at just ${{price}}! Don\'t miss out: {{link}} #deals #shopping',
+      title: t('affiliate.templates.dealAlert.title'),
+      description: t('affiliate.templates.dealAlert.description'),
+      template: t('affiliate.templates.dealAlert.template'),
       category: 'promotional',
     },
     {
       id: 'review_share',
-      title: '⭐ Product Review',
-      description: 'Share your honest product review',
-      template: '⭐ Just tried {{productName}} and I\'m impressed! Here\'s my honest review and where to get it: {{link}} #review #honest',
+      title: t('affiliate.templates.reviewShare.title'),
+      description: t('affiliate.templates.reviewShare.description'),
+      template: t('affiliate.templates.reviewShare.template'),
       category: 'personal',
     },
     {
       id: 'lifestyle_post',
-      title: '💫 Lifestyle Post',
-      description: 'Integrate product into lifestyle content',
-      template: '💫 Living my best life with {{productName}}! It has made such a difference. Get yours here: {{link}} #lifestyle #wellness',
+      title: t('affiliate.templates.lifestylePost.title'),
+      description: t('affiliate.templates.lifestylePost.description'),
+      template: t('affiliate.templates.lifestylePost.template'),
       category: 'personal',
     },
     {
       id: 'gift_idea',
-      title: '🎁 Gift Idea',
-      description: 'Suggest product as a perfect gift',
-      template: '🎁 Looking for the perfect gift? {{productName}} is absolutely perfect! Your loved ones will thank you: {{link}} #gifts #presents',
+      title: t('affiliate.templates.giftIdea.title'),
+      description: t('affiliate.templates.giftIdea.description'),
+      template: t('affiliate.templates.giftIdea.template'),
       category: 'general',
     },
     {
       id: 'comparison_post',
-      title: '🤔 Product Comparison',
-      description: 'Compare products and highlight benefits',
-      template: '🤔 After trying many options, {{productName}} stands out! Here\'s why it\'s the best choice: {{link}} #comparison #bestchoice',
+      title: t('affiliate.templates.comparisonPost.title'),
+      description: t('affiliate.templates.comparisonPost.description'),
+      template: t('affiliate.templates.comparisonPost.template'),
       category: 'product',
     },
     {
       id: 'unboxing_story',
-      title: '📦 Unboxing Story',
-      description: 'Share unboxing experience',
-      template: '📦 Unboxing my new {{productName}} and I\'m so excited! The quality is amazing. Get yours: {{link}} #unboxing #excited',
+      title: t('affiliate.templates.unboxingStory.title'),
+      description: t('affiliate.templates.unboxingStory.description'),
+      template: t('affiliate.templates.unboxingStory.template'),
       category: 'personal',
     },
     {
       id: 'tutorial_share',
-      title: '📚 How-to Tutorial',
-      description: 'Educational content with product mention',
-      template: '📚 Tutorial: How to get the most out of {{productName}}! It\'s been a game-changer for me: {{link}} #tutorial #tips',
+      title: t('affiliate.templates.tutorialShare.title'),
+      description: t('affiliate.templates.tutorialShare.description'),
+      template: t('affiliate.templates.tutorialShare.template'),
       category: 'general',
     },
   ];
@@ -202,11 +204,11 @@ export const ShareToolsScreen = () => {
         // For Instagram and TikTok, copy content to clipboard
         await Clipboard.setString(content);
         Alert.alert(
-          `Share to ${platform.name}`,
-          'Content copied to clipboard! Open the app and paste it in your post.',
+          t('affiliate.shareToTitle', { platform: platform.name }),
+          t('affiliate.shareToMessage'),
           [
-            { text: 'Cancel' },
-            { text: 'Open App', onPress: () => console.log(`Open ${platform.name}`) }
+            { text: t('common.cancel') },
+            { text: t('affiliate.openApp'), onPress: () => console.log(`Open ${platform.name}`) }
           ]
         );
         return;
@@ -218,23 +220,23 @@ export const ShareToolsScreen = () => {
       });
 
       if (result.action === Share.sharedAction) {
-        Alert.alert('Shared!', `Content shared to ${platform.name} successfully! 🎉`);
+        Alert.alert(t('affiliate.sharedTitle'), t('affiliate.sharedMessage', { platform: platform.name }));
       }
     } catch (error) {
       console.error('Error sharing:', error);
-      Alert.alert('Error', 'Failed to share content. Please try again.');
+      Alert.alert(t('common.error'), t('affiliate.failedShareContent'));
     }
-  }, []);
+  }, [t]);
 
   const copyToClipboard = useCallback(async (content: string) => {
     try {
       await Clipboard.setString(content);
-      Alert.alert('Copied! 📋', 'Content copied to clipboard.');
+      Alert.alert(t('affiliate.copiedTitle'), t('affiliate.copiedMessage'));
     } catch (error) {
       console.error('Error copying:', error);
-      Alert.alert('Error', 'Failed to copy content.');
+      Alert.alert(t('common.error'), t('affiliate.failedCopyContent'));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     setShareAnalytics(mockAnalytics);
@@ -244,8 +246,8 @@ export const ShareToolsScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <EmptyState
-          title="Sign in Required"
-          description="Please sign in to access sharing tools"
+          title={t('affiliate.signInRequired')}
+          description={t('affiliate.signInToAccessTools')}
           icon="🔐"
         />
       </SafeAreaView>
@@ -260,7 +262,7 @@ export const ShareToolsScreen = () => {
     >
       <Text style={styles.templateTitle}>{template.title}</Text>
       <Text style={styles.templateDescription}>{template.description}</Text>
-      <Text style={styles.templateCategory}>{template.category}</Text>
+      <Text style={styles.templateCategory}>{t(`affiliate.categories.${template.category}`)}</Text>
     </TouchableOpacity>
   );
 
@@ -282,15 +284,15 @@ export const ShareToolsScreen = () => {
       <View style={styles.analyticsRow}>
         <View style={styles.analyticsStat}>
           <Text style={styles.analyticsValue}>{analytics.shares}</Text>
-          <Text style={styles.analyticsLabel}>Shares</Text>
+          <Text style={styles.analyticsLabel}>{t('affiliate.shares')}</Text>
         </View>
         <View style={styles.analyticsStat}>
           <Text style={styles.analyticsValue}>{analytics.clicks}</Text>
-          <Text style={styles.analyticsLabel}>Clicks</Text>
+          <Text style={styles.analyticsLabel}>{t('affiliate.clicks')}</Text>
         </View>
         <View style={styles.analyticsStat}>
           <Text style={styles.analyticsValue}>{analytics.conversions}</Text>
-          <Text style={styles.analyticsLabel}>Sales</Text>
+          <Text style={styles.analyticsLabel}>{t('affiliate.sales')}</Text>
         </View>
       </View>
     </View>
@@ -299,16 +301,16 @@ export const ShareToolsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Share Tools</Text>
-        <Text style={styles.headerSubtitle}>Create engaging content for social media</Text>
+        <Text style={styles.headerTitle}>{t('affiliate.shareTools')}</Text>
+        <Text style={styles.headerSubtitle}>{t('affiliate.shareToolsSubtitle')}</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Content Templates */}
         <View style={styles.templatesSection}>
-          <Text style={styles.sectionTitle}>📝 Content Templates</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.contentTemplates')}</Text>
           <Text style={styles.sectionSubtitle}>
-            Choose a template to generate engaging content for your posts
+            {t('affiliate.contentTemplatesSubtitle')}
           </Text>
           <View style={styles.templatesGrid}>
             {shareTemplates.map(renderTemplate)}
@@ -318,7 +320,7 @@ export const ShareToolsScreen = () => {
         {/* Generated Content */}
         {generatedContent ? (
           <View style={styles.contentSection}>
-            <Text style={styles.sectionTitle}>✨ Generated Content</Text>
+            <Text style={styles.sectionTitle}>{t('affiliate.generatedContent')}</Text>
             <View style={styles.contentCard}>
               <Text style={styles.contentText}>{generatedContent}</Text>
               <View style={styles.contentActions}>
@@ -326,13 +328,13 @@ export const ShareToolsScreen = () => {
                   style={styles.contentAction}
                   onPress={() => copyToClipboard(generatedContent)}
                 >
-                  <Text style={styles.contentActionText}>📋 Copy</Text>
+                  <Text style={styles.contentActionText}>{t('affiliate.copy')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.contentAction}
                   onPress={() => setGeneratedContent('')}
                 >
-                  <Text style={styles.contentActionText}>🗑️ Clear</Text>
+                  <Text style={styles.contentActionText}>{t('affiliate.clear')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -341,9 +343,9 @@ export const ShareToolsScreen = () => {
 
         {/* Social Platforms */}
         <View style={styles.platformsSection}>
-          <Text style={styles.sectionTitle}>📱 Share to Social Media</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.shareToSocialMedia')}</Text>
           <Text style={styles.sectionSubtitle}>
-            {generatedContent ? 'Choose a platform to share your content' : 'Generate content first to enable sharing'}
+            {generatedContent ? t('affiliate.choosePlatform') : t('affiliate.generateFirst')}
           </Text>
           <View style={styles.platformsGrid}>
             {socialPlatforms.map(renderSocialPlatform)}
@@ -352,44 +354,44 @@ export const ShareToolsScreen = () => {
 
         {/* Performance Analytics */}
         <View style={styles.analyticsSection}>
-          <Text style={styles.sectionTitle}>📊 Sharing Performance</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.sharingPerformance')}</Text>
           <Text style={styles.sectionSubtitle}>
-            Track how your shared content performs across platforms
+            {t('affiliate.sharingPerformanceSubtitle')}
           </Text>
           {shareAnalytics.map(renderAnalytics)}
         </View>
 
         {/* Tips Section */}
         <View style={styles.tipsSection}>
-          <Text style={styles.sectionTitle}>💡 Sharing Tips</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.sharingTips')}</Text>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>🎯</Text>
             <Text style={styles.tipText}>
-              Personalize templates with your own voice and style for authenticity
+              {t('affiliate.shareTip1')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📸</Text>
             <Text style={styles.tipText}>
-              Add high-quality images or videos to increase engagement
+              {t('affiliate.shareTip2')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>⏰</Text>
             <Text style={styles.tipText}>
-              Post at optimal times when your audience is most active
+              {t('affiliate.shareTip3')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>💬</Text>
             <Text style={styles.tipText}>
-              Engage with comments and questions to build trust with your audience
+              {t('affiliate.shareTip4')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📈</Text>
             <Text style={styles.tipText}>
-              Track performance and adjust your strategy based on what works best
+              {t('affiliate.shareTip5')}
             </Text>
           </View>
         </View>

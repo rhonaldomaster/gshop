@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { affiliatesService, AffiliateLink } from '../../services/affiliates.service';
 import { productsService } from '../../services/products.service';
@@ -29,6 +30,7 @@ interface ProductSearchResult {
 }
 
 export const LinkGeneratorScreen = () => {
+  const { t } = useTranslation('translation');
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
@@ -64,11 +66,11 @@ export const LinkGeneratorScreen = () => {
       setSearchResults(products.products || []);
     } catch (error) {
       console.error('Error searching products:', error);
-      Alert.alert('Error', 'Failed to search products. Please try again.');
+      Alert.alert(t('common.error'), t('affiliate.failedSearchProducts'));
     } finally {
       setSearching(false);
     }
-  }, []);
+  }, [t]);
 
   const generateAffiliateLink = useCallback(async (product: ProductSearchResult) => {
     if (!user?.id) return;
@@ -92,28 +94,28 @@ export const LinkGeneratorScreen = () => {
       await Clipboard.setString(affiliateLink.fullUrl);
 
       Alert.alert(
-        'Link Generated! 🎉',
-        'Your affiliate link has been created and copied to clipboard.',
+        t('affiliate.linkGeneratedTitle'),
+        t('affiliate.linkGeneratedMessage'),
         [
-          { text: 'OK' },
+          { text: t('common.done') },
           {
-            text: 'Share',
+            text: t('affiliate.share'),
             onPress: () => shareLink(affiliateLink),
           },
         ]
       );
     } catch (error) {
       console.error('Error generating affiliate link:', error);
-      Alert.alert('Error', 'Failed to generate affiliate link. Please try again.');
+      Alert.alert(t('common.error'), t('affiliate.failedGenerateLink'));
     } finally {
       setGeneratingLink(null);
     }
-  }, [user?.id]);
+  }, [user?.id, t, shareLink]);
 
   const shareLink = useCallback(async (link: AffiliateLink) => {
     try {
       const result = await Share.share({
-        message: `Check out this amazing product! ${link.fullUrl}`,
+        message: t('affiliate.shareMessage', { url: link.fullUrl }),
         url: link.fullUrl,
       });
 
@@ -123,19 +125,19 @@ export const LinkGeneratorScreen = () => {
       }
     } catch (error) {
       console.error('Error sharing link:', error);
-      Alert.alert('Error', 'Failed to share link.');
+      Alert.alert(t('common.error'), t('affiliate.failedShareLink'));
     }
-  }, []);
+  }, [t]);
 
   const copyToClipboard = useCallback(async (text: string) => {
     try {
       await Clipboard.setString(text);
-      Alert.alert('Copied! 📋', 'Link copied to clipboard.');
+      Alert.alert(t('affiliate.copiedTitle'), t('affiliate.copiedMessage'));
     } catch (error) {
       console.error('Error copying to clipboard:', error);
-      Alert.alert('Error', 'Failed to copy link.');
+      Alert.alert(t('common.error'), t('affiliate.failedCopyLink'));
     }
-  }, []);
+  }, [t]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -159,8 +161,8 @@ export const LinkGeneratorScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <EmptyState
-          title="Sign in Required"
-          description="Please sign in to generate affiliate links"
+          title={t('affiliate.signInRequired')}
+          description={t('affiliate.signInRequiredDesc')}
           icon="🔐"
         />
       </SafeAreaView>
@@ -180,7 +182,7 @@ export const LinkGeneratorScreen = () => {
         </Text>
         <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
         {product.seller && (
-          <Text style={styles.productSeller}>by {product.seller.name}</Text>
+          <Text style={styles.productSeller}>{t('affiliate.bySeller', { name: product.seller.name })}</Text>
         )}
       </View>
 
@@ -188,7 +190,7 @@ export const LinkGeneratorScreen = () => {
         {generatingLink === product.id ? (
           <ActivityIndicator color="#007bff" size="small" />
         ) : (
-          <Text style={styles.generateButtonText}>Generate Link</Text>
+          <Text style={styles.generateButtonText}>{t('affiliate.generateLinkButton')}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -201,12 +203,12 @@ export const LinkGeneratorScreen = () => {
           {link.fullUrl}
         </Text>
         <View style={styles.linkStats}>
-          <Text style={styles.linkStat}>👆 {link.clicks} clicks</Text>
-          <Text style={styles.linkStat}>💰 {link.conversions} sales</Text>
+          <Text style={styles.linkStat}>👆 {t('affiliate.clicksCount', { count: link.clicks })}</Text>
+          <Text style={styles.linkStat}>💰 {t('affiliate.salesCount', { count: link.conversions })}</Text>
           <Text style={styles.linkStat}>💵 ${link.revenue.toFixed(2)}</Text>
         </View>
         <Text style={styles.linkDate}>
-          Created {new Date(link.createdAt).toLocaleDateString()}
+          {t('affiliate.createdDate', { date: new Date(link.createdAt).toLocaleDateString() })}
         </Text>
       </View>
 
@@ -230,8 +232,8 @@ export const LinkGeneratorScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Link Generator</Text>
-        <Text style={styles.headerSubtitle}>Create affiliate links for any product</Text>
+        <Text style={styles.headerTitle}>{t('affiliate.linkGenerator')}</Text>
+        <Text style={styles.headerSubtitle}>{t('affiliate.linkGeneratorSubtitle')}</Text>
       </View>
 
       <ScrollView
@@ -243,11 +245,11 @@ export const LinkGeneratorScreen = () => {
       >
         {/* Search Section */}
         <View style={styles.searchSection}>
-          <Text style={styles.sectionTitle}>🔍 Search Products</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.searchProducts')}</Text>
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search for products to create affiliate links..."
+              placeholder={t('affiliate.searchPlaceholder')}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCapitalize="none"
@@ -269,7 +271,7 @@ export const LinkGeneratorScreen = () => {
               ) : searchResults.length > 0 ? (
                 searchResults.map(renderProductItem)
               ) : (
-                <Text style={styles.noResults}>No products found. Try a different search term.</Text>
+                <Text style={styles.noResults}>{t('affiliate.noProductsFound')}</Text>
               )}
             </View>
           )}
@@ -277,50 +279,50 @@ export const LinkGeneratorScreen = () => {
 
         {/* Quick Actions */}
         <View style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.quickActions')}</Text>
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.quickAction}
               onPress={() => setSearchQuery('trending')}
             >
               <Text style={styles.quickActionIcon}>🔥</Text>
-              <Text style={styles.quickActionText}>Trending Products</Text>
+              <Text style={styles.quickActionText}>{t('affiliate.trendingProducts')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickAction}
               onPress={() => setSearchQuery('electronics')}
             >
               <Text style={styles.quickActionIcon}>📱</Text>
-              <Text style={styles.quickActionText}>Electronics</Text>
+              <Text style={styles.quickActionText}>{t('affiliate.electronics')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickAction}
               onPress={() => setSearchQuery('fashion')}
             >
               <Text style={styles.quickActionIcon}>👕</Text>
-              <Text style={styles.quickActionText}>Fashion</Text>
+              <Text style={styles.quickActionText}>{t('affiliate.fashion')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickAction}
               onPress={() => setSearchQuery('deals')}
             >
               <Text style={styles.quickActionIcon}>💰</Text>
-              <Text style={styles.quickActionText}>Best Deals</Text>
+              <Text style={styles.quickActionText}>{t('affiliate.bestDeals')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Recent Links */}
         <View style={styles.recentLinksSection}>
-          <Text style={styles.sectionTitle}>📋 Recent Links</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.recentLinks')}</Text>
           {loading ? (
             <LoadingState style={styles.recentLoading} />
           ) : recentLinks.length > 0 ? (
             recentLinks.map(renderRecentLink)
           ) : (
             <EmptyState
-              title="No Links Yet"
-              description="Generate your first affiliate link by searching for products above"
+              title={t('affiliate.noLinksYet')}
+              description={t('affiliate.noLinksYetDesc')}
               icon="🔗"
             />
           )}
@@ -328,29 +330,29 @@ export const LinkGeneratorScreen = () => {
 
         {/* Tips Section */}
         <View style={styles.tipsSection}>
-          <Text style={styles.sectionTitle}>💡 Link Generation Tips</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.linkGenerationTips')}</Text>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>🎯</Text>
             <Text style={styles.tipText}>
-              Choose products that match your audience's interests for better conversion rates
+              {t('affiliate.linkTip1')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📱</Text>
             <Text style={styles.tipText}>
-              Share links on multiple platforms - social media, blogs, live streams
+              {t('affiliate.linkTip2')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📊</Text>
             <Text style={styles.tipText}>
-              Track your link performance and focus on what works best
+              {t('affiliate.linkTip3')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>⏰</Text>
             <Text style={styles.tipText}>
-              Generate links for trending and seasonal products for timely promotion
+              {t('affiliate.linkTip4')}
             </Text>
           </View>
         </View>

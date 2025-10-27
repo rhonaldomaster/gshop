@@ -27,6 +27,7 @@ interface InputProps {
   keyboardType?: any;
   multiline?: boolean;
   numberOfLines?: number;
+  maxLength?: number;
 }
 
 const GSInput: React.FC<InputProps> = ({
@@ -38,12 +39,13 @@ const GSInput: React.FC<InputProps> = ({
   keyboardType,
   multiline,
   numberOfLines,
+  maxLength,
 }) => {
   const { theme } = useTheme();
 
   return (
     <View>
-      <GSText variant="body" weight="semibold" style={{ marginBottom: 8 }}>
+      <GSText variant="body" weight="semiBold" style={{ marginBottom: 8 }}>
         {label}
       </GSText>
       <TextInput
@@ -66,6 +68,7 @@ const GSInput: React.FC<InputProps> = ({
         keyboardType={keyboardType}
         multiline={multiline}
         numberOfLines={numberOfLines}
+        maxLength={maxLength}
       />
       {error && (
         <GSText variant="caption" color="error" style={{ marginTop: 4 }}>
@@ -344,7 +347,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       padding: 16,
       marginBottom: 12,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.gray300,
     },
     defaultBadge: {
       backgroundColor: theme.colors.primary,
@@ -376,7 +379,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       marginTop: 12,
       paddingTop: 12,
       borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
+      borderTopColor: theme.colors.gray300,
     },
     actionButton: {
       flexDirection: 'row',
@@ -450,7 +453,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       alignItems: 'center',
       padding: 20,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      borderBottomColor: theme.colors.gray300,
     },
     modalTitle: {
       fontSize: 18,
@@ -468,7 +471,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
     },
     stateSelector: {
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.gray300,
       borderRadius: 8,
       padding: 16,
       backgroundColor: theme.colors.surface,
@@ -483,7 +486,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
     stateOption: {
       padding: 16,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      borderBottomColor: theme.colors.gray300,
     },
     stateOptionText: {
       fontSize: 16,

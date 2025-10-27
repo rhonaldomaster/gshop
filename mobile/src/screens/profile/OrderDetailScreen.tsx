@@ -21,11 +21,8 @@ import GSButton from '../../components/ui/GSButton';
 import {
   ordersService,
   Order,
-  OrderStatus,
   PaymentStatus,
   OrderTrackingInfo,
-  TrackingEvent,
-  ReturnRequest,
 } from '../../services/orders.service';
 
 type OrderDetailScreenParams = {
@@ -59,7 +56,7 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder
       </View>
 
       <View style={styles.orderItemInfo}>
-        <GSText variant="body" weight="medium" numberOfLines={2}>
+        <GSText variant="body" weight="semiBold" numberOfLines={2}>
           {item.product?.name || `Product ${item.productId}`}
         </GSText>
 
@@ -73,7 +70,7 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder
         </View>
 
         <View style={styles.orderItemFooter}>
-          <GSText variant="body" weight="medium" color="primary">
+          <GSText variant="body" weight="semiBold" color="primary">
             Subtotal: {ordersService.formatPrice(item.subtotal)}
           </GSText>
 
@@ -142,7 +139,7 @@ const TrackingTimeline: React.FC<TrackingTimelineProps> = ({ trackingInfo }) => 
                 <View
                   style={[
                     styles.trackingEventLine,
-                    { backgroundColor: theme.colors.border },
+                    { backgroundColor: theme.colors.gray300 },
                   ]}
                 />
               )}
@@ -151,7 +148,7 @@ const TrackingTimeline: React.FC<TrackingTimelineProps> = ({ trackingInfo }) => 
             <View style={styles.trackingEventContent}>
               <GSText
                 variant="body"
-                weight={isActive ? 'medium' : 'regular'}
+                weight={isActive ? 'semiBold' : 'normal'}
                 color={isActive ? 'primary' : 'text'}
               >
                 {event.description}
@@ -193,10 +190,7 @@ export default function OrderDetailScreen() {
   const [trackingInfo, setTrackingInfo] = useState<OrderTrackingInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [trackingLoading, setTrackingLoading] = useState(false);
-  const [returnLoading, setReturnLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showReturnForm, setShowReturnForm] = useState(false);
-  const [returnReason, setReturnReason] = useState('');
 
   // Load order details
   const loadOrderDetails = useCallback(async () => {
@@ -249,7 +243,7 @@ export default function OrderDetailScreen() {
           `${orderItem.product.name} has been added to your cart`,
           [
             { text: 'Continue Shopping', style: 'cancel' },
-            { text: 'View Cart', onPress: () => navigation.navigate('Cart' as any) },
+            { text: 'View Cart', onPress: () => (navigation as any).navigate('Cart') },
           ]
         );
       }
@@ -284,37 +278,16 @@ export default function OrderDetailScreen() {
     );
   }, [order, loadOrderDetails]);
 
-  // Handle return request
-  const handleReturnRequest = useCallback(async () => {
-    if (!order || !returnReason.trim()) {
-      Alert.alert('Error', 'Please provide a reason for the return');
-      return;
-    }
+  // Handle return request (placeholder for future implementation)
+  const handleRequestReturn = useCallback(async () => {
+    if (!order) return;
 
-    try {
-      setReturnLoading(true);
-
-      const returnRequest: ReturnRequest = {
-        orderId: order.id,
-        reason: returnReason.trim(),
-        description: 'Return requested from mobile app',
-      };
-
-      await ordersService.requestReturn(returnRequest);
-
-      Alert.alert(
-        'Return Requested',
-        'Your return request has been submitted. We will review it and get back to you soon.',
-        [{ text: 'OK', onPress: () => setShowReturnForm(false) }]
-      );
-
-      loadOrderDetails();
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to request return');
-    } finally {
-      setReturnLoading(false);
-    }
-  }, [order, returnReason, loadOrderDetails]);
+    Alert.alert(
+      'Request Return',
+      'Return functionality will be available soon.',
+      [{ text: 'OK' }]
+    );
+  }, [order]);
 
   // Handle open tracking URL
   const handleOpenTracking = useCallback(() => {
@@ -378,7 +351,7 @@ export default function OrderDetailScreen() {
           />
           <GSButton
             title="Go Back"
-            variant="outlined"
+            variant="outline"
             onPress={() => navigation.goBack()}
             style={styles.goBackButton}
           />
@@ -413,7 +386,7 @@ export default function OrderDetailScreen() {
           >
             <GSText
               variant="body"
-              weight="medium"
+              weight="semiBold"
               style={{ color: ordersService.getOrderStatusColor(order.status) }}
             >
               {ordersService.getOrderStatusText(order.status)}
@@ -426,7 +399,7 @@ export default function OrderDetailScreen() {
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
             Order Items
           </GSText>
-          {order.items.map((item, index) => (
+          {order.items.map((item) => (
             <OrderItemComponent
               key={item.id}
               item={item}
@@ -449,19 +422,19 @@ export default function OrderDetailScreen() {
           <View style={styles.summaryRow}>
             <GSText variant="body">Shipping</GSText>
             <GSText variant="body">
-              {parseFloat(String(order.shipping)) === 0 ? 'Free' : ordersService.formatPrice(order.shipping)}
+              {parseFloat(String(order.shipping || 0)) === 0 ? 'Free' : ordersService.formatPrice(order.shipping || 0)}
             </GSText>
           </View>
 
           <View style={styles.summaryRow}>
             <GSText variant="body">Tax</GSText>
-            <GSText variant="body">{ordersService.formatPrice(order.tax)}</GSText>
+            <GSText variant="body">{ordersService.formatPrice(order.tax || 0)}</GSText>
           </View>
 
           <View style={[styles.summaryRow, styles.totalRow]}>
             <GSText variant="h4" weight="bold">Total</GSText>
             <GSText variant="h4" weight="bold" color="primary">
-              {ordersService.formatPrice(order.total)}
+              {ordersService.formatPrice(order.total || 0)}
             </GSText>
           </View>
         </View>
@@ -487,7 +460,7 @@ export default function OrderDetailScreen() {
 
             <View style={[styles.trackingCard, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.trackingInfo}>
-                <GSText variant="body" weight="medium">
+                <GSText variant="body" weight="semiBold">
                   Tracking Number: {order.trackingNumber}
                 </GSText>
                 <GSText variant="caption" color="textSecondary">
@@ -520,7 +493,7 @@ export default function OrderDetailScreen() {
             Shipping Address
           </GSText>
           <View style={[styles.addressCard, { backgroundColor: theme.colors.surface }]}>
-            <GSText variant="body" weight="medium">
+            <GSText variant="body" weight="semiBold">
               {order.shippingAddress.firstName} {order.shippingAddress.lastName}
             </GSText>
             <GSText variant="body">{order.shippingAddress.address}</GSText>
@@ -539,7 +512,7 @@ export default function OrderDetailScreen() {
           <View style={[styles.paymentCard, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.paymentRow}>
               <GSText variant="body">Payment Method:</GSText>
-              <GSText variant="body" weight="medium">
+              <GSText variant="body" weight="semiBold">
                 {order.paymentMethod?.provider || 'N/A'}
               </GSText>
             </View>
@@ -547,7 +520,7 @@ export default function OrderDetailScreen() {
               <GSText variant="body">Payment Status:</GSText>
               <GSText
                 variant="body"
-                weight="medium"
+                weight="semiBold"
                 color={order.paymentStatus === PaymentStatus.PAID ? 'success' : 'warning'}
               >
                 {ordersService.getPaymentStatusText(order.paymentStatus)}
@@ -562,7 +535,7 @@ export default function OrderDetailScreen() {
             {ordersService.canCancelOrder(order) && (
               <GSButton
                 title="Cancel Order"
-                variant="outlined"
+                variant="outline"
                 onPress={handleCancelOrder}
                 style={styles.actionButton}
               />
@@ -571,8 +544,8 @@ export default function OrderDetailScreen() {
             {ordersService.canRequestReturn(order) && (
               <GSButton
                 title="Request Return"
-                variant="outlined"
-                onPress={() => setShowReturnForm(true)}
+                variant="outline"
+                onPress={handleRequestReturn}
                 style={styles.actionButton}
               />
             )}

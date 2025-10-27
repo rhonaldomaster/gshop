@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { recommendationsService, Recommendation } from '../../services/recommendations.service';
 import { productsService } from '../../services/products.service';
-import { ProductCard } from '../../components/ui/ProductCard';
+import { ProductCard } from '../../components/live/ProductCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LoadingState } from '../../components/ui/LoadingState';
 
@@ -229,7 +228,9 @@ export const RecommendationsScreen = () => {
               <Text style={styles.sectionDescription}>{section.description}</Text>
             </View>
           </View>
-          <LoadingState style={styles.loadingSection} />
+          <View style={styles.loadingSection}>
+            <LoadingState />
+          </View>
         </View>
       );
     }
@@ -268,15 +269,13 @@ export const RecommendationsScreen = () => {
           contentContainerStyle={styles.productsContainer}
         >
           {section.recommendations.map((product, index) => (
-            <TouchableOpacity
+            <View
               key={`${product.id}-${index}`}
-              style={styles.productContainer}
-              onPress={() => handleProductPress(product)}
+              style={[styles.productContainer, styles.productCard]}
             >
               <ProductCard
                 product={product}
                 onPress={() => handleProductPress(product)}
-                style={styles.productCard}
               />
               {product.recommendationScore && (
                 <View style={styles.scoreContainer}>
@@ -285,7 +284,7 @@ export const RecommendationsScreen = () => {
                   </Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </View>
           ))}
         </ScrollView>
       </View>

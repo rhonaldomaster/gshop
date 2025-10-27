@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
-import GSButton from '../../components/ui/GSButton';
 
 // Notification types
 export type NotificationType = 'order' | 'promotion' | 'system' | 'info';
@@ -113,7 +112,7 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
 
         <View style={styles.notificationContent}>
           <View style={styles.notificationTitleRow}>
-            <GSText variant="body" weight="semibold" style={styles.notificationTitle}>
+            <GSText variant="body" weight="semiBold" style={styles.notificationTitle}>
               {notification.title}
             </GSText>
             {!notification.isRead && <View style={styles.unreadBadge} />}
@@ -230,7 +229,7 @@ export default function NotificationsScreen() {
 
     // Navigate based on notification type
     if (notification.type === 'order' && notification.data?.orderId) {
-      navigation.navigate('OrderTracking' as any, { orderId: notification.data.orderId });
+      (navigation as any).navigate('OrderTracking', { orderId: notification.data.orderId });
     }
   };
 
@@ -329,7 +328,7 @@ export default function NotificationsScreen() {
         >
           <GSText
             variant="body"
-            weight={filter === 'all' ? 'semibold' : 'normal'}
+            weight={filter === 'all' ? 'semiBold' : 'normal'}
             color={filter === 'all' ? 'primary' : 'textSecondary'}
           >
             All ({notifications.length})
@@ -345,7 +344,7 @@ export default function NotificationsScreen() {
         >
           <GSText
             variant="body"
-            weight={filter === 'unread' ? 'semibold' : 'normal'}
+            weight={filter === 'unread' ? 'semiBold' : 'normal'}
             color={filter === 'unread' ? 'primary' : 'textSecondary'}
           >
             Unread ({unreadCount})

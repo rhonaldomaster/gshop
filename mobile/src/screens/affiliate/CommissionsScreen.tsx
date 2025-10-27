@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { affiliatesService, AffiliateStats } from '../../services/affiliates.service';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -40,6 +41,7 @@ interface PayoutRequest {
 }
 
 export const CommissionsScreen = () => {
+  const { t } = useTranslation('translation');
   const { user } = useAuth();
   const [stats, setStats] = useState<AffiliateStats | null>(null);
   const [transactions, setTransactions] = useState<CommissionTransaction[]>([]);
@@ -55,7 +57,7 @@ export const CommissionsScreen = () => {
       id: '1',
       type: 'earned',
       amount: 15.50,
-      description: 'Commission from product sale',
+      description: t('affiliate.commissionFromSale'),
       orderId: 'ORD-12345',
       productName: 'Wireless Bluetooth Headphones',
       date: new Date('2024-01-15'),
@@ -65,7 +67,7 @@ export const CommissionsScreen = () => {
       id: '2',
       type: 'earned',
       amount: 8.25,
-      description: 'Commission from live stream sale',
+      description: t('affiliate.commissionFromLiveStream'),
       orderId: 'ORD-12346',
       productName: 'Smartphone Case',
       date: new Date('2024-01-14'),
@@ -75,7 +77,7 @@ export const CommissionsScreen = () => {
       id: '3',
       type: 'pending',
       amount: 22.75,
-      description: 'Pending commission (awaiting confirmation)',
+      description: t('affiliate.pendingCommissionDesc'),
       orderId: 'ORD-12347',
       productName: 'Running Shoes',
       date: new Date('2024-01-13'),
@@ -85,7 +87,7 @@ export const CommissionsScreen = () => {
       id: '4',
       type: 'paid',
       amount: -125.00,
-      description: 'Payout to bank account',
+      description: t('affiliate.payoutToBankAccount'),
       date: new Date('2024-01-10'),
       status: 'completed',
     },
@@ -112,9 +114,9 @@ export const CommissionsScreen = () => {
   ];
 
   const timeframes = [
-    { key: 'week', label: 'This Week', icon: '📅' },
-    { key: 'month', label: 'This Month', icon: '📊' },
-    { key: 'year', label: 'This Year', icon: '📈' },
+    { key: 'week', label: t('affiliate.thisWeek'), icon: '📅' },
+    { key: 'month', label: t('affiliate.thisMonth'), icon: '📊' },
+    { key: 'year', label: t('affiliate.thisYear'), icon: '📈' },
   ];
 
   const loadCommissionsData = useCallback(async () => {
@@ -133,11 +135,11 @@ export const CommissionsScreen = () => {
       setPayouts(mockPayouts);
     } catch (error) {
       console.error('Error loading commissions data:', error);
-      Alert.alert('Error', 'Failed to load commissions data. Please try again.');
+      Alert.alert(t('common.error'), t('affiliate.failedLoadCommissions'));
     } finally {
       setLoading(false);
     }
-  }, [user?.id, selectedTimeframe]);
+  }, [user?.id, selectedTimeframe, t]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -148,20 +150,20 @@ export const CommissionsScreen = () => {
   const requestPayout = useCallback(async () => {
     if (!stats || stats.totalRevenue < 50) {
       Alert.alert(
-        'Minimum Payout Amount',
-        'You need at least $50.00 in available balance to request a payout.',
-        [{ text: 'OK' }]
+        t('affiliate.minimumPayoutTitle'),
+        t('affiliate.minimumPayoutMessage'),
+        [{ text: t('common.done') }]
       );
       return;
     }
 
     Alert.alert(
-      'Request Payout',
-      `Request a payout of $${stats.totalRevenue.toFixed(2)}? Processing fee: $2.50`,
+      t('affiliate.requestPayoutTitle'),
+      t('affiliate.requestPayoutMessage', { amount: stats.totalRevenue.toFixed(2) }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Request',
+          text: t('affiliate.requestButton'),
           onPress: async () => {
             try {
               setRequestingPayout(true);
@@ -170,16 +172,16 @@ export const CommissionsScreen = () => {
               await new Promise(resolve => setTimeout(resolve, 2000));
 
               Alert.alert(
-                'Payout Requested! 💰',
-                'Your payout request has been submitted and will be processed within 3-5 business days.',
-                [{ text: 'OK' }]
+                t('affiliate.payoutRequestedTitle'),
+                t('affiliate.payoutRequestedMessage'),
+                [{ text: t('common.done') }]
               );
 
               // Refresh data
               await loadCommissionsData();
             } catch (error) {
               console.error('Error requesting payout:', error);
-              Alert.alert('Error', 'Failed to request payout. Please try again.');
+              Alert.alert(t('common.error'), t('affiliate.failedRequestPayout'));
             } finally {
               setRequestingPayout(false);
             }
@@ -187,7 +189,7 @@ export const CommissionsScreen = () => {
         },
       ]
     );
-  }, [stats, loadCommissionsData]);
+  }, [stats, loadCommissionsData, t]);
 
   useEffect(() => {
     loadCommissionsData();
@@ -197,8 +199,8 @@ export const CommissionsScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <EmptyState
-          title="Sign in Required"
-          description="Please sign in to view your commissions"
+          title={t('affiliate.signInRequired')}
+          description={t('affiliate.signInToViewCommissions')}
           icon="🔐"
         />
       </SafeAreaView>
@@ -291,7 +293,7 @@ export const CommissionsScreen = () => {
             {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toFixed(2)}
           </Text>
           <Text style={[styles.transactionStatus, { color: getStatusColor() }]}>
-            {transaction.status}
+            {t(`affiliate.status.${transaction.status}`)}
           </Text>
         </View>
       </View>
@@ -326,20 +328,20 @@ export const CommissionsScreen = () => {
         <View style={styles.payoutInfo}>
           <Text style={styles.payoutAmount}>${payout.amount.toFixed(2)}</Text>
           <Text style={styles.payoutMethod}>
-            via {payout.method.replace('_', ' ')} • Fee: ${payout.fee.toFixed(2)}
+            {t('affiliate.viaMethod', { method: payout.method.replace('_', ' ') })} • {t('affiliate.fee')}: ${payout.fee.toFixed(2)}
           </Text>
           <Text style={styles.payoutDate}>
-            Requested: {payout.requestedAt.toLocaleDateString()}
+            {t('affiliate.requested')}: {payout.requestedAt.toLocaleDateString()}
           </Text>
           {payout.processedAt && (
             <Text style={styles.payoutDate}>
-              Processed: {payout.processedAt.toLocaleDateString()}
+              {t('affiliate.processed')}: {payout.processedAt.toLocaleDateString()}
             </Text>
           )}
         </View>
 
         <Text style={[styles.payoutStatus, { color: getStatusColor() }]}>
-          {payout.status}
+          {t(`affiliate.status.${payout.status}`)}
         </Text>
       </View>
     );
@@ -348,8 +350,8 @@ export const CommissionsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Commissions</Text>
-        <Text style={styles.headerSubtitle}>Track your earnings and payouts</Text>
+        <Text style={styles.headerTitle}>{t('affiliate.commissions')}</Text>
+        <Text style={styles.headerSubtitle}>{t('affiliate.commissionsSubtitle')}</Text>
       </View>
 
       {renderTimeframeTabs()}
@@ -363,30 +365,30 @@ export const CommissionsScreen = () => {
       >
         {/* Stats Overview */}
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.overview')}</Text>
           <View style={styles.statsGrid}>
             {renderStatsCard(
-              'Total Earnings',
+              t('affiliate.totalEarningsStats'),
               `$${stats?.totalRevenue.toFixed(2) || '0.00'}`,
               selectedTimeframe,
               '#28a745'
             )}
             {renderStatsCard(
-              'Available Balance',
+              t('affiliate.availableBalance'),
               `$${(stats?.totalRevenue || 0).toFixed(2)}`,
-              'Ready to withdraw',
+              t('affiliate.readyToWithdraw'),
               '#007bff'
             )}
             {renderStatsCard(
-              'Conversion Rate',
+              t('affiliate.conversionRate'),
               `${(stats?.conversionRate || 0).toFixed(1)}%`,
-              'Clicks to sales',
+              t('affiliate.clicksToSales'),
               '#ffc107'
             )}
             {renderStatsCard(
-              'Total Clicks',
+              t('affiliate.totalClicksStats'),
               (stats?.totalClicks || 0).toLocaleString(),
-              'All time',
+              t('affiliate.allTime'),
               '#dc3545'
             )}
           </View>
@@ -395,7 +397,7 @@ export const CommissionsScreen = () => {
         {/* Payout Section */}
         <View style={styles.payoutSection}>
           <View style={styles.payoutHeader}>
-            <Text style={styles.sectionTitle}>💸 Request Payout</Text>
+            <Text style={styles.sectionTitle}>{t('affiliate.requestPayoutSection')}</Text>
             <TouchableOpacity
               style={[
                 styles.payoutButton,
@@ -408,25 +410,25 @@ export const CommissionsScreen = () => {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.payoutButtonText}>
-                  Request ${(stats?.totalRevenue || 0).toFixed(2)}
+                  {t('affiliate.requestAmount', { amount: (stats?.totalRevenue || 0).toFixed(2) })}
                 </Text>
               )}
             </TouchableOpacity>
           </View>
           <Text style={styles.payoutNote}>
-            Minimum payout amount: $50.00 • Processing fee: $2.50
+            {t('affiliate.payoutNote')}
           </Text>
         </View>
 
         {/* Recent Transactions */}
         <View style={styles.transactionsSection}>
-          <Text style={styles.sectionTitle}>💰 Recent Transactions</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.recentTransactions')}</Text>
           {transactions.length > 0 ? (
             transactions.map(renderTransaction)
           ) : (
             <EmptyState
-              title="No Transactions"
-              description="Start earning commissions by sharing your affiliate links"
+              title={t('affiliate.noTransactions')}
+              description={t('affiliate.noTransactionsDesc')}
               icon="💰"
             />
           )}
@@ -434,13 +436,13 @@ export const CommissionsScreen = () => {
 
         {/* Payout History */}
         <View style={styles.payoutsSection}>
-          <Text style={styles.sectionTitle}>📋 Payout History</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.payoutHistory')}</Text>
           {payouts.length > 0 ? (
             payouts.map(renderPayout)
           ) : (
             <EmptyState
-              title="No Payouts Yet"
-              description="Your payout requests will appear here"
+              title={t('affiliate.noPayoutsYet')}
+              description={t('affiliate.noPayoutsYetDesc')}
               icon="💸"
             />
           )}

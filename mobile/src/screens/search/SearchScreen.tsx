@@ -87,7 +87,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
             <View>
               {/* Price Range */}
               <View style={styles.filterSection}>
-                <GSText variant="body" weight="medium" style={styles.filterTitle}>
+                <GSText variant="body" weight="semiBold" style={styles.filterTitle}>
                   {t('search.priceRange')}
                 </GSText>
                 <View style={styles.priceInputs}>
@@ -117,7 +117,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* Categories */}
               <View style={styles.filterSection}>
-                <GSText variant="body" weight="medium" style={styles.filterTitle}>
+                <GSText variant="body" weight="semiBold" style={styles.filterTitle}>
                   {t('search.category')}
                 </GSText>
                 <FlatList
@@ -131,7 +131,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                           backgroundColor: localFilters.category === item.id
                             ? theme.colors.primary + '20'
                             : 'transparent',
-                          borderColor: theme.colors.border,
+                          borderColor: theme.colors.gray300,
                         }
                       ]}
                       onPress={() => setLocalFilters(prev => ({
@@ -152,7 +152,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* Sort By */}
               <View style={styles.filterSection}>
-                <GSText variant="body" weight="medium" style={styles.filterTitle}>
+                <GSText variant="body" weight="semiBold" style={styles.filterTitle}>
                   {t('products.sortBy')}
                 </GSText>
                 {sortOptions.map((option) => (
@@ -164,7 +164,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                         backgroundColor: localFilters.sortBy === option.value
                           ? theme.colors.primary + '20'
                           : 'transparent',
-                        borderColor: theme.colors.border,
+                        borderColor: theme.colors.gray300,
                       }
                     ]}
                     onPress={() => setLocalFilters(prev => ({
@@ -191,7 +191,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                       backgroundColor: localFilters.inStock
                         ? theme.colors.primary + '20'
                         : 'transparent',
-                      borderColor: theme.colors.border,
+                      borderColor: theme.colors.gray300,
                     }
                   ]}
                   onPress={() => setLocalFilters(prev => ({
@@ -279,7 +279,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
       <View style={styles.productInfo}>
         <GSText
           variant="body"
-          weight="medium"
+          weight="semiBold"
           numberOfLines={2}
           style={styles.productName}
         >
@@ -315,7 +315,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           style={[
             styles.addToCartButton,
             {
-              backgroundColor: inStock ? theme.colors.primary : theme.colors.border,
+              backgroundColor: inStock ? theme.colors.primary : theme.colors.gray300,
             }
           ]}
           onPress={onAddToCart}
@@ -324,7 +324,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           <GSText
             variant="caption"
             color={inStock ? 'white' : 'textSecondary'}
-            weight="medium"
+            weight="semiBold"
           >
             {t('products.addToCart')}
           </GSText>
@@ -355,7 +355,6 @@ export default function SearchScreen() {
   // Local state
   const [searchText, setSearchText] = useState(searchQuery);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Handle search input change
   const handleSearchTextChange = useCallback((text: string) => {
@@ -369,7 +368,7 @@ export default function SearchScreen() {
 
   // Handle product card press
   const handleProductPress = (product: Product) => {
-    navigation.navigate('ProductDetail' as any, { productId: product.id });
+    (navigation as any).navigate('ProductDetail', { productId: product.id });
   };
 
   // Handle add to cart
@@ -411,7 +410,7 @@ export default function SearchScreen() {
           autoFocus
         />
         <TouchableOpacity
-          style={[styles.filterButton, { borderColor: theme.colors.border }]}
+          style={[styles.filterButton, { borderColor: theme.colors.gray300 }]}
           onPress={() => setIsFilterModalVisible(true)}
         >
           <GSText variant="body">{t('search.filters')}</GSText>

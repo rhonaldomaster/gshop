@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { affiliatesService, DashboardStats } from '../../services/affiliates.service';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -27,6 +28,7 @@ interface QuickAction {
 }
 
 export const AffiliateScreen = () => {
+  const { t } = useTranslation('translation');
   const { user } = useAuth();
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,27 +62,27 @@ export const AffiliateScreen = () => {
 
   const handleBecomeAffiliate = useCallback(() => {
     Alert.alert(
-      'Become an Affiliate',
-      'Join our affiliate program and start earning commissions by promoting products!',
+      t('affiliate.becomeAffiliate'),
+      t('affiliate.becomeAffiliateMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Apply Now',
+          text: t('affiliate.applyNow'),
           onPress: () => {
             // Navigate to affiliate registration or application process
-            Alert.alert('Success', 'Application submitted! We\'ll review and get back to you soon.');
+            Alert.alert(t('common.success'), t('affiliate.applicationSubmitted'));
           },
         },
       ]
     );
-  }, []);
+  }, [t]);
 
   const quickActions: QuickAction[] = [
     {
       id: 'generate_links',
-      title: 'Generate Links',
+      title: t('affiliate.generateLinks'),
       icon: '🔗',
-      description: 'Create affiliate links for products',
+      description: t('affiliate.generateLinksDesc'),
       onPress: () => {
         // Navigate to LinkGeneratorScreen
         console.log('Navigate to LinkGenerator');
@@ -88,9 +90,9 @@ export const AffiliateScreen = () => {
     },
     {
       id: 'view_commissions',
-      title: 'View Commissions',
+      title: t('affiliate.viewCommissions'),
       icon: '💰',
-      description: 'Track your earnings and payouts',
+      description: t('affiliate.viewCommissionsDesc'),
       onPress: () => {
         // Navigate to CommissionsScreen
         console.log('Navigate to Commissions');
@@ -98,9 +100,9 @@ export const AffiliateScreen = () => {
     },
     {
       id: 'share_tools',
-      title: 'Share Tools',
+      title: t('affiliate.shareTools'),
       icon: '📱',
-      description: 'Access sharing and promotion tools',
+      description: t('affiliate.shareToolsDesc'),
       onPress: () => {
         // Navigate to ShareToolsScreen
         console.log('Navigate to ShareTools');
@@ -108,9 +110,9 @@ export const AffiliateScreen = () => {
     },
     {
       id: 'live_stream',
-      title: 'Go Live',
+      title: t('affiliate.goLive'),
       icon: '📹',
-      description: 'Start a live shopping session',
+      description: t('affiliate.goLiveDesc'),
       onPress: () => {
         // Navigate to live stream creation
         console.log('Navigate to Live Stream');
@@ -126,8 +128,8 @@ export const AffiliateScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <EmptyState
-          title="Sign in Required"
-          description="Please sign in to access the affiliate panel"
+          title={t('affiliate.signInRequired')}
+          description={t('affiliate.signInRequiredDesc')}
           icon="🔐"
         />
       </SafeAreaView>
@@ -154,40 +156,40 @@ export const AffiliateScreen = () => {
         >
           <View style={styles.joinContainer}>
             <Text style={styles.joinIcon}>🚀</Text>
-            <Text style={styles.joinTitle}>Join the Affiliate Program</Text>
+            <Text style={styles.joinTitle}>{t('affiliate.joinProgram')}</Text>
             <Text style={styles.joinDescription}>
-              Earn money by promoting products you love! Get up to 15% commission on every sale.
+              {t('affiliate.joinProgramDesc')}
             </Text>
 
             <View style={styles.benefitsContainer}>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitIcon}>💰</Text>
-                <Text style={styles.benefitText}>Earn up to 15% commission</Text>
+                <Text style={styles.benefitText}>{t('affiliate.benefit1')}</Text>
               </View>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitIcon}>📈</Text>
-                <Text style={styles.benefitText}>Real-time analytics and tracking</Text>
+                <Text style={styles.benefitText}>{t('affiliate.benefit2')}</Text>
               </View>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitIcon}>🔗</Text>
-                <Text style={styles.benefitText}>Easy link generation tools</Text>
+                <Text style={styles.benefitText}>{t('affiliate.benefit3')}</Text>
               </View>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitIcon}>📱</Text>
-                <Text style={styles.benefitText}>Live streaming capabilities</Text>
+                <Text style={styles.benefitText}>{t('affiliate.benefit4')}</Text>
               </View>
               <View style={styles.benefitItem}>
                 <Text style={styles.benefitIcon}>💸</Text>
-                <Text style={styles.benefitText}>Weekly payouts</Text>
+                <Text style={styles.benefitText}>{t('affiliate.benefit5')}</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.joinButton} onPress={handleBecomeAffiliate}>
-              <Text style={styles.joinButtonText}>Apply to Become an Affiliate</Text>
+              <Text style={styles.joinButtonText}>{t('affiliate.applyToBecome')}</Text>
             </TouchableOpacity>
 
             <Text style={styles.joinFooter}>
-              Already an affiliate? Pull down to refresh and access your dashboard.
+              {t('affiliate.alreadyAffiliate')}
             </Text>
           </View>
         </ScrollView>
@@ -218,8 +220,8 @@ export const AffiliateScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Affiliate Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Track your performance and earnings</Text>
+        <Text style={styles.headerTitle}>{t('affiliate.dashboard')}</Text>
+        <Text style={styles.headerSubtitle}>{t('affiliate.dashboardSubtitle')}</Text>
       </View>
 
       <ScrollView
@@ -231,30 +233,30 @@ export const AffiliateScreen = () => {
       >
         {/* Overview Stats */}
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.overview')}</Text>
           <View style={styles.statsGrid}>
             {renderStatsCard(
-              'Total Earnings',
+              t('affiliate.totalEarnings'),
               `$${dashboardStats?.earnings.totalEarnings.toFixed(2) || '0.00'}`,
-              'All time',
+              t('affiliate.allTime'),
               '#28a745'
             )}
             {renderStatsCard(
-              'Available Balance',
+              t('affiliate.availableBalance'),
               `$${dashboardStats?.earnings.availableBalance.toFixed(2) || '0.00'}`,
-              'Ready to withdraw',
+              t('affiliate.readyToWithdraw'),
               '#007bff'
             )}
             {renderStatsCard(
-              'This Month',
+              t('affiliate.thisMonth'),
               `$${dashboardStats?.earnings.monthlyEarnings.toFixed(2) || '0.00'}`,
-              'Current month earnings',
+              t('affiliate.currentMonthEarnings'),
               '#ffc107'
             )}
             {renderStatsCard(
-              'Followers',
+              t('social.followers'),
               dashboardStats?.profile.followersCount.toLocaleString() || '0',
-              `${(dashboardStats?.profile.engagementRate || 0).toFixed(1)}% engagement`,
+              `${(dashboardStats?.profile.engagementRate || 0).toFixed(1)}% ${t('affiliate.engagement')}`,
               '#dc3545'
             )}
           </View>
@@ -262,7 +264,7 @@ export const AffiliateScreen = () => {
 
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.quickActions')}</Text>
           <View style={styles.actionsGrid}>
             {quickActions.map(renderQuickAction)}
           </View>
@@ -270,24 +272,24 @@ export const AffiliateScreen = () => {
 
         {/* Performance Summary */}
         <View style={styles.performanceContainer}>
-          <Text style={styles.sectionTitle}>Performance Summary</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.performanceSummary')}</Text>
 
           <View style={styles.performanceCard}>
-            <Text style={styles.performanceTitle}>Content Performance</Text>
+            <Text style={styles.performanceTitle}>{t('affiliate.contentPerformance')}</Text>
             <View style={styles.performanceRow}>
-              <Text style={styles.performanceLabel}>Total Videos:</Text>
+              <Text style={styles.performanceLabel}>{t('affiliate.totalVideos')}</Text>
               <Text style={styles.performanceValue}>
                 {dashboardStats?.content.totalVideos || 0}
               </Text>
             </View>
             <View style={styles.performanceRow}>
-              <Text style={styles.performanceLabel}>Total Views:</Text>
+              <Text style={styles.performanceLabel}>{t('affiliate.totalViews')}</Text>
               <Text style={styles.performanceValue}>
                 {dashboardStats?.content.totalViews.toLocaleString() || '0'}
               </Text>
             </View>
             <View style={styles.performanceRow}>
-              <Text style={styles.performanceLabel}>Avg. Engagement:</Text>
+              <Text style={styles.performanceLabel}>{t('affiliate.avgEngagement')}</Text>
               <Text style={styles.performanceValue}>
                 {(dashboardStats?.content.averageEngagement || 0).toFixed(1)}%
               </Text>
@@ -295,21 +297,21 @@ export const AffiliateScreen = () => {
           </View>
 
           <View style={styles.performanceCard}>
-            <Text style={styles.performanceTitle}>Live Streaming</Text>
+            <Text style={styles.performanceTitle}>{t('affiliate.liveStreaming')}</Text>
             <View style={styles.performanceRow}>
-              <Text style={styles.performanceLabel}>Total Streams:</Text>
+              <Text style={styles.performanceLabel}>{t('affiliate.totalStreams')}</Text>
               <Text style={styles.performanceValue}>
                 {dashboardStats?.liveStreams.totalStreams || 0}
               </Text>
             </View>
             <View style={styles.performanceRow}>
-              <Text style={styles.performanceLabel}>Total Viewers:</Text>
+              <Text style={styles.performanceLabel}>{t('affiliate.totalViewers')}</Text>
               <Text style={styles.performanceValue}>
                 {dashboardStats?.liveStreams.totalViewers.toLocaleString() || '0'}
               </Text>
             </View>
             <View style={styles.performanceRow}>
-              <Text style={styles.performanceLabel}>Avg. Viewers:</Text>
+              <Text style={styles.performanceLabel}>{t('affiliate.avgViewers')}</Text>
               <Text style={styles.performanceValue}>
                 {Math.round(dashboardStats?.liveStreams.averageViewers || 0)}
               </Text>
@@ -319,29 +321,29 @@ export const AffiliateScreen = () => {
 
         {/* Tips Section */}
         <View style={styles.tipsContainer}>
-          <Text style={styles.sectionTitle}>💡 Tips to Boost Earnings</Text>
+          <Text style={styles.sectionTitle}>{t('affiliate.tipsBoostEarnings')}</Text>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📱</Text>
             <Text style={styles.tipText}>
-              Share your affiliate links on social media to reach more customers
+              {t('affiliate.tip1')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📹</Text>
             <Text style={styles.tipText}>
-              Host live shopping sessions to showcase products in real-time
+              {t('affiliate.tip2')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>🎯</Text>
             <Text style={styles.tipText}>
-              Create content around products that match your audience's interests
+              {t('affiliate.tip3')}
             </Text>
           </View>
           <View style={styles.tipItem}>
             <Text style={styles.tipIcon}>📊</Text>
             <Text style={styles.tipText}>
-              Check your analytics regularly to understand what performs best
+              {t('affiliate.tip4')}
             </Text>
           </View>
         </View>

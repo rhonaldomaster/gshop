@@ -1,18 +1,57 @@
-# Environment files
+# GSHOP Mobile - .gitignore
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Keep example and environment-specific files
-!.env.example
-!.env.development
-!.env.production
+# React Native
+.react-native/
+
+# Metro bundler
+.metro-health-check*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # OSX
 .DS_Store
 
-# Xcode
-build/
+# Android
+android/app/build/
+android/.gradle/
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+*.keystore
+!debug.keystore
+*.jks
+android/.cxx/
+android/app/release/
+
+# iOS
+ios/Pods/
+ios/build/
+ios/.xcode.env.local
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -21,50 +60,63 @@ build/
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-xcuserdata
+xcuserdata/
 *.xccheckout
 *.moved-aside
-DerivedData
+DerivedData/
 *.hmap
 *.ipa
 *.xcuserstate
-project.xcworkspace
+project.xcworkspace/
 
-# Android/IntelliJ
-build/
-.idea
-.gradle
-local.properties
-*.iml
-*.hprof
-.cxx/
-*.keystore
-!debug.keystore
-
-# node.js
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# fastlane
+# Fastlane
 fastlane/report.xml
 fastlane/Preview.html
-fastlane/screenshots
-fastlane/test_output
+fastlane/screenshots/
+fastlane/test_output/
+
+# EAS
+eas-build-*.json
+.eas/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Debugging
+.vscode/.react/
 
 # Bundle artifacts
 *.jsbundle
 
-# Expo
-.expo/
-dist/
-web-build/
+# CocoaPods
+ios/Podfile.lock
 
-# Testing
-coverage/
+# Ruby (for Fastlane)
+.bundle/
+vendor/bundle/
 
-# Temporary files
-*.swp
-*.swo
-*~
-.tmp/
+# Watchman
+.watchmanconfig
+
+# AsyncStorage
+.asyncstorage/
+
+# Offline cache
+.offline-cache/
+offline-data/

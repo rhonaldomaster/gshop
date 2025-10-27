@@ -8,11 +8,10 @@ import {
   FlatList,
   Alert,
   Dimensions,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import io, { Socket } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../../components/live/ProductCard';
@@ -107,31 +106,31 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       });
     });
 
-    socketRef.current.on('streamInfo', (data) => {
+    socketRef.current.on('streamInfo', (data: { stream: LiveStreamData; viewerCount: number }) => {
       setStream(data.stream);
       setViewerCount(data.viewerCount);
     });
 
-    socketRef.current.on('viewerCountUpdate', (data) => {
+    socketRef.current.on('viewerCountUpdate', (data: { count: number }) => {
       setViewerCount(data.count);
     });
 
-    socketRef.current.on('newMessage', (message) => {
+    socketRef.current.on('newMessage', (message: Message) => {
       setMessages(prev => [...prev, message]);
     });
 
-    socketRef.current.on('recentMessages', (recentMessages) => {
+    socketRef.current.on('recentMessages', (recentMessages: Message[]) => {
       setMessages(recentMessages);
     });
 
-    socketRef.current.on('streamStatusUpdate', (data) => {
+    socketRef.current.on('streamStatusUpdate', (data: { status: string }) => {
       if (data.status === 'ended') {
         Alert.alert(t('live.streamEnded'), t('live.streamHasEnded'));
         navigation.goBack();
       }
     });
 
-    socketRef.current.on('streamProductsUpdate', (data) => {
+    socketRef.current.on('streamProductsUpdate', (data: { products: LiveStreamData['products'] }) => {
       setStream(prev => prev ? { ...prev, products: data.products } : null);
     });
   };
@@ -240,7 +239,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           style={styles.video}
           source={{ uri: stream.hlsUrl }}
           useNativeControls
-          resizeMode="contain"
+          resizeMode={ResizeMode.CONTAIN}
           shouldPlay
           isLooping={false}
         />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  ActivityIndicator,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -33,7 +32,7 @@ export default function EditProfileScreen() {
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [bio, setBio] = useState(user?.bio || '');
+  const [bio, setBio] = useState('');
 
   // Validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -76,7 +75,7 @@ export default function EditProfileScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -160,7 +159,6 @@ export default function EditProfileScreen() {
         lastName,
         email,
         phone,
-        bio,
         avatar: avatarUri || undefined,
       });
 
@@ -214,7 +212,7 @@ export default function EditProfileScreen() {
           <View style={styles.form}>
             {/* First Name */}
             <View style={styles.formGroup}>
-              <GSText variant="body" weight="semibold" style={styles.label}>
+              <GSText variant="body" weight="semiBold" style={styles.label}>
                 First Name *
               </GSText>
               <TextInput
@@ -245,7 +243,7 @@ export default function EditProfileScreen() {
 
             {/* Last Name */}
             <View style={styles.formGroup}>
-              <GSText variant="body" weight="semibold" style={styles.label}>
+              <GSText variant="body" weight="semiBold" style={styles.label}>
                 Last Name *
               </GSText>
               <TextInput
@@ -277,17 +275,9 @@ export default function EditProfileScreen() {
             {/* Email */}
             <View style={styles.formGroup}>
               <View style={styles.labelRow}>
-                <GSText variant="body" weight="semibold" style={styles.label}>
+                <GSText variant="body" weight="semiBold" style={styles.label}>
                   Email *
                 </GSText>
-                {user?.emailVerified && (
-                  <View style={styles.verifiedBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                    <GSText variant="caption" style={{ color: '#10B981', marginLeft: 4 }}>
-                      Verified
-                    </GSText>
-                  </View>
-                )}
               </View>
               <TextInput
                 style={[
@@ -319,7 +309,7 @@ export default function EditProfileScreen() {
 
             {/* Phone */}
             <View style={styles.formGroup}>
-              <GSText variant="body" weight="semibold" style={styles.label}>
+              <GSText variant="body" weight="semiBold" style={styles.label}>
                 Phone (optional)
               </GSText>
               <TextInput
@@ -351,7 +341,7 @@ export default function EditProfileScreen() {
 
             {/* Bio */}
             <View style={styles.formGroup}>
-              <GSText variant="body" weight="semibold" style={styles.label}>
+              <GSText variant="body" weight="semiBold" style={styles.label}>
                 Bio (optional)
               </GSText>
               <TextInput
