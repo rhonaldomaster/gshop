@@ -37,6 +37,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
   onSaveForLater,
   isUpdating,
 }) => {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { formatPrice, getDiscountPercentage, isInStock } = useCart();
   const [localQuantity, setLocalQuantity] = useState(item.quantity);
@@ -62,8 +63,8 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
     } else {
       Toast.show({
         type: 'error',
-        text1: 'Stock Limit',
-        text2: `Only ${stockQuantity} items available`,
+        text1: t('cart.stockLimit'),
+        text2: t('cart.onlyXAvailable', { count: stockQuantity }),
       });
     }
   };
@@ -84,14 +85,14 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
           />
         ) : (
           <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">No Image</GSText>
+            <GSText variant="caption" color="textSecondary">{t('products.noImage')}</GSText>
           </View>
         )}
       </View>
 
       {/* Product Info */}
       <View style={styles.productInfo}>
-        <GSText variant="body" weight="medium" numberOfLines={2} style={styles.productName}>
+        <GSText variant="body" weight="semiBold" numberOfLines={2} style={styles.productName}>
           {item.product.name}
         </GSText>
 
@@ -120,7 +121,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
           color={inStock ? 'success' : 'error'}
           style={styles.stockStatus}
         >
-          {inStock ? `${item.product.quantity ?? item.product.stock ?? 0} available` : 'Out of stock'}
+          {inStock ? `${item.product.quantity ?? item.product.stock ?? 0} ${t('cart.available')}` : t('products.outOfStock')}
         </GSText>
 
         {/* Quantity Controls */}
@@ -129,7 +130,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
             style={[
               styles.quantityButton,
               {
-                borderColor: theme.colors.border,
+                borderColor: theme.colors.gray300,
                 opacity: isUpdating ? 0.5 : 1,
               }
             ]}
@@ -143,7 +144,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
             {isUpdating ? (
               <ActivityIndicator size="small" color={theme.colors.primary} />
             ) : (
-              <GSText variant="body" weight="medium">{localQuantity}</GSText>
+              <GSText variant="body" weight="semiBold">{localQuantity}</GSText>
             )}
           </View>
 
@@ -151,7 +152,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
             style={[
               styles.quantityButton,
               {
-                borderColor: theme.colors.border,
+                borderColor: theme.colors.gray300,
                 opacity: isUpdating ? 0.5 : 1,
               }
             ]}
@@ -160,14 +161,16 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
           >
             <GSText variant="body" weight="bold">+</GSText>
           </TouchableOpacity>
+        </View>
 
-          {/* Remove & Save for Later Buttons */}
+        {/* Remove & Save for Later Buttons */}
+        <View style={styles.actionButtonsRow}>
           <TouchableOpacity
             style={styles.removeButton}
             onPress={() => onRemove(item.productId)}
             disabled={isUpdating}
           >
-            <GSText variant="caption" color="error">Remove</GSText>
+            <GSText variant="caption" color="error">{t('cart.remove')}</GSText>
           </TouchableOpacity>
 
           {onSaveForLater && (
@@ -176,7 +179,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
               onPress={() => onSaveForLater(item.productId)}
               disabled={isUpdating}
             >
-              <GSText variant="caption" color="primary">Save for Later</GSText>
+              <GSText variant="caption" color="primary">{t('cart.saveForLater')}</GSText>
             </TouchableOpacity>
           )}
         </View>
@@ -201,7 +204,6 @@ export default function CartScreen() {
   const {
     items,
     savedItems,
-    totalItems,
     subtotal,
     shippingCost,
     taxAmount,
@@ -233,15 +235,15 @@ export default function CartScreen() {
       await updateQuantity(productId, quantity);
       Toast.show({
         type: 'success',
-        text1: 'Quantity Updated',
-        text2: 'Cart has been updated',
+        text1: t('cart.quantityUpdated'),
+        text2: t('cart.cartUpdated'),
       });
     } catch (error) {
       console.error('Failed to update quantity:', error);
       Toast.show({
         type: 'error',
-        text1: 'Update Failed',
-        text2: 'Failed to update quantity',
+        text1: t('cart.updateFailed'),
+        text2: t('cart.failedToUpdateQuantity'),
       });
     } finally {
       setUpdatingItems(prev => {
@@ -259,15 +261,15 @@ export default function CartScreen() {
       await removeFromCart(productId);
       Toast.show({
         type: 'success',
-        text1: 'Item Removed',
-        text2: 'Item has been removed from cart',
+        text1: t('cart.itemRemoved'),
+        text2: t('cart.itemRemovedFromCart'),
       });
     } catch (error) {
       console.error('Failed to remove item:', error);
       Toast.show({
         type: 'error',
-        text1: 'Remove Failed',
-        text2: 'Failed to remove item',
+        text1: t('cart.removeFailed'),
+        text2: t('cart.failedToRemoveItem'),
       });
     } finally {
       setUpdatingItems(prev => {
@@ -281,19 +283,19 @@ export default function CartScreen() {
   // Handle clear cart
   const handleClearCart = async (): Promise<void> => {
     Alert.alert(
-      'Clear Cart',
-      'Are you sure you want to remove all items?',
+      t('cart.clearCart'),
+      t('cart.confirmClearCart'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Clear',
+          text: t('common.clear'),
           style: 'destructive',
           onPress: async () => {
             await clearCart();
             Toast.show({
               type: 'success',
-              text1: 'Cart Cleared',
-              text2: 'All items removed from cart',
+              text1: t('cart.cartCleared'),
+              text2: t('cart.allItemsRemoved'),
             });
           },
         },
@@ -306,8 +308,8 @@ export default function CartScreen() {
     if (!couponInput.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Invalid Coupon',
-        text2: 'Please enter a coupon code',
+        text1: t('cart.invalidCoupon'),
+        text2: t('cart.enterCouponCode'),
       });
       return;
     }
@@ -315,8 +317,8 @@ export default function CartScreen() {
     if (!isAuthenticated) {
       Toast.show({
         type: 'error',
-        text1: 'Login Required',
-        text2: 'Please login to use coupons',
+        text1: t('auth.loginRequired'),
+        text2: t('cart.loginToUseCoupons'),
       });
       return;
     }
@@ -327,8 +329,8 @@ export default function CartScreen() {
       if (success) {
         Toast.show({
           type: 'success',
-          text1: 'Coupon Applied!',
-          text2: `You saved ${formatPrice(couponDiscount)}`,
+          text1: t('cart.couponApplied'),
+          text2: t('cart.youSaved', { amount: formatPrice(couponDiscount) }),
         });
         setCouponInput('');
       }
@@ -345,8 +347,8 @@ export default function CartScreen() {
       await removeCoupon();
       Toast.show({
         type: 'info',
-        text1: 'Coupon Removed',
-        text2: 'Coupon has been removed from cart',
+        text1: t('cart.couponRemoved'),
+        text2: t('cart.couponRemovedFromCart'),
       });
     } catch (error) {
       console.error('Failed to remove coupon:', error);
@@ -357,11 +359,11 @@ export default function CartScreen() {
   const handleCheckout = async (): Promise<void> => {
     if (!isAuthenticated) {
       Alert.alert(
-        'Login Required',
-        'Please login to proceed with checkout',
+        t('auth.loginRequired'),
+        t('cart.loginToCheckout'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Login', onPress: () => navigation.navigate('Auth' as any) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('auth.login'), onPress: () => (navigation as any).navigate('Auth') },
         ]
       );
       return;
@@ -375,27 +377,27 @@ export default function CartScreen() {
 
       if (!isValid) {
         Alert.alert(
-          'Stock Updated',
-          'Some items in your cart have limited availability. Please review your cart.',
-          [{ text: 'OK' }]
+          t('cart.stockUpdated'),
+          t('cart.limitedAvailability'),
+          [{ text: t('common.confirm') }]
         );
         return;
       }
 
-      navigation.navigate('Checkout' as any);
+      (navigation as any).navigate('Checkout');
     } catch (error) {
       setValidatingStock(false);
       Toast.show({
         type: 'error',
-        text1: 'Validation Failed',
-        text2: 'Unable to validate cart. Please try again.',
+        text1: t('cart.validationFailed'),
+        text2: t('cart.unableToValidate'),
       });
     }
   };
 
   // Handle continue shopping
   const handleContinueShopping = (): void => {
-    navigation.navigate('Home' as any);
+    (navigation as any).navigate('Home');
   };
 
   // Handle save for later
@@ -403,8 +405,8 @@ export default function CartScreen() {
     if (!isAuthenticated) {
       Toast.show({
         type: 'error',
-        text1: 'Login Required',
-        text2: 'Please login to save items for later',
+        text1: t('auth.loginRequired'),
+        text2: t('cart.loginToSaveForLater'),
       });
       return;
     }
@@ -414,15 +416,15 @@ export default function CartScreen() {
       await saveForLater(productId);
       Toast.show({
         type: 'success',
-        text1: 'Saved for Later',
-        text2: 'Item moved to Saved Items',
+        text1: t('cart.savedForLater'),
+        text2: t('cart.itemMovedToSaved'),
       });
     } catch (error) {
       console.error('Failed to save for later:', error);
       Toast.show({
         type: 'error',
-        text1: 'Save Failed',
-        text2: 'Failed to save item for later',
+        text1: t('cart.saveFailed'),
+        text2: t('cart.failedToSaveForLater'),
       });
     } finally {
       setUpdatingItems(prev => {
@@ -440,15 +442,15 @@ export default function CartScreen() {
       await moveToCart(itemId);
       Toast.show({
         type: 'success',
-        text1: 'Moved to Cart',
-        text2: 'Item added back to cart',
+        text1: t('cart.movedToCart'),
+        text2: t('cart.itemAddedBackToCart'),
       });
     } catch (error) {
       console.error('Failed to move to cart:', error);
       Toast.show({
         type: 'error',
-        text1: 'Move Failed',
-        text2: 'Failed to move item to cart',
+        text1: t('cart.moveFailed'),
+        text2: t('cart.failedToMoveToCart'),
       });
     } finally {
       setUpdatingItems(prev => {
@@ -482,13 +484,13 @@ export default function CartScreen() {
           />
         ) : (
           <View style={styles.productImagePlaceholder}>
-            <GSText variant="caption" color="textSecondary">No Image</GSText>
+            <GSText variant="caption" color="textSecondary">{t('products.noImage')}</GSText>
           </View>
         )}
       </View>
 
       <View style={styles.savedItemInfo}>
-        <GSText variant="body" weight="medium" numberOfLines={2}>
+        <GSText variant="body" weight="semiBold" numberOfLines={2}>
           {item.product.name}
         </GSText>
         <GSText variant="body" weight="bold" color="primary">
@@ -505,7 +507,7 @@ export default function CartScreen() {
           <ActivityIndicator size="small" color="white" />
         ) : (
           <GSText variant="caption" color="white" weight="bold">
-            Move to Cart
+            {t('cart.moveToCart')}
           </GSText>
         )}
       </TouchableOpacity>
@@ -524,13 +526,13 @@ export default function CartScreen() {
             <GSText variant="h1">🛒</GSText>
           </View>
           <GSText variant="h3" weight="bold" style={styles.emptyCartTitle}>
-            {t('cart.empty.title')}
+            {t('cart.empty')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptyCartSubtitle}>
-            {t('cart.empty.message')}
+            {t('cart.emptyMessage')}
           </GSText>
           <GSButton
-            title={t('cart.empty.action')}
+            title={t('cart.startShopping')}
             onPress={handleContinueShopping}
             style={styles.startShoppingButton}
           />
@@ -544,10 +546,10 @@ export default function CartScreen() {
       {/* Header */}
       <View style={styles.header}>
         <GSText variant="h3" weight="bold">
-          {t('cart.title')} ({summary.itemCount} {t('cart.summary.items')})
+          {t('cart.title')} ({summary.itemCount} {t('wishlist.items')})
         </GSText>
         <TouchableOpacity onPress={handleClearCart}>
-          <GSText variant="body" color="error">{t('cart.actions.clearCart')}</GSText>
+          <GSText variant="body" color="error">{t('common.clear')}</GSText>
         </TouchableOpacity>
       </View>
 
@@ -567,7 +569,7 @@ export default function CartScreen() {
           <View style={styles.savedItemsSection}>
             <View style={styles.savedItemsHeader}>
               <GSText variant="h4" weight="bold">
-                Saved for Later ({savedItems.length} item{savedItems.length !== 1 ? 's' : ''})
+                {t('cart.savedItemsSection', { count: savedItems.length })}
               </GSText>
             </View>
             <FlatList
@@ -584,8 +586,8 @@ export default function CartScreen() {
         {/* Coupon Section */}
         {isAuthenticated && (
           <View style={[styles.couponSection, { backgroundColor: theme.colors.surface }]}>
-            <GSText variant="body" weight="medium" style={styles.couponTitle}>
-              Have a coupon code?
+            <GSText variant="body" weight="semiBold" style={styles.couponTitle}>
+              {t('cart.haveCoupon')}
             </GSText>
 
             {couponCode ? (
@@ -596,7 +598,7 @@ export default function CartScreen() {
                   </GSText>
                 </View>
                 <TouchableOpacity onPress={handleRemoveCoupon}>
-                  <GSText variant="body" color="error">Remove</GSText>
+                  <GSText variant="body" color="error">{t('cart.remove')}</GSText>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -605,12 +607,12 @@ export default function CartScreen() {
                   style={[
                     styles.couponInput,
                     {
-                      borderColor: theme.colors.border,
+                      borderColor: theme.colors.gray300,
                       color: theme.colors.text,
                       backgroundColor: theme.colors.background,
                     }
                   ]}
-                  placeholder="Enter coupon code"
+                  placeholder={t('cart.couponCode')}
                   placeholderTextColor={theme.colors.textSecondary}
                   value={couponInput}
                   onChangeText={setCouponInput}
@@ -618,7 +620,7 @@ export default function CartScreen() {
                   editable={!applyingCoupon}
                 />
                 <GSButton
-                  title="Apply"
+                  title={t('common.apply')}
                   onPress={handleApplyCoupon}
                   loading={applyingCoupon}
                   disabled={!couponInput.trim() || applyingCoupon}
@@ -630,7 +632,7 @@ export default function CartScreen() {
             {/* Sample coupons hint */}
             {!couponCode && (
               <GSText variant="caption" color="textSecondary" style={styles.couponHint}>
-                Try: SAVE10, SAVE20, or PERCENT10
+                {t('cart.tryCoupons')}
               </GSText>
             )}
           </View>
@@ -639,29 +641,29 @@ export default function CartScreen() {
         {/* Cart Summary */}
         <View style={[styles.cartSummary, { backgroundColor: theme.colors.surface }]}>
           <GSText variant="h4" weight="bold" style={styles.summaryTitle}>
-            Order Summary
+            {t('cart.orderSummary')}
           </GSText>
 
           <View style={styles.summaryRow}>
-            <GSText variant="body">Subtotal ({summary.totalItems} items)</GSText>
-            <GSText variant="body" weight="medium">{formatPrice(subtotal)}</GSText>
+            <GSText variant="body">{t('cart.subtotalItems', { count: summary.totalItems })}</GSText>
+            <GSText variant="body" weight="semiBold">{formatPrice(subtotal)}</GSText>
           </View>
 
           <View style={styles.summaryRow}>
-            <GSText variant="body" color="textSecondary">Shipping</GSText>
+            <GSText variant="body" color="textSecondary">{t('cart.shipping')}</GSText>
             <GSText variant="body" color="textSecondary">
-              {shippingCost === 0 ? 'Free' : formatPrice(shippingCost)}
+              {shippingCost === 0 ? t('checkout.free') : formatPrice(shippingCost)}
             </GSText>
           </View>
 
           <View style={styles.summaryRow}>
-            <GSText variant="body" color="textSecondary">Tax</GSText>
+            <GSText variant="body" color="textSecondary">{t('cart.tax')}</GSText>
             <GSText variant="body" color="textSecondary">{formatPrice(taxAmount)}</GSText>
           </View>
 
           {couponDiscount > 0 && (
             <View style={styles.summaryRow}>
-              <GSText variant="body" color="success">Discount ({couponCode})</GSText>
+              <GSText variant="body" color="success">{t('cart.discount', { code: couponCode })}</GSText>
               <GSText variant="body" color="success" weight="bold">
                 -{formatPrice(couponDiscount)}
               </GSText>
@@ -669,7 +671,7 @@ export default function CartScreen() {
           )}
 
           <View style={[styles.summaryRow, styles.totalRow]}>
-            <GSText variant="h4" weight="bold">Total</GSText>
+            <GSText variant="h4" weight="bold">{t('cart.total')}</GSText>
             <GSText variant="h4" weight="bold" color="primary">
               {formatPrice(total)}
             </GSText>
@@ -679,14 +681,14 @@ export default function CartScreen() {
           {shippingCost > 0 && subtotal < 300000 && (
             <View style={styles.freeShippingNotice}>
               <GSText variant="caption" color="textSecondary">
-                💰 Add {formatPrice(300000 - subtotal)} more for free shipping
+                💰 {t('cart.freeShippingNotice', { amount: formatPrice(300000 - subtotal) })}
               </GSText>
             </View>
           )}
 
           {/* Checkout Button */}
           <GSButton
-            title={t('cart.summary.checkout')}
+            title={t('cart.checkout')}
             onPress={handleCheckout}
             style={styles.checkoutButton}
             loading={validatingStock || isLoading}
@@ -779,6 +781,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginBottom: 8,
   },
   quantityButton: {
     width: 32,
@@ -792,12 +795,15 @@ const styles = StyleSheet.create({
     minWidth: 40,
     alignItems: 'center',
   },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
   removeButton: {
-    marginLeft: 8,
     paddingVertical: 4,
   },
   saveForLaterButton: {
-    marginLeft: 8,
     paddingVertical: 4,
   },
   savedItemsSection: {

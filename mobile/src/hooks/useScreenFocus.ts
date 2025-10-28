@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
 import { runAfterInteractions } from '../utils/navigationOptimization';
 
@@ -47,7 +47,7 @@ export const useDeferredLoad = (loadFn: () => void | Promise<void>) => {
       hasLoaded.current = true;
       loadFn();
     }
-  }, [shouldLoad]);
+  }, [shouldLoad, loadFn]);
 
   return hasLoaded.current;
 };
@@ -57,25 +57,27 @@ export const useDeferredLoad = (loadFn: () => void | Promise<void>) => {
  */
 export const useFocusAwareEffect = (
   effect: () => void | (() => void),
-  deps: any[] = []
+  deps: React.DependencyList = []
 ) => {
   const isFocused = useIsFocused();
-  const cleanup = useRef<void | (() => void)>();
+  const cleanup = useRef<(() => void) | undefined>(undefined);
 
   useEffect(() => {
     if (isFocused) {
-      cleanup.current = effect();
+      const result = effect();
+      cleanup.current = typeof result === 'function' ? result : undefined;
     } else {
       // Cleanup when screen loses focus
-      if (cleanup.current && typeof cleanup.current === 'function') {
+      if (cleanup.current) {
         cleanup.current();
       }
     }
 
     return () => {
-      if (cleanup.current && typeof cleanup.current === 'function') {
+      if (cleanup.current) {
         cleanup.current();
       }
     };
-  }, [isFocused, ...deps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused, effect, ...deps]);
 };

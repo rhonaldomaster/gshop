@@ -23,7 +23,7 @@ import analyticsService from '../services/analytics.service';
  * Main deep link hook
  */
 export const useDeepLink = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const isInitialized = useRef(false);
 
   useEffect(() => {
@@ -59,13 +59,13 @@ export const useDeepLink = () => {
     switch (route) {
       case DeepLinkRoute.PRODUCT:
         if (params?.id) {
-          navigation.navigate('ProductDetail' as never, { productId: params.id } as never);
+          navigation.navigate('ProductDetail', { productId: params.id });
         }
         break;
 
       case DeepLinkRoute.LIVE_STREAM:
         if (params?.id) {
-          navigation.navigate('LiveStream' as never, { streamId: params.id } as never);
+          navigation.navigate('LiveStream', { streamId: params.id });
         }
         break;
 
@@ -77,43 +77,43 @@ export const useDeepLink = () => {
           });
           // You might want to fetch the product/destination from the affiliate code
           // For now, navigate to home
-          navigation.navigate('Home' as never);
+          navigation.navigate('Home');
         }
         break;
 
       case DeepLinkRoute.ORDER:
         if (params?.id) {
-          navigation.navigate('OrderDetail' as never, { orderId: params.id } as never);
+          navigation.navigate('OrderDetail', { orderId: params.id });
         }
         break;
 
       case DeepLinkRoute.SELLER:
         if (params?.id) {
-          navigation.navigate('SellerProfile' as never, { sellerId: params.id } as never);
+          navigation.navigate('SellerProfile', { sellerId: params.id });
         }
         break;
 
       case DeepLinkRoute.CATEGORY:
         if (params?.slug) {
-          navigation.navigate('ProductList' as never, { category: params.slug } as never);
+          navigation.navigate('ProductList', { category: params.slug });
         }
         break;
 
       case DeepLinkRoute.SEARCH:
-        navigation.navigate('Search' as never, { query: params?.q || '' } as never);
+        navigation.navigate('Search', { query: params?.q || '' });
         break;
 
       case DeepLinkRoute.CHECKOUT:
-        navigation.navigate('Checkout' as never);
+        navigation.navigate('Checkout');
         break;
 
       case DeepLinkRoute.PROFILE:
-        navigation.navigate('Profile' as never);
+        navigation.navigate('Profile');
         break;
 
       case DeepLinkRoute.HOME:
       default:
-        navigation.navigate('Home' as never);
+        navigation.navigate('Home');
         break;
     }
   }, [navigation]);

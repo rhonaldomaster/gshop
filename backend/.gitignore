@@ -87,3 +87,4 @@ generated/
 
 # Migration backup
 migrations/*.backup.ts
+.vercel

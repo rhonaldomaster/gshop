@@ -55,8 +55,15 @@ class ApiClient {
         const originalRequest = error.config;
 
         // List of endpoints that are known to not exist or are optional (analytics/tracking)
+        // Also includes endpoints that are optional for unauthenticated users
         const silencedEndpoints = ['/reviews', '/related', '/recommendations/interactions'];
+        const optionalAuthEndpoints = ['/wishlist'];
+
         const isSilencedEndpoint = silencedEndpoints.some(endpoint =>
+          error.config?.url?.includes(endpoint)
+        );
+
+        const isOptionalAuthEndpoint = optionalAuthEndpoints.some(endpoint =>
           error.config?.url?.includes(endpoint)
         );
 
@@ -64,6 +71,9 @@ class ApiClient {
           // Only show warnings for known missing/optional endpoints, errors for real issues
           if (isSilencedEndpoint && (error.response?.status === 404 || error.response?.status === 400)) {
             console.warn(`⚠️ Optional feature not available: ${error.config?.url}`);
+          } else if (isOptionalAuthEndpoint && error.response?.status === 401 && !this.authToken) {
+            // Silently ignore 401 errors for optional auth endpoints when user is not authenticated
+            console.log(`🔒 Skipping unauthenticated request: ${error.config?.url}`);
           } else {
             console.error(`❌ API Error: ${error.response?.status} ${error.config?.url}`, {
               data: error.response?.data,
@@ -78,7 +88,12 @@ class ApiClient {
                                originalRequest.url?.includes('/auth/register') ||
                                originalRequest.url?.includes('/auth/refresh');
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+        // Only try to refresh token if:
+        // 1. We got a 401 error
+        // 2. We haven't already retried
+        // 3. It's not an auth endpoint
+        // 4. We actually have a token (user was authenticated)
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint && this.authToken) {
           originalRequest._retry = true;
 
           try {

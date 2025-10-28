@@ -66,8 +66,8 @@ export const useNotificationHandler = (
   onNotificationReceived?: (notification: Notifications.Notification) => void,
   onNotificationTapped?: (response: Notifications.NotificationResponse) => void
 ) => {
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.EventSubscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.EventSubscription | undefined>(undefined);
 
   useEffect(() => {
     // Listen for incoming notifications when app is foregrounded
@@ -86,10 +86,10 @@ export const useNotificationHandler = (
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, [onNotificationReceived, onNotificationTapped]);

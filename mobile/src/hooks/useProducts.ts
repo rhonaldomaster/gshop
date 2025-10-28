@@ -134,8 +134,21 @@ export function useProducts(): UseProductsReturn {
   // Get product with additional details
   const getProductDetails = useCallback(
     async (productId: string) => {
-      await trackProductView(productId);
-      return await productDetailsApi.execute(productId);
+      // Track view first
+      try {
+        await productsService.trackProductInteraction(productId, 'view');
+      } catch (error) {
+        console.warn('Failed to track product view:', error);
+      }
+
+      const result = await productDetailsApi.execute(productId);
+
+      // Ensure we always return the expected shape, even if API fails
+      return result ?? {
+        product: null,
+        relatedProducts: [],
+        reviews: [],
+      };
     },
     [productDetailsApi]
   );
@@ -321,7 +334,9 @@ export function useProducts(): UseProductsReturn {
         };
       }
 
-      if (product.stock === 0) {
+      const stock = product.stock ?? 0;
+
+      if (stock === 0) {
         return {
           status: 'out_of_stock',
           message: 'Out of Stock',
@@ -329,10 +344,10 @@ export function useProducts(): UseProductsReturn {
         };
       }
 
-      if (product.stock <= 5) {
+      if (stock <= 5) {
         return {
           status: 'low_stock',
-          message: `Only ${product.stock} left`,
+          message: `Only ${stock} left`,
           color: '#FFA500',
         };
       }

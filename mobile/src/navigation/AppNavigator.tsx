@@ -3,6 +3,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCart } from '../contexts/CartContext';
 import HomeNavigator from './HomeNavigator';
@@ -20,6 +21,7 @@ export type AppTabParamList = {
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 export default function AppNavigator() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { totalItems } = useCart();
@@ -66,21 +68,21 @@ export default function AppNavigator() {
         },
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeNavigator} 
-        options={{ tabBarLabel: 'Home' }}
+      <Tab.Screen
+        name="Home"
+        component={HomeNavigator}
+        options={{ tabBarLabel: t('home.title') }}
       />
-      <Tab.Screen 
-        name="Categories" 
-        component={CategoriesNavigator} 
-        options={{ tabBarLabel: 'Categories' }}
+      <Tab.Screen
+        name="Categories"
+        component={CategoriesNavigator}
+        options={{ tabBarLabel: t('categories.title') }}
       />
       <Tab.Screen
         name="Cart"
         component={CartNavigator}
         options={{
-          tabBarLabel: 'Cart',
+          tabBarLabel: t('cart.title'),
           tabBarBadge: totalItems > 0 ? totalItems : undefined,
           tabBarBadgeStyle: {
             backgroundColor: theme.colors.error,
@@ -94,10 +96,10 @@ export default function AppNavigator() {
           },
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileNavigator} 
-        options={{ tabBarLabel: 'Profile' }}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileNavigator}
+        options={{ tabBarLabel: t('profile.title') }}
       />
     </Tab.Navigator>
   );

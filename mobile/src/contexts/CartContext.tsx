@@ -2,7 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '../config/api.config';
 import { Product } from '../services/products.service';
-import { cartService, CartResponse, CartItem as BackendCartItem } from '../services/cart.service';
+import { cartService, CartResponse } from '../services/cart.service';
 import { useAuth } from './AuthContext';
 import { analyticsService } from '../services/analytics.service';
 
@@ -411,7 +411,8 @@ export function CartProvider({ children }: CartProviderProps) {
   // Add product to cart
   const addToCart = async (product: Product, quantity: number = 1): Promise<void> => {
     try {
-      if (product.status !== 'active' || product.stock < quantity) {
+      const stock = product.stock ?? 0;
+      if (product.status !== 'active' || stock < quantity) {
         throw new Error('Product is not available or insufficient stock');
       }
 
@@ -490,7 +491,8 @@ export function CartProvider({ children }: CartProviderProps) {
       }
 
       const cartItem = state.items.find((item) => item.productId === productId);
-      if (cartItem && cartItem.product.stock < quantity) {
+      const stock = cartItem?.product.stock ?? 0;
+      if (cartItem && stock < quantity) {
         throw new Error('Insufficient stock available');
       }
 
@@ -729,6 +731,3 @@ export function useCart(): CartContextType {
   }
   return context;
 }
-
-// Export cart item type for other components
-export type { CartItem };

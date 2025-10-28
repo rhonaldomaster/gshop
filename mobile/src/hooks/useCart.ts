@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useCart as useCartContext, CartItem } from '../contexts/CartContext';
 import { Product } from '../services/products.service';
 import { productsService } from '../services/products.service';
@@ -75,6 +76,7 @@ interface UseCartReturn {
  * Enhanced cart hook with additional utilities and error handling
  */
 export function useCart(): UseCartReturn {
+  const { t } = useTranslation();
   const cartContext = useCartContext();
 
   // Add to cart with validation and user feedback
@@ -85,7 +87,7 @@ export function useCart(): UseCartReturn {
         const validation = canAddToCart(product, quantity);
         if (!validation.canAdd) {
           if (showAlert) {
-            Alert.alert('Cannot Add to Cart', validation.reason || 'Unknown error');
+            Alert.alert(t('cart.cannotAddToCart'), validation.reason || t('common.error'));
           }
           return false;
         }
@@ -97,8 +99,8 @@ export function useCart(): UseCartReturn {
 
         if (showAlert) {
           Alert.alert(
-            'Added to Cart',
-            `${product.name} has been added to your cart`,
+            t('cart.addedToCart'),
+            t('cart.itemAddedToCart', { name: product.name }),
             [{ text: 'OK' }],
             { cancelable: true }
           );
@@ -108,12 +110,12 @@ export function useCart(): UseCartReturn {
       } catch (error: any) {
         console.error('useCart: Add to cart failed', error);
         if (showAlert) {
-          Alert.alert('Error', error.message || 'Failed to add item to cart');
+          Alert.alert(t('common.error'), error.message || t('cart.failedToAddItem'));
         }
         return false;
       }
     },
-    [cartContext]
+    [cartContext, t]
   );
 
   // Remove from cart with confirmation
@@ -128,12 +130,12 @@ export function useCart(): UseCartReturn {
         if (showAlert) {
           return new Promise((resolve) => {
             Alert.alert(
-              'Remove Item',
-              `Remove ${cartItem.product.name} from your cart?`,
+              t('cart.removeItemTitle'),
+              t('cart.removeItemConfirm', { name: cartItem.product.name }),
               [
-                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
                 {
-                  text: 'Remove',
+                  text: t('cart.remove'),
                   style: 'destructive',
                   onPress: async () => {
                     await cartContext.removeFromCart(productId);
@@ -150,12 +152,12 @@ export function useCart(): UseCartReturn {
       } catch (error: any) {
         console.error('useCart: Remove from cart failed', error);
         if (showAlert) {
-          Alert.alert('Error', error.message || 'Failed to remove item from cart');
+          Alert.alert(t('common.error'), error.message || t('cart.failedToRemoveItem'));
         }
         return false;
       }
     },
-    [cartContext]
+    [cartContext, t]
   );
 
   // Update quantity with validation
@@ -170,7 +172,7 @@ export function useCart(): UseCartReturn {
         // Validate new quantity
         const validation = canAddToCart(cartItem.product, quantity);
         if (!validation.canAdd) {
-          Alert.alert('Cannot Update Quantity', validation.reason || 'Invalid quantity');
+          Alert.alert(t('cart.cannotUpdateQuantity'), validation.reason || t('cart.invalidQuantity'));
           return false;
         }
 
@@ -178,11 +180,11 @@ export function useCart(): UseCartReturn {
         return true;
       } catch (error: any) {
         console.error('useCart: Update quantity failed', error);
-        Alert.alert('Error', error.message || 'Failed to update quantity');
+        Alert.alert(t('common.error'), error.message || t('cart.failedToUpdateQuantity'));
         return false;
       }
     },
-    [cartContext]
+    [cartContext, t]
   );
 
   // Clear cart with confirmation
@@ -196,12 +198,12 @@ export function useCart(): UseCartReturn {
         if (showAlert) {
           return new Promise((resolve) => {
             Alert.alert(
-              'Clear Cart',
-              'Remove all items from your cart?',
+              t('cart.clearCartTitle'),
+              t('cart.clearCartConfirm'),
               [
-                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
                 {
-                  text: 'Clear',
+                  text: t('common.clear'),
                   style: 'destructive',
                   onPress: async () => {
                     await cartContext.clearCart();
@@ -218,12 +220,12 @@ export function useCart(): UseCartReturn {
       } catch (error: any) {
         console.error('useCart: Clear cart failed', error);
         if (showAlert) {
-          Alert.alert('Error', error.message || 'Failed to clear cart');
+          Alert.alert(t('common.error'), error.message || t('cart.failedToClearCart'));
         }
         return false;
       }
     },
-    [cartContext]
+    [cartContext, t]
   );
 
   // Increment quantity
@@ -267,21 +269,21 @@ export function useCart(): UseCartReturn {
   const canAddToCart = useCallback(
     (product: Product, quantity: number = 1): { canAdd: boolean; reason?: string } => {
       if (!product) {
-        return { canAdd: false, reason: 'Product not found' };
+        return { canAdd: false, reason: t('cart.productNotFound') };
       }
 
       if (product.status !== 'active') {
-        return { canAdd: false, reason: 'Product is not available' };
+        return { canAdd: false, reason: t('cart.productNotAvailable') };
       }
 
       if (quantity <= 0) {
-        return { canAdd: false, reason: 'Quantity must be greater than 0' };
+        return { canAdd: false, reason: t('cart.quantityGreaterThanZero') };
       }
 
       const stockQuantity = product.quantity ?? product.stock ?? 0;
 
       if (quantity > stockQuantity) {
-        return { canAdd: false, reason: `Only ${stockQuantity} items available` };
+        return { canAdd: false, reason: t('cart.onlyXItemsAvailable', { count: stockQuantity }) };
       }
 
       // Check current cart quantity
@@ -293,14 +295,14 @@ export function useCart(): UseCartReturn {
         return {
           canAdd: false,
           reason: remaining > 0
-            ? `You can only add ${remaining} more items`
-            : 'Maximum quantity already in cart',
+            ? t('cart.canOnlyAddXMore', { count: remaining })
+            : t('cart.maxQuantityInCart'),
         };
       }
 
       return { canAdd: true };
     },
-    [getItemQuantity]
+    [getItemQuantity, t]
   );
 
   // Enhanced cart summary with additional calculations
@@ -360,19 +362,19 @@ export function useCart(): UseCartReturn {
     for (const item of cartContext.items) {
       // Check if product is still available
       if (item.product.status !== 'active') {
-        issues.push(`${item.product.name} is no longer available`);
+        issues.push(t('cart.productNoLongerAvailable', { name: item.product.name }));
       }
 
       // Check stock availability
       const stockQuantity = item.product.quantity ?? item.product.stock ?? 0;
       if (item.quantity > stockQuantity) {
-        issues.push(`${item.product.name} - only ${stockQuantity} items available`);
+        issues.push(t('cart.onlyXItemsLeft', { name: item.product.name, count: stockQuantity }));
       }
 
       // Check for price changes (would require API call to get current price)
       // This is a placeholder for price validation
       if (item.price !== item.product.price) {
-        issues.push(`${item.product.name} price has changed`);
+        issues.push(t('cart.priceHasChanged', { name: item.product.name }));
       }
     }
 
@@ -380,7 +382,7 @@ export function useCart(): UseCartReturn {
       isValid: issues.length === 0,
       issues,
     };
-  }, [cartContext.items]);
+  }, [cartContext.items, t]);
 
   // Sync cart with server
   const syncWithServer = useCallback(async (): Promise<void> => {
@@ -398,18 +400,18 @@ export function useCart(): UseCartReturn {
     async (code: string): Promise<boolean> => {
       try {
         if (!cartContext.applyCoupon) {
-          Alert.alert('Error', 'Coupon feature not available');
+          Alert.alert(t('common.error'), t('cart.couponNotAvailable'));
           return false;
         }
         await cartContext.applyCoupon(code);
         return true;
       } catch (error: any) {
         console.error('useCart: Apply coupon failed', error);
-        Alert.alert('Invalid Coupon', error.message || 'Failed to apply coupon');
+        Alert.alert(t('cart.invalidCouponTitle'), error.message || t('cart.failedToApplyCoupon'));
         return false;
       }
     },
-    [cartContext]
+    [cartContext, t]
   );
 
   // Remove coupon
@@ -530,6 +532,7 @@ export function useCart(): UseCartReturn {
       isInStock,
     }),
     [
+      t,
       cartContext,
       addToCart,
       removeFromCart,

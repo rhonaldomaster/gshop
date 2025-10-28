@@ -179,16 +179,24 @@ class OrdersService {
   // Get user orders with pagination
   getOrders = async (page: number = 1, limit: number = 10): Promise<PaginatedResponse<Order>> => {
     try {
-      const response = await apiClient.get<PaginatedResponse<Order>>(
+      const response = await apiClient.get<any>(
         API_CONFIG.ENDPOINTS.ORDERS.LIST,
         { params: { page, limit } }
       );
 
       if (response.success && response.data) {
-        // Map orders to normalize field names
-        const mappedData = {
-          ...response.data,
-          data: response.data.data.map(order => this.mapOrder(order)),
+        // Backend returns flat structure: { data, total, page, limit, totalPages }
+        // Mobile expects nested structure: { data, pagination: { page, limit, total, totalPages } }
+
+        // Map backend response to mobile format
+        const mappedData: PaginatedResponse<Order> = {
+          data: (response.data.data || []).map((order: any) => this.mapOrder(order)),
+          pagination: {
+            page: response.data.page || 1,
+            limit: response.data.limit || 10,
+            total: response.data.total || 0,
+            totalPages: response.data.totalPages || 0,
+          },
         };
         return mappedData;
       } else {

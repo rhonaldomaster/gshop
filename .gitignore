@@ -277,3 +277,4 @@ storybook-static
 # Tool-specific files
 *.donotdelete
 .abacus.*
+.vercel

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import {
   getPendingActions,
   removePendingAction,
@@ -35,14 +35,17 @@ export const useOfflineSync = (
 
   useEffect(() => {
     // Subscribe to network state
-    const unsubscribe = NetInfo.addEventListener(state => {
-      const isConnected = state.isConnected && state.isInternetReachable !== false;
-      setState(prev => ({ ...prev, isOnline: isConnected }));
+    const unsubscribe = NetInfo.addEventListener((networkState: NetInfoState) => {
+      const isConnected = (networkState.isConnected ?? false) && networkState.isInternetReachable !== false;
 
-      // Trigger sync when coming back online
-      if (isConnected && !state.isSyncing) {
-        syncPendingActions();
-      }
+      setState(prev => {
+        // Trigger sync when coming back online
+        if (isConnected && !prev.isSyncing && prev.isOnline === false) {
+          syncPendingActions();
+        }
+
+        return { ...prev, isOnline: isConnected };
+      });
     });
 
     // Initial sync check
@@ -113,8 +116,9 @@ export const useNetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsOnline(state.isConnected && state.isInternetReachable !== false);
+    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+      const isConnected = (state.isConnected ?? false) && state.isInternetReachable !== false;
+      setIsOnline(isConnected);
     });
 
     return () => unsubscribe();
