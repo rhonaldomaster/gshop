@@ -411,7 +411,7 @@ export function CartProvider({ children }: CartProviderProps) {
   // Add product to cart
   const addToCart = async (product: Product, quantity: number = 1): Promise<void> => {
     try {
-      const stock = product.stock ?? 0;
+      const stock = product.quantity ?? product.stock ?? 0;
       if (product.status !== 'active' || stock < quantity) {
         throw new Error('Product is not available or insufficient stock');
       }
@@ -491,7 +491,7 @@ export function CartProvider({ children }: CartProviderProps) {
       }
 
       const cartItem = state.items.find((item) => item.productId === productId);
-      const stock = cartItem?.product.stock ?? 0;
+      const stock = cartItem?.product.quantity ?? cartItem?.product.stock ?? 0;
       if (cartItem && stock < quantity) {
         throw new Error('Insufficient stock available');
       }

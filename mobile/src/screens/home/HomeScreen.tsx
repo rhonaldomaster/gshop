@@ -118,7 +118,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.searchButton}
-            onPress={() => navigation.navigate('Search')}
+            onPress={() => navigation.navigate('Search', {})}
           >
             <Ionicons name="search" size={24} color="#6B7280" />
           </TouchableOpacity>
