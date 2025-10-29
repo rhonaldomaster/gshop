@@ -45,11 +45,10 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
   const { getProductDetails, formatPrice, isInStock, getDiscountPercentage } = useProducts();
-  const { addToCart, isInCart, getItemQuantity } = useCart();
+  const { addToCart, getItemQuantity } = useCart();
 
   // Local state
   const [product, setProduct] = useState<Product | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +71,6 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
 
       if (result?.product) {
         setProduct(result.product);
-        setRelatedProducts(result.relatedProducts || []);
 
         // Check if product is in wishlist (only if authenticated)
         if (isAuthenticated) {
@@ -292,7 +290,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
                     {
                       backgroundColor: index === selectedImageIndex
                         ? theme.colors.primary
-                        : theme.colors.border,
+                        : theme.colors.gray300,
                     },
                   ]}
                   onPress={() => setSelectedImageIndex(index)}
@@ -335,7 +333,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
             <GSText
               variant="body"
               color={inStock ? 'success' : 'error'}
-              weight="medium"
+              weight="semiBold"
             >
               {inStock ? t('products.inStock') : t('products.outOfStock')}
             </GSText>
@@ -349,22 +347,22 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
           {/* Quantity Selector */}
           {inStock && (
             <View style={styles.quantityContainer}>
-              <GSText variant="body" weight="medium" style={styles.quantityLabel}>
+              <GSText variant="body" weight="semiBold" style={styles.quantityLabel}>
                 {t('products.quantity')}:
               </GSText>
               <View style={styles.quantitySelector}>
                 <TouchableOpacity
-                  style={[styles.quantityButton, { borderColor: theme.colors.border }]}
+                  style={[styles.quantityButton, { borderColor: theme.colors.gray300 }]}
                   onPress={decreaseQuantity}
                   disabled={quantity <= 1}
                 >
                   <GSText variant="body" weight="bold">-</GSText>
                 </TouchableOpacity>
-                <GSText variant="body" weight="medium" style={styles.quantityText}>
+                <GSText variant="body" weight="semiBold" style={styles.quantityText}>
                   {quantity}
                 </GSText>
                 <TouchableOpacity
-                  style={[styles.quantityButton, { borderColor: theme.colors.border }]}
+                  style={[styles.quantityButton, { borderColor: theme.colors.gray300 }]}
                   onPress={increaseQuantity}
                   disabled={quantity >= stockQuantity}
                 >
@@ -377,7 +375,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
           {/* Cart Status */}
           {cartQuantity > 0 && (
             <View style={styles.cartStatus}>
-              <GSText variant="body" color="primary" weight="medium">
+              <GSText variant="body" color="primary" weight="semiBold">
                 {t('products.itemsInCart', { count: cartQuantity })}
               </GSText>
             </View>
@@ -393,7 +391,7 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
             onPress={handleAddToCart}
             loading={isAddingToCart}
             style={[styles.actionButton, styles.addToCartButton]}
-            variant="outlined"
+            variant="outline"
           />
           <GSButton
             title={t('products.buyNow')}

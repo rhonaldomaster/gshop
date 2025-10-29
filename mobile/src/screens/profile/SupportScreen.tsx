@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
@@ -91,6 +92,7 @@ const ContactOption: React.FC<ContactOptionProps> = ({ icon, title, description,
 
 export default function SupportScreen() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [showTicketForm, setShowTicketForm] = useState(false);
@@ -101,51 +103,43 @@ export default function SupportScreen() {
   const faqs: FAQ[] = [
     {
       id: '1',
-      question: 'How do I track my order?',
-      answer:
-        'You can track your order by going to "My Orders" in your profile, then tap on the order you want to track. You\'ll see real-time updates on your order status and delivery progress.',
+      question: t('support.faqs.trackOrder.question'),
+      answer: t('support.faqs.trackOrder.answer'),
     },
     {
       id: '2',
-      question: 'What is your return policy?',
-      answer:
-        'We accept returns within 30 days of delivery. Items must be unused and in original packaging. Simply go to your order details and click "Request Return". Refunds are processed within 5-7 business days after we receive the item.',
+      question: t('support.faqs.returnPolicy.question'),
+      answer: t('support.faqs.returnPolicy.answer'),
     },
     {
       id: '3',
-      question: 'How long does shipping take?',
-      answer:
-        'Standard shipping takes 5-7 business days. Express shipping takes 2-3 business days. Same-day delivery is available in select areas. You can see estimated delivery dates at checkout.',
+      question: t('support.faqs.shippingTime.question'),
+      answer: t('support.faqs.shippingTime.answer'),
     },
     {
       id: '4',
-      question: 'What payment methods do you accept?',
-      answer:
-        'We accept credit/debit cards (Visa, Mastercard, American Express), MercadoPago, USDC cryptocurrency, and GSHOP tokens. All payments are processed securely.',
+      question: t('support.faqs.paymentMethods.question'),
+      answer: t('support.faqs.paymentMethods.answer'),
     },
     {
       id: '5',
-      question: 'How do I change or cancel my order?',
-      answer:
-        'You can cancel or modify your order within 1 hour of placing it. Go to "My Orders", select the order, and click "Cancel Order" or "Modify Order". After processing begins, contact support for assistance.',
+      question: t('support.faqs.changeOrder.question'),
+      answer: t('support.faqs.changeOrder.answer'),
     },
     {
       id: '6',
-      question: 'Do you offer international shipping?',
-      answer:
-        'Currently, we ship within Colombia only. We\'re working on expanding to other Latin American countries soon. Subscribe to our newsletter to get notified when we expand.',
+      question: t('support.faqs.internationalShipping.question'),
+      answer: t('support.faqs.internationalShipping.answer'),
     },
     {
       id: '7',
-      question: 'How do I use a coupon code?',
-      answer:
-        'Enter your coupon code at checkout in the "Promo Code" field. The discount will be applied automatically. Make sure the code is valid and meets any minimum purchase requirements.',
+      question: t('support.faqs.couponCode.question'),
+      answer: t('support.faqs.couponCode.answer'),
     },
     {
       id: '8',
-      question: 'What are GSHOP tokens and how do I earn them?',
-      answer:
-        'GSHOP tokens are our reward currency. You earn 5% cashback on all purchases. Tokens can be used for future purchases. Check your wallet in the Profile section to see your balance.',
+      question: t('support.faqs.gshopTokens.question'),
+      answer: t('support.faqs.gshopTokens.answer'),
     },
   ];
 
@@ -158,22 +152,22 @@ export default function SupportScreen() {
   };
 
   const handleCallSupport = () => {
-    Alert.alert('Call Support', 'Would you like to call our support team?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('support.callSupportTitle'), t('support.callSupportMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Call',
+        text: t('support.call'),
         onPress: () => Linking.openURL('tel:+541112345678'),
       },
     ]);
   };
 
   const handleLiveChat = () => {
-    Alert.alert('Live Chat', 'Live chat is coming soon! For now, please use email or phone support.');
+    Alert.alert(t('support.liveChat'), t('support.liveChatComingSoon'));
   };
 
   const handleSubmitTicket = async () => {
     if (!ticketSubject.trim() || !ticketMessage.trim()) {
-      Alert.alert('Missing Information', 'Please fill in both subject and message fields.');
+      Alert.alert(t('support.missingInfo'), t('support.fillAllFields'));
       return;
     }
 
@@ -187,8 +181,8 @@ export default function SupportScreen() {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       Alert.alert(
-        'Ticket Submitted',
-        'Your support ticket has been submitted. We\'ll get back to you within 24 hours.',
+        t('support.ticketSubmitted'),
+        t('support.ticketSubmittedMessage'),
         [
           {
             text: 'OK',
@@ -202,7 +196,7 @@ export default function SupportScreen() {
       );
     } catch (error) {
       console.error('Failed to submit ticket:', error);
-      Alert.alert('Error', 'Failed to submit ticket. Please try again.');
+      Alert.alert(t('common.error'), t('support.ticketSubmitError'));
     } finally {
       setSubmitting(false);
     }
@@ -214,27 +208,27 @@ export default function SupportScreen() {
         {/* Contact Us Section */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Contact Us
+            {t('support.contactUs')}
           </GSText>
 
           <ContactOption
             icon="mail-outline"
-            title="Email Support"
-            description="support@gshop.com • 24h response"
+            title={t('support.emailSupport')}
+            description={t('support.emailDescription')}
             onPress={handleEmailSupport}
           />
 
           <ContactOption
             icon="call-outline"
-            title="Call Us"
-            description="+54 11 1234 5678 • Mon-Fri 9AM-6PM"
+            title={t('support.callUs')}
+            description={t('support.callDescription')}
             onPress={handleCallSupport}
           />
 
           <ContactOption
             icon="chatbubbles-outline"
-            title="Live Chat"
-            description="Chat with us in real-time"
+            title={t('support.liveChat')}
+            description={t('support.liveChatDescription')}
             onPress={handleLiveChat}
           />
         </View>
@@ -242,7 +236,7 @@ export default function SupportScreen() {
         {/* Frequently Asked Questions */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Frequently Asked Questions
+            {t('support.faq')}
           </GSText>
 
           {faqs.map((faq) => (
@@ -258,7 +252,7 @@ export default function SupportScreen() {
         {/* Submit a Ticket */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Submit a Support Ticket
+            {t('support.submitTicket')}
           </GSText>
 
           {!showTicketForm ? (
@@ -268,13 +262,13 @@ export default function SupportScreen() {
             >
               <Ionicons name="create-outline" size={24} color={theme.colors.primary} />
               <GSText variant="body" color="primary" style={{ marginLeft: 12 }}>
-                Create New Ticket
+                {t('support.createNewTicket')}
               </GSText>
             </TouchableOpacity>
           ) : (
             <View style={[styles.ticketForm, { backgroundColor: theme.colors.surface }]}>
               <GSText variant="body" weight="semiBold" style={styles.formLabel}>
-                Subject
+                {t('support.subject')}
               </GSText>
               <TextInput
                 style={[
@@ -285,14 +279,14 @@ export default function SupportScreen() {
                     borderColor: '#E5E7EB',
                   },
                 ]}
-                placeholder="Brief description of your issue"
+                placeholder={t('support.subjectPlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={ticketSubject}
                 onChangeText={setTicketSubject}
               />
 
               <GSText variant="body" weight="semiBold" style={styles.formLabel}>
-                Message
+                {t('support.message')}
               </GSText>
               <TextInput
                 style={[
@@ -303,7 +297,7 @@ export default function SupportScreen() {
                     borderColor: '#E5E7EB',
                   },
                 ]}
-                placeholder="Please describe your issue in detail..."
+                placeholder={t('support.messagePlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={ticketMessage}
                 onChangeText={setTicketMessage}
@@ -314,7 +308,7 @@ export default function SupportScreen() {
 
               <View style={styles.formButtons}>
                 <GSButton
-                  title="Cancel"
+                  title={t('common.cancel')}
                   onPress={() => {
                     setShowTicketForm(false);
                     setTicketSubject('');
@@ -324,7 +318,7 @@ export default function SupportScreen() {
                   style={styles.formButton}
                 />
                 <GSButton
-                  title="Submit"
+                  title={t('support.submit')}
                   onPress={handleSubmitTicket}
                   loading={submitting}
                   style={styles.formButton}
@@ -337,33 +331,33 @@ export default function SupportScreen() {
         {/* Additional Resources */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Additional Resources
+            {t('support.additionalResources')}
           </GSText>
 
           <TouchableOpacity style={styles.resourceLink}>
             <GSText variant="body" color="primary">
-              Privacy Policy
+              {t('support.privacyPolicy')}
             </GSText>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.resourceLink}>
             <GSText variant="body" color="primary">
-              Terms of Service
+              {t('support.termsOfService')}
             </GSText>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.resourceLink}>
             <GSText variant="body" color="primary">
-              Shipping Information
+              {t('support.shippingInfo')}
             </GSText>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.resourceLink}>
             <GSText variant="body" color="primary">
-              Return & Refund Policy
+              {t('support.returnRefundPolicy')}
             </GSText>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
           </TouchableOpacity>

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -37,37 +38,38 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
   isUpdating,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const getMethodDetails = () => {
     switch (method.type) {
       case 'card':
         return {
           title: `•••• ${method.details.last4}`,
-          subtitle: `${method.details.brand?.toUpperCase()} • Expires ${method.details.expiryMonth}/${method.details.expiryYear}`,
+          subtitle: `${method.details.brand?.toUpperCase()} • ${t('payments.expires')} ${method.details.expiryMonth}/${method.details.expiryYear}`,
           icon: 'card-outline' as const,
         };
       case 'mercadopago':
         return {
           title: 'MercadoPago',
-          subtitle: 'Digital wallet',
+          subtitle: t('payments.digitalWallet'),
           icon: 'wallet-outline' as const,
         };
       case 'crypto':
         return {
-          title: 'Crypto Wallet',
+          title: t('payments.cryptoWallet'),
           subtitle: `${method.details.walletAddress?.slice(0, 6)}...${method.details.walletAddress?.slice(-4)}`,
           icon: 'logo-bitcoin' as const,
         };
       case 'gshop_tokens':
         return {
           title: 'GSHOP Tokens',
-          subtitle: `${method.details.tokenBalance || 0} tokens available`,
+          subtitle: `${method.details.tokenBalance || 0} ${t('payments.tokensAvailable')}`,
           icon: 'diamond-outline' as const,
         };
       default:
         return {
           title: method.provider,
-          subtitle: 'Payment method',
+          subtitle: t('payments.paymentMethodType'),
           icon: 'payment-outline' as const,
         };
     }
@@ -78,19 +80,20 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
   const handleRemove = () => {
     if (method.isDefault) {
       Alert.alert(
-        'Cannot Remove',
-        'You cannot remove your default payment method. Please set another method as default first.'
+        t('payments.cannotRemove'),
+        t('payments.cannotRemoveDefaultMessage')
       );
       return;
     }
 
+    const methodType = method.type === 'card' ? t('payments.card') : t('payments.paymentMethodType');
     Alert.alert(
-      'Remove Payment Method',
-      `Are you sure you want to remove this ${method.type === 'card' ? 'card' : 'payment method'}?`,
+      t('payments.removePaymentMethod'),
+      t('payments.removeCardConfirm', { type: methodType }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => onRemove(method.id),
         },
@@ -117,7 +120,7 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
             {method.isDefault && (
               <View style={[styles.defaultBadge, { backgroundColor: theme.colors.primary }]}>
                 <GSText variant="caption" color="white" weight="bold">
-                  Default
+                  {t('payments.default')}
                 </GSText>
               </View>
             )}
@@ -146,7 +149,7 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
               <>
                 <Ionicons name="checkmark-circle-outline" size={16} color={theme.colors.primary} />
                 <GSText variant="caption" color="primary" style={{ marginLeft: 4 }}>
-                  Set Default
+                  {t('payments.setDefault')}
                 </GSText>
               </>
             )}
@@ -161,7 +164,7 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
           >
             <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
             <GSText variant="caption" color="error" style={{ marginLeft: 4 }}>
-              Remove
+              {t('common.delete')}
             </GSText>
           </TouchableOpacity>
         )}
@@ -179,6 +182,7 @@ interface AddCardModalProps {
 
 const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit, isLoading }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvc, setCvc] = useState('');
@@ -218,23 +222,23 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
     const fullYear = year ? 2000 + year : 0;
 
     if (!paymentsService.validateCardNumber(cardNumber)) {
-      Alert.alert('Invalid Card', 'Please enter a valid card number');
+      Alert.alert(t('payments.invalidCard'), t('payments.enterValidCardNumber'));
       return;
     }
 
     if (!paymentsService.validateExpiryDate(month, fullYear)) {
-      Alert.alert('Invalid Expiry', 'Please enter a valid expiry date');
+      Alert.alert(t('payments.invalidExpiry'), t('payments.enterValidExpiryDate'));
       return;
     }
 
     const cardBrand = paymentsService.getCardBrand(cardNumber);
     if (!paymentsService.validateCVC(cvc, cardBrand)) {
-      Alert.alert('Invalid CVC', 'Please enter a valid security code');
+      Alert.alert(t('payments.invalidCVC'), t('payments.enterValidSecurityCode'));
       return;
     }
 
     if (!holderName.trim()) {
-      Alert.alert('Missing Name', 'Please enter the cardholder name');
+      Alert.alert(t('payments.missingName'), t('payments.enterCardholderName'));
       return;
     }
 
@@ -259,11 +263,11 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose}>
             <GSText variant="body" color="textSecondary">
-              Cancel
+              {t('common.cancel')}
             </GSText>
           </TouchableOpacity>
           <GSText variant="h4" weight="bold">
-            Add New Card
+            {t('payments.addNewCard')}
           </GSText>
           <View style={{ width: 50 }} />
         </View>
@@ -272,14 +276,14 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
           <View style={styles.cardPreview}>
             <View style={[styles.cardMockup, { backgroundColor: theme.colors.primary }]}>
               <GSText variant="body" color="white" weight="bold">
-                {cardNumber || '•••• •••• •••• ••••'}
+                {cardNumber || t('payments.cardPlaceholder')}
               </GSText>
               <View style={styles.cardInfo}>
                 <GSText variant="caption" color="white">
-                  {holderName || 'CARDHOLDER NAME'}
+                  {holderName || t('payments.cardholderPlaceholder')}
                 </GSText>
                 <GSText variant="caption" color="white">
-                  {expiryDate || 'MM/YY'}
+                  {expiryDate || t('payments.expiryPlaceholder')}
                 </GSText>
               </View>
             </View>
@@ -287,28 +291,28 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
 
           <View style={styles.form}>
             <GSInput
-              label="Card Number"
+              label={t('payments.cardNumber')}
               value={cardNumber}
               onChangeText={handleCardNumberChange}
-              placeholder="1234 5678 9012 3456"
+              placeholder={t('payments.cardNumberPlaceholder')}
               keyboardType="numeric"
               style={styles.formInput}
             />
 
             <View style={styles.formRow}>
               <GSInput
-                label="Expiry Date"
+                label={t('payments.expiryDate')}
                 value={expiryDate}
                 onChangeText={handleExpiryChange}
-                placeholder="MM/YY"
+                placeholder={t('payments.expiryDatePlaceholder')}
                 keyboardType="numeric"
                 style={[styles.formInput, { flex: 1, marginRight: 8 }]}
               />
               <GSInput
-                label="CVC"
+                label={t('payments.cvc')}
                 value={cvc}
                 onChangeText={setCvc}
-                placeholder="123"
+                placeholder={t('payments.cvcPlaceholder')}
                 keyboardType="numeric"
                 maxLength={4}
                 style={[styles.formInput, { flex: 1, marginLeft: 8 }]}
@@ -316,10 +320,10 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
             </View>
 
             <GSInput
-              label="Cardholder Name"
+              label={t('payments.cardholderName')}
               value={holderName}
               onChangeText={setHolderName}
-              placeholder="John Doe"
+              placeholder={t('payments.cardholderNamePlaceholder')}
               autoCapitalize="words"
               style={styles.formInput}
             />
@@ -342,7 +346,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
                 )}
               </View>
               <GSText variant="body" style={{ marginLeft: 12 }}>
-                Save this card for future purchases
+                {t('payments.saveCard')}
               </GSText>
             </TouchableOpacity>
           </View>
@@ -350,7 +354,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
 
         <View style={styles.modalFooter}>
           <GSButton
-            title="Add Card"
+            title={t('payments.addNewCard')}
             onPress={handleSubmit}
             loading={isLoading}
             style={styles.addButton}
@@ -363,6 +367,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
 
 export default function PaymentMethodsScreen() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
 
@@ -384,7 +389,7 @@ export default function PaymentMethodsScreen() {
       setPaymentMethods(methods);
     } catch (error: any) {
       console.error('Failed to load payment methods:', error);
-      Alert.alert('Error', error.message || 'Failed to load payment methods');
+      Alert.alert(t('common.error'), error.message || t('payments.failedToLoadPaymentMethods'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -417,10 +422,10 @@ export default function PaymentMethodsScreen() {
         }))
       );
 
-      Alert.alert('Success', 'Default payment method updated');
+      Alert.alert(t('common.success'), t('payments.defaultPaymentUpdated'));
     } catch (error: any) {
       console.error('Failed to set default payment method:', error);
-      Alert.alert('Error', error.message || 'Failed to update default payment method');
+      Alert.alert(t('common.error'), error.message || t('payments.failedToUpdateDefault'));
     } finally {
       setUpdatingMethodId(null);
     }
@@ -435,10 +440,10 @@ export default function PaymentMethodsScreen() {
       // Update local state
       setPaymentMethods(prev => prev.filter(method => method.id !== methodId));
 
-      Alert.alert('Success', 'Payment method removed');
+      Alert.alert(t('common.success'), t('payments.paymentMethodRemoved'));
     } catch (error: any) {
       console.error('Failed to remove payment method:', error);
-      Alert.alert('Error', error.message || 'Failed to remove payment method');
+      Alert.alert(t('common.error'), error.message || t('payments.failedToRemovePayment'));
     } finally {
       setUpdatingMethodId(null);
     }
@@ -464,10 +469,10 @@ export default function PaymentMethodsScreen() {
       setPaymentMethods(prev => [newMethod, ...prev]);
       setShowAddCardModal(false);
 
-      Alert.alert('Success', 'Card added successfully');
+      Alert.alert(t('common.success'), t('payments.cardAddedSuccessfully'));
     } catch (error: any) {
       console.error('Failed to add card:', error);
-      Alert.alert('Error', error.message || 'Failed to add card');
+      Alert.alert(t('common.error'), error.message || t('payments.failedToAddCard'));
     } finally {
       setAddingCard(false);
     }
@@ -485,7 +490,7 @@ export default function PaymentMethodsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Payment Methods
+            {t('payments.paymentMethods')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -493,13 +498,13 @@ export default function PaymentMethodsScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="person-outline" size={60} color={theme.colors.textSecondary} />
           <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-            Sign in Required
+            {t('payments.signInRequired')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-            Sign in to manage your payment methods
+            {t('payments.signInToManagePayments')}
           </GSText>
           <GSButton
-            title="Sign In"
+            title={t('payments.signIn')}
             onPress={() => navigation.navigate('Auth' as any)}
             style={styles.signInButton}
           />
@@ -520,7 +525,7 @@ export default function PaymentMethodsScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Payment Methods
+            {t('payments.paymentMethods')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -528,7 +533,7 @@ export default function PaymentMethodsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Loading payment methods...
+            {t('payments.loadingPaymentMethods')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -546,7 +551,7 @@ export default function PaymentMethodsScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <GSText variant="h3" weight="bold">
-          Payment Methods
+          {t('payments.paymentMethods')}
         </GSText>
         <TouchableOpacity
           onPress={() => setShowAddCardModal(true)}
@@ -571,13 +576,13 @@ export default function PaymentMethodsScreen() {
           <View style={styles.emptyContainer}>
             <Ionicons name="card-outline" size={60} color={theme.colors.textSecondary} />
             <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-              No Payment Methods
+              {t('payments.noPaymentMethods')}
             </GSText>
             <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-              Add a payment method to make purchases easier
+              {t('payments.addPaymentMethodToStart')}
             </GSText>
             <GSButton
-              title="Add Payment Method"
+              title={t('payments.addPaymentMethod')}
               onPress={() => setShowAddCardModal(true)}
               style={styles.addMethodButton}
             />
@@ -601,7 +606,7 @@ export default function PaymentMethodsScreen() {
             >
               <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
               <GSText variant="body" color="primary" style={{ marginLeft: 12 }}>
-                Add New Payment Method
+                {t('payments.addNewPaymentMethod')}
               </GSText>
             </TouchableOpacity>
           </View>
@@ -611,7 +616,7 @@ export default function PaymentMethodsScreen() {
         <View style={[styles.securityNotice, { backgroundColor: theme.colors.surface }]}>
           <Ionicons name="shield-checkmark-outline" size={20} color={theme.colors.success} />
           <GSText variant="caption" color="textSecondary" style={{ marginLeft: 8, flex: 1 }}>
-            Your payment information is encrypted and stored securely. We never store your full card details.
+            {t('payments.securityNotice')}
           </GSText>
         </View>
       </ScrollView>

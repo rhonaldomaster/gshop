@@ -85,7 +85,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
         {/* Stock Badge */}
         {!inStock && (
           <View style={[styles.stockBadge, { backgroundColor: 'rgba(0, 0, 0, 0.7)' }]}>
-            <GSText variant="caption" color="white" weight="medium">
+            <GSText variant="caption" color="white" weight="semiBold">
               {t('products.outOfStock')}
             </GSText>
           </View>
@@ -96,7 +96,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
       <View style={styles.productInfo}>
         <GSText
           variant="body"
-          weight="medium"
+          weight="semiBold"
           numberOfLines={2}
           style={styles.productName}
         >
@@ -133,7 +133,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
           style={[
             styles.addToCartButton,
             {
-              backgroundColor: inStock ? theme.colors.primary : theme.colors.border,
+              backgroundColor: inStock ? theme.colors.primary : theme.colors.gray300,
             }
           ]}
           onPress={onAddToCart}
@@ -142,7 +142,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({ product, onPress, 
           <GSText
             variant="caption"
             color={inStock ? 'white' : 'textSecondary'}
-            weight="medium"
+            weight="semiBold"
           >
             {inStock ? t('cart.addToCart') : t('products.unavailable')}
           </GSText>
@@ -206,7 +206,7 @@ const SortModal: React.FC<SortModalProps> = ({ visible, onClose, onSelect, curre
             <GSText
               variant="body"
               color={currentSort === option.value ? 'primary' : 'text'}
-              weight={currentSort === option.value ? 'medium' : 'normal'}
+              weight={currentSort === option.value ? 'semiBold' : 'normal'}
             >
               {option.label}
             </GSText>
@@ -231,13 +231,10 @@ export default function ProductListScreen({ route, navigation }: Props) {
     isLoading,
     isLoadingMore,
     isRefreshing,
-    currentPage,
     totalProducts,
     loadProducts,
     loadMoreProducts,
-    refreshAllData,
     getProductsByCategory,
-    getProductsBySeller,
     updateFilters,
   } = useProducts();
   const { addToCart } = useCart();
@@ -268,7 +265,7 @@ export default function ProductListScreen({ route, navigation }: Props) {
       if (categoryId) {
         await getProductsByCategory(categoryId, filters);
       } else if (sellerId) {
-        await getProductsBySeller(sellerId, filters);
+        await loadProducts({ ...filters, sellerId }, true);
       } else {
         await loadProducts(filters, true);
       }
@@ -311,11 +308,11 @@ export default function ProductListScreen({ route, navigation }: Props) {
     if (categoryId) {
       await getProductsByCategory(categoryId, newFilters);
     } else if (sellerId) {
-      await getProductsBySeller(sellerId, newFilters);
+      await loadProducts({ ...newFilters, sellerId }, true);
     } else {
       await loadProducts(newFilters, true);
     }
-  }, [currentFilters, categoryId, sellerId, updateFilters, getProductsByCategory, getProductsBySeller, loadProducts]);
+  }, [currentFilters, categoryId, sellerId, updateFilters, getProductsByCategory, loadProducts]);
 
   // Render product item
   const renderProduct = useCallback(({ item }: { item: Product }) => (
@@ -357,7 +354,7 @@ export default function ProductListScreen({ route, navigation }: Props) {
         title={t('products.refresh')}
         onPress={handleRefresh}
         style={styles.refreshButton}
-        variant="outlined"
+        variant="outline"
       />
     </View>
   );
@@ -382,7 +379,7 @@ export default function ProductListScreen({ route, navigation }: Props) {
           {t('products.productsFound', { count: totalProducts })}
         </GSText>
         <TouchableOpacity
-          style={[styles.sortButton, { borderColor: theme.colors.border }]}
+          style={[styles.sortButton, { borderColor: theme.colors.gray300 }]}
           onPress={() => setShowSortModal(true)}
         >
           <GSText variant="body">{t('products.sort')}</GSText>
@@ -414,7 +411,7 @@ export default function ProductListScreen({ route, navigation }: Props) {
             tintColor={theme.colors.primary}
           />
         }
-        getItemLayout={(data, index) => ({
+        getItemLayout={(_data, index) => ({
           length: 280, // Approximate item height
           offset: 280 * Math.floor(index / 2),
           index,

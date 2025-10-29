@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -79,6 +80,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
 
 export default function SettingsScreen() {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const { logout } = useAuth();
   const navigation = useNavigation();
 
@@ -93,28 +95,28 @@ export default function SettingsScreen() {
   const [personalizationEnabled, setPersonalizationEnabled] = useState(true);
 
   const handleChangePassword = () => {
-    Alert.alert('Change Password', 'This feature is coming soon!');
+    Alert.alert(t('settings.changePassword'), t('settings.changePasswordComingSoon'));
   };
 
   const handlePrivacyPolicy = () => {
-    Alert.alert('Privacy Policy', 'Opening privacy policy...');
+    Alert.alert(t('settings.privacyPolicy'), t('settings.privacyPolicyOpening'));
   };
 
   const handleTermsOfService = () => {
-    Alert.alert('Terms of Service', 'Opening terms of service...');
+    Alert.alert(t('settings.termsOfService'), t('settings.termsOfServiceOpening'));
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
+      t('settings.deleteAccount'),
+      t('settings.deleteAccountConfirm'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: () => {
-            Alert.alert('Account Deleted', 'Your account has been deleted.');
+            Alert.alert(t('settings.accountDeleted'), t('settings.accountDeletedMessage'));
           },
         },
       ]
@@ -122,10 +124,10 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('settings.signOut'), t('settings.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: t('settings.signOut'),
         style: 'destructive',
         onPress: async () => {
           await logout();
@@ -140,29 +142,29 @@ export default function SettingsScreen() {
         {/* Account Section */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Account
+            {t('settings.account')}
           </GSText>
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.colors.surface }]}>
             <SettingItem
               icon="person-outline"
-              title="Edit Profile"
-              subtitle="Update your personal information"
+              title={t('settings.editProfile')}
+              subtitle={t('settings.editProfileSubtitle')}
               onPress={() => (navigation as any).navigate('EditProfile')}
             />
 
             <SettingItem
               icon="lock-closed-outline"
-              title="Change Password"
-              subtitle="Update your password"
+              title={t('settings.changePassword')}
+              subtitle={t('settings.changePasswordSubtitle')}
               onPress={handleChangePassword}
             />
 
             <SettingItem
               icon="mail-outline"
-              title="Email Preferences"
-              subtitle="Manage email notifications"
-              onPress={() => Alert.alert('Email Preferences', 'Coming soon!')}
+              title={t('settings.emailPreferences')}
+              subtitle={t('settings.emailPreferencesSubtitle')}
+              onPress={() => Alert.alert(t('settings.emailPreferences'), t('settings.emailPreferencesComingSoon'))}
               isLast
             />
           </View>
@@ -171,14 +173,14 @@ export default function SettingsScreen() {
         {/* Notifications Section */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Notifications
+            {t('settings.notifications')}
           </GSText>
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.colors.surface }]}>
             <SettingItem
               icon="bag-check-outline"
-              title="Order Updates"
-              subtitle="Get notified about your orders"
+              title={t('settings.orderUpdates')}
+              subtitle={t('settings.orderUpdatesSubtitle')}
               rightElement={
                 <Switch
                   value={orderNotifications}
@@ -190,8 +192,8 @@ export default function SettingsScreen() {
 
             <SettingItem
               icon="pricetag-outline"
-              title="Promotions & Offers"
-              subtitle="Receive special deals and discounts"
+              title={t('settings.promotionsOffers')}
+              subtitle={t('settings.promotionsOffersSubtitle')}
               rightElement={
                 <Switch
                   value={promotionNotifications}
@@ -203,8 +205,8 @@ export default function SettingsScreen() {
 
             <SettingItem
               icon="sparkles-outline"
-              title="New Arrivals"
-              subtitle="Be the first to know about new products"
+              title={t('settings.newArrivals')}
+              subtitle={t('settings.newArrivalsSubtitle')}
               rightElement={
                 <Switch
                   value={newArrivalsNotifications}
@@ -216,8 +218,8 @@ export default function SettingsScreen() {
 
             <SettingItem
               icon="trending-down-outline"
-              title="Price Drops"
-              subtitle="Get alerts on wishlist price drops"
+              title={t('settings.priceDrops')}
+              subtitle={t('settings.priceDropsSubtitle')}
               rightElement={
                 <Switch
                   value={priceDropNotifications}
@@ -233,29 +235,29 @@ export default function SettingsScreen() {
         {/* App Preferences Section */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            App Preferences
+            {t('settings.appPreferences')}
           </GSText>
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.colors.surface }]}>
             <SettingItem
               icon="moon-outline"
-              title="Theme"
-              subtitle="Auto"
-              onPress={() => Alert.alert('Theme', 'Theme selection coming soon!')}
+              title={t('settings.theme')}
+              subtitle={t('settings.themeAuto')}
+              onPress={() => Alert.alert(t('settings.theme'), t('settings.themeComingSoon'))}
             />
 
             <SettingItem
               icon="language-outline"
-              title="Language"
-              subtitle="English"
-              onPress={() => Alert.alert('Language', 'Language selection coming soon!')}
+              title={t('settings.language')}
+              subtitle={t('settings.languageEnglish')}
+              onPress={() => Alert.alert(t('settings.language'), t('settings.languageComingSoon'))}
             />
 
             <SettingItem
               icon="cash-outline"
-              title="Currency"
-              subtitle="USD"
-              onPress={() => Alert.alert('Currency', 'Currency selection coming soon!')}
+              title={t('settings.currency')}
+              subtitle={t('settings.currencyUSD')}
+              onPress={() => Alert.alert(t('settings.currency'), t('settings.currencyComingSoon'))}
               isLast
             />
           </View>
@@ -264,14 +266,14 @@ export default function SettingsScreen() {
         {/* Privacy Section */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Privacy
+            {t('settings.privacy')}
           </GSText>
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.colors.surface }]}>
             <SettingItem
               icon="analytics-outline"
-              title="Analytics"
-              subtitle="Help us improve the app"
+              title={t('settings.analytics')}
+              subtitle={t('settings.analyticsSubtitle')}
               rightElement={
                 <Switch
                   value={analyticsEnabled}
@@ -283,8 +285,8 @@ export default function SettingsScreen() {
 
             <SettingItem
               icon="star-outline"
-              title="Personalization"
-              subtitle="Get personalized recommendations"
+              title={t('settings.personalization')}
+              subtitle={t('settings.personalizationSubtitle')}
               rightElement={
                 <Switch
                   value={personalizationEnabled}
@@ -296,20 +298,20 @@ export default function SettingsScreen() {
 
             <SettingItem
               icon="shield-checkmark-outline"
-              title="Privacy Policy"
+              title={t('settings.privacyPolicy')}
               onPress={handlePrivacyPolicy}
             />
 
             <SettingItem
               icon="document-text-outline"
-              title="Terms of Service"
+              title={t('settings.termsOfService')}
               onPress={handleTermsOfService}
             />
 
             <SettingItem
               icon="trash-outline"
-              title="Delete Account"
-              subtitle="Permanently delete your account"
+              title={t('settings.deleteAccount')}
+              subtitle={t('settings.deleteAccountSubtitle')}
               onPress={handleDeleteAccount}
               isLast
             />
@@ -319,20 +321,20 @@ export default function SettingsScreen() {
         {/* About Section */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            About
+            {t('settings.about')}
           </GSText>
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.colors.surface }]}>
             <SettingItem
               icon="information-circle-outline"
-              title="Version"
+              title={t('settings.version')}
               subtitle="1.0.0"
             />
 
             <SettingItem
               icon="document-outline"
-              title="Licenses"
-              onPress={() => Alert.alert('Licenses', 'Open source licenses')}
+              title={t('settings.licenses')}
+              onPress={() => Alert.alert(t('settings.licenses'), t('settings.licensesMessage'))}
               isLast
             />
           </View>
@@ -341,7 +343,7 @@ export default function SettingsScreen() {
         {/* Sign Out Button */}
         <View style={styles.signOutSection}>
           <GSButton
-            title="Sign Out"
+            title={t('settings.signOut')}
             onPress={handleLogout}
             variant="outline"
             style={styles.signOutButton}
