@@ -60,7 +60,6 @@ export class CartService {
         items: [],
         subtotal: 0,
         shippingCost: 0,
-        taxAmount: 0,
         total: 0,
         itemCount: 0,
       });
@@ -446,18 +445,14 @@ export class CartService {
     // Calculate shipping (simple logic for now)
     const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
 
-    // Calculate tax (10% for example)
-    const taxAmount = subtotal * 0.1;
-
     // Apply coupon discount
     const discount = Number(cart.couponDiscount) || 0;
 
-    // Calculate total
-    const total = Math.max(0, subtotal + shippingCost + taxAmount - discount);
+    // Calculate total (prices already include VAT)
+    const total = Math.max(0, subtotal + shippingCost - discount);
 
     cartToUpdate.subtotal = subtotal;
     cartToUpdate.shippingCost = shippingCost;
-    cartToUpdate.taxAmount = taxAmount;
     cartToUpdate.total = total;
     cartToUpdate.itemCount = itemCount;
     cartToUpdate.couponCode = cart.couponCode;

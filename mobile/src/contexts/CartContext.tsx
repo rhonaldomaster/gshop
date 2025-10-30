@@ -118,8 +118,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
       const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
       const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
-      const taxAmount = subtotal * 0.1;
-      const total = subtotal + shippingCost + taxAmount;
+      const total = subtotal + shippingCost; // Prices already include VAT
 
       return {
         ...state,
@@ -127,7 +126,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalItems,
         subtotal,
         shippingCost,
-        taxAmount,
+        taxAmount: 0, // VAT is included in product prices
         total,
         isLoading: false,
         lastUpdated: new Date().toISOString(),
@@ -159,8 +158,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
       const subtotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
       const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
-      const taxAmount = subtotal * 0.1;
-      const total = subtotal + shippingCost + taxAmount - state.couponDiscount;
+      const total = subtotal + shippingCost - state.couponDiscount; // Prices already include VAT
 
       return {
         ...state,
@@ -168,7 +166,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalItems,
         subtotal,
         shippingCost,
-        taxAmount,
+        taxAmount: 0, // VAT is included in product prices
         total,
         lastUpdated: new Date().toISOString(),
       };
@@ -179,8 +177,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
       const subtotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
       const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
-      const taxAmount = subtotal * 0.1;
-      const total = subtotal + shippingCost + taxAmount - state.couponDiscount;
+      const total = subtotal + shippingCost - state.couponDiscount; // Prices already include VAT
 
       return {
         ...state,
@@ -188,7 +185,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalItems,
         subtotal,
         shippingCost,
-        taxAmount,
+        taxAmount: 0, // VAT is included in product prices
         total,
         lastUpdated: new Date().toISOString(),
       };
@@ -202,8 +199,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
         const subtotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
         const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
-        const taxAmount = subtotal * 0.1;
-        const total = subtotal + shippingCost + taxAmount - state.couponDiscount;
+        const total = subtotal + shippingCost - state.couponDiscount; // Prices already include VAT
 
         return {
           ...state,
@@ -211,7 +207,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           totalItems,
           subtotal,
           shippingCost,
-          taxAmount,
+          taxAmount: 0, // VAT is included in product prices
           total,
           lastUpdated: new Date().toISOString(),
         };
@@ -230,8 +226,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const totalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
       const subtotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
       const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
-      const taxAmount = subtotal * 0.1;
-      const total = subtotal + shippingCost + taxAmount - state.couponDiscount;
+      const total = subtotal + shippingCost - state.couponDiscount; // Prices already include VAT
 
       return {
         ...state,
@@ -239,7 +234,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         totalItems,
         subtotal,
         shippingCost,
-        taxAmount,
+        taxAmount: 0, // VAT is included in product prices
         total,
         lastUpdated: new Date().toISOString(),
       };
@@ -263,15 +258,14 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
       const subtotal = state.items.reduce((sum, item) => sum + item.subtotal, 0);
       const shippingCost = subtotal > 100 ? 0 : subtotal > 0 ? 10 : 0;
-      const taxAmount = subtotal * 0.1;
-      const total = subtotal + shippingCost + taxAmount - state.couponDiscount;
+      const total = subtotal + shippingCost - state.couponDiscount; // Prices already include VAT
 
       return {
         ...state,
         totalItems,
         subtotal,
         shippingCost,
-        taxAmount,
+        taxAmount: 0, // VAT is included in product prices
         total,
         lastUpdated: new Date().toISOString(),
       };

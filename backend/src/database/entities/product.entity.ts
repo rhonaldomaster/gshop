@@ -21,6 +21,20 @@ export enum ProductStatus {
   OUT_OF_STOCK = 'out_of_stock',
 }
 
+export enum VatType {
+  EXCLUIDO = 'excluido',    // 0% - No tax deduction rights
+  EXENTO = 'exento',        // 0% - With tax deduction rights
+  REDUCIDO = 'reducido',    // 5%
+  GENERAL = 'general',      // 19%
+}
+
+export const VAT_RATES = {
+  [VatType.EXCLUIDO]: 0,
+  [VatType.EXENTO]: 0,
+  [VatType.REDUCIDO]: 0.05,
+  [VatType.GENERAL]: 0.19,
+};
+
 @Entity('products')
 export class Product {
   @ApiProperty()
@@ -46,6 +60,22 @@ export class Product {
   @ApiProperty()
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
+
+  @ApiProperty({ enum: VatType })
+  @Column({
+    type: 'enum',
+    enum: VatType,
+    default: VatType.GENERAL,
+  })
+  vatType: VatType;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  basePrice: number; // Price without VAT
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  vatAmount: number; // VAT amount included
 
   @ApiProperty()
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
@@ -157,4 +187,35 @@ export class Product {
 
   @OneToMany(() => OrderItem, (orderItem) => orderItem.product)
   orderItems: OrderItem[];
+
+  /**
+   * Calculate prices automatically based on vatType
+   * @param priceWithVat - Final price including VAT
+   */
+  calculatePrices(priceWithVat: number): void {
+    const vatRate = VAT_RATES[this.vatType];
+    // Price with VAT / (1 + VAT rate) = Base price
+    this.basePrice = priceWithVat / (1 + vatRate);
+    this.vatAmount = priceWithVat - this.basePrice;
+    this.price = priceWithVat;
+  }
+
+  /**
+   * Get VAT information for this product
+   */
+  getVatInfo(): {
+    type: VatType;
+    rate: number;
+    basePrice: number;
+    vatAmount: number;
+    finalPrice: number;
+  } {
+    return {
+      type: this.vatType,
+      rate: VAT_RATES[this.vatType],
+      basePrice: this.basePrice,
+      vatAmount: this.vatAmount,
+      finalPrice: this.price,
+    };
+  }
 }

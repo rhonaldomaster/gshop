@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Order } from './order.entity';
-import { Product } from './product.entity';
+import { Product, VatType } from './product.entity';
 
 @Entity('order_items')
 export class OrderItem {
@@ -29,6 +29,30 @@ export class OrderItem {
   @ApiProperty()
   @Column('decimal', { precision: 10, scale: 2 })
   totalPrice: number;
+
+  @ApiProperty({ enum: VatType })
+  @Column({
+    type: 'enum',
+    enum: VatType,
+    default: VatType.GENERAL,
+  })
+  vatType: VatType;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  basePrice: number; // Unit base price without VAT
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  vatAmountPerUnit: number; // VAT per unit
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  totalBasePrice: number; // basePrice * quantity
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  totalVatAmount: number; // vatAmountPerUnit * quantity
 
   @ApiProperty()
   @Column('json', { nullable: true })

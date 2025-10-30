@@ -55,6 +55,23 @@ export class Order {
 
   @ApiProperty()
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  subtotalBase: number; // Sum of all basePrices (without VAT)
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  totalVatAmount: number; // Sum of all VAT included
+
+  @ApiProperty()
+  @Column('json', { nullable: true })
+  vatBreakdown: {
+    excluido: { base: number; vat: number; total: number };
+    exento: { base: number; vat: number; total: number };
+    reducido: { base: number; vat: number; total: number };
+    general: { base: number; vat: number; total: number };
+  };
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
   shippingAmount: number;
 
   @ApiProperty()

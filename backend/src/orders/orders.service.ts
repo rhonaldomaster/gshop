@@ -36,17 +36,16 @@ export class OrdersService {
       // Generate unique order number
       const orderNumber = await this.generateOrderNumber();
 
-      // Validate products and calculate totals
-      const { items, subtotal } = await this.validateAndCalculateOrder(
+      // Validate products and calculate totals with VAT breakdown
+      const { items, subtotal, subtotalBase, totalVatAmount, vatBreakdown } = await this.validateAndCalculateOrder(
         createOrderDto.items,
         queryRunner.manager,
       );
 
-      // Calculate final totals
-      const taxAmount = createOrderDto.taxAmount || 0;
+      // Calculate final totals (prices already include VAT)
       const shippingAmount = createOrderDto.shippingAmount || 0;
       const discountAmount = createOrderDto.discountAmount || 0;
-      const totalAmount = subtotal + taxAmount + shippingAmount - discountAmount;
+      const totalAmount = subtotal + shippingAmount - discountAmount;
 
       // Calculate commission if affiliate is involved
       let commissionRate = 0;
@@ -69,7 +68,9 @@ export class OrdersService {
         userId,
         status: OrderStatus.PENDING,
         subtotal,
-        taxAmount,
+        subtotalBase,
+        totalVatAmount,
+        vatBreakdown,
         shippingAmount,
         discountAmount,
         totalAmount,
@@ -84,7 +85,7 @@ export class OrdersService {
 
       const savedOrder = await queryRunner.manager.save(Order, order);
 
-      // Create order items
+      // Create order items with VAT details
       const orderItems = items.map((item) =>
         queryRunner.manager.create(OrderItem, {
           orderId: savedOrder.id,
@@ -92,6 +93,11 @@ export class OrdersService {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
+          vatType: item.vatType,
+          basePrice: item.basePrice,
+          vatAmountPerUnit: item.vatAmountPerUnit,
+          totalBasePrice: item.totalBasePrice,
+          totalVatAmount: item.totalVatAmount,
           productSnapshot: item.productSnapshot,
         }),
       );
@@ -340,6 +346,16 @@ export class OrdersService {
   private async validateAndCalculateOrder(items: any[], manager: any) {
     const validatedItems = [];
     let subtotal = 0;
+    let subtotalBase = 0;
+    let totalVatAmount = 0;
+
+    // Initialize VAT breakdown structure
+    const vatBreakdown = {
+      excluido: { base: 0, vat: 0, total: 0 },
+      exento: { base: 0, vat: 0, total: 0 },
+      reducido: { base: 0, vat: 0, total: 0 },
+      general: { base: 0, vat: 0, total: 0 },
+    };
 
     for (const item of items) {
       const product = await manager.findOne(Product, {
@@ -359,11 +375,28 @@ export class OrdersService {
       const unitPrice = product.price;
       const totalPrice = unitPrice * item.quantity;
 
+      // VAT calculations for this item
+      const basePrice = product.basePrice;
+      const vatAmountPerUnit = product.vatAmount;
+      const totalBasePrice = basePrice * item.quantity;
+      const itemTotalVatAmount = vatAmountPerUnit * item.quantity;
+      const vatType = product.vatType;
+
+      // Update VAT breakdown
+      vatBreakdown[vatType].base += totalBasePrice;
+      vatBreakdown[vatType].vat += itemTotalVatAmount;
+      vatBreakdown[vatType].total += totalPrice;
+
       validatedItems.push({
         productId: item.productId,
         quantity: item.quantity,
         unitPrice,
         totalPrice,
+        vatType,
+        basePrice,
+        vatAmountPerUnit,
+        totalBasePrice,
+        totalVatAmount: itemTotalVatAmount,
         productSnapshot: {
           name: product.name,
           sku: product.sku,
@@ -373,9 +406,17 @@ export class OrdersService {
       });
 
       subtotal += totalPrice;
+      subtotalBase += totalBasePrice;
+      totalVatAmount += itemTotalVatAmount;
     }
 
-    return { items: validatedItems, subtotal };
+    return {
+      items: validatedItems,
+      subtotal,
+      subtotalBase,
+      totalVatAmount,
+      vatBreakdown,
+    };
   }
 
   private async generateOrderNumber(): Promise<string> {

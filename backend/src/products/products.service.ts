@@ -17,12 +17,15 @@ export class ProductsService {
 
   async create(createProductDto: CreateProductDto, sellerId: string): Promise<Product> {
     const slug = this.generateSlug(createProductDto.name);
-    
+
     const product = this.productRepository.create({
       ...createProductDto,
       slug,
       sellerId,
     });
+
+    // Calculate VAT-inclusive pricing
+    product.calculatePrices(createProductDto.price);
 
     return this.productRepository.save(product);
   }
@@ -110,6 +113,20 @@ export class ProductsService {
     // Update slug if name changed
     if (updateProductDto.name && updateProductDto.name !== product.name) {
       updateProductDto.slug = this.generateSlug(updateProductDto.name);
+    }
+
+    // Recalculate VAT-inclusive pricing if price or vatType changed
+    if (updateProductDto.price !== undefined || updateProductDto.vatType !== undefined) {
+      const finalPrice = updateProductDto.price ?? product.price;
+      const finalVatType = updateProductDto.vatType ?? product.vatType;
+
+      // Temporarily assign vatType to calculate prices correctly
+      product.vatType = finalVatType;
+      product.calculatePrices(finalPrice);
+
+      // Add calculated values to DTO
+      updateProductDto.basePrice = product.basePrice;
+      updateProductDto.vatAmount = product.vatAmount;
     }
 
     await this.productRepository.update(id, updateProductDto);

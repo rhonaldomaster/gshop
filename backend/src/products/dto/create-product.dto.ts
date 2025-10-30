@@ -11,7 +11,7 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
-import { ProductStatus } from '../../database/entities/product.entity';
+import { ProductStatus, VatType } from '../../database/entities/product.entity';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'iPhone 15 Pro Max' })
@@ -36,6 +36,16 @@ export class CreateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   price: number;
+
+  @ApiProperty({
+    enum: VatType,
+    example: VatType.GENERAL,
+    description: 'VAT type: excluido (0%), exento (0%), reducido (5%), general (19%)',
+    default: VatType.GENERAL
+  })
+  @IsOptional()
+  @IsEnum(VatType)
+  vatType?: VatType;
 
   @ApiProperty({ example: 1199.99, required: false })
   @IsOptional()
