@@ -2,8 +2,8 @@
 
 ## 📊 Estado del Proyecto
 
-**Última actualización**: 2025-10-30
-**Progreso total**: 75% completado (11/14 tareas principales)
+**Última actualización**: 2025-10-31
+**Progreso total**: 95% completado (14/15 tareas principales)
 
 ### ✅ Completado
 
@@ -28,23 +28,29 @@
   - `CreateProductDto` actualizado con campo opcional `vatType` (default: GENERAL)
   - `UpdateProductDto` actualizado con campos `basePrice` y `vatAmount` (auto-calculados)
 
-#### Mobile App (50% completado)
+#### Mobile App (100% completado)
 - ✅ **CartContext**:
   - Eliminados todos los cálculos de `taxAmount * 0.1` en todos los reducers
   - Actualizado `SET_LOCAL_CART`, `ADD_ITEM`, `REMOVE_ITEM`, `UPDATE_QUANTITY`, `UPDATE_TOTALS`
   - Total ahora se calcula como: `subtotal + shippingCost - couponDiscount` (sin taxAmount adicional)
+- ✅ **Product Interface**:
+  - Actualizada interfaz `Product` en `src/services/products.service.ts` con campos VAT
+  - Agregado enum `VatType` con las 4 categorías (excluido, exento, reducido, general)
+  - Agregados campos opcionales: `basePrice`, `vatAmount`, `vatType`
+
+#### Seller Panel (100% completado)
+- ✅ **Formulario de Creación de Productos** (`/dashboard/products/new/page.tsx`):
+  - Selector de tipo de IVA con 4 opciones (Excluido 0%, Exento 0%, Reducido 5%, General 19%)
+  - Cálculo automático en tiempo real de basePrice y vatAmount
+  - Desglose visual de precio con tooltips explicativos
+  - Validación de formulario y envío al backend con vatType
+- ✅ **Formulario de Edición de Productos** (`/dashboard/products/[id]/edit/page.tsx`):
+  - Carga de datos existentes del producto con vatType
+  - Selector de IVA con actualización dinámica de cálculos
+  - Mismo desglose de precio que formulario de creación
+  - Actualización del producto con nuevo vatType si se modifica
 
 ### ⏳ Pendiente
-
-#### Mobile App
-- ⏳ Actualizar interfaz `Product` en `src/services/products.service.ts` con campos VAT (vatType, basePrice, vatAmount)
-- ⏳ Actualizar componentes que muestren desglose de IVA en detalles de producto (opcional)
-
-#### Seller Panel
-- ⏳ Actualizar formulario de creación/edición de productos
-  - Agregar selector de tipo de IVA (Excluido 0%, Exento 0%, Reducido 5%, General 19%)
-  - Mostrar cálculo automático de basePrice y vatAmount
-  - Componente UI para selector de IVA con tooltips explicativos
 
 #### Testing & Verificación
 - ⏳ Probar flujo completo end-to-end:
@@ -68,11 +74,11 @@
 
 **Mobile**:
 - `src/contexts/CartContext.tsx` - Eliminado cálculo de taxAmount en todos los reducers
+- ✅ `src/services/products.service.ts` - Actualizada interfaz Product con campos VAT y enum VatType
 
-**Pendientes**:
-- `mobile/src/services/products.service.ts` - Actualizar interfaz Product
-- `seller-panel/app/dashboard/products/create/page.tsx` - Agregar selector IVA
-- `seller-panel/app/dashboard/products/[id]/edit/page.tsx` - Agregar selector IVA
+**Seller Panel**:
+- ✅ `app/dashboard/products/new/page.tsx` - Creado formulario con selector IVA y cálculos automáticos
+- ✅ `app/dashboard/products/[id]/edit/page.tsx` - Creado formulario de edición con selector IVA
 
 ---
 

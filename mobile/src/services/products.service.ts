@@ -1,13 +1,24 @@
 import { apiClient, ApiResponse } from './api';
 import { API_CONFIG, PaginatedResponse, buildEndpointUrl } from '../config/api.config';
 
+// VAT types for Colombian tax system
+export enum VatType {
+  EXCLUIDO = 'excluido',    // 0% - No tax deduction rights
+  EXENTO = 'exento',        // 0% - With tax deduction rights
+  REDUCIDO = 'reducido',    // 5%
+  GENERAL = 'general',      // 19%
+}
+
 // Product types
 export interface Product {
   id: string;
   name: string;
   description: string;
   shortDescription?: string;
-  price: number;
+  price: number; // With VAT included (customer-facing price)
+  basePrice?: number; // Without VAT
+  vatAmount?: number; // VAT amount included
+  vatType?: VatType; // VAT type (default: GENERAL)
   comparePrice?: number;
   originalPrice?: number;
   discount?: number;
@@ -412,4 +423,5 @@ export type {
   ProductSearchFilters,
   ProductReview,
   CreateReviewRequest,
+  VatType,
 };
