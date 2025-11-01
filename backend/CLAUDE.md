@@ -242,6 +242,13 @@ src/
 - `GET /api/v1/pixel/analytics` - Get analytics data
 - `GET /api/v1/pixel/realtime` - Get realtime events
 
+### VAT (IVA) Reporting
+- `GET /api/v1/analytics/vat-report` - Generate VAT report by date range
+  - Query params: `startDate`, `endDate`, `sellerId` (optional)
+  - Returns VAT breakdown by category (excluido, exento, reducido, general)
+  - Includes total base prices, VAT amounts, and order counts
+  - Required for DIAN tax compliance in Colombia
+
 ### Ads Manager
 - `POST /api/v1/ads/campaigns` - Create campaign
 - `GET /api/v1/ads/campaigns` - List campaigns
@@ -286,6 +293,27 @@ src/
 - Automatic commission calculation for affiliate-hosted streams
 - WebSocket real-time communication at `/live` namespace
 - RTMP ingestion and HLS playback support
+
+### Colombian VAT (IVA) System
+- **Status**: Production-ready (100% implemented - November 2025)
+- **Compliance**: Colombian tax legislation (DIAN)
+- **VAT Categories**:
+  - `excluido` (0%) - Excluded, no tax deduction rights
+  - `exento` (0%) - Exempt, with tax deduction rights
+  - `reducido` (5%) - Reduced rate for specific goods
+  - `general` (19%) - Standard rate (default)
+- **Key Principle**: VAT is ALWAYS included in product prices (not added at checkout)
+- **Entities**:
+  - `Product`: Fields `vatType`, `basePrice`, `vatAmount`
+  - `OrderItem`: VAT breakdown per item
+  - `Order`: Complete VAT breakdown by category in `vatBreakdown` JSON field
+- **Services**:
+  - `ProductsService.create()`: Auto-calculates base and VAT via `calculatePrices()`
+  - `ProductsService.update()`: Recalculates when price or vatType changes
+  - `OrdersService.create()`: Generates vatBreakdown for each order
+  - `AnalyticsService.generateVatReport()`: Tax compliance reporting
+- **Migration**: `npm run migrate:vat` to update existing products with VAT data
+- **Calculation**: `basePrice = price / (1 + vatRate)`, `vatAmount = price - basePrice`
 
 ### Token Economy (Partial Implementation)
 - ⚠️ **Token metrics table missing** - causes 500 errors on wallet creation

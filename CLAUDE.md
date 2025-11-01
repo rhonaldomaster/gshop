@@ -143,6 +143,20 @@ npm run docker:logs        # View container logs
 - Configurable through admin panel
 - Applied to all orders automatically
 
+### Colombian VAT (IVA) System
+- **Implementation Date**: November 2025
+- **Status**: Production-ready (100% implemented)
+- **Compliance**: Colombian tax legislation (DIAN)
+- **Features**:
+  - 4 VAT categories: Excluido (0%), Exento (0%), Reducido (5%), General (19%)
+  - VAT-inclusive pricing (price includes VAT, not added at checkout)
+  - Automatic base price and VAT amount calculation
+  - VAT breakdown by category for tax compliance
+  - Admin panel reporting for tax declarations
+  - Real-time price calculator in seller panel
+- **Key Difference**: Unlike other systems, Colombian VAT is ALWAYS included in the displayed price
+- **Documentation**: See `PLAN_IVA_COLOMBIA.md` for complete implementation details
+
 ## Phase 1 Features (Implemented)
 
 ### 🏪 Seller Panel (Next.js)
@@ -249,6 +263,144 @@ npm run docker:logs        # View container logs
 - **Streaming Infrastructure**: RTMP ingest and HLS playback
 - **Cross-Platform Analytics**: Unified tracking across web and mobile
 - **API Webhooks**: Event-driven architecture for campaign triggers
+
+## Colombian VAT (IVA) System (November 2025)
+
+### 📋 Overview
+Complete implementation of Colombian tax legislation (DIAN) for VAT management in e-commerce. Unlike international systems where tax is added at checkout, Colombian law requires VAT to be **ALWAYS included** in the displayed price.
+
+### 🏷️ VAT Categories
+
+| Category | Rate | Description | Tax Deduction Rights | Examples |
+|----------|------|-------------|---------------------|----------|
+| **Excluido** | 0% | Excluded goods/services | ❌ No | Educational services, healthcare |
+| **Exento** | 0% | Exempt goods/services | ✅ Yes | Basic foods (bread, milk, eggs) |
+| **Reducido** | 5% | Reduced rate | ✅ Yes | Processed foods (sausages, coffee) |
+| **General** | 19% | Standard rate | ✅ Yes | Electronics, clothing, jewelry |
+
+### 🔧 Technical Implementation
+
+#### Backend (100% Complete)
+- **Entities Enhanced**:
+  - `Product`: Added `vatType`, `basePrice`, `vatAmount` fields
+  - `OrderItem`: VAT breakdown per item with totals
+  - `Order`: Complete VAT breakdown by category in `vatBreakdown` JSON field
+- **Services**:
+  - `ProductsService`: Automatic price calculation via `calculatePrices()` method
+  - `OrdersService`: VAT breakdown aggregation for tax reporting
+  - `AnalyticsService`: VAT report generation with `generateVatReport()` method
+- **API Endpoints**:
+  - `GET /api/v1/analytics/vat-report` - Tax compliance reports
+- **Migration**:
+  - Migration: `1761860408199-AddVatFieldsToProducts.ts`
+  - Data migration script: `npm run migrate:vat` (updates existing products)
+
+#### Seller Panel (100% Complete)
+- **Product Creation** (`/dashboard/products/new`):
+  - VAT type selector with 4 categories
+  - Real-time price calculator showing base + VAT = final price
+  - Visual breakdown with tooltips
+- **Product Editing** (`/dashboard/products/[id]/edit`):
+  - Same VAT features as creation form
+  - Recalculates on VAT type change
+
+#### Admin Panel (100% Complete)
+- **VAT Reports** (`/dashboard/reports/vat`):
+  - Date range filters (start/end dates)
+  - Breakdown by category with visual cards
+  - Summary totals (base, VAT, total with VAT)
+  - Order count per category
+- **Products Table**:
+  - "VAT Type" column with color-coded badges
+  - Category labels with percentage
+
+#### Mobile App (100% Complete)
+- **CartContext**:
+  - Removed incorrect `taxAmount * 0.1` calculation
+  - Total = subtotal + shipping - discount (NO additional VAT)
+- **Product Interface**:
+  - Added `vatType`, `basePrice`, `vatAmount` fields
+  - Prices displayed ALWAYS include VAT
+
+### 💰 Price Calculation Formula
+
+```typescript
+// Given: Final price (with VAT included) = $119,000 COP
+// VAT Rate: 19% (General category)
+
+basePrice = finalPrice / (1 + vatRate)
+basePrice = 119000 / 1.19 = 100,000 COP
+
+vatAmount = finalPrice - basePrice
+vatAmount = 119000 - 100000 = 19,000 COP
+
+// Customer sees: $119,000 COP (VAT included)
+// Seller gets: $100,000 COP (base)
+// Government gets: $19,000 COP (VAT)
+```
+
+### 📊 Usage Examples
+
+#### For Sellers
+```typescript
+// Creating a product
+POST /api/v1/products
+{
+  "name": "iPhone 15 Pro Max",
+  "price": 1299999.99,  // Price WITH VAT included
+  "vatType": "general",  // 19% VAT
+  // basePrice and vatAmount calculated automatically
+}
+
+// System calculates:
+// basePrice: 1,092,436.97 COP
+// vatAmount: 207,563.02 COP
+// price: 1,299,999.99 COP (what customer sees)
+```
+
+#### For Admins
+```bash
+# Generate VAT report for tax declaration
+GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
+
+# Response includes:
+{
+  "breakdown": {
+    "excluido": { "base": 0, "vat": 0, "total": 0, "orders": 0 },
+    "exento": { "base": 50000, "vat": 0, "total": 50000, "orders": 5 },
+    "reducido": { "base": 95238, "vat": 4762, "total": 100000, "orders": 10 },
+    "general": { "base": 420168, "vat": 79832, "total": 500000, "orders": 25 }
+  },
+  "totalBase": 565406,
+  "totalVat": 84594,
+  "totalWithVat": 650000,
+  "totalOrders": 40
+}
+```
+
+### 🚀 Key Features
+1. **Automatic Calculation**: Sellers enter final price, system calculates base and VAT
+2. **Tax Compliance**: Complete audit trail for DIAN declarations
+3. **Mixed Carts**: Supports products with different VAT rates in same order
+4. **Historical Data**: Existing products migrated with default 19% VAT
+5. **Real-time Preview**: Seller panel shows live price breakdown
+6. **Admin Reporting**: Generate reports by date range for tax filing
+
+### 📁 Key Files
+- `backend/src/database/entities/product.entity.ts` - VatType enum and VAT_RATES constant
+- `backend/src/analytics/analytics.service.ts` - `generateVatReport()` method
+- `backend/src/analytics/analytics.controller.ts` - VAT report endpoint
+- `backend/src/database/scripts/migrate-vat-data.ts` - Data migration script
+- `seller-panel/app/dashboard/products/new/page.tsx` - Product form with VAT selector
+- `admin-web/app/dashboard/reports/vat/page.tsx` - VAT reporting dashboard
+- `PLAN_IVA_COLOMBIA.md` - Complete implementation plan and documentation
+
+### ⚠️ Important Notes
+- **Pricing**: All prices in GSHOP MUST include VAT (Colombian law requirement)
+- **No Checkout Addition**: Unlike US/EU systems, VAT is NEVER added at checkout
+- **Seller Responsibility**: Sellers must select correct VAT category for their products
+- **Data Migration**: Run `npm run migrate:vat` after deployment to update existing products
+- **Default VAT**: New products default to "General" (19%) if not specified
 
 ## Installation & Usage
 
@@ -363,6 +515,13 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 - `GET /api/v1/pixel/analytics` - Get analytics data
 - `GET /api/v1/pixel/realtime` - Get realtime events
 
+### VAT (IVA) Reporting
+- `GET /api/v1/analytics/vat-report` - Generate VAT report by date range
+  - Query params: `startDate`, `endDate`, `sellerId` (optional)
+  - Returns breakdown by VAT category (excluido, exento, reducido, general)
+  - Includes total base, total VAT, and order counts per category
+  - Used for DIAN tax compliance and declarations
+
 ### Ads Manager (Phase 2)
 - `POST /api/v1/ads/campaigns` - Create advertising campaign
 - `GET /api/v1/ads/campaigns` - List seller campaigns
@@ -417,7 +576,9 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 - `affiliate_links` - Generated affiliate links with tracking
 - `affiliate_clicks` - Click tracking data
 - `pixel_events` - Website tracking events
-- `orders` - Enhanced with live stream attribution (liveSessionId, affiliateId, commissionRate, commissionAmount)
+- `orders` - Enhanced with live stream attribution (liveSessionId, affiliateId, commissionRate, commissionAmount) and VAT breakdown
+- `products` - Enhanced with VAT fields (vatType, basePrice, vatAmount)
+- `order_items` - Enhanced with VAT fields per item (vatType, basePrice, vatAmountPerUnit, totalBasePrice, totalVatAmount)
 
 #### Phase 2 Entities
 - `campaigns` - Advertising campaigns with budget and targeting

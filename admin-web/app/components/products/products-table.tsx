@@ -45,6 +45,9 @@ interface Product {
   name: string;
   sku: string;
   price: number;
+  basePrice?: number;
+  vatAmount?: number;
+  vatType?: string;
   quantity: number;
   status: string;
   images?: string[];
@@ -57,6 +60,26 @@ interface Product {
   };
   createdAt: string;
 }
+
+const getVatLabel = (vatType?: string): string => {
+  const labels: Record<string, string> = {
+    excluido: 'Excluido (0%)',
+    exento: 'Exento (0%)',
+    reducido: 'Reducido (5%)',
+    general: 'General (19%)',
+  };
+  return labels[vatType || 'general'] || 'General (19%)';
+};
+
+const getVatBadgeColor = (vatType?: string): string => {
+  const colors: Record<string, string> = {
+    excluido: 'bg-gray-100 text-gray-800',
+    exento: 'bg-green-100 text-green-800',
+    reducido: 'bg-yellow-100 text-yellow-800',
+    general: 'bg-blue-100 text-blue-800',
+  };
+  return colors[vatType || 'general'] || 'bg-blue-100 text-blue-800';
+};
 
 export function ProductsTable() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -208,6 +231,7 @@ export function ProductsTable() {
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>VAT Type</TableHead>
                   <TableHead>Stock</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Category</TableHead>
@@ -253,9 +277,14 @@ export function ProductsTable() {
                       </span>
                     </TableCell>
                     <TableCell>
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getVatBadgeColor(product?.vatType)}`}>
+                        {getVatLabel(product?.vatType)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
                       <span className={`${
-                        product?.quantity === 0 ? 'text-red-600' : 
-                        product?.quantity < 10 ? 'text-yellow-600' : 
+                        product?.quantity === 0 ? 'text-red-600' :
+                        product?.quantity < 10 ? 'text-yellow-600' :
                         'text-green-600'
                       }`}>
                         {product?.quantity}
