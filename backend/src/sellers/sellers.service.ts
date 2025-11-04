@@ -4,9 +4,12 @@ import { Repository } from 'typeorm'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { Seller, SellerType, DocumentType, VerificationStatus } from './entities/seller.entity'
+import { SellerLocation } from './entities/seller-location.entity'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
+import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
+import { AddSellerLocationDto } from './dto/add-seller-location.dto'
 import { EmailService } from '../email/email.service'
 
 @Injectable()
@@ -14,6 +17,8 @@ export class SellersService {
   constructor(
     @InjectRepository(Seller)
     private sellersRepository: Repository<Seller>,
+    @InjectRepository(SellerLocation)
+    private locationsRepository: Repository<SellerLocation>,
     private jwtService: JwtService,
     private emailService: EmailService,
   ) {}
@@ -283,5 +288,120 @@ export class SellersService {
     })
     // Remove passwords from all sellers
     return sellers.map(({ passwordHash, ...seller }) => seller) as any[]
+  }
+
+  // NUEVOS MÉTODOS: Shipping Configuration
+
+  async updateShippingConfig(
+    sellerId: string,
+    updateShippingConfigDto: UpdateShippingConfigDto,
+  ): Promise<Seller> {
+    const seller = await this.sellersRepository.findOne({
+      where: { id: sellerId }
+    })
+
+    if (!seller) {
+      throw new NotFoundException('Vendedor no encontrado')
+    }
+
+    // Actualizar configuración de envío
+    seller.shippingLocalPrice = updateShippingConfigDto.shippingLocalPrice
+    seller.shippingNationalPrice = updateShippingConfigDto.shippingNationalPrice
+    seller.shippingFreeEnabled = updateShippingConfigDto.shippingFreeEnabled
+    seller.shippingFreeMinAmount = updateShippingConfigDto.shippingFreeMinAmount
+
+    return this.sellersRepository.save(seller)
+  }
+
+  async getShippingConfig(sellerId: string): Promise<{
+    shippingLocalPrice: number
+    shippingNationalPrice: number
+    shippingFreeEnabled: boolean
+    shippingFreeMinAmount?: number
+    locations: SellerLocation[]
+  }> {
+    const seller = await this.sellersRepository.findOne({
+      where: { id: sellerId },
+      relations: ['locations']
+    })
+
+    if (!seller) {
+      throw new NotFoundException('Vendedor no encontrado')
+    }
+
+    return {
+      shippingLocalPrice: seller.shippingLocalPrice,
+      shippingNationalPrice: seller.shippingNationalPrice,
+      shippingFreeEnabled: seller.shippingFreeEnabled,
+      shippingFreeMinAmount: seller.shippingFreeMinAmount,
+      locations: seller.locations || [],
+    }
+  }
+
+  // NUEVOS MÉTODOS: Seller Locations
+
+  async addLocation(
+    sellerId: string,
+    addLocationDto: AddSellerLocationDto,
+  ): Promise<SellerLocation> {
+    const seller = await this.sellersRepository.findOne({
+      where: { id: sellerId },
+      relations: ['locations']
+    })
+
+    if (!seller) {
+      throw new NotFoundException('Vendedor no encontrado')
+    }
+
+    // Verificar si ya existe esta ubicación
+    const existingLocation = await this.locationsRepository.findOne({
+      where: {
+        sellerId,
+        city: addLocationDto.city,
+        state: addLocationDto.state,
+      }
+    })
+
+    if (existingLocation) {
+      throw new BadRequestException('Esta ubicación ya está registrada')
+    }
+
+    // Si es la primera ubicación, marcarla como primaria
+    const isPrimary = seller.locations.length === 0 || addLocationDto.isPrimary
+
+    const location = this.locationsRepository.create({
+      sellerId,
+      city: addLocationDto.city,
+      state: addLocationDto.state,
+      isPrimary,
+      address: addLocationDto.address,
+    })
+
+    return this.locationsRepository.save(location)
+  }
+
+  async removeLocation(sellerId: string, locationId: string): Promise<void> {
+    const location = await this.locationsRepository.findOne({
+      where: { id: locationId, sellerId }
+    })
+
+    if (!location) {
+      throw new NotFoundException('Ubicación no encontrada')
+    }
+
+    // No permitir eliminar si es la última ubicación
+    const count = await this.locationsRepository.count({ where: { sellerId } })
+    if (count <= 1) {
+      throw new BadRequestException('No puedes eliminar la última ubicación')
+    }
+
+    await this.locationsRepository.remove(location)
+  }
+
+  async getLocations(sellerId: string): Promise<SellerLocation[]> {
+    return this.locationsRepository.find({
+      where: { sellerId },
+      order: { isPrimary: 'DESC', createdAt: 'ASC' }
+    })
   }
 }

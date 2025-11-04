@@ -5,6 +5,8 @@ import { SellersService } from './sellers.service'
 import { SellersUploadService } from './sellers-upload.service'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
+import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
+import { AddSellerLocationDto } from './dto/add-seller-location.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 
 @ApiTags('sellers')
@@ -153,6 +155,70 @@ export class SellersController {
     return {
       message: approved ? 'Vendedor aprobado exitosamente' : 'Vendedor rechazado',
       seller,
+    }
+  }
+
+  // Shipping Configuration Endpoints
+
+  @Put(':id/shipping-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update seller shipping configuration' })
+  async updateShippingConfig(
+    @Param('id') sellerId: string,
+    @Body() updateShippingConfigDto: UpdateShippingConfigDto,
+  ) {
+    const seller = await this.sellersService.updateShippingConfig(sellerId, updateShippingConfigDto)
+    return {
+      message: 'Configuración de envío actualizada exitosamente',
+      seller,
+    }
+  }
+
+  @Get(':id/shipping-config')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller shipping configuration' })
+  async getShippingConfig(@Param('id') sellerId: string) {
+    return this.sellersService.getShippingConfig(sellerId)
+  }
+
+  // Seller Locations Endpoints
+
+  @Get(':id/locations')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all seller locations' })
+  async getLocations(@Param('id') sellerId: string) {
+    return this.sellersService.getLocations(sellerId)
+  }
+
+  @Post(':id/locations')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add new seller location' })
+  async addLocation(
+    @Param('id') sellerId: string,
+    @Body() addLocationDto: AddSellerLocationDto,
+  ) {
+    const location = await this.sellersService.addLocation(sellerId, addLocationDto)
+    return {
+      message: 'Ubicación agregada exitosamente',
+      location,
+    }
+  }
+
+  @Patch(':id/locations/:locationId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Remove seller location' })
+  async removeLocation(
+    @Param('id') sellerId: string,
+    @Param('locationId') locationId: string,
+  ) {
+    await this.sellersService.removeLocation(sellerId, locationId)
+    return {
+      message: 'Ubicación eliminada exitosamente',
     }
   }
 }

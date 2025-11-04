@@ -21,7 +21,7 @@ import { LiveModule } from './live/live.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { TokenModule } from './token/token.module';
 import { RecsysModule } from './recsys/recsys.module';
-import { ShippingModule } from './shipping/shipping.module';
+// import { ShippingModule } from './shipping/shipping.module'; // REMOVED: EasyPost integration replaced by OrdersModule ShippingService
 import { ReturnsModule } from './returns/returns.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CartModule } from './cart/cart.module';
@@ -66,7 +66,7 @@ import { AppService } from './app.service';
     MarketplaceModule,
     TokenModule,
     RecsysModule,
-    ShippingModule,
+    // ShippingModule, // REMOVED: EasyPost integration replaced by OrdersModule ShippingService
     ReturnsModule,
     WishlistModule,
     CartModule,

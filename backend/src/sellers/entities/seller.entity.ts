@@ -1,5 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm'
 import { Product } from '../../products/entities/product.entity'
+import { SellerLocation } from './seller-location.entity'
+
+export enum ShippingType {
+  LOCAL = 'local',
+  NATIONAL = 'national',
+}
 
 export enum SellerType {
   NATURAL = 'natural',
@@ -163,6 +169,40 @@ export class Seller {
   @Column({ default: true })
   isActive: boolean
 
+  // NUEVOS CAMPOS DE ENVÍO
+  @Column({
+    name: 'shippingLocalPrice',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0
+  })
+  shippingLocalPrice: number
+
+  @Column({
+    name: 'shippingNationalPrice',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0
+  })
+  shippingNationalPrice: number
+
+  @Column({
+    name: 'shippingFreeEnabled',
+    default: false
+  })
+  shippingFreeEnabled: boolean
+
+  @Column({
+    name: 'shippingFreeMinAmount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true
+  })
+  shippingFreeMinAmount?: number
+
   @CreateDateColumn()
   createdAt: Date
 
@@ -171,4 +211,7 @@ export class Seller {
 
   @OneToMany(() => Product, product => product.seller)
   products: Product[]
+
+  @OneToMany(() => SellerLocation, location => location.seller)
+  locations: SellerLocation[]
 }

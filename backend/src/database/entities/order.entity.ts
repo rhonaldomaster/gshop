@@ -14,6 +14,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from './user.entity';
 import { OrderItem } from './order-item.entity';
 import { Payment } from './payment.entity';
+import { ShippingType } from '../../sellers/entities/seller.entity';
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -131,28 +132,34 @@ export class Order {
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   shippingCost: number;
 
-  @ApiProperty()
-  @Column({ nullable: true })
-  courierService: string;
+  // NUEVOS CAMPOS DE ENVÍO (Sistema Vendedor)
+  @ApiProperty({ enum: ShippingType })
+  @Column({
+    type: 'enum',
+    enum: ShippingType,
+    nullable: true,
+  })
+  shippingType: ShippingType;
 
   @ApiProperty()
-  @Column('json', { nullable: true })
-  shippingOptions: {
-    carrier: string;
-    service: string;
-    rate: number;
-    deliveryTime: string;
-    easypostRateId?: string;
-  }[];
+  @Column({ length: 500, nullable: true })
+  shippingTrackingUrl: string;
 
   @ApiProperty()
-  @Column('json', { nullable: true })
-  packageDimensions: {
-    length: number;
-    width: number;
-    height: number;
-    weight: number;
-  };
+  @Column({ length: 100, nullable: true })
+  shippingTrackingNumber: string;
+
+  @ApiProperty()
+  @Column({ type: 'text', nullable: true })
+  shippingNotes: string;
+
+  @ApiProperty()
+  @Column({ length: 100, nullable: true })
+  buyerCity: string;
+
+  @ApiProperty()
+  @Column({ length: 100, nullable: true })
+  buyerState: string;
 
   @ApiProperty()
   @Column('json', { nullable: true })
@@ -165,9 +172,11 @@ export class Order {
   @Column({ nullable: true })
   isGuestOrder: boolean;
 
-  @ApiProperty()
-  @Column({ nullable: true })
-  easypostShipmentId: string;
+  // NOTA: Campos de EasyPost eliminados:
+  // - easypostShipmentId
+  // - shippingOptions
+  // - packageDimensions
+  // - courierService
 
   @ApiProperty()
   @Column({ nullable: true })

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -15,12 +17,17 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { Truck, Package, Eye, CheckCircle, XCircle } from 'lucide-react'
+import { Truck, Package, Eye, CheckCircle, XCircle, MapPin } from 'lucide-react'
+import { toast } from 'sonner'
+import DashboardLayout from '@/components/DashboardLayout'
+import { useSession } from 'next-auth/react'
 
 interface Order {
   id: string
@@ -65,10 +72,18 @@ const statusColors: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  const { data: session } = useSession()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [returnNotes, setReturnNotes] = useState('')
+  const [isAddTrackingOpen, setIsAddTrackingOpen] = useState(false)
+  const [trackingData, setTrackingData] = useState({
+    trackingUrl: '',
+    trackingNumber: '',
+    carrier: '',
+    notes: ''
+  })
 
   useEffect(() => {
     fetchOrders()
@@ -199,19 +214,64 @@ export default function OrdersPage() {
     }
   }
 
+  const handleAddTracking = async (orderId: string) => {
+    if (!trackingData.trackingUrl || !trackingData.trackingNumber || !trackingData.carrier) {
+      toast.error('Por favor complete los campos requeridos')
+      return
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/tracking`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.accessToken}`,
+          },
+          body: JSON.stringify({
+            shippingTrackingUrl: trackingData.trackingUrl,
+            shippingTrackingNumber: trackingData.trackingNumber,
+            shippingCarrier: trackingData.carrier,
+            shippingNotes: trackingData.notes || undefined,
+          })
+        }
+      )
+
+      if (response.ok) {
+        toast.success('Información de rastreo agregada exitosamente')
+        await fetchOrders()
+        setIsAddTrackingOpen(false)
+        setSelectedOrder(null)
+        setTrackingData({
+          trackingUrl: '',
+          trackingNumber: '',
+          carrier: '',
+          notes: ''
+        })
+      } else {
+        const error = await response.json()
+        toast.error(error.message || 'Error al agregar tracking')
+      }
+    } catch (error) {
+      console.error('Error adding tracking:', error)
+      toast.error('Error al agregar información de rastreo')
+    }
+  }
+
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-300 rounded mb-4"></div>
-          <div className="h-64 bg-gray-300 rounded"></div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Gestión de Pedidos</h1>
         <div className="text-sm text-gray-500">
@@ -381,14 +441,17 @@ export default function OrdersPage() {
                         </DialogContent>
                       </Dialog>
 
-                      {order.status === 'confirmed' && (
+                      {(order.status === 'confirmed' || order.status === 'processing') && !order.trackingNumber && (
                         <Button
                           size="sm"
-                          onClick={() => handleShippingApproval(order.id)}
+                          onClick={() => {
+                            setSelectedOrder(order)
+                            setIsAddTrackingOpen(true)
+                          }}
                           className="flex items-center gap-2"
                         >
-                          <Truck className="h-4 w-4" />
-                          Aprobar Envío
+                          <MapPin className="h-4 w-4" />
+                          Agregar Tracking
                         </Button>
                       )}
                     </div>
@@ -399,6 +462,72 @@ export default function OrdersPage() {
           </Table>
         </CardContent>
       </Card>
-    </div>
+
+      {/* Add Tracking Dialog */}
+      <Dialog open={isAddTrackingOpen} onOpenChange={setIsAddTrackingOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Información de Rastreo</DialogTitle>
+            <DialogDescription>
+              Completa la información de rastreo para el pedido {selectedOrder?.orderNumber}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="trackingUrl">URL de Rastreo *</Label>
+              <Input
+                id="trackingUrl"
+                type="url"
+                value={trackingData.trackingUrl}
+                onChange={(e) => setTrackingData({ ...trackingData, trackingUrl: e.target.value })}
+                placeholder="https://servientrega.com/rastrear?guia=123456"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="trackingNumber">Número de Guía *</Label>
+              <Input
+                id="trackingNumber"
+                value={trackingData.trackingNumber}
+                onChange={(e) => setTrackingData({ ...trackingData, trackingNumber: e.target.value })}
+                placeholder="123456789"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="carrier">Empresa de Mensajería *</Label>
+              <Input
+                id="carrier"
+                value={trackingData.carrier}
+                onChange={(e) => setTrackingData({ ...trackingData, carrier: e.target.value })}
+                placeholder="Servientrega, Coordinadora, etc."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas (Opcional)</Label>
+              <Textarea
+                id="notes"
+                value={trackingData.notes}
+                onChange={(e) => setTrackingData({ ...trackingData, notes: e.target.value })}
+                placeholder="Información adicional sobre el envío..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddTrackingOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => selectedOrder && handleAddTracking(selectedOrder.id)}
+            >
+              Guardar Tracking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </div>
+    </DashboardLayout>
   )
 }

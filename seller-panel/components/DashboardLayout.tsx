@@ -15,13 +15,15 @@ import {
   Menu,
   X,
   DollarSign,
-  Video
+  Video,
+  Truck
 } from 'lucide-react'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: Home },
   { name: 'Products', href: '/dashboard/products', icon: Package },
   { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
+  { name: 'Shipping', href: '/dashboard/shipping', icon: Truck },
   { name: 'Live Streaming', href: '/dashboard/live', icon: Video },
   { name: 'Analytics', href: '/dashboard/analytics', icon: TrendingUp },
   { name: 'Affiliates', href: '/dashboard/affiliates', icon: Users },
@@ -36,7 +38,6 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
-  const { data: session } = useSession()
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/auth/login' })

@@ -5,6 +5,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   UseGuards,
   Request,
@@ -12,9 +13,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
+import { ShippingService } from './shipping.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
+import { AddTrackingDto } from './dto/add-tracking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -26,7 +29,10 @@ import { OrderStatus } from '../database/entities/order.entity';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly shippingService: ShippingService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new order' })
@@ -93,5 +99,56 @@ export class OrdersController {
   @ApiResponse({ status: 200, description: 'Order status updated successfully' })
   updateStatus(@Param('id') id: string, @Body() body: { status: OrderStatus }) {
     return this.ordersService.updateStatus(id, body.status);
+  }
+
+  // Shipping Endpoints
+
+  @Post('calculate-shipping')
+  @ApiOperation({ summary: 'Calculate shipping cost for buyer location' })
+  @ApiResponse({ status: 200, description: 'Shipping cost calculated successfully' })
+  @ApiResponse({ status: 404, description: 'Seller not found' })
+  async calculateShipping(
+    @Body() body: {
+      sellerId: string;
+      buyerCity: string;
+      buyerState: string;
+      orderTotal: number;
+    },
+  ) {
+    const shippingInfo = await this.shippingService.calculateShippingCost(
+      body.sellerId,
+      body.buyerCity,
+      body.buyerState,
+      body.orderTotal,
+    );
+    return shippingInfo;
+  }
+
+  @Put(':id/tracking')
+  @Roles(UserRole.ADMIN, UserRole.SELLER)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Add tracking information to order (Seller/Admin only)' })
+  @ApiResponse({ status: 200, description: 'Tracking information added successfully' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async addTracking(@Param('id') orderId: string, @Body() addTrackingDto: AddTrackingDto) {
+    const order = await this.shippingService.addTracking(
+      orderId,
+      addTrackingDto.shippingTrackingUrl,
+      addTrackingDto.shippingTrackingNumber,
+      addTrackingDto.shippingCarrier,
+      addTrackingDto.shippingNotes,
+    );
+    return {
+      message: 'Información de rastreo agregada exitosamente',
+      order,
+    };
+  }
+
+  @Get(':id/tracking')
+  @ApiOperation({ summary: 'Get tracking information for order' })
+  @ApiResponse({ status: 200, description: 'Tracking information retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async getTracking(@Param('id') orderId: string) {
+    return this.shippingService.getTracking(orderId);
   }
 }
