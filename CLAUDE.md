@@ -21,6 +21,7 @@ GSHOP is a TikTok Shop clone MVP with a microservices architecture consisting of
 ## Development Commands
 
 ### Quick Setup
+
 ```bash
 npm install
 npm run install:all        # Install dependencies for all workspaces
@@ -31,6 +32,7 @@ npm run db:seed           # Seed database with initial data
 ```
 
 ### Development Servers
+
 ```bash
 npm run dev               # Start all services (backend, admin, seller, mobile)
 npm run dev:backend       # Backend API on http://localhost:3000
@@ -41,6 +43,7 @@ npm run dev:mobile        # Mobile app with Expo development server
 ```
 
 ### Individual Service Commands
+
 ```bash
 # Backend (NestJS)
 cd backend
@@ -64,6 +67,7 @@ npm run web              # Start web version
 ```
 
 ### Database Operations
+
 ```bash
 npm run db:migrate           # Run TypeORM migrations (backend)
 npm run db:seed             # Seed database with initial data
@@ -75,6 +79,7 @@ npm run migration:run       # Run pending migrations
 ```
 
 ### Testing
+
 ```bash
 npm test                    # Run all tests
 npm run test:backend        # Backend tests only
@@ -82,6 +87,7 @@ npm run test:admin          # Admin panel tests only
 ```
 
 ### Docker Operations
+
 ```bash
 npm run docker:up          # Start PostgreSQL container
 npm run docker:down        # Stop containers
@@ -91,11 +97,13 @@ npm run docker:logs        # View container logs
 ## Architecture Notes
 
 ### Monorepo Structure
+
 - Uses npm workspaces with individual package.json files
 - Root package.json contains scripts for coordinating all services
 - Each service (backend, admin-web, mobile) is self-contained
 
 ### Backend Architecture (NestJS)
+
 - **Location**: `backend/src/`
 - **Modules**: auth, users, products, orders, payments, database
 - **Database**: TypeORM with PostgreSQL
@@ -103,6 +111,7 @@ npm run docker:logs        # View container logs
 - **Authentication**: JWT with Passport strategies
 
 ### Admin Web Panel (Next.js)
+
 - **Location**: `admin-web/app/`
 - **Framework**: Next.js 14 with App Router
 - **UI**: Tailwind CSS + Radix UI components
@@ -111,17 +120,20 @@ npm run docker:logs        # View container logs
 - **State Management**: Zustand, React Query (@tanstack/react-query)
 
 ### Mobile App (React Native)
+
 - **Location**: `mobile/src/`
 - **Framework**: Expo with React Native
 - **Navigation**: React Navigation v7
 - **State**: AsyncStorage for persistence
 
 ### Key Dependencies
+
 - **Backend**: NestJS, TypeORM, PostgreSQL, JWT, Swagger
 - **Admin**: Next.js, Prisma, NextAuth, Tailwind, Radix UI, Zustand
 - **Mobile**: Expo, React Navigation, React Native Reanimated
 
 ### Environment Configuration
+
 - Copy `.env.example` to `.env` and configure:
   - Database connection (PostgreSQL)
   - MercadoPago credentials (CLIENT_ID, CLIENT_SECRET, ACCESS_TOKEN)
@@ -129,6 +141,7 @@ npm run docker:logs        # View container logs
   - NextAuth configuration
 
 ### Development Workflow
+
 1. Start PostgreSQL: `npm run docker:up`
 2. Run migrations and seed: `npm run db:migrate && npm run db:seed`
 3. Start all services: `npm run dev`
@@ -139,11 +152,13 @@ npm run docker:logs        # View container logs
    - Mobile: Expo DevTools in terminal
 
 ### Commission System
+
 - Default 7% commission rate configured in backend
 - Configurable through admin panel
 - Applied to all orders automatically
 
 ### Colombian VAT (IVA) System
+
 - **Implementation Date**: November 2025
 - **Status**: Production-ready (100% implemented)
 - **Compliance**: Colombian tax legislation (DIAN)
@@ -160,6 +175,7 @@ npm run docker:logs        # View container logs
 ## Phase 1 Features (Implemented)
 
 ### 🏪 Seller Panel (Next.js)
+
 - **Location**: `seller-panel/`
 - **URL**: http://localhost:3002
 - **Features**:
@@ -172,6 +188,7 @@ npm run docker:logs        # View container logs
   - Real-time analytics integration
 
 ### 👥 Affiliate/Creator System
+
 - **Backend Module**: `backend/src/affiliates/`
 - **Features**:
   - Affiliate registration and management
@@ -183,6 +200,7 @@ npm run docker:logs        # View container logs
   - Performance analytics (clicks, conversions, revenue)
 
 ### 📊 GSHOP Pixel (Website Tracking)
+
 - **Script Location**: `public/gshop-pixel.js`
 - **Backend Module**: `backend/src/pixel/`
 - **Features**:
@@ -194,6 +212,7 @@ npm run docker:logs        # View container logs
   - GDPR-friendly with configurable data collection
 
 ### 📈 Analytics Dashboard
+
 - **Backend Module**: `backend/src/analytics/`
 - **Features**:
   - Real-time visitor tracking and conversion metrics
@@ -204,6 +223,7 @@ npm run docker:logs        # View container logs
   - Product performance metrics
 
 ### 💳 Enhanced Payment System
+
 - **Features**:
   - MercadoPago webhook integration for payment confirmation
   - Automated commission calculation on successful orders
@@ -213,6 +233,7 @@ npm run docker:logs        # View container logs
 ## Phase 2 Features (Implemented)
 
 ### 🎯 Ads Manager (Admin Panel)
+
 - **Location**: `admin-web/app/ads/`
 - **Backend Module**: `backend/src/ads/`
 - **Features**:
@@ -224,6 +245,7 @@ npm run docker:logs        # View container logs
   - Integration with pixel events for audience building
 
 ### 🎨 Dynamic Product Ads (DPA)
+
 - **Backend Module**: `backend/src/ads/dpa.service.ts`
 - **Features**:
   - Automatic product feed generation from catalog
@@ -233,6 +255,7 @@ npm run docker:logs        # View container logs
   - Real-time inventory sync with product availability
 
 ### 👥 Audience Management & Retargeting
+
 - **Backend Module**: `backend/src/audiences/`
 - **Features**:
   - Pixel-based audience creation from website events
@@ -243,6 +266,7 @@ npm run docker:logs        # View container logs
   - Automatic audience rebuilding based on new data
 
 ### 📺 Live Shopping Platform
+
 - **Backend Module**: `backend/src/live/`
 - **Seller Panel**: `seller-panel/app/dashboard/live/`
 - **Mobile App**: `mobile/src/screens/live/`
@@ -259,6 +283,7 @@ npm run docker:logs        # View container logs
   - **Commission Calculation**: Automatic commission calculation for affiliate sales during live streams
 
 ### 🔧 Advanced Integrations
+
 - **WebSocket Integration**: Real-time communication for live streams
 - **Streaming Infrastructure**: RTMP ingest and HLS playback
 - **Cross-Platform Analytics**: Unified tracking across web and mobile
@@ -267,20 +292,22 @@ npm run docker:logs        # View container logs
 ## Colombian VAT (IVA) System (November 2025)
 
 ### 📋 Overview
+
 Complete implementation of Colombian tax legislation (DIAN) for VAT management in e-commerce. Unlike international systems where tax is added at checkout, Colombian law requires VAT to be **ALWAYS included** in the displayed price.
 
 ### 🏷️ VAT Categories
 
-| Category | Rate | Description | Tax Deduction Rights | Examples |
-|----------|------|-------------|---------------------|----------|
-| **Excluido** | 0% | Excluded goods/services | ❌ No | Educational services, healthcare |
-| **Exento** | 0% | Exempt goods/services | ✅ Yes | Basic foods (bread, milk, eggs) |
-| **Reducido** | 5% | Reduced rate | ✅ Yes | Processed foods (sausages, coffee) |
-| **General** | 19% | Standard rate | ✅ Yes | Electronics, clothing, jewelry |
+| Category     | Rate | Description             | Tax Deduction Rights | Examples                           |
+| ------------ | ---- | ----------------------- | -------------------- | ---------------------------------- |
+| **Excluido** | 0%   | Excluded goods/services | ❌ No                | Educational services, healthcare   |
+| **Exento**   | 0%   | Exempt goods/services   | ✅ Yes               | Basic foods (bread, milk, eggs)    |
+| **Reducido** | 5%   | Reduced rate            | ✅ Yes               | Processed foods (sausages, coffee) |
+| **General**  | 19%  | Standard rate           | ✅ Yes               | Electronics, clothing, jewelry     |
 
 ### 🔧 Technical Implementation
 
 #### Backend (100% Complete)
+
 - **Entities Enhanced**:
   - `Product`: Added `vatType`, `basePrice`, `vatAmount` fields
   - `OrderItem`: VAT breakdown per item with totals
@@ -296,6 +323,7 @@ Complete implementation of Colombian tax legislation (DIAN) for VAT management i
   - Data migration script: `npm run migrate:vat` (updates existing products)
 
 #### Seller Panel (100% Complete)
+
 - **Product Creation** (`/dashboard/products/new`):
   - VAT type selector with 4 categories
   - Real-time price calculator showing base + VAT = final price
@@ -305,6 +333,7 @@ Complete implementation of Colombian tax legislation (DIAN) for VAT management i
   - Recalculates on VAT type change
 
 #### Admin Panel (100% Complete)
+
 - **VAT Reports** (`/dashboard/reports/vat`):
   - Date range filters (start/end dates)
   - Breakdown by category with visual cards
@@ -315,6 +344,7 @@ Complete implementation of Colombian tax legislation (DIAN) for VAT management i
   - Category labels with percentage
 
 #### Mobile App (100% Complete)
+
 - **CartContext**:
   - Removed incorrect `taxAmount * 0.1` calculation
   - Total = subtotal + shipping - discount (NO additional VAT)
@@ -342,6 +372,7 @@ vatAmount = 119000 - 100000 = 19,000 COP
 ### 📊 Usage Examples
 
 #### For Sellers
+
 ```typescript
 // Creating a product
 POST /api/v1/products
@@ -359,6 +390,7 @@ POST /api/v1/products
 ```
 
 #### For Admins
+
 ```bash
 # Generate VAT report for tax declaration
 GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
@@ -379,6 +411,7 @@ GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
 ```
 
 ### 🚀 Key Features
+
 1. **Automatic Calculation**: Sellers enter final price, system calculates base and VAT
 2. **Tax Compliance**: Complete audit trail for DIAN declarations
 3. **Mixed Carts**: Supports products with different VAT rates in same order
@@ -387,6 +420,7 @@ GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
 6. **Admin Reporting**: Generate reports by date range for tax filing
 
 ### 📁 Key Files
+
 - `backend/src/database/entities/product.entity.ts` - VatType enum and VAT_RATES constant
 - `backend/src/analytics/analytics.service.ts` - `generateVatReport()` method
 - `backend/src/analytics/analytics.controller.ts` - VAT report endpoint
@@ -396,6 +430,7 @@ GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
 - `PLAN_IVA_COLOMBIA.md` - Complete implementation plan and documentation
 
 ### ⚠️ Important Notes
+
 - **Pricing**: All prices in GSHOP MUST include VAT (Colombian law requirement)
 - **No Checkout Addition**: Unlike US/EU systems, VAT is NEVER added at checkout
 - **Seller Responsibility**: Sellers must select correct VAT category for their products
@@ -405,6 +440,7 @@ GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
 ## Installation & Usage
 
 ### Quick Start with Deploy Script
+
 ```bash
 # Make script executable
 chmod +x deploy_seller.sh
@@ -417,6 +453,7 @@ chmod +x deploy_seller.sh
 ```
 
 ### Manual Setup
+
 ```bash
 # Install all dependencies
 npm run install:all
@@ -435,6 +472,7 @@ npm run dev
 ```
 
 ### GSHOP Pixel Implementation
+
 ```html
 <!-- Add to your website -->
 <script src="https://your-domain.com/gshop-pixel.js"></script>
@@ -463,6 +501,7 @@ npm run dev
 ```
 
 ### Affiliate Link Creation
+
 ```javascript
 // Generate affiliate link via API
 POST /api/v1/affiliates/links
@@ -480,6 +519,7 @@ POST /api/v1/affiliates/links
 ```
 
 ### Environment Variables
+
 ```bash
 # Add to .env
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -497,25 +537,30 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ## API Endpoints
 
 ### Seller Authentication
+
 - `POST /api/v1/auth/seller/register` - Register new seller
 - `POST /api/v1/auth/seller/login` - Seller login
 
 ### Seller Management
+
 - `GET /api/v1/sellers/profile` - Get seller profile
 - `GET /api/v1/sellers/stats` - Get seller statistics
 - `POST /api/v1/sellers/withdrawal` - Request withdrawal
 
 ### Affiliate System
+
 - `POST /api/v1/affiliates/links` - Create affiliate link
 - `GET /api/v1/affiliates/stats/:id` - Get affiliate statistics
 - `POST /api/v1/affiliates/track/:shortCode` - Track click
 
 ### Analytics & Pixel
+
 - `POST /api/v1/pixel/track` - Track pixel event
 - `GET /api/v1/pixel/analytics` - Get analytics data
 - `GET /api/v1/pixel/realtime` - Get realtime events
 
 ### VAT (IVA) Reporting
+
 - `GET /api/v1/analytics/vat-report` - Generate VAT report by date range
   - Query params: `startDate`, `endDate`, `sellerId` (optional)
   - Returns breakdown by VAT category (excluido, exento, reducido, general)
@@ -523,6 +568,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
   - Used for DIAN tax compliance and declarations
 
 ### Ads Manager (Phase 2)
+
 - `POST /api/v1/ads/campaigns` - Create advertising campaign
 - `GET /api/v1/ads/campaigns` - List seller campaigns
 - `PUT /api/v1/ads/campaigns/:id/status` - Update campaign status
@@ -530,18 +576,21 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 - `GET /api/v1/ads/dashboard` - Get ads dashboard statistics
 
 ### Audience Management (Phase 2)
+
 - `POST /api/v1/audiences` - Create custom audience
 - `GET /api/v1/audiences` - List seller audiences
 - `POST /api/v1/audiences/:id/rebuild` - Rebuild audience from rules
 - `GET /api/v1/audiences/:id/users` - Get audience members
 
 ### Dynamic Product Ads (Phase 2)
+
 - `GET /api/v1/dpa/feed/:sellerId` - Get product catalog feed
 - `GET /api/v1/dpa/recommendations/:userId` - Get personalized recommendations
 - `GET /api/v1/dpa/retargeting/:audienceId` - Get retargeting product suggestions
 - `GET /api/v1/dpa/creative/:productId` - Generate creative assets for product
 
 ### Live Shopping (Phase 2)
+
 - `POST /api/v1/live/streams` - Create live stream (seller)
 - `POST /api/v1/live/affiliate/streams` - Create affiliate live stream
 - `GET /api/v1/live/streams/active` - Get active live streams
@@ -558,12 +607,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ## Architecture Notes
 
 ### Phase 1 Modules Added
+
 - **Sellers Module**: Complete seller management with KYC and payments
 - **Affiliates Module**: Link generation, tracking, and commission management
 - **Pixel Module**: Event tracking and analytics data collection
 - **Analytics Module**: Reporting and metrics aggregation
 
 ### Phase 2 Modules Added
+
 - **Ads Module**: Campaign management, metrics tracking, and DPA system
 - **Audiences Module**: Pixel-based audience creation and retargeting
 - **Live Module**: Live streaming infrastructure with WebSocket support
@@ -571,6 +622,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ### Database Entities
 
 #### Phase 1 Entities
+
 - `sellers` - Seller profiles with KYC information
 - `affiliates` - Affiliate/creator accounts
 - `affiliate_links` - Generated affiliate links with tracking
@@ -581,6 +633,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 - `order_items` - Enhanced with VAT fields per item (vatType, basePrice, vatAmountPerUnit, totalBasePrice, totalVatAmount)
 
 #### Phase 2 Entities
+
 - `campaigns` - Advertising campaigns with budget and targeting
 - `campaign_metrics` - Daily performance metrics (CTR, CPA, ROAS)
 - `audiences` - Custom audiences with segmentation rules
@@ -593,12 +646,14 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ### Technical Infrastructure
 
 #### Streaming Setup
+
 - **RTMP Server**: rtmp://localhost:1935/live (for streaming software)
 - **HLS Playback**: http://localhost:8080/hls (for video consumption)
 - **WebSocket**: /live namespace for real-time communication
 - **Stream Keys**: UUID-based unique keys per stream
 
 #### Performance Considerations
+
 - Audience rebuilding is asynchronous for large datasets
 - Campaign metrics are aggregated daily for performance
 - Live stream viewer counts are updated in real-time via WebSocket
@@ -607,12 +662,15 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
 ### Development Notes
 
 #### Required Dependencies
+
 Add to package.json files:
+
 - **Backend**: `socket.io`, `uuid` for live streaming
 - **Admin Panel**: `date-fns`, `recharts` for analytics
 - **Mobile**: `expo-av`, `socket.io-client` for live video and chat
 
 #### Environment Variables
+
 ```bash
 # Add to .env for Phase 2 features
 RTMP_SERVER_URL=rtmp://localhost:1935/live
@@ -632,6 +690,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 ## Phase 3 Features (Implemented)
 
 ### 🛒 Marketplace Global System
+
 - **Backend Module**: `backend/src/marketplace/`
 - **Features**:
   - Comprehensive seller management with KYC verification and approval workflow
@@ -643,30 +702,16 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
   - Multi-status product management (draft, active, sold_out, discontinued)
 
 ### 💳 Enhanced Payment System V2
+
 - **Backend Module**: `backend/src/payments/`
 - **Features**:
   - Stripe integration for traditional card payments with webhooks
-  - USDC cryptocurrency payments on Polygon blockchain
-  - Hybrid fiat/crypto payment processing with automatic exchange rates
-  - Blockchain transaction verification with gas fee tracking
   - PDF invoice generation with automated numbering system
-  - Payment method management (cards, bank accounts, crypto wallets)
-  - Multi-currency support with real-time conversion rates
+  - Payment method management (cards, bank accounts)
   - Advanced payment analytics with volume and fee tracking
 
-### 🪙 GSHOP Token Economy
-- **Backend Module**: `backend/src/token/`
-- **Features**:
-  - Internal wallet system with balance management and transaction history
-  - 5% cashback rewards on all purchases with configurable rates
-  - Token transfer system between users with transaction tracking
-  - Wallet top-up via credit cards and bank transfers
-  - Token burning and minting capabilities for admin management
-  - Comprehensive transaction categorization (rewards, transfers, purchases)
-  - Token circulation analytics and supply management
-  - Exchange rate tracking for token valuation
-
 ### 🤖 AI-Powered Recommendation Engine
+
 - **Backend Module**: `backend/src/recsys/`
 - **Features**:
   - Multiple recommendation algorithms: collaborative filtering, content-based, popularity-based, and hybrid
@@ -679,6 +724,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
   - Recommendation feedback loop for continuous improvement
 
 ### 🔗 Advanced Integrations
+
 - **Cross-Module Communication**: Seamless integration between marketplace, payments, tokens, and recommendations
 - **Webhook System**: Real-time event processing for payment confirmations and marketplace updates
 - **Analytics Pipeline**: Unified data collection across all Phase 3 modules
@@ -687,6 +733,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 ## Phase 3 Database Entities
 
 ### Marketplace Entities
+
 - `marketplace_sellers` - Seller profiles with business verification and status management
 - `marketplace_products` - Product catalog with multi-image support and inventory tracking
 - `reviews` - Customer reviews with ratings and image attachments
@@ -694,19 +741,13 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 - `shipping` - Order shipping with carrier tracking and delivery status
 
 ### Payment V2 Entities
-- `payments_v2` - Enhanced payment records with crypto and fiat support
-- `invoices` - PDF invoice generation with automated numbering
-- `payment_methods` - User payment methods (cards, bank accounts, crypto wallets)
-- `crypto_transactions` - Blockchain transaction tracking with confirmation status
 
-### Token System Entities
-- `gshop_wallets` - User wallets with balance and cashback rate management
-- `gshop_transactions` - All token transactions with detailed metadata
-- `token_rewards` - Reward distribution tracking with order correlation
-- `wallet_topups` - Fiat-to-token conversion records
-- `token_circulation` - Daily token metrics and supply analytics
+- `payments_v2` - Enhanced payment records
+- `invoices` - PDF invoice generation with automated numbering
+- `payment_methods` - User payment methods (cards, bank accounts)
 
 ### AI Recommendation Entities
+
 - `user_interactions` - All user behavior tracking (views, clicks, purchases)
 - `user_preferences` - Learned user preferences with strength scoring
 - `product_similarity` - Product relationship mapping for recommendations
@@ -715,6 +756,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 ## Phase 3 API Endpoints
 
 ### Marketplace Global
+
 - `POST /api/v1/marketplace/sellers` - Create seller profile with KYC
 - `GET /api/v1/marketplace/products` - Search products with advanced filters
 - `POST /api/v1/marketplace/reviews` - Submit product review with images
@@ -722,20 +764,13 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 - `GET /api/v1/marketplace/sellers/:id/stats` - Get seller performance metrics
 
 ### Payment System V2
+
 - `POST /api/v1/payments-v2` - Create payment with fiat or crypto
 - `POST /api/v1/payments-v2/:id/process/stripe` - Process Stripe payment
-- `POST /api/v1/payments-v2/:id/process/crypto` - Process USDC payment
-- `POST /api/v1/payments-v2/crypto/verify/:id` - Verify blockchain transaction
 - `GET /api/v1/payments-v2/invoices/:id/pdf` - Generate PDF invoice
 
-### GSHOP Token System
-- `GET /api/v1/tokens/wallet` - Get user wallet balance and history
-- `POST /api/v1/tokens/transfer` - Transfer tokens between users
-- `POST /api/v1/tokens/rewards/cashback` - Process cashback rewards
-- `POST /api/v1/tokens/topup` - Top up wallet with fiat payment
-- `GET /api/v1/tokens/stats` - Get token economy analytics
-
 ### AI Recommendations
+
 - `POST /api/v1/recommendations/interactions` - Track user behavior
 - `POST /api/v1/recommendations/generate` - Generate personalized recommendations
 - `GET /api/v1/recommendations/trending` - Get trending products
@@ -744,33 +779,22 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 
 ## Phase 3 Technical Infrastructure
 
-### Blockchain Integration
-- **Network**: Polygon (MATIC) for low-cost transactions
-- **Token**: USDC for stable cryptocurrency payments
-- **Verification**: Real-time transaction confirmation via JSON-RPC
-- **Gas Optimization**: Dynamic gas price calculation for cost efficiency
-
 ### Machine Learning Pipeline
+
 - **Algorithms**: Collaborative filtering, content-based filtering, and hybrid approaches
 - **Real-time Processing**: Immediate preference updates on user interactions
 - **Cold Start Solutions**: Popularity-based recommendations for new users
 - **Performance Tracking**: A/B testing framework for algorithm optimization
 
-### Token Economics
-- **Cashback Rate**: Configurable 5% default with admin override capabilities
-- **Circulation Control**: Admin tools for token minting and burning
-- **Exchange Integration**: Mock exchange rate API with real-time updates
-- **Audit Trail**: Complete transaction history with immutable records
-
 ### Payment Processing
+
 - **Stripe Integration**: Card payments with webhook confirmation
-- **Crypto Processing**: USDC payments with blockchain verification
 - **Invoice System**: Automated PDF generation with unique numbering
-- **Multi-currency**: USD and crypto with real-time conversion rates
 
 ## GSHOP Logistics Phase (Latest Implementation)
 
 ### 🚚 Complete Shipping & Logistics System
+
 - **Backend Module**: `backend/src/shipping/` and `backend/src/returns/`
 - **EasyPost Integration**: Dynamic shipping rates and automated tracking
 - **Features**:
@@ -783,6 +807,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
   - Mobile app with dynamic shipping selection and order tracking
 
 ### 📱 Mobile Buyer Experience
+
 - **Checkout Flow**: Dynamic shipping rates displayed before payment
 - **Guest Checkout**: Full checkout without account creation, with document validation
 - **Document Validation**: Support for Cédula, Pasaporte, and other Colombian ID types
@@ -790,6 +815,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 - **Return Requests**: In-app return initiation with 30-day window
 
 ### 🏪 Seller Panel Integration
+
 - **Order Management**: Complete order lifecycle from confirmation to delivery
 - **Shipping Approval**: Review automatically generated shipping labels and tracking
 - **Return Processing**: Approve/reject return requests with automated refunds
@@ -798,6 +824,7 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 ### 🔧 Technical Implementation
 
 #### Order Entity Enhancements
+
 ```typescript
 // New order status types
 export enum OrderStatus {
@@ -809,7 +836,7 @@ export enum OrderStatus {
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
   RETURN_REQUESTED = 'return_requested',
-  REFUNDED = 'refunded',
+  REFUNDED = 'refunded'
 }
 
 // New order fields
@@ -829,18 +856,21 @@ interface OrderShippingData {
 ```
 
 #### EasyPost Integration
+
 - **Rate Shopping**: Automatically fetches rates from all available carriers
 - **Shipment Creation**: Generates tracking numbers and shipping labels
 - **Real-time Tracking**: Updates order status based on carrier tracking events
 - **Fallback System**: Mock rates when API is unavailable for development
 
 ### 🛒 Guest Checkout System
+
 - **No Account Required**: Complete purchases without user registration
 - **Document Validation**: Mandatory Colombian ID validation (CC, CE, PA, TI)
 - **Address Validation**: Colombian state/department selection and postal code verification
 - **Temporary User Creation**: Creates temporary user records for order management
 
 ### 📦 Returns & Refunds
+
 - **30-Day Return Window**: Automatic calculation from delivery date
 - **Reason Tracking**: Detailed return reason collection and storage
 - **Automated Refunds**: Integration with existing MercadoPago refund system
@@ -849,12 +879,14 @@ interface OrderShippingData {
 ### 🌐 API Endpoints - Logistics
 
 #### Shipping Management
+
 - `POST /api/v1/orders/:id/shipping-options` - Get dynamic shipping rates for order
 - `POST /api/v1/orders/:id/confirm-shipping` - Confirm selected shipping method
 - `GET /api/v1/orders/:id/tracking` - Get real-time tracking information
 - `PUT /api/v1/orders/:id/shipping-status` - Update shipping status (seller/admin)
 
 #### Returns Management
+
 - `POST /api/v1/orders/:id/return` - Request return for delivered order
 - `PUT /api/v1/orders/:id/process-return` - Process return (approve/reject)
 - `GET /api/v1/returns` - Get all return requests (filtered by seller)
@@ -862,25 +894,30 @@ interface OrderShippingData {
 - `GET /api/v1/returns/stats` - Get return statistics and analytics
 
 #### Guest Checkout
+
 - `POST /api/v1/orders/guest` - Create order for guest user
 - All existing shipping and payment endpoints work with guest orders
 
 ### 💰 Cost Structure
+
 - **Shipping Costs**: Dynamically calculated based on package dimensions and destination
 - **Return Handling**: Free returns within 30-day window (cost absorbed by seller)
 - **EasyPost Fees**: Standard API fees for rate calculation and tracking
 
 ### 📊 Analytics & Reporting
+
 - **Shipping Performance**: Track delivery times, carrier performance, and costs
 - **Return Analytics**: Monitor return rates, reasons, and seller approval rates
 - **Guest Conversion**: Track guest checkout completion rates and user conversion
 
 ### 🔐 Security & Validation
+
 - **Document Verification**: Validates Colombian ID formats and patterns
 - **Address Validation**: Ensures complete and valid Colombian addresses
 - **Rate Protection**: Prevents rate manipulation through server-side validation
 
 ### 📺 Live Shopping Implementation Files
+
 - `backend/src/live/live.entity.ts` - Live stream entity with affiliate support
 - `backend/src/live/live.service.ts` - Live streaming business logic with host type handling
 - `backend/src/live/live.controller.ts` - API endpoints for both seller and affiliate streams
@@ -893,14 +930,17 @@ interface OrderShippingData {
 - `mobile/src/screens/live/LiveStreamScreen.tsx` - Live stream viewing with purchase attribution
 
 ### 📱 Mobile Implementation Files
+
 - `mobile/src/screens/checkout/ShippingOptionsScreen.tsx` - Dynamic rate selection
 - `mobile/src/screens/checkout/GuestCheckoutScreen.tsx` - Guest checkout with validation
 - `mobile/src/screens/orders/OrderTrackingScreen.tsx` - Real-time order tracking
 
 ### 🖥️ Seller Panel Files
+
 - `seller-panel/app/dashboard/orders/page.tsx` - Complete order management dashboard
 
 ### ⚙️ Environment Configuration
+
 ```bash
 # Required for logistics functionality
 EASYPOST_API_KEY=EZAK_your_easypost_api_key_here
@@ -912,6 +952,7 @@ MERCAPAGO_ACCESS_TOKEN=your-mercadopago-access-token
 ```
 
 ### 🚀 Deployment Notes
+
 - EasyPost requires production API keys for live shipping rates
 - Colombian carrier integration optimized (Servientrega, Coordinadora primary)
 - Database migration required for new Order entity fields
@@ -922,6 +963,7 @@ MERCAPAGO_ACCESS_TOKEN=your-mercadopago-access-token
 ### Creating Live Streams
 
 #### Seller Live Stream
+
 ```javascript
 // Create seller live stream via API
 POST /api/v1/live/streams
@@ -934,6 +976,7 @@ POST /api/v1/live/streams
 ```
 
 #### Affiliate Live Stream
+
 ```javascript
 // Create affiliate live stream via API
 POST /api/v1/live/affiliate/streams
@@ -947,6 +990,7 @@ POST /api/v1/live/affiliate/streams
 ```
 
 ### Purchase Attribution Flow
+
 ```javascript
 // Mobile app: User purchases during affiliate live stream
 // Order automatically includes:
@@ -962,6 +1006,7 @@ POST /api/v1/live/affiliate/streams
 ```
 
 ### WebSocket Integration
+
 ```javascript
 // Real-time chat and viewer tracking
 socket.emit('joinStream', {
@@ -973,7 +1018,7 @@ socket.emit('joinStream', {
 socket.emit('streamPurchase', {
   streamId: 'stream_789',
   productId: 'product_456',
-  affiliateId: 'affiliate_456'  // For attribution
+  affiliateId: 'affiliate_456' // For attribution
 });
 ```
 
@@ -982,28 +1027,33 @@ socket.emit('streamPurchase', {
 ### 📱 **Completed Phases (1-6)**
 
 #### **Phase 1: Foundation & API Integration** ✅
+
 - API services layer with Axios
 - State management (Cart, Products, Auth contexts)
 - Custom hooks (useApi, useCart, useProducts)
 
 #### **Phase 2: Core Shopping Features** ✅
+
 - Product catalog with search and filters
 - Shopping cart with persistence
 - User profile and order management
 
 #### **Phase 3: Payment & Logistics** ✅
+
 - MercadoPago integration
 - Crypto payments (USDC)
 - GSHOP token wallet
 - Shipping options and tracking
 
 #### **Phase 4: Live Shopping & Social** ✅
+
 - Live streaming with WebSocket chat
 - Wishlist and reviews system
 - Social sharing features
 - Follow system for sellers/affiliates
 
 #### **Phase 5: Advanced Features** ✅
+
 - AI-powered recommendations
 - Trending products discovery
 - Affiliate dashboard and tools
@@ -1011,6 +1061,7 @@ socket.emit('streamPurchase', {
 - Link generation
 
 #### **Phase 6: Polish & Optimization** ✅
+
 - **Performance Optimizations**:
   - Image caching with `CachedImage` component
   - Lazy loading with `LazyLoadView`
@@ -1045,6 +1096,7 @@ socket.emit('streamPurchase', {
 ### 📊 **Mobile Development Progress: 87% Complete (54/62 tasks)**
 
 ### 🎯 **Next Phase: Deployment & Production** (Phase 7)
+
 - Environment variables configuration
 - Analytics integration
 - Push notifications
@@ -1055,6 +1107,7 @@ socket.emit('streamPurchase', {
 ### 📱 **Mobile App Key Files**
 
 #### Performance & Optimization
+
 - `mobile/src/components/ui/CachedImage.tsx` - Image caching
 - `mobile/src/components/ui/LazyLoadView.tsx` - Lazy loading
 - `mobile/src/components/ui/Skeleton.tsx` - Skeleton screens
@@ -1070,6 +1123,7 @@ socket.emit('streamPurchase', {
 - `mobile/src/utils/bundleOptimization.ts` - Bundle optimization helpers
 
 #### Error Handling & Testing
+
 - `mobile/src/components/ErrorBoundary.tsx` - Error boundary
 - `mobile/src/utils/crashReporting.ts` - Crash reporter
 - `mobile/src/utils/errorHandler.ts` - Error handling utilities
@@ -1080,12 +1134,14 @@ socket.emit('streamPurchase', {
 - `mobile/jest.setup.js` - Test setup
 
 #### Build Configuration
+
 - `mobile/app.json` - Expo config with Hermes & optimization
 - `mobile/metro.config.js` - Metro bundler optimization
 - `mobile/babel.config.js` - Babel optimization plugins
 - `mobile/OPTIMIZATION_GUIDE.md` - Complete optimization guide
 
 ### 🚀 **Performance Targets Achieved**
+
 - ⚡ Image caching with filesystem persistence
 - 💀 Animated skeleton screens for smooth UX
 - 📴 Offline-first architecture with auto-sync
@@ -1094,18 +1150,22 @@ socket.emit('streamPurchase', {
 - 📦 Hermes engine enabled (2x faster startup)
 - 🔄 Smart navigation with deferred loading
 - 📊 Performance monitoring built-in
+
 ## 🔮 Pending Features & Future Implementation
 
 ### GSHOP Token Economy System (Phase 3 - Partially Implemented)
+
 **Status**: Backend implemented, mobile integration pending
 
 **What's Implemented**:
+
 - Backend token service with wallet management (`backend/src/token/`)
 - Database entities: `gshop_wallets`, `gshop_transactions`, `token_rewards`
 - API endpoints for wallet creation, balance queries, and transfers
 - Token circulation metrics and analytics
 
 **What's Pending**:
+
 - Mobile app wallet integration removed temporarily due to:
   - Missing `token_metrics` database table causing 500 errors
   - Incomplete entity relations in `GshopWallet` (transactions, rewards, topups)
@@ -1115,12 +1175,14 @@ socket.emit('streamPurchase', {
 - Wallet top-up functionality via fiat/crypto
 
 **Implementation Notes**:
+
 - `PaymentMethodSelection` component updated to exclude GSHOP tokens option
 - Backend wallet auto-creation works but fails on circulation metrics update
 - Fixed with try-catch in `updateCirculation()` method but table still needs migration
 - Payment expiration system (30 minutes) implemented and working
 
 **To Resume Development**:
+
 1. Create missing `token_metrics` table migration
 2. Add proper relations to `GshopWallet` entity (OneToMany with transactions, rewards, topups)
 3. Re-enable GSHOP tokens in `PaymentMethodSelection.tsx`
@@ -1128,7 +1190,7 @@ socket.emit('streamPurchase', {
 5. Test wallet balance updates and transaction history
 
 **Related Files**:
+
 - Backend: `backend/src/token/token.service.ts`, `backend/src/token/token.entity.ts`
 - Mobile: `mobile/src/components/checkout/PaymentMethodSelection.tsx` (tokens section commented out)
 - Migration needed: Create `1704XXXXX-CreateTokenMetricsTable.ts`
-
