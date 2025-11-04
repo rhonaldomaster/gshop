@@ -6,6 +6,7 @@ import { SellersController } from './sellers.controller'
 import { SellersService } from './sellers.service'
 import { SellersUploadService } from './sellers-upload.service'
 import { Seller } from './entities/seller.entity'
+import { EmailModule } from '../email/email.module'
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { Seller } from './entities/seller.entity'
       signOptions: { expiresIn: '7d' },
     }),
     ConfigModule,
+    EmailModule,
   ],
   controllers: [SellersController],
   providers: [SellersService, SellersUploadService],

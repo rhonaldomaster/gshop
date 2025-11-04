@@ -7,6 +7,7 @@ import { Seller, SellerType, DocumentType, VerificationStatus } from './entities
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
+import { EmailService } from '../email/email.service'
 
 @Injectable()
 export class SellersService {
@@ -14,6 +15,7 @@ export class SellersService {
     @InjectRepository(Seller)
     private sellersRepository: Repository<Seller>,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async register(createSellerDto: CreateSellerDto) {
@@ -212,8 +214,8 @@ export class SellersService {
   async verifySeller(
     sellerId: string,
     adminId: string,
-    approved: boolean,
-    notes?: string,
+    action: 'approve' | 'reject' | 'needs_update',
+    message?: string,
   ): Promise<Seller> {
     const seller = await this.sellersRepository.findOne({ where: { id: sellerId } })
 
@@ -221,7 +223,11 @@ export class SellersService {
       throw new NotFoundException('Vendedor no encontrado')
     }
 
-    if (approved) {
+    seller.reviewedBy = adminId
+    seller.adminMessage = message || null
+    seller.adminMessageDate = message ? new Date() : null
+
+    if (action === 'approve') {
       seller.verificationStatus = VerificationStatus.APPROVED
       seller.rutVerified = true
       seller.rutVerificationDate = new Date()
@@ -229,10 +235,31 @@ export class SellersService {
       seller.verifiedAt = new Date()
       seller.verifiedBy = adminId
       seller.status = 'approved'
-    } else {
+
+      // Enviar email de aprobación
+      await this.emailService.sendSellerApprovalEmail(seller.email, seller.businessName)
+    } else if (action === 'reject') {
       seller.verificationStatus = VerificationStatus.REJECTED
-      seller.verificationNotes = notes || 'Documentos rechazados'
+      seller.verificationNotes = message || 'Documentos rechazados'
       seller.status = 'rejected'
+
+      // Enviar email de rechazo
+      await this.emailService.sendSellerRejectionEmail(
+        seller.email,
+        seller.businessName,
+        message || 'No se especificó un motivo',
+      )
+    } else if (action === 'needs_update') {
+      seller.verificationStatus = VerificationStatus.NEEDS_UPDATE
+      seller.verificationNotes = message || 'Se requiere actualización de datos'
+      seller.status = 'pending'
+
+      // Enviar email solicitando actualización
+      await this.emailService.sendSellerUpdateRequestEmail(
+        seller.email,
+        seller.businessName,
+        message || 'Se requiere actualización de algunos datos',
+      )
     }
 
     return this.sellersRepository.save(seller)
@@ -241,10 +268,20 @@ export class SellersService {
   async getPendingVerifications(): Promise<Seller[]> {
     return this.sellersRepository.find({
       where: [
+        { verificationStatus: VerificationStatus.PENDING },
         { verificationStatus: VerificationStatus.DOCUMENTS_UPLOADED },
         { verificationStatus: VerificationStatus.UNDER_REVIEW },
+        { verificationStatus: VerificationStatus.NEEDS_UPDATE },
       ],
       order: { createdAt: 'ASC' },
     })
+  }
+
+  async getAllSellers(): Promise<Seller[]> {
+    const sellers = await this.sellersRepository.find({
+      order: { createdAt: 'DESC' },
+    })
+    // Remove passwords from all sellers
+    return sellers.map(({ passwordHash, ...seller }) => seller) as any[]
   }
 }

@@ -227,6 +227,7 @@ export class ProductsService {
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.seller', 'seller')
       .leftJoinAndSelect('product.category', 'category')
+      .where('seller.verificationStatus = :approvedStatus', { approvedStatus: 'approved' })
       .select([
         'product',
         'seller.id',

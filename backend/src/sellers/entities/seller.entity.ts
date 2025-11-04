@@ -24,6 +24,7 @@ export enum VerificationStatus {
   UNDER_REVIEW = 'under_review',
   APPROVED = 'approved',
   REJECTED = 'rejected',
+  NEEDS_UPDATE = 'needs_update',
 }
 
 @Entity('sellers')
@@ -129,6 +130,16 @@ export class Seller {
 
   @Column({ nullable: true })
   verifiedBy: string
+
+  // Mensajes del admin al vendedor
+  @Column({ type: 'text', nullable: true })
+  adminMessage: string
+
+  @Column({ type: 'timestamp', nullable: true })
+  adminMessageDate: Date
+
+  @Column({ nullable: true })
+  reviewedBy: string
 
   // Estado del vendedor (legacy)
   @Column({ type: 'enum', enum: ['pending', 'approved', 'rejected', 'suspended'], default: 'pending' })

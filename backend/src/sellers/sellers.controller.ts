@@ -94,6 +94,14 @@ export class SellersController {
     }
   }
 
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all sellers (Admin only)' })
+  async getAllSellers() {
+    return this.sellersService.getAllSellers()
+  }
+
   @Get('admin/pending-verifications')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -102,10 +110,36 @@ export class SellersController {
     return this.sellersService.getPendingVerifications()
   }
 
+  @Put(':id/review')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Review seller application - approve, reject, or request update (Admin only)' })
+  async reviewSeller(
+    @Param('id') sellerId: string,
+    @Body('action') action: 'approve' | 'reject' | 'needs_update',
+    @Body('message') message: string,
+    @Request() req,
+  ) {
+    const adminId = req.user.id || req.user.sellerId
+    const seller = await this.sellersService.verifySeller(sellerId, adminId, action, message)
+
+    const messages = {
+      approve: 'Vendedor aprobado exitosamente',
+      reject: 'Vendedor rechazado',
+      needs_update: 'Solicitud de actualización enviada al vendedor',
+    }
+
+    return {
+      message: messages[action],
+      seller,
+    }
+  }
+
+  // Keep old endpoint for backward compatibility
   @Put(':id/verify')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Verify or reject seller (Admin only)' })
+  @ApiOperation({ summary: 'Verify or reject seller (Admin only) - DEPRECATED, use /review instead' })
   async verifySeller(
     @Param('id') sellerId: string,
     @Body('approved') approved: boolean,
@@ -113,7 +147,8 @@ export class SellersController {
     @Request() req,
   ) {
     const adminId = req.user.id || req.user.sellerId
-    const seller = await this.sellersService.verifySeller(sellerId, adminId, approved, notes)
+    const action = approved ? 'approve' : 'reject'
+    const seller = await this.sellersService.verifySeller(sellerId, adminId, action, notes)
 
     return {
       message: approved ? 'Vendedor aprobado exitosamente' : 'Vendedor rechazado',
