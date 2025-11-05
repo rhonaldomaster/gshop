@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import DashboardLayout from '@/components/DashboardLayout'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
@@ -33,6 +34,7 @@ function calculateVatAmount(priceWithVat: number, vatType: VatType): number {
 }
 
 export default function EditProductPage() {
+  const t = useTranslations('products')
   const { data: session } = useSession()
   const router = useRouter()
   const params = useParams()
@@ -80,7 +82,7 @@ export default function EditProductPage() {
         })
       } catch (error) {
         console.error('Error loading product:', error)
-        alert('Failed to load product')
+        alert(t('errorLoading'))
       } finally {
         setLoadingProduct(false)
       }
@@ -121,11 +123,11 @@ export default function EditProductPage() {
         throw new Error('Failed to update product')
       }
 
-      alert('Product updated successfully!')
+      alert(t('productUpdated'))
       router.push('/dashboard/products')
     } catch (error) {
       console.error('Error updating product:', error)
-      alert('Failed to update product. Please try again.')
+      alert(t('errorUpdating'))
     } finally {
       setLoading(false)
     }
@@ -142,7 +144,7 @@ export default function EditProductPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading product...</p>
+            <p className="mt-4 text-gray-600">{t('loading')}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -158,20 +160,20 @@ export default function EditProductPage() {
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Products
+            {t('backToProducts')}
           </Link>
         </div>
 
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Product</h1>
-          <p className="text-gray-600">Update product information</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('editProduct')}</h1>
+          <p className="text-gray-600">{t('updateProductInfo')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-6">
           {/* Product Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-              Product Name *
+              {t('productName')} *
             </label>
             <input
               type="text"
@@ -181,14 +183,14 @@ export default function EditProductPage() {
               onChange={handleChange}
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder="e.g., Premium Wireless Headphones"
+              placeholder={t('productNamePlaceholder')}
             />
           </div>
 
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-              Description *
+              {t('description')} *
             </label>
             <textarea
               id="description"
@@ -198,14 +200,14 @@ export default function EditProductPage() {
               required
               rows={4}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder="Describe your product..."
+              placeholder={t('descriptionPlaceholder')}
             />
           </div>
 
           {/* VAT Type Selector */}
           <div>
             <label htmlFor="vatType" className="block text-sm font-medium text-gray-700">
-              Tipo de IVA (Colombian Tax Category) *
+              {t('vatType')} *
             </label>
             <select
               id="vatType"
@@ -215,20 +217,20 @@ export default function EditProductPage() {
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
             >
-              <option value="excluido">Excluido (0% - Sin derecho a descuentos)</option>
-              <option value="exento">Exento (0% - Con derecho a descuentos)</option>
-              <option value="reducido">Reducido (5%)</option>
-              <option value="general">General (19%)</option>
+              <option value="excluido">{t('vatTypes.excluido')}</option>
+              <option value="exento">{t('vatTypes.exento')}</option>
+              <option value="reducido">{t('vatTypes.reducido')}</option>
+              <option value="general">{t('vatTypes.general')}</option>
             </select>
             <p className="mt-1 text-sm text-gray-500">
-              Selecciona la categoría de IVA según la ley colombiana
+              {t('vatTypeHelp')}
             </p>
           </div>
 
           {/* Price with VAT */}
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-              Precio CON IVA incluido (COP) *
+              {t('priceWithVat')} *
             </label>
             <input
               type="number"
@@ -240,29 +242,29 @@ export default function EditProductPage() {
               min="0"
               step="100"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder="e.g., 119000"
+              placeholder={t('pricePlaceholder')}
             />
             <p className="mt-1 text-sm text-gray-500">
-              Este es el precio que verán los clientes (IVA incluido)
+              {t('priceHelp')}
             </p>
 
             {/* Price Breakdown */}
             {price > 0 && (
               <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
                 <p className="text-sm font-semibold text-blue-900 mb-2">
-                  Desglose de Precio:
+                  {t('priceBreakdown')}:
                 </p>
                 <div className="space-y-1 text-sm text-blue-800">
                   <div className="flex justify-between">
-                    <span>Base sin IVA:</span>
+                    <span>{t('baseWithoutVat')}:</span>
                     <span className="font-medium">${basePrice.toFixed(2)} COP</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>IVA ({(vatRate * 100).toFixed(0)}%):</span>
+                    <span>{t('vat')} ({(vatRate * 100).toFixed(0)}%):</span>
                     <span className="font-medium">${vatAmount.toFixed(2)} COP</span>
                   </div>
                   <div className="flex justify-between border-t border-blue-300 pt-1 mt-1">
-                    <span className="font-semibold">Precio final:</span>
+                    <span className="font-semibold">{t('finalPrice')}:</span>
                     <span className="font-bold">${price.toFixed(2)} COP</span>
                   </div>
                 </div>
@@ -273,7 +275,7 @@ export default function EditProductPage() {
           {/* Category */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-              Category *
+              {t('category')} *
             </label>
             <input
               type="text"
@@ -283,14 +285,14 @@ export default function EditProductPage() {
               onChange={handleChange}
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder="e.g., Electronics"
+              placeholder={t('categoryPlaceholder')}
             />
           </div>
 
           {/* SKU */}
           <div>
             <label htmlFor="sku" className="block text-sm font-medium text-gray-700">
-              SKU (Stock Keeping Unit) *
+              {t('sku')} *
             </label>
             <input
               type="text"
@@ -300,14 +302,14 @@ export default function EditProductPage() {
               onChange={handleChange}
               required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder="e.g., WH-001"
+              placeholder={t('skuPlaceholder')}
             />
           </div>
 
           {/* Stock */}
           <div>
             <label htmlFor="stock" className="block text-sm font-medium text-gray-700">
-              Stock Quantity *
+              {t('stock')} *
             </label>
             <input
               type="number"
@@ -318,7 +320,7 @@ export default function EditProductPage() {
               required
               min="0"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder="e.g., 100"
+              placeholder={t('stockPlaceholder')}
             />
           </div>
 
@@ -328,14 +330,14 @@ export default function EditProductPage() {
               href="/dashboard/products"
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              Cancel
+              {t('cancel')}
             </Link>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {loading ? 'Updating...' : 'Update Product'}
+              {loading ? t('updating') : t('updateProduct')}
             </button>
           </div>
         </form>

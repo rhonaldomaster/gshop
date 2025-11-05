@@ -1,10 +1,12 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 
 export default function RecentOrders() {
+  const t = useTranslations('dashboard')
   const { data: session } = useSession()
 
   const { data: orders, isLoading } = useQuery({
@@ -24,7 +26,7 @@ export default function RecentOrders() {
   if (isLoading) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Orders</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">{t('recentOrders')}</h3>
         <div className="animate-pulse space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-4 bg-gray-200 rounded"></div>
@@ -37,7 +39,7 @@ export default function RecentOrders() {
   return (
     <div className="bg-white shadow rounded-lg">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Recent Orders</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t('recentOrders')}</h3>
       </div>
       <div className="flow-root">
         <ul className="divide-y divide-gray-200">
@@ -47,10 +49,10 @@ export default function RecentOrders() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      Order #{order.id.slice(-8)}
+                      Pedido #{order.id.slice(-8)}
                     </p>
                     <p className="text-sm text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString()}
+                      {new Date(order.createdAt).toLocaleDateString('es-CO')}
                     </p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -70,7 +72,7 @@ export default function RecentOrders() {
             ))
           ) : (
             <li className="px-6 py-8 text-center">
-              <p className="text-gray-500">No orders yet</p>
+              <p className="text-gray-500">{t('noOrdersYet')}</p>
             </li>
           )}
         </ul>
@@ -81,7 +83,7 @@ export default function RecentOrders() {
             href="/dashboard/orders"
             className="text-sm font-medium text-blue-600 hover:text-blue-500"
           >
-            View all orders →
+            {t('viewAll')} →
           </Link>
         </div>
       )}

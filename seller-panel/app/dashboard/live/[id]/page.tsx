@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import {
   Play,
   Square,
@@ -67,6 +68,7 @@ interface Product {
 }
 
 export default function LiveStreamDetailPage() {
+  const t = useTranslations('live')
   const { id } = useParams()
   const { data: session } = useSession()
   const [stream, setStream] = useState<LiveStream | null>(null)
@@ -267,7 +269,7 @@ export default function LiveStreamDetailPage() {
                 className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 <Square className="h-4 w-4" />
-                <span>End Stream</span>
+                <span>{t('endStream')}</span>
               </button>
             )}
           </div>
@@ -365,13 +367,13 @@ export default function LiveStreamDetailPage() {
       {/* Products Section */}
       <div className="bg-white rounded-lg shadow">
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Stream Products</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('streamProducts')}</h3>
           <button
             onClick={() => setShowAddProduct(true)}
             className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Product</span>
+            <span>{t('addProduct')}</span>
           </button>
         </div>
 
@@ -422,13 +424,13 @@ export default function LiveStreamDetailPage() {
           {(!stream.products || stream.products.length === 0) && (
             <div className="p-12 text-center">
               <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No products added</h3>
-              <p className="text-gray-600 mb-4">Add products to showcase during your live stream</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noProducts')}</h3>
+              <p className="text-gray-600 mb-4">{t('noProductsDesc')}</p>
               <button
                 onClick={() => setShowAddProduct(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
               >
-                Add Product
+                {t('addProduct')}
               </button>
             </div>
           )}
@@ -460,6 +462,7 @@ function AddProductModal({
   onClose: () => void
   onAdd: (productId: string, specialPrice?: number) => void
 }) {
+  const t = useTranslations('live')
   const [selectedProduct, setSelectedProduct] = useState<string>('')
   const [specialPrice, setSpecialPrice] = useState<string>('')
 
@@ -476,12 +479,12 @@ function AddProductModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Product to Stream</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('addProductToStream')}</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select Product
+              {t('selectProduct')}
             </label>
             <select
               value={selectedProduct}
@@ -489,7 +492,7 @@ function AddProductModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             >
-              <option value="">Choose a product</option>
+              <option value="">{t('chooseProduct')}</option>
               {availableProducts.map((product) => (
                 <option key={product.id} value={product.id}>
                   {product.name} - ${product.price}
@@ -500,7 +503,7 @@ function AddProductModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Special Live Price (Optional)
+              {t('specialLivePrice')}
             </label>
             <input
               type="number"
@@ -508,7 +511,7 @@ function AddProductModal({
               value={specialPrice}
               onChange={(e) => setSpecialPrice(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter special price"
+              placeholder={t('specialPricePlaceholder')}
             />
           </div>
 
@@ -518,14 +521,14 @@ function AddProductModal({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={!selectedProduct}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
-              Add Product
+              {t('addProduct')}
             </button>
           </div>
         </form>

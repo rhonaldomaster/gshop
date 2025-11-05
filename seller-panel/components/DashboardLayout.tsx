@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { signOut, useSession } from 'next-auth/react'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -18,18 +19,6 @@ import {
   Video,
   Truck
 } from 'lucide-react'
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
-  { name: 'Products', href: '/dashboard/products', icon: Package },
-  { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
-  { name: 'Shipping', href: '/dashboard/shipping', icon: Truck },
-  { name: 'Live Streaming', href: '/dashboard/live', icon: Video },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: TrendingUp },
-  { name: 'Affiliates', href: '/dashboard/affiliates', icon: Users },
-  { name: 'Payments', href: '/dashboard/payments', icon: DollarSign },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-]
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -58,14 +47,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <X className="h-6 w-6 text-white" />
             </button>
           </div>
-          <SidebarContent navigation={navigation} pathname={pathname} onSignOut={handleSignOut} />
+          <SidebarContent pathname={pathname} onSignOut={handleSignOut} />
         </div>
       </div>
 
       {/* Desktop sidebar */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-64">
-          <SidebarContent navigation={navigation} pathname={pathname} onSignOut={handleSignOut} />
+          <SidebarContent pathname={pathname} onSignOut={handleSignOut} />
         </div>
       </div>
 
@@ -92,15 +81,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 }
 
 function SidebarContent({
-  navigation,
   pathname,
   onSignOut
 }: {
-  navigation: any[],
   pathname: string,
   onSignOut: () => void
 }) {
   const { data: session } = useSession()
+  const t = useTranslations('navigation')
+
+  const navigation = [
+    { name: t('dashboard'), href: '/dashboard', icon: Home },
+    { name: t('products'), href: '/dashboard/products', icon: Package },
+    { name: t('orders'), href: '/dashboard/orders', icon: ShoppingCart },
+    { name: t('shipping'), href: '/dashboard/shipping', icon: Truck },
+    { name: t('liveStreaming'), href: '/dashboard/live', icon: Video },
+    { name: t('analytics'), href: '/dashboard/analytics', icon: TrendingUp },
+    { name: t('affiliates'), href: '/dashboard/affiliates', icon: Users },
+    { name: t('payments'), href: '/dashboard/payments', icon: DollarSign },
+    { name: t('settings'), href: '/dashboard/settings', icon: Settings },
+  ]
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-white shadow">
@@ -145,6 +145,7 @@ function SidebarContent({
           <button
             onClick={onSignOut}
             className="ml-3 flex items-center justify-center h-8 w-8 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            title={t('logout')}
           >
             <LogOut className="h-4 w-4" />
           </button>

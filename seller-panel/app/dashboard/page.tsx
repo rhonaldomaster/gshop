@@ -1,6 +1,7 @@
 'use client'
 
 import { useSession } from 'next-auth/react'
+import { useTranslations } from 'next-intl'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -11,6 +12,7 @@ import QuickActions from '@/components/dashboard/QuickActions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function DashboardPage() {
+  const t = useTranslations('dashboard')
   const { data: session, status } = useSession()
   const router = useRouter()
 
@@ -66,31 +68,31 @@ export default function DashboardPage() {
       pending: {
         color: 'bg-gray-50 border-gray-200 text-gray-800',
         icon: '⏳',
-        title: 'Cuenta Pendiente de Verificación',
+        title: t('verificationStatus.pending'),
         message: 'Tu cuenta está en proceso de revisión. Te notificaremos por email cuando esté aprobada.',
       },
       documents_uploaded: {
         color: 'bg-blue-50 border-blue-200 text-blue-800',
         icon: '📄',
-        title: 'Documentos Recibidos',
+        title: t('verificationStatus.documentsUploaded'),
         message: 'Hemos recibido tus documentos y estamos revisándolos. Te notificaremos pronto.',
       },
       under_review: {
         color: 'bg-yellow-50 border-yellow-200 text-yellow-800',
         icon: '🔍',
-        title: 'En Revisión',
+        title: t('verificationStatus.underReview'),
         message: 'Tu cuenta está siendo revisada por nuestro equipo. Esto puede tomar 24-48 horas.',
       },
       needs_update: {
         color: 'bg-orange-50 border-orange-200 text-orange-800',
         icon: '⚠️',
-        title: 'Se Requiere Actualización',
+        title: t('verificationStatus.needsUpdate'),
         message: profile.adminMessage || 'Se necesita actualizar algunos datos de tu cuenta.',
       },
       rejected: {
         color: 'bg-red-50 border-red-200 text-red-800',
         icon: '❌',
-        title: 'Cuenta Rechazada',
+        title: t('verificationStatus.rejected'),
         message: profile.adminMessage || 'Tu solicitud no pudo ser aprobada. Contacta a soporte para más información.',
       },
     }
@@ -125,10 +127,10 @@ export default function DashboardPage() {
         <Card className="gshop-seller-header border-0 shadow-lg">
           <CardHeader className="pb-4">
             <CardTitle className="text-3xl font-bold">
-              Welcome back, {session?.seller?.businessName || 'Seller'}! 🏪
+              {t('welcome')}, {session?.seller?.businessName || 'Seller'}! 🏪
             </CardTitle>
             <p className="text-white/90 text-lg">
-              Here's what's happening with your store today.
+              {t('welcomeMessage')}
             </p>
           </CardHeader>
         </Card>

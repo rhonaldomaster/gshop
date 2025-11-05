@@ -1,34 +1,37 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { Plus, Package, BarChart3, DollarSign } from 'lucide-react'
 
 export default function QuickActions() {
+  const t = useTranslations('dashboard')
+
   const actions = [
     {
-      title: 'Add Product',
-      description: 'List a new product in your store',
+      title: t('addProduct'),
+      description: t('addProductDesc'),
       href: '/dashboard/products/new',
       icon: Plus,
       color: 'bg-blue-500 hover:bg-blue-600',
     },
     {
-      title: 'Manage Products',
-      description: 'Edit or remove existing products',
+      title: t('manageProducts'),
+      description: t('manageProductsDesc'),
       href: '/dashboard/products',
       icon: Package,
       color: 'bg-green-500 hover:bg-green-600',
     },
     {
-      title: 'View Analytics',
-      description: 'See your sales performance',
+      title: t('viewAnalytics'),
+      description: t('viewAnalyticsDesc'),
       href: '/dashboard/analytics',
       icon: BarChart3,
       color: 'bg-purple-500 hover:bg-purple-600',
     },
     {
-      title: 'Request Withdrawal',
-      description: 'Cash out your earnings',
+      title: t('requestWithdrawal'),
+      description: t('requestWithdrawalDesc'),
       href: '/dashboard/payments',
       icon: DollarSign,
       color: 'bg-emerald-500 hover:bg-emerald-600',
@@ -38,7 +41,7 @@ export default function QuickActions() {
   return (
     <div className="bg-white shadow rounded-lg">
       <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+        <h3 className="text-lg font-medium text-gray-900">{t('quickActions')}</h3>
       </div>
       <div className="p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

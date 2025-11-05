@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { Package, DollarSign, TrendingUp, Clock } from 'lucide-react'
 
 interface StatsCardsProps {
@@ -14,27 +15,29 @@ interface StatsCardsProps {
 }
 
 export default function StatsCards({ stats }: StatsCardsProps) {
+  const t = useTranslations('dashboard')
+
   const cards = [
     {
-      title: 'Total Products',
+      title: t('totalProducts'),
       value: stats?.totalProducts || 0,
       icon: Package,
       color: 'bg-blue-500',
     },
     {
-      title: 'Total Earnings',
+      title: t('totalEarnings'),
       value: `$${(stats?.totalEarnings || 0).toFixed(2)}`,
       icon: TrendingUp,
       color: 'bg-green-500',
     },
     {
-      title: 'Available Balance',
+      title: t('availableBalance'),
       value: `$${(stats?.availableBalance || 0).toFixed(2)}`,
       icon: DollarSign,
       color: 'bg-emerald-500',
     },
     {
-      title: 'Pending Balance',
+      title: t('pendingBalance'),
       value: `$${(stats?.pendingBalance || 0).toFixed(2)}`,
       icon: Clock,
       color: 'bg-orange-500',

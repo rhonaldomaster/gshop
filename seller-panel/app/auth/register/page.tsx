@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
 interface RegistrationData {
@@ -20,6 +21,7 @@ interface RegistrationData {
 }
 
 export default function RegisterPage() {
+  const t = useTranslations('auth.register')
   const [formData, setFormData] = useState<RegistrationData>({
     email: '',
     password: '',
@@ -49,11 +51,11 @@ export default function RegisterPage() {
   const handleNext = () => {
     if (step === 1) {
       if (!formData.email || !formData.password || formData.password !== formData.confirmPassword) {
-        setError('Please fill all fields and ensure passwords match')
+        setError(t('errorPasswordMatch'))
         return
       }
       if (formData.password.length < 8) {
-        setError('Password must be at least 8 characters')
+        setError(t('errorPasswordLength'))
         return
       }
     }
@@ -105,10 +107,10 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create Seller Account
+            {t('title')}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Step {step} of 2
+            {t('step')} {step} {t('of')} 2
           </p>
         </div>
 
@@ -121,7 +123,7 @@ export default function RegisterPage() {
                   type="email"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Email address"
+                  placeholder={t('emailPlaceholder')}
                   value={formData.email}
                   onChange={handleChange}
                 />
@@ -132,7 +134,7 @@ export default function RegisterPage() {
                   type="password"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Password (min 8 characters)"
+                  placeholder={t('passwordPlaceholder')}
                   value={formData.password}
                   onChange={handleChange}
                 />
@@ -143,7 +145,7 @@ export default function RegisterPage() {
                   type="password"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Confirm password"
+                  placeholder={t('confirmPasswordPlaceholder')}
                   value={formData.confirmPassword}
                   onChange={handleChange}
                 />
@@ -160,7 +162,7 @@ export default function RegisterPage() {
                 onClick={handleNext}
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Next: Business Information
+                {t('next')}
               </button>
             </div>
 
@@ -169,7 +171,7 @@ export default function RegisterPage() {
                 href="/auth/login"
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
-                Already have an account? Sign in
+                {t('hasAccount')} {t('signIn')}
               </Link>
             </div>
           </div>
@@ -184,7 +186,7 @@ export default function RegisterPage() {
                   type="text"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Business name"
+                  placeholder={t('businessName')}
                   value={formData.businessName}
                   onChange={handleChange}
                 />
@@ -195,7 +197,7 @@ export default function RegisterPage() {
                   type="text"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Owner full name"
+                  placeholder={t('ownerName')}
                   value={formData.ownerName}
                   onChange={handleChange}
                 />
@@ -211,14 +213,14 @@ export default function RegisterPage() {
                   <option value="CC">CC</option>
                   <option value="NIT">NIT</option>
                   <option value="RUT">RUT</option>
-                  <option value="Passport">Passport</option>
+                  <option value="Passport">{t('documentTypes.passport')}</option>
                 </select>
                 <input
                   name="documentNumber"
                   type="text"
                   required
                   className="appearance-none relative block w-2/3 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Document number"
+                  placeholder={t('documentPlaceholder')}
                   value={formData.documentNumber}
                   onChange={handleChange}
                 />
@@ -229,7 +231,7 @@ export default function RegisterPage() {
                   type="tel"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Phone number"
+                  placeholder={t('phonePlaceholder')}
                   value={formData.phone}
                   onChange={handleChange}
                 />
@@ -240,7 +242,7 @@ export default function RegisterPage() {
                   type="text"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Business address"
+                  placeholder={t('addressPlaceholder')}
                   value={formData.address}
                   onChange={handleChange}
                 />
@@ -251,7 +253,7 @@ export default function RegisterPage() {
                   type="text"
                   required
                   className="appearance-none relative block w-1/2 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="City"
+                  placeholder={t('cityPlaceholder')}
                   value={formData.city}
                   onChange={handleChange}
                 />
@@ -260,7 +262,7 @@ export default function RegisterPage() {
                   type="text"
                   required
                   className="appearance-none relative block w-1/2 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Country"
+                  placeholder={t('countryPlaceholder')}
                   value={formData.country}
                   onChange={handleChange}
                 />
@@ -273,16 +275,16 @@ export default function RegisterPage() {
                   value={formData.businessCategory}
                   onChange={handleChange}
                 >
-                  <option value="">Select business category</option>
-                  <option value="fashion">Fashion & Apparel</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="home">Home & Garden</option>
-                  <option value="beauty">Beauty & Personal Care</option>
-                  <option value="sports">Sports & Outdoors</option>
-                  <option value="books">Books & Media</option>
-                  <option value="toys">Toys & Games</option>
-                  <option value="food">Food & Beverages</option>
-                  <option value="other">Other</option>
+                  <option value="">{t('selectCategory')}</option>
+                  <option value="fashion">{t('categories.fashion')}</option>
+                  <option value="electronics">{t('categories.electronics')}</option>
+                  <option value="home">{t('categories.home')}</option>
+                  <option value="beauty">{t('categories.beauty')}</option>
+                  <option value="sports">{t('categories.sports')}</option>
+                  <option value="books">{t('categories.books')}</option>
+                  <option value="toys">{t('categories.toys')}</option>
+                  <option value="food">{t('categories.food')}</option>
+                  <option value="other">{t('categories.other')}</option>
                 </select>
               </div>
             </div>
@@ -297,14 +299,14 @@ export default function RegisterPage() {
                 onClick={() => setStep(1)}
                 className="group relative w-1/3 flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Back
+                {t('back')}
               </button>
               <button
                 type="submit"
                 disabled={isLoading}
                 className="group relative w-2/3 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? t('creatingAccount') : t('createAccount')}
               </button>
             </div>
           </form>

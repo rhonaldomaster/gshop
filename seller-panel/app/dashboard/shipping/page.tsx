@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import DashboardLayout from '@/components/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -55,6 +56,7 @@ interface NewLocation {
 }
 
 export default function ShippingPage() {
+  const t = useTranslations('shipping')
   const { data: session, status } = useSession()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -128,10 +130,10 @@ export default function ShippingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-config'] })
-      toast.success('Configuración de envío actualizada exitosamente')
+      toast.success(t('success'))
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Error al actualizar configuración')
+      toast.error(error.message || t('error'))
     }
   })
 
@@ -157,12 +159,12 @@ export default function ShippingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-config'] })
-      toast.success('Ubicación agregada exitosamente')
+      toast.success(t('locationAdded'))
       setIsAddLocationOpen(false)
       setNewLocation({ city: '', state: '', address: '', isPrimary: false })
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Error al agregar ubicación')
+      toast.error(error.message || t('locationError'))
     }
   })
 
@@ -186,10 +188,10 @@ export default function ShippingPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shipping-config'] })
-      toast.success('Ubicación eliminada exitosamente')
+      toast.success(t('locationRemoved'))
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Error al eliminar ubicación')
+      toast.error(error.message || t('locationRemoveError'))
     }
   })
 
@@ -204,14 +206,14 @@ export default function ShippingPage() {
 
   const handleAddLocation = () => {
     if (!newLocation.city || !newLocation.state) {
-      toast.error('Ciudad y departamento son requeridos')
+      toast.error(t('cityStateRequired'))
       return
     }
     addLocationMutation.mutate(newLocation)
   }
 
   const handleRemoveLocation = (locationId: string) => {
-    if (confirm('¿Estás seguro de eliminar esta ubicación?')) {
+    if (confirm(t('confirmRemoveLocation'))) {
       removeLocationMutation.mutate(locationId)
     }
   }
@@ -230,9 +232,9 @@ export default function ShippingPage() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Configuración de Envío</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona los precios de envío y tus ubicaciones para ofrecer envío local
+            {t('description')}
           </p>
         </div>
 
@@ -241,16 +243,16 @@ export default function ShippingPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5" />
-              Precios de Envío
+              {t('shippingPrices')}
             </CardTitle>
             <CardDescription>
-              Configura tus tarifas de envío local y nacional
+              {t('shippingPricesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="localPrice">Precio Envío Local (COP)</Label>
+                <Label htmlFor="localPrice">{t('localShipping')}</Label>
                 <Input
                   id="localPrice"
                   type="number"
@@ -259,12 +261,12 @@ export default function ShippingPage() {
                   placeholder="5000"
                 />
                 <p className="text-xs text-gray-500">
-                  Precio cuando el comprador está en tu misma ciudad
+                  {t('localShippingDesc')}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nationalPrice">Precio Envío Nacional (COP)</Label>
+                <Label htmlFor="nationalPrice">{t('nationalShipping')}</Label>
                 <Input
                   id="nationalPrice"
                   type="number"
@@ -273,7 +275,7 @@ export default function ShippingPage() {
                   placeholder="15000"
                 />
                 <p className="text-xs text-gray-500">
-                  Precio cuando el comprador está en otra ciudad
+                  {t('nationalShippingDesc')}
                 </p>
               </div>
             </div>
@@ -286,17 +288,17 @@ export default function ShippingPage() {
               />
               <div className="flex-1">
                 <Label htmlFor="freeShipping" className="cursor-pointer">
-                  Habilitar Envío Gratis
+                  {t('enableFreeShipping')}
                 </Label>
                 <p className="text-xs text-gray-500">
-                  Ofrecer envío gratis para compras superiores a un monto
+                  {t('freeShippingDesc')}
                 </p>
               </div>
             </div>
 
             {freeShippingEnabled && (
               <div className="space-y-2 pl-6">
-                <Label htmlFor="freeShippingMin">Monto Mínimo para Envío Gratis (COP)</Label>
+                <Label htmlFor="freeShippingMin">{t('freeShippingMin')}</Label>
                 <Input
                   id="freeShippingMin"
                   type="number"
@@ -314,7 +316,7 @@ export default function ShippingPage() {
                 className="gap-2"
               >
                 <Save className="h-4 w-4" />
-                {updateConfigMutation.isPending ? 'Guardando...' : 'Guardar Configuración'}
+                {updateConfigMutation.isPending ? t('saving') : t('saveConfig')}
               </Button>
             </div>
           </CardContent>
@@ -327,29 +329,29 @@ export default function ShippingPage() {
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Mis Ubicaciones
+                  {t('myLocations')}
                 </CardTitle>
                 <CardDescription>
-                  Agrega tus sucursales o bodegas para ofrecer envío local en múltiples ciudades
+                  {t('myLocationsDesc')}
                 </CardDescription>
               </div>
               <Dialog open={isAddLocationOpen} onOpenChange={setIsAddLocationOpen}>
                 <DialogTrigger asChild>
                   <Button className="gap-2">
                     <Plus className="h-4 w-4" />
-                    Agregar Ubicación
+                    {t('addLocation')}
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Nueva Ubicación</DialogTitle>
+                    <DialogTitle>{t('newLocation')}</DialogTitle>
                     <DialogDescription>
-                      Agrega una nueva sucursal o bodega para ofrecer envío local
+                      {t('newLocationDesc')}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">Ciudad *</Label>
+                      <Label htmlFor="city">{t('city')} *</Label>
                       <Input
                         id="city"
                         value={newLocation.city}
@@ -358,7 +360,7 @@ export default function ShippingPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="state">Departamento *</Label>
+                      <Label htmlFor="state">{t('department')} *</Label>
                       <Input
                         id="state"
                         value={newLocation.state}
@@ -367,7 +369,7 @@ export default function ShippingPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="address">Dirección (Opcional)</Label>
+                      <Label htmlFor="address">{t('address')}</Label>
                       <Input
                         id="address"
                         value={newLocation.address}
@@ -382,13 +384,13 @@ export default function ShippingPage() {
                       onClick={() => setIsAddLocationOpen(false)}
                       disabled={addLocationMutation.isPending}
                     >
-                      Cancelar
+                      {t('cancel')}
                     </Button>
                     <Button
                       onClick={handleAddLocation}
                       disabled={addLocationMutation.isPending}
                     >
-                      {addLocationMutation.isPending ? 'Agregando...' : 'Agregar'}
+                      {addLocationMutation.isPending ? t('adding') : t('add')}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -400,11 +402,11 @@ export default function ShippingPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ciudad</TableHead>
-                    <TableHead>Departamento</TableHead>
-                    <TableHead>Dirección</TableHead>
-                    <TableHead>Principal</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
+                    <TableHead>{t('city')}</TableHead>
+                    <TableHead>{t('department')}</TableHead>
+                    <TableHead>{t('address')}</TableHead>
+                    <TableHead>{t('primary')}</TableHead>
+                    <TableHead className="text-right">{t('actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -416,7 +418,7 @@ export default function ShippingPage() {
                       <TableCell>
                         {location.isPrimary && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Principal
+                            {t('primary')}
                           </span>
                         )}
                       </TableCell>
@@ -438,9 +440,9 @@ export default function ShippingPage() {
             ) : (
               <div className="text-center py-12">
                 <MapPin className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ubicaciones</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">{t('noLocations')}</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  Agrega tu primera ubicación para comenzar
+                  {t('noLocationsDesc')}
                 </p>
               </div>
             )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,8 +25,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { Truck, Package, Eye, CheckCircle, XCircle, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
+import { Package, Eye, CheckCircle2, X, MapPin } from 'lucide-react'
 import DashboardLayout from '@/components/DashboardLayout'
 import { useSession } from 'next-auth/react'
 
@@ -72,6 +73,8 @@ const statusColors: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  const t = useTranslations('orders')
+  const tCommon = useTranslations('common')
   const { data: session } = useSession()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -172,25 +175,6 @@ export default function OrdersPage() {
     }
   }
 
-  const handleShippingApproval = async (orderId: string) => {
-    try {
-      // API call to approve shipping
-      const response = await fetch(`/api/orders/${orderId}/shipping-status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'in_transit' })
-      })
-
-      if (response.ok) {
-        await fetchOrders() // Refresh orders
-      }
-    } catch (error) {
-      console.error('Error approving shipping:', error)
-    }
-  }
-
   const handleReturnDecision = async (orderId: string, approved: boolean) => {
     try {
       const response = await fetch(`/api/orders/${orderId}/process-return`, {
@@ -216,7 +200,7 @@ export default function OrdersPage() {
 
   const handleAddTracking = async (orderId: string) => {
     if (!trackingData.trackingUrl || !trackingData.trackingNumber || !trackingData.carrier) {
-      toast.error('Por favor complete los campos requeridos')
+      toast.error(t('fillRequiredFields'))
       return
     }
 
@@ -239,7 +223,7 @@ export default function OrdersPage() {
       )
 
       if (response.ok) {
-        toast.success('Información de rastreo agregada exitosamente')
+        toast.success(t('successTracking'))
         await fetchOrders()
         setIsAddTrackingOpen(false)
         setSelectedOrder(null)
@@ -251,11 +235,40 @@ export default function OrdersPage() {
         })
       } else {
         const error = await response.json()
-        toast.error(error.message || 'Error al agregar tracking')
+        toast.error(error.message || t('errorAddTracking'))
       }
     } catch (error) {
       console.error('Error adding tracking:', error)
-      toast.error('Error al agregar información de rastreo')
+      toast.error(t('errorAddTracking'))
+    }
+  }
+
+  const handleMarkAsDelivered = async (orderId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.accessToken}`,
+          },
+          body: JSON.stringify({
+            status: 'delivered'
+          })
+        }
+      )
+
+      if (response.ok) {
+        toast.success(t('orderDelivered'))
+        await fetchOrders()
+      } else {
+        const error = await response.json()
+        toast.error(error.message || t('errorAddTracking'))
+      }
+    } catch (error) {
+      console.error('Error marking as delivered:', error)
+      toast.error(t('errorAddTracking'))
     }
   }
 
@@ -273,7 +286,7 @@ export default function OrdersPage() {
     <DashboardLayout>
       <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Gestión de Pedidos</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <div className="text-sm text-gray-500">
           {orders.length} pedidos en total
         </div>
@@ -290,13 +303,13 @@ export default function OrdersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Pedido</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Total</TableHead>
-                <TableHead>Envío</TableHead>
-                <TableHead>Tracking</TableHead>
-                <TableHead>Acciones</TableHead>
+                <TableHead>{t('orderNumber')}</TableHead>
+                <TableHead>{t('customer')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('total')}</TableHead>
+                <TableHead>{t('shipping')}</TableHead>
+                <TableHead>{t('tracking')}</TableHead>
+                <TableHead>{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -320,9 +333,13 @@ export default function OrdersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}>
-                      {order.status === 'in_transit' ? 'En Tránsito' :
-                       order.status === 'confirmed' ? 'Confirmado' :
-                       order.status === 'return_requested' ? 'Devolución Solicitada' :
+                      {order.status === 'in_transit' ? t('inTransit') :
+                       order.status === 'confirmed' ? t('confirmed') :
+                       order.status === 'return_requested' ? t('returnRequested') :
+                       order.status === 'delivered' ? t('delivered') :
+                       order.status === 'shipped' ? t('shipped') :
+                       order.status === 'cancelled' ? t('cancelled') :
+                       order.status === 'refunded' ? t('refunded') :
                        order.status}
                     </Badge>
                   </TableCell>
@@ -367,20 +384,20 @@ export default function OrdersPage() {
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl">
                           <DialogHeader>
-                            <DialogTitle>Detalles del Pedido {order.orderNumber}</DialogTitle>
+                            <DialogTitle>{t('orderDetails')} {order.orderNumber}</DialogTitle>
                           </DialogHeader>
                           {selectedOrder && (
                             <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <h4 className="font-medium">Cliente</h4>
+                                  <h4 className="font-medium">{t('customer')}</h4>
                                   <p className="text-sm text-gray-600">
                                     {selectedOrder.user.firstName} {selectedOrder.user.lastName}
                                   </p>
                                   <p className="text-sm text-gray-600">{selectedOrder.user.email}</p>
                                 </div>
                                 <div>
-                                  <h4 className="font-medium">Estado</h4>
+                                  <h4 className="font-medium">{t('status')}</h4>
                                   <Badge className={statusColors[selectedOrder.status]}>
                                     {selectedOrder.status}
                                   </Badge>
@@ -389,7 +406,7 @@ export default function OrdersPage() {
 
                               {selectedOrder.returnReason && (
                                 <div>
-                                  <h4 className="font-medium text-red-600">Razón de Devolución</h4>
+                                  <h4 className="font-medium text-red-600">{t('returnReason')}</h4>
                                   <p className="text-sm bg-red-50 p-3 rounded border border-red-200">
                                     {selectedOrder.returnReason}
                                   </p>
@@ -397,7 +414,7 @@ export default function OrdersPage() {
                               )}
 
                               <div>
-                                <h4 className="font-medium">Productos</h4>
+                                <h4 className="font-medium">{t('products')}</h4>
                                 <div className="space-y-2">
                                   {selectedOrder.items.map((item, index) => (
                                     <div key={index} className="flex justify-between text-sm">
@@ -410,9 +427,9 @@ export default function OrdersPage() {
 
                               {selectedOrder.status === 'return_requested' && (
                                 <div className="space-y-4 border-t pt-4">
-                                  <h4 className="font-medium">Procesar Devolución</h4>
+                                  <h4 className="font-medium">{t('processReturn')}</h4>
                                   <Textarea
-                                    placeholder="Notas del vendedor (opcional)..."
+                                    placeholder={t('notesPlaceholder')}
                                     value={returnNotes}
                                     onChange={(e) => setReturnNotes(e.target.value)}
                                   />
@@ -422,16 +439,16 @@ export default function OrdersPage() {
                                       onClick={() => handleReturnDecision(selectedOrder.id, false)}
                                       className="flex items-center gap-2"
                                     >
-                                      <XCircle className="h-4 w-4" />
-                                      Rechazar Devolución
+                                      <X className="h-4 w-4" />
+                                      {t('rejectReturn')}
                                     </Button>
                                     <Button
                                       variant="default"
                                       onClick={() => handleReturnDecision(selectedOrder.id, true)}
                                       className="flex items-center gap-2"
                                     >
-                                      <CheckCircle className="h-4 w-4" />
-                                      Aprobar y Procesar Reembolso
+                                      <CheckCircle2 className="h-4 w-4" />
+                                      {t('approveReturn')}
                                     </Button>
                                   </div>
                                 </div>
@@ -451,7 +468,19 @@ export default function OrdersPage() {
                           className="flex items-center gap-2"
                         >
                           <MapPin className="h-4 w-4" />
-                          Agregar Tracking
+                          {t('addTracking')}
+                        </Button>
+                      )}
+
+                      {(order.status === 'in_transit' || order.status === 'shipped') && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleMarkAsDelivered(order.id)}
+                          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          {t('markAsDelivered')}
                         </Button>
                       )}
                     </div>
@@ -467,47 +496,47 @@ export default function OrdersPage() {
       <Dialog open={isAddTrackingOpen} onOpenChange={setIsAddTrackingOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Agregar Información de Rastreo</DialogTitle>
+            <DialogTitle>{t('addTracking')}</DialogTitle>
             <DialogDescription>
               Completa la información de rastreo para el pedido {selectedOrder?.orderNumber}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="trackingUrl">URL de Rastreo *</Label>
+              <Label htmlFor="trackingUrl">{t('trackingUrl')} *</Label>
               <Input
                 id="trackingUrl"
                 type="url"
                 value={trackingData.trackingUrl}
                 onChange={(e) => setTrackingData({ ...trackingData, trackingUrl: e.target.value })}
-                placeholder="https://servientrega.com/rastrear?guia=123456"
+                placeholder={t('trackingUrlPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="trackingNumber">Número de Guía *</Label>
+              <Label htmlFor="trackingNumber">{t('guideNumber')} *</Label>
               <Input
                 id="trackingNumber"
                 value={trackingData.trackingNumber}
                 onChange={(e) => setTrackingData({ ...trackingData, trackingNumber: e.target.value })}
-                placeholder="123456789"
+                placeholder={t('guideNumberPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="carrier">Empresa de Mensajería *</Label>
+              <Label htmlFor="carrier">{t('courierCompany')} *</Label>
               <Input
                 id="carrier"
                 value={trackingData.carrier}
                 onChange={(e) => setTrackingData({ ...trackingData, carrier: e.target.value })}
-                placeholder="Servientrega, Coordinadora, etc."
+                placeholder={t('courierPlaceholder')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notes">Notas (Opcional)</Label>
+              <Label htmlFor="notes">{t('notesOptional')}</Label>
               <Textarea
                 id="notes"
                 value={trackingData.notes}
                 onChange={(e) => setTrackingData({ ...trackingData, notes: e.target.value })}
-                placeholder="Información adicional sobre el envío..."
+                placeholder={t('notesPlaceholder')}
                 rows={3}
               />
             </div>
@@ -517,12 +546,12 @@ export default function OrdersPage() {
               variant="outline"
               onClick={() => setIsAddTrackingOpen(false)}
             >
-              Cancelar
+              {tCommon('cancel')}
             </Button>
             <Button
               onClick={() => selectedOrder && handleAddTracking(selectedOrder.id)}
             >
-              Guardar Tracking
+              {t('saveTracking')}
             </Button>
           </DialogFooter>
         </DialogContent>
