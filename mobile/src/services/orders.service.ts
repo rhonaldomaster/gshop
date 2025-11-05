@@ -37,6 +37,7 @@ export interface ShippingAddress {
   documentType?: 'CC' | 'CE' | 'PA' | 'TI';
 }
 
+// Legacy interface - no longer used with seller-managed shipping
 export interface ShippingOption {
   id: string;
   name: string;
@@ -74,10 +75,15 @@ export interface Order {
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
   shippingAddress: ShippingAddress;
+  // Seller-managed shipping fields
+  shippingType?: 'local' | 'national';
   shippingCarrier?: string;
-  courierService?: string;
+  shippingTrackingNumber?: string;
+  shippingTrackingUrl?: string;
+  shippingNotes?: string;
+  // Legacy fields (backward compatibility)
   trackingNumber?: string;
-  easypostShipmentId?: string;
+  courierService?: string;
   isGuestOrder: boolean;
   liveSessionId?: string;
   affiliateId?: string;
@@ -126,6 +132,12 @@ export interface CreateOrderRequest {
 export interface OrderTrackingInfo {
   orderId: string;
   status: OrderStatus;
+  // Seller-managed tracking
+  shippingTrackingNumber?: string;
+  shippingTrackingUrl?: string;
+  shippingCarrier?: string;
+  shippingNotes?: string;
+  // Legacy fields
   trackingNumber?: string;
   carrier?: string;
   estimatedDelivery?: string;
@@ -227,7 +239,10 @@ class OrdersService {
     }
   }
 
-  // Get shipping options for order
+  /**
+   * @deprecated No longer used with seller-managed shipping system.
+   * Shipping cost is now calculated via POST /orders/calculate-shipping
+   */
   getShippingOptions = async (orderData: {
     items: { productId: string; quantity: number }[];
     shippingAddress: ShippingAddress;
@@ -330,7 +345,10 @@ class OrdersService {
     }
   }
 
-  // Confirm shipping method for order
+  /**
+   * @deprecated No longer used with seller-managed shipping system.
+   * Shipping cost is automatically included in order total during checkout.
+   */
   confirmShipping = async (orderId: string, shippingOptionId: string): Promise<Order> => {
     try {
       const url = buildEndpointUrl(API_CONFIG.ENDPOINTS.ORDERS.CONFIRM_SHIPPING, { id: orderId });

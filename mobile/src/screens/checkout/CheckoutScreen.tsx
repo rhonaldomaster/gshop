@@ -15,7 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApi } from '../../hooks/useApi';
-import { ordersService, CreateOrderRequest, ShippingAddress, ShippingOption } from '../../services/orders.service';
+import { ordersService, CreateOrderRequest, ShippingAddress } from '../../services/orders.service';
 import { addressesService, Address } from '../../services/addresses.service';
 import { paymentsService, PaymentMethod } from '../../services/payments.service';
 import GSText from '../../components/ui/GSText';
@@ -249,23 +249,23 @@ const ShippingForm: React.FC<ShippingFormProps> = ({ address, onUpdate, onNext, 
   );
 };
 
-// Shipping options component
-interface ShippingOptionsProps {
-  options: ShippingOption[];
-  selectedOption: ShippingOption | null;
-  onSelect: (option: ShippingOption) => void;
+// Shipping summary component (new seller-managed system)
+interface ShippingSummaryProps {
+  shippingCost: number;
+  shippingType: 'local' | 'national';
+  isFree: boolean;
+  message: string;
   onNext: () => void;
   onBack: () => void;
-  isLoading?: boolean;
 }
 
-const ShippingOptions: React.FC<ShippingOptionsProps> = ({
-  options,
-  selectedOption,
-  onSelect,
+const ShippingSummary: React.FC<ShippingSummaryProps> = ({
+  shippingCost,
+  shippingType,
+  isFree,
+  message,
   onNext,
-  onBack,
-  isLoading
+  onBack
 }) => {
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
@@ -274,67 +274,31 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
   return (
     <View style={styles.formSection}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-        {t('checkout.shippingOptions')}
+        {t('checkout.shipping')}
       </GSText>
 
-      {options.map((option) => (
-        <TouchableOpacity
-          key={option.id}
-          style={[
-            styles.shippingOption,
-            {
-              borderColor: selectedOption?.id === option.id
-                ? theme.colors.primary
-                : theme.colors.gray300,
-              backgroundColor: selectedOption?.id === option.id
-                ? theme.colors.primary + '10'
-                : theme.colors.surface,
-            },
-          ]}
-          onPress={() => onSelect(option)}
-        >
-          <View style={styles.shippingOptionContent}>
-            <View style={styles.shippingOptionHeader}>
-              <GSText variant="body" weight="semiBold">
-                {option.carrier} - {option.serviceName}
-              </GSText>
-              <GSText variant="body" weight="bold" color="primary">
-                {option.price === 0 ? t('checkout.free') : formatPrice(option.price)}
-              </GSText>
-            </View>
+      <View style={[styles.shippingCard, { backgroundColor: isFree ? theme.colors.success + '10' : theme.colors.surface, borderColor: isFree ? theme.colors.success : theme.colors.gray300 }]}>
+        <View style={styles.shippingCardHeader}>
+          <GSText variant="body" weight="semiBold">
+            {shippingType === 'local' ? '📍 Envío Local' : '🚚 Envío Nacional'}
+          </GSText>
+          <GSText variant="h5" weight="bold" color={isFree ? 'success' : 'primary'}>
+            {isFree ? '¡GRATIS!' : formatPrice(shippingCost)}
+          </GSText>
+        </View>
 
-            <GSText variant="caption" color="textSecondary">
-              {t('checkout.deliveryIn', { days: option.estimatedDays })}
+        <GSText variant="caption" color="textSecondary" style={styles.shippingMessage}>
+          {message}
+        </GSText>
+
+        {isFree && (
+          <View style={[styles.freeShippingBadge, { backgroundColor: theme.colors.success }]}>
+            <GSText variant="caption" color="white" weight="semiBold">
+              🎉 ¡Felicidades! Tu compra califica para envío gratis
             </GSText>
-
-            {option.description && (
-              <GSText variant="caption" color="textSecondary" style={styles.shippingDescription}>
-                {option.description}
-              </GSText>
-            )}
           </View>
-
-          <View
-            style={[
-              styles.radioButton,
-              {
-                borderColor: selectedOption?.id === option.id
-                  ? theme.colors.primary
-                  : theme.colors.gray300,
-              },
-            ]}
-          >
-            {selectedOption?.id === option.id && (
-              <View
-                style={[
-                  styles.radioButtonInner,
-                  { backgroundColor: theme.colors.primary },
-                ]}
-              />
-            )}
-          </View>
-        </TouchableOpacity>
-      ))}
+        )}
+      </View>
 
       <View style={styles.navigationButtons}>
         <View style={styles.buttonWrapper}>
@@ -350,8 +314,6 @@ const ShippingOptions: React.FC<ShippingOptionsProps> = ({
             title={t('checkout.selectPaymentMethod')}
             onPress={onNext}
             style={styles.nextButton}
-            disabled={!selectedOption}
-            loading={isLoading}
           />
         </View>
       </View>
@@ -364,11 +326,11 @@ interface OrderSummaryProps {
   onBack: () => void;
   onPlaceOrder: () => void;
   isPlacingOrder?: boolean;
-  selectedShippingOption: ShippingOption | null;
+  shippingCost: number;
   selectedPaymentMethod: PaymentMethod | null;
 }
 
-const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, selectedShippingOption, selectedPaymentMethod }) => {
+const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, shippingCost, selectedPaymentMethod }) => {
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const {
@@ -379,15 +341,15 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
 
   const summary = getCartSummary();
   const subtotal = Number(summary.subtotal) || 0;
-  const shipping = Number(selectedShippingOption?.price) || 0;
-  const tax = Number((subtotal * 0.19).toFixed(2));
-  const total = Number((subtotal + shipping + tax).toFixed(2));
+  const shipping = Number(shippingCost) || 0;
+  // NOTE: VAT is already included in product prices (Colombian law)
+  // No additional tax calculation needed
+  const total = Number((subtotal + shipping).toFixed(2));
 
   console.log('OrderSummary calculations:', {
     'summary.subtotal': summary.subtotal,
     'subtotal': subtotal,
     'shipping': shipping,
-    'tax': tax,
     'total': total,
   });
 
@@ -452,10 +414,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
           </GSText>
         </View>
 
-        <View style={styles.totalRow}>
-          <GSText variant="body" color="textSecondary">{t('checkout.taxEstimated')}</GSText>
-          <GSText variant="body" color="textSecondary">{formatPrice(tax)}</GSText>
-        </View>
+        <GSText variant="caption" color="textSecondary" style={styles.vatNote}>
+          * IVA incluido en los precios
+        </GSText>
 
         <View style={[styles.totalRow, styles.finalTotal]}>
           <GSText variant="h4" weight="bold">{t('checkout.total')}</GSText>
@@ -508,13 +469,17 @@ export default function CheckoutScreen() {
     document: '',
     documentType: 'CC',
   });
-  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
-  const [selectedShippingOption, setSelectedShippingOption] = useState<ShippingOption | null>(null);
+  const [shippingInfo, setShippingInfo] = useState<{
+    shippingType: 'local' | 'national';
+    shippingCost: number;
+    isFree: boolean;
+    message: string;
+  } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [loadingAddress, setLoadingAddress] = useState(true);
+  const [calculatingShipping, setCalculatingShipping] = useState(false);
 
   // API hooks
-  const shippingOptionsApi = useApi(ordersService.getShippingOptions);
   const createOrderApi = useApi(ordersService.createOrder);
   const createPaymentApi = useApi(paymentsService.createPayment);
 
@@ -571,34 +536,57 @@ export default function CheckoutScreen() {
     }
   }, [items.length, navigation, t]);
 
-  // Handle shipping address next
+  // Handle shipping address next - calculate shipping cost
   const handleShippingAddressNext = async () => {
     try {
-      const orderData = {
-        items: items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-        })),
-        shippingAddress,
-      };
+      setCalculatingShipping(true);
 
-      const options = await shippingOptionsApi.execute(orderData);
-      if (options && options.length > 0) {
-        setShippingOptions(options);
+      // Get seller ID from first cart item (assuming single seller per order)
+      const sellerId = items[0]?.product?.sellerId;
+      if (!sellerId) {
+        Alert.alert(t('common.error'), 'No se pudo obtener información del vendedor');
+        return;
+      }
+
+      // Calculate order total (VAT already included in prices)
+      const orderTotal = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
+
+      // Call new seller-managed shipping calculation API
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/orders/calculate-shipping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sellerId,
+          buyerCity: shippingAddress.city,
+          buyerState: shippingAddress.state,
+          orderTotal,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data) {
+        setShippingInfo({
+          shippingType: data.shippingType,
+          shippingCost: data.shippingCost,
+          isFree: data.isFree,
+          message: data.message || '',
+        });
         setCurrentStep(1);
       } else {
-        Alert.alert(t('common.error'), t('checkout.shippingOptions.errorLoading'));
+        Alert.alert(t('common.error'), 'No se pudo calcular el costo de envío');
       }
     } catch (error) {
-      Alert.alert(t('common.error'), t('checkout.shippingOptions.errorLoading'));
+      console.error('Shipping calculation error:', error);
+      Alert.alert(t('common.error'), 'Error al calcular el costo de envío');
+    } finally {
+      setCalculatingShipping(false);
     }
   };
 
-  // Handle shipping option next
-  const handleShippingOptionNext = () => {
-    if (selectedShippingOption) {
-      setCurrentStep(2);
-    }
+  // Handle shipping info next
+  const handleShippingSummaryNext = () => {
+    setCurrentStep(2);
   };
 
   // Handle payment method next
@@ -611,8 +599,8 @@ export default function CheckoutScreen() {
   // Handle place order
   const handlePlaceOrder = async () => {
     try {
-      if (!selectedShippingOption) {
-        Alert.alert(t('common.error'), t('checkout.alerts.pleaseSelectShipping'));
+      if (!shippingInfo) {
+        Alert.alert(t('common.error'), 'No se ha calculado el costo de envío');
         return;
       }
 
@@ -638,11 +626,10 @@ export default function CheckoutScreen() {
         throw new Error('Failed to create order');
       }
 
-      // Step 2: Calculate order total
+      // Step 2: Calculate order total (VAT already included in prices)
       const summary = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
-      const shipping = Number(selectedShippingOption.price || 0);
-      const tax = Number((summary * 0.19).toFixed(2));
-      const total = Number((summary + shipping + tax).toFixed(2));
+      const shipping = Number(shippingInfo.shippingCost || 0);
+      const total = Number((summary + shipping).toFixed(2));
 
       // Step 3: Map payment method to backend enum
       const paymentMethodMap: Record<string, string> = {
@@ -716,7 +703,6 @@ export default function CheckoutScreen() {
 
   const steps = [
     t('checkout.steps.shipping'),
-    t('checkout.steps.delivery'),
     t('checkout.steps.payment'),
     t('checkout.steps.review')
   ];
@@ -765,17 +751,18 @@ export default function CheckoutScreen() {
               address={shippingAddress}
               onUpdate={setShippingAddress}
               onNext={handleShippingAddressNext}
-              isLoading={shippingOptionsApi.isLoading}
+              isLoading={calculatingShipping}
             />
           )
         )}
 
-        {currentStep === 1 && (
-          <ShippingOptions
-            options={shippingOptions}
-            selectedOption={selectedShippingOption}
-            onSelect={setSelectedShippingOption}
-            onNext={handleShippingOptionNext}
+        {currentStep === 1 && shippingInfo && (
+          <ShippingSummary
+            shippingCost={shippingInfo.shippingCost}
+            shippingType={shippingInfo.shippingType}
+            isFree={shippingInfo.isFree}
+            message={shippingInfo.message}
+            onNext={handleShippingSummaryNext}
             onBack={() => setCurrentStep(0)}
           />
         )}
@@ -784,9 +771,8 @@ export default function CheckoutScreen() {
           <PaymentMethodSelection
             orderTotal={(() => {
               const summary = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
-              const shipping = Number(selectedShippingOption?.price || 0);
-              const tax = Number((summary * 0.19).toFixed(2));
-              return Number((summary + shipping + tax).toFixed(2));
+              const shipping = Number(shippingInfo?.shippingCost || 0);
+              return Number((summary + shipping).toFixed(2));
             })()}
             selectedMethod={selectedPaymentMethod}
             onSelectMethod={setSelectedPaymentMethod}
@@ -800,7 +786,7 @@ export default function CheckoutScreen() {
             onBack={() => setCurrentStep(2)}
             onPlaceOrder={handlePlaceOrder}
             isPlacingOrder={createOrderApi.isLoading}
-            selectedShippingOption={selectedShippingOption}
+            shippingCost={shippingInfo?.shippingCost || 0}
             selectedPaymentMethod={selectedPaymentMethod}
           />
         )}
@@ -934,39 +920,26 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
   },
-  shippingOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  shippingCard: {
     padding: 16,
     borderWidth: 1,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 20,
   },
-  shippingOptionContent: {
-    flex: 1,
-  },
-  shippingOptionHeader: {
+  shippingCardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  shippingDescription: {
+  shippingMessage: {
     marginTop: 4,
   },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  freeShippingBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
   },
   navigationButtons: {
     flexDirection: 'row',
@@ -1017,6 +990,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  vatNote: {
+    marginTop: 4,
+    marginBottom: 12,
   },
   finalTotal: {
     paddingTop: 12,

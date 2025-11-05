@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../hooks/useCart';
@@ -37,6 +38,7 @@ interface OrderItemComponentProps {
 }
 
 const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
 
   return (
@@ -57,21 +59,21 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder
 
       <View style={styles.orderItemInfo}>
         <GSText variant="body" weight="semiBold" numberOfLines={2}>
-          {item.product?.name || `Product ${item.productId}`}
+          {item.product?.name || t('orders.product', { id: item.productId })}
         </GSText>
 
         <View style={styles.orderItemDetails}>
           <GSText variant="caption" color="textSecondary">
-            Quantity: {item.quantity}
+            {t('orders.quantity')}: {item.quantity}
           </GSText>
           <GSText variant="caption" color="textSecondary">
-            Price: {ordersService.formatPrice(item.price)}
+            {t('orders.price')}: {ordersService.formatPrice(item.price)}
           </GSText>
         </View>
 
         <View style={styles.orderItemFooter}>
           <GSText variant="body" weight="semiBold" color="primary">
-            Subtotal: {ordersService.formatPrice(item.subtotal)}
+            {t('orders.subtotal')}: {ordersService.formatPrice(item.subtotal)}
           </GSText>
 
           {onReorder && (
@@ -81,7 +83,7 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder
             >
               <Ionicons name="refresh-outline" size={16} color={theme.colors.primary} />
               <GSText variant="caption" color="primary" style={{ marginLeft: 4 }}>
-                Reorder
+                {t('orders.reorder')}
               </GSText>
             </TouchableOpacity>
           )}
@@ -96,6 +98,7 @@ interface TrackingTimelineProps {
 }
 
 const TrackingTimeline: React.FC<TrackingTimelineProps> = ({ trackingInfo }) => {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
 
   const getStatusIcon = (status: string, isActive: boolean) => {
@@ -124,7 +127,7 @@ const TrackingTimeline: React.FC<TrackingTimelineProps> = ({ trackingInfo }) => 
   return (
     <View style={styles.trackingTimeline}>
       <GSText variant="h4" weight="bold" style={styles.trackingTitle}>
-        Tracking Timeline
+        {t('orders.trackingTimeline')}
       </GSText>
 
       {trackingInfo.trackingEvents.map((event, index) => {
@@ -178,6 +181,7 @@ const TrackingTimeline: React.FC<TrackingTimelineProps> = ({ trackingInfo }) => 
 };
 
 export default function OrderDetailScreen() {
+  const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const route = useRoute<OrderDetailScreenRouteProp>();
   const navigation = useNavigation();
@@ -201,8 +205,8 @@ export default function OrderDetailScreen() {
       const orderData = await ordersService.getOrder(orderId);
       setOrder(orderData);
 
-      // Load tracking info if order has tracking number
-      if (orderData.trackingNumber) {
+      // Load tracking info if order has tracking number (new seller-managed system)
+      if (orderData.shippingTrackingNumber) {
         setTrackingLoading(true);
         try {
           const tracking = await ordersService.getOrderTracking(orderId);
@@ -232,23 +236,23 @@ export default function OrderDetailScreen() {
     try {
       const orderItem = order?.items.find(item => item.productId === productId);
       if (!orderItem?.product) {
-        Alert.alert('Error', 'Product information not available');
+        Alert.alert(t('common.error'), t('orders.productNotAvailable'));
         return;
       }
 
       const success = await addToCart(orderItem.product, orderItem.quantity, false);
       if (success) {
         Alert.alert(
-          'Added to Cart',
-          `${orderItem.product.name} has been added to your cart`,
+          t('orders.addedToCart'),
+          t('orders.addedToCartMessage', { name: orderItem.product.name }),
           [
-            { text: 'Continue Shopping', style: 'cancel' },
-            { text: 'View Cart', onPress: () => (navigation as any).navigate('Cart') },
+            { text: t('orders.continueShopping'), style: 'cancel' },
+            { text: t('orders.viewCart'), onPress: () => (navigation as any).navigate('Cart') },
           ]
         );
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add to cart');
+      Alert.alert(t('common.error'), error.message || t('orders.addToCartError'));
     }
   }, [order, addToCart, navigation]);
 
@@ -257,42 +261,52 @@ export default function OrderDetailScreen() {
     if (!order) return;
 
     Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel this order?',
+      t('orders.cancelOrder'),
+      t('orders.cancelOrderConfirm'),
       [
-        { text: 'No', style: 'cancel' },
+        { text: t('common.no'), style: 'cancel' },
         {
-          text: 'Yes, Cancel',
+          text: t('orders.yesCancelOrder'),
           style: 'destructive',
           onPress: async () => {
             try {
-              await ordersService.cancelOrder(order.id, 'Cancelled by customer');
-              Alert.alert('Success', 'Order has been cancelled');
+              await ordersService.cancelOrder(order.id, t('orders.cancelledByCustomer'));
+              Alert.alert(t('common.success'), t('orders.orderCancelled'));
               loadOrderDetails();
             } catch (error: any) {
-              Alert.alert('Error', error.message || 'Failed to cancel order');
+              Alert.alert(t('common.error'), error.message || t('orders.cancelOrderError'));
             }
           },
         },
       ]
     );
-  }, [order, loadOrderDetails]);
+  }, [order, loadOrderDetails, t]);
 
   // Handle return request (placeholder for future implementation)
   const handleRequestReturn = useCallback(async () => {
     if (!order) return;
 
     Alert.alert(
-      'Request Return',
-      'Return functionality will be available soon.',
-      [{ text: 'OK' }]
+      t('orders.requestReturn'),
+      t('orders.returnFunctionalitySoon'),
+      [{ text: t('common.ok') }]
     );
-  }, [order]);
+  }, [order, t]);
 
-  // Handle open tracking URL
+  // Handle open tracking URL (new seller-managed system)
   const handleOpenTracking = useCallback(() => {
-    if (order?.trackingNumber && order?.shippingCarrier) {
-      // Create tracking URL based on carrier
+    if (!order) return;
+
+    // Use seller-provided tracking URL if available
+    if (order.shippingTrackingUrl) {
+      Linking.openURL(order.shippingTrackingUrl).catch(() => {
+        Alert.alert(t('common.error'), t('orders.trackingLinkError'));
+      });
+      return;
+    }
+
+    // Fallback: construct URL based on carrier (for backward compatibility)
+    if (order.shippingTrackingNumber && order.shippingCarrier) {
       let trackingUrl = '';
 
       switch (order.shippingCarrier.toLowerCase()) {
@@ -303,20 +317,20 @@ export default function OrderDetailScreen() {
           trackingUrl = `https://www.coordinadora.com/seguimiento-de-envios/`;
           break;
         case 'dhl':
-          trackingUrl = `https://www.dhl.com/co-es/home/tracking.html?tracking-id=${order.trackingNumber}`;
+          trackingUrl = `https://www.dhl.com/co-es/home/tracking.html?tracking-id=${order.shippingTrackingNumber}`;
           break;
         case 'fedex':
-          trackingUrl = `https://www.fedex.com/fedextrack/?tracknumber=${order.trackingNumber}`;
+          trackingUrl = `https://www.fedex.com/fedextrack/?tracknumber=${order.shippingTrackingNumber}`;
           break;
         default:
-          trackingUrl = `https://www.google.com/search?q=track+${order.trackingNumber}+${order.shippingCarrier}`;
+          trackingUrl = `https://www.google.com/search?q=track+${order.shippingTrackingNumber}+${order.shippingCarrier}`;
       }
 
       Linking.openURL(trackingUrl).catch(() => {
-        Alert.alert('Error', 'Could not open tracking link');
+        Alert.alert(t('common.error'), t('orders.trackingLinkError'));
       });
     }
-  }, [order]);
+  }, [order, t]);
 
   // Show loading state
   if (loading) {
@@ -325,7 +339,7 @@ export default function OrderDetailScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Loading order details...
+            {t('orders.loadingDetails')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -339,18 +353,18 @@ export default function OrderDetailScreen() {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color={theme.colors.error} />
           <GSText variant="h3" weight="bold" style={styles.errorTitle}>
-            Error Loading Order
+            {t('orders.errorLoadingOrder')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.errorMessage}>
-            {error || 'Order not found'}
+            {error || t('orders.orderNotFound')}
           </GSText>
           <GSButton
-            title="Retry"
+            title={t('common.retry')}
             onPress={loadOrderDetails}
             style={styles.retryButton}
           />
           <GSButton
-            title="Go Back"
+            title={t('common.goBack')}
             variant="outline"
             onPress={() => navigation.goBack()}
             style={styles.goBackButton}
@@ -397,7 +411,7 @@ export default function OrderDetailScreen() {
         {/* Order Items */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Order Items
+            {t('orders.orderItems')}
           </GSText>
           {order.items.map((item) => (
             <OrderItemComponent
@@ -411,64 +425,75 @@ export default function OrderDetailScreen() {
         {/* Order Summary */}
         <View style={[styles.section, styles.summarySection, { backgroundColor: theme.colors.surface }]}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Order Summary
+            {t('orders.orderSummary')}
           </GSText>
 
           <View style={styles.summaryRow}>
-            <GSText variant="body">Subtotal</GSText>
+            <GSText variant="body">{t('orders.subtotal')}</GSText>
             <GSText variant="body">{ordersService.formatPrice(order.subtotal)}</GSText>
           </View>
 
           <View style={styles.summaryRow}>
-            <GSText variant="body">Shipping</GSText>
+            <GSText variant="body">{t('orders.shipping')}</GSText>
             <GSText variant="body">
-              {parseFloat(String(order.shipping || 0)) === 0 ? 'Free' : ordersService.formatPrice(order.shipping || 0)}
+              {parseFloat(String(order.shipping || 0)) === 0 ? t('orders.free') : ordersService.formatPrice(order.shipping || 0)}
             </GSText>
           </View>
 
-          <View style={styles.summaryRow}>
-            <GSText variant="body">Tax</GSText>
-            <GSText variant="body">{ordersService.formatPrice(order.tax || 0)}</GSText>
-          </View>
+          <GSText variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 8 }}>
+            {t('orders.vatIncluded')}
+          </GSText>
 
           <View style={[styles.summaryRow, styles.totalRow]}>
-            <GSText variant="h4" weight="bold">Total</GSText>
+            <GSText variant="h4" weight="bold">{t('orders.total')}</GSText>
             <GSText variant="h4" weight="bold" color="primary">
               {ordersService.formatPrice(order.total || 0)}
             </GSText>
           </View>
         </View>
 
-        {/* Tracking Information */}
-        {order.trackingNumber && (
+        {/* Tracking Information - New seller-managed system */}
+        {order.shippingTrackingNumber && (
           <View style={styles.section}>
             <View style={styles.trackingHeader}>
               <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-                Tracking Information
+                {t('orders.trackingInformation')}
               </GSText>
 
-              <TouchableOpacity
-                style={styles.trackingButton}
-                onPress={handleOpenTracking}
-              >
-                <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
-                <GSText variant="caption" color="primary" style={{ marginLeft: 4 }}>
-                  Open Tracking
-                </GSText>
-              </TouchableOpacity>
+              {order.shippingTrackingUrl && (
+                <TouchableOpacity
+                  style={styles.trackingButton}
+                  onPress={handleOpenTracking}
+                >
+                  <Ionicons name="open-outline" size={16} color={theme.colors.primary} />
+                  <GSText variant="caption" color="primary" style={{ marginLeft: 4 }}>
+                    {t('orders.trackOrder')}
+                  </GSText>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={[styles.trackingCard, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.trackingInfo}>
                 <GSText variant="body" weight="semiBold">
-                  Tracking Number: {order.trackingNumber}
+                  {t('orders.carrier')}: {order.shippingCarrier || 'N/A'}
                 </GSText>
-                <GSText variant="caption" color="textSecondary">
-                  Carrier: {order.shippingCarrier || 'N/A'}
+                <GSText variant="body" color="textSecondary">
+                  {t('orders.trackingNumber')}: {order.shippingTrackingNumber}
                 </GSText>
+                {order.shippingNotes && (
+                  <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.1)' }}>
+                    <GSText variant="caption" weight="semiBold">
+                      {t('orders.sellerNotes')}:
+                    </GSText>
+                    <GSText variant="caption" color="textSecondary" style={{ marginTop: 4 }}>
+                      {order.shippingNotes}
+                    </GSText>
+                  </View>
+                )}
                 {order.estimatedDelivery && (
-                  <GSText variant="caption" color="textSecondary">
-                    Estimated Delivery: {new Date(order.estimatedDelivery).toLocaleDateString('es-CO')}
+                  <GSText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
+                    {t('orders.estimatedDelivery')}: {new Date(order.estimatedDelivery).toLocaleDateString('es-CO')}
                   </GSText>
                 )}
               </View>
@@ -478,7 +503,7 @@ export default function OrderDetailScreen() {
               <View style={styles.trackingLoading}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
                 <GSText variant="caption" color="textSecondary" style={{ marginLeft: 8 }}>
-                  Loading tracking details...
+                  {t('orders.loadingTracking')}
                 </GSText>
               </View>
             ) : (
@@ -487,10 +512,24 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
+        {/* Waiting for tracking message */}
+        {!order.shippingTrackingNumber && (order.status === 'confirmed' || order.status === 'processing') && (
+          <View style={styles.section}>
+            <View style={[styles.waitingCard, { backgroundColor: theme.colors.warning + '10', borderColor: theme.colors.warning, borderWidth: 1, borderRadius: 12, padding: 16 }]}>
+              <GSText variant="body" weight="semiBold" style={{ marginBottom: 8 }}>
+                ⏳ {t('orders.orderBeingPrepared')}
+              </GSText>
+              <GSText variant="caption" color="textSecondary">
+                {t('orders.sellerWillAddShipping')}
+              </GSText>
+            </View>
+          </View>
+        )}
+
         {/* Shipping Address */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Shipping Address
+            {t('orders.shippingAddress')}
           </GSText>
           <View style={[styles.addressCard, { backgroundColor: theme.colors.surface }]}>
             <GSText variant="body" weight="semiBold">
@@ -507,17 +546,17 @@ export default function OrderDetailScreen() {
         {/* Payment Information */}
         <View style={styles.section}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Payment Information
+            {t('orders.paymentInformation')}
           </GSText>
           <View style={[styles.paymentCard, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.paymentRow}>
-              <GSText variant="body">Payment Method:</GSText>
+              <GSText variant="body">{t('orders.paymentMethod')}:</GSText>
               <GSText variant="body" weight="semiBold">
                 {order.paymentMethod?.provider || 'N/A'}
               </GSText>
             </View>
             <View style={styles.paymentRow}>
-              <GSText variant="body">Payment Status:</GSText>
+              <GSText variant="body">{t('orders.paymentStatus')}:</GSText>
               <GSText
                 variant="body"
                 weight="semiBold"
@@ -534,7 +573,7 @@ export default function OrderDetailScreen() {
           <View style={styles.actionsContainer}>
             {ordersService.canCancelOrder(order) && (
               <GSButton
-                title="Cancel Order"
+                title={t('orders.cancelOrder')}
                 variant="outline"
                 onPress={handleCancelOrder}
                 style={styles.actionButton}
@@ -543,7 +582,7 @@ export default function OrderDetailScreen() {
 
             {ordersService.canRequestReturn(order) && (
               <GSButton
-                title="Request Return"
+                title={t('orders.requestReturn')}
                 variant="outline"
                 onPress={handleRequestReturn}
                 style={styles.actionButton}
@@ -551,7 +590,7 @@ export default function OrderDetailScreen() {
             )}
 
             <GSButton
-              title="Reorder Items"
+              title={t('orders.reorderItems')}
               onPress={() => {
                 order.items.forEach(item => {
                   if (item.product) {
@@ -711,6 +750,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+  },
+  waitingCard: {
+    // Styles defined inline in JSX
   },
   trackingTimeline: {
     marginTop: 8,

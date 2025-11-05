@@ -38,9 +38,6 @@ interface EnvConfig {
   POLYGON_RPC_URL: string;
   USDC_CONTRACT_ADDRESS: string;
 
-  // Shipping
-  EASYPOST_PUBLIC_KEY: string;
-
   // Deep Linking
   APP_SCHEME: string;
   DEEP_LINK_BASE_URL: string;
@@ -114,9 +111,6 @@ export const ENV: EnvConfig = {
   // Blockchain
   POLYGON_RPC_URL: getEnvVar('POLYGON_RPC_URL', 'https://polygon-rpc.com'),
   USDC_CONTRACT_ADDRESS: getEnvVar('USDC_CONTRACT_ADDRESS', '0x2791bca1f2de4661ed88a30c99a7a9449aa84174'),
-
-  // Shipping
-  EASYPOST_PUBLIC_KEY: getEnvVar('EASYPOST_PUBLIC_KEY', ''),
 
   // Deep Linking
   APP_SCHEME: getEnvVar('APP_SCHEME', 'gshop'),

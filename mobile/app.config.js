@@ -102,7 +102,6 @@ export default ({ config }) => {
       STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || '',
       POLYGON_RPC_URL: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
       USDC_CONTRACT_ADDRESS: process.env.USDC_CONTRACT_ADDRESS || '0x2791bca1f2de4661ed88a30c99a7a9449aa84174',
-      EASYPOST_PUBLIC_KEY: process.env.EASYPOST_PUBLIC_KEY || '',
       APP_SCHEME: process.env.APP_SCHEME || 'gshop',
       DEEP_LINK_BASE_URL: process.env.DEEP_LINK_BASE_URL || 'https://gshop.com',
       FCM_SENDER_ID: process.env.FCM_SENDER_ID || '',

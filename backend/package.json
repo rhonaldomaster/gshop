@@ -27,7 +27,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@easypost/api": "^8.2.0",
     "@nestjs/common": "^11.1.6",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.6",

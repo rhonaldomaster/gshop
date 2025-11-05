@@ -16,7 +16,7 @@ GSHOP is a TikTok Shop clone MVP with a microservices architecture consisting of
 - **Affiliate System**: Link generation and tracking with commission management
 - **GSHOP Pixel**: JavaScript tracking script for external websites
 - **Analytics**: Real-time analytics and reporting dashboard
-- **Logistics System**: EasyPost integration for dynamic shipping rates and tracking
+- **Logistics System**: Seller-managed shipping with configurable rates and manual tracking
 
 ## Development Commands
 
@@ -683,8 +683,7 @@ STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 POLYGON_RPC_URL=https://polygon-rpc.com
 USDC_CONTRACT_ADDRESS=0x2791bca1f2de4661ed88a30c99a7a9449aa84174
 
-# Add to .env for Logistics features
-EASYPOST_API_KEY=EZAK_your_easypost_api_key
+# Note: EasyPost removed - shipping now managed by sellers (no API key needed)
 ```
 
 ## Phase 3 Features (Implemented)
@@ -793,40 +792,42 @@ EASYPOST_API_KEY=EZAK_your_easypost_api_key
 
 ## GSHOP Logistics Phase (Latest Implementation)
 
-### 🚚 Complete Shipping & Logistics System
+### 🚚 Complete Shipping & Logistics System (Seller-Managed)
 
-- **Backend Module**: `backend/src/shipping/` and `backend/src/returns/`
-- **EasyPost Integration**: Dynamic shipping rates and automated tracking
+- **Backend Module**: `backend/src/sellers/` and `backend/src/returns/`
+- **Seller-Managed Shipping**: Sellers configure their own rates and provide tracking
 - **Features**:
-  - Real-time shipping rate calculation from multiple carriers (Servientrega, Coordinadora, DHL, FedEx)
-  - Automatic tracking number generation and shipment creation
-  - Package dimension and weight-based pricing
+  - Seller-configured shipping rates (local and national)
+  - Multiple seller locations support (warehouses/branches)
+  - Free shipping option with configurable minimum order amount
+  - Manual tracking URL provision by sellers
   - Guest checkout with mandatory document validation
   - Returns management with automated MercadoPago refunds
-  - Seller dashboard for shipping approval and return processing
-  - Mobile app with dynamic shipping selection and order tracking
+  - Seller dashboard for shipping configuration and tracking management
+  - Mobile app with calculated shipping and order tracking
 
 ### 📱 Mobile Buyer Experience
 
-- **Checkout Flow**: Dynamic shipping rates displayed before payment
+- **Checkout Flow**: Seller-configured shipping rates calculated before payment
 - **Guest Checkout**: Full checkout without account creation, with document validation
 - **Document Validation**: Support for Cédula, Pasaporte, and other Colombian ID types
-- **Real-time Tracking**: Live order status with carrier tracking links
+- **Real-time Tracking**: Live order status with seller-provided tracking URLs
 - **Return Requests**: In-app return initiation with 30-day window
 
 ### 🏪 Seller Panel Integration
 
+- **Shipping Configuration**: Configure local/national rates and free shipping thresholds
+- **Location Management**: Add/remove multiple warehouse/branch locations
 - **Order Management**: Complete order lifecycle from confirmation to delivery
-- **Shipping Approval**: Review automatically generated shipping labels and tracking
+- **Tracking Management**: Add tracking URLs and carrier info to orders
 - **Return Processing**: Approve/reject return requests with automated refunds
-- **Shipping Analytics**: Track shipping costs, carriers, and delivery times
 
 ### 🔧 Technical Implementation
 
 #### Order Entity Enhancements
 
 ```typescript
-// New order status types
+// Order status types
 export enum OrderStatus {
   PENDING = 'pending',
   CONFIRMED = 'confirmed',
@@ -839,28 +840,26 @@ export enum OrderStatus {
   REFUNDED = 'refunded'
 }
 
-// New order fields
+// New seller-managed shipping fields
 interface OrderShippingData {
-  shippingCarrier?: string;
-  courierService?: string;
+  shippingType?: 'local' | 'national';
   shippingCost?: number;
-  trackingNumber?: string;
-  easypostShipmentId?: string;
-  shippingOptions?: ShippingOption[];
-  packageDimensions?: PackageDimensions;
+  shippingCarrier?: string;
+  shippingTrackingNumber?: string;
+  shippingTrackingUrl?: string;
+  shippingNotes?: string;
   customerDocument?: CustomerDocument;
   isGuestOrder?: boolean;
   returnReason?: string;
-  shippingProof?: string;
 }
 ```
 
-#### EasyPost Integration
+#### Seller Shipping Configuration
 
-- **Rate Shopping**: Automatically fetches rates from all available carriers
-- **Shipment Creation**: Generates tracking numbers and shipping labels
-- **Real-time Tracking**: Updates order status based on carrier tracking events
-- **Fallback System**: Mock rates when API is unavailable for development
+- **Configurable Rates**: Sellers set their own local/national prices
+- **Multiple Locations**: Support for warehouses/branches with city/state
+- **Distance Calculation**: Automatic local vs national determination
+- **Free Shipping**: Optional free shipping with minimum order amount
 
 ### 🛒 Guest Checkout System
 
@@ -880,10 +879,14 @@ interface OrderShippingData {
 
 #### Shipping Management
 
-- `POST /api/v1/orders/:id/shipping-options` - Get dynamic shipping rates for order
-- `POST /api/v1/orders/:id/confirm-shipping` - Confirm selected shipping method
-- `GET /api/v1/orders/:id/tracking` - Get real-time tracking information
-- `PUT /api/v1/orders/:id/shipping-status` - Update shipping status (seller/admin)
+- `PUT /api/v1/sellers/:id/shipping-config` - Configure shipping rates
+- `GET /api/v1/sellers/:id/shipping-config` - Get shipping configuration
+- `GET /api/v1/sellers/:id/locations` - Get seller locations
+- `POST /api/v1/sellers/:id/locations` - Add seller location
+- `DELETE /api/v1/sellers/:id/locations/:locationId` - Remove location
+- `POST /api/v1/orders/calculate-shipping` - Calculate shipping cost for order
+- `PUT /api/v1/orders/:id/tracking` - Add tracking info to order
+- `GET /api/v1/orders/:id/tracking` - Get tracking information
 
 #### Returns Management
 
@@ -900,9 +903,9 @@ interface OrderShippingData {
 
 ### 💰 Cost Structure
 
-- **Shipping Costs**: Dynamically calculated based on package dimensions and destination
+- **Shipping Costs**: Configured by sellers (fixed local/national rates)
 - **Return Handling**: Free returns within 30-day window (cost absorbed by seller)
-- **EasyPost Fees**: Standard API fees for rate calculation and tracking
+- **No External Fees**: $0 API costs (seller-managed system)
 
 ### 📊 Analytics & Reporting
 
@@ -942,20 +945,20 @@ interface OrderShippingData {
 ### ⚙️ Environment Configuration
 
 ```bash
-# Required for logistics functionality
-EASYPOST_API_KEY=EZAK_your_easypost_api_key_here
-
-# Existing MercadoPago config still used for refunds
+# MercadoPago config (used for payments and refunds)
 MERCAPAGO_CLIENT_ID=your-mercadopago-client-id
 MERCAPAGO_CLIENT_SECRET=your-mercadopago-client-secret
 MERCAPAGO_ACCESS_TOKEN=your-mercadopago-access-token
+
+# Note: EasyPost removed - shipping now managed by sellers
+# Sellers configure their own shipping rates and provide tracking URLs
 ```
 
 ### 🚀 Deployment Notes
 
-- EasyPost requires production API keys for live shipping rates
-- Colombian carrier integration optimized (Servientrega, Coordinadora primary)
-- Database migration required for new Order entity fields
+- Sellers manage their own shipping rates (no external API needed)
+- Sellers provide tracking URLs from their chosen carriers
+- Database migrations required for seller locations and shipping config
 - Mobile app requires @react-native-picker/picker dependency
 
 ## Live Shopping Usage Examples
