@@ -26,12 +26,18 @@ import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer } fr
 
 // Seller Entities
 import { Seller } from '../sellers/entities/seller.entity';
+import { SellerLocation } from '../sellers/entities/seller-location.entity';
 
 // Payment V2 Entities
 import { PaymentMethodEntity, PaymentV2, Invoice, CryptoTransaction } from '../payments/payments-v2.entity';
 
 // Recommendation System Entities
 import { UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics } from '../recsys/recsys.entity';
+
+// Commission & Fee System Entities
+import { PlatformConfig } from './entities/platform-config.entity';
+import { Invoice as CommissionInvoice } from './entities/invoice.entity';
+import { AuditLog } from './entities/audit-log.entity';
 
 export const typeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
   type: 'postgres',
@@ -44,9 +50,11 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     // Core entities
     User, Product, Category, Order, OrderItem, Payment, Commission, WishlistItem, Cart, CartItem,
     // Seller entities
-    Seller,
+    Seller, SellerLocation,
     // Payment V2 entities
     PaymentMethodEntity, PaymentV2, Invoice, CryptoTransaction,
+    // Commission & Fee System entities
+    PlatformConfig, CommissionInvoice, AuditLog,
     // Live streaming entities
     LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer,
     // Affiliates/Creator system entities
@@ -57,7 +65,7 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics
   ],
   migrations: ['dist/database/migrations/*.js'],
-  synchronize: configService.get('NODE_ENV') !== 'production',
+  synchronize: false, // Disabled to prevent schema conflicts with manual migrations
   logging: configService.get('NODE_ENV') === 'development',
   ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
 });

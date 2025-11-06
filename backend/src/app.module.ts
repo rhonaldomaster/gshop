@@ -27,6 +27,11 @@ import { WishlistModule } from './wishlist/wishlist.module';
 import { CartModule } from './cart/cart.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { DatabaseModule } from './database/database.module';
+import { ConfigModule as PlatformConfigModule } from './config/config.module';
+import { InvoicingModule } from './invoicing/invoicing.module';
+import { CommissionsModule } from './admin/commissions/commissions.module';
+import { CommonModule } from './common/common.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -49,7 +54,12 @@ import { AppService } from './app.service';
         new HeaderResolver(['x-custom-lang']),
       ],
     }),
+    EventEmitterModule.forRoot(),
     DatabaseModule,
+    CommonModule,
+    PlatformConfigModule,
+    InvoicingModule,
+    CommissionsModule,
     AuthModule,
     UsersModule,
     ProductsModule,

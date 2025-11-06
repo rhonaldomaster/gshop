@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request, Patch, Put, UseInterceptors, UploadedFiles, BadRequestException } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, UseGuards, Request, Patch, Put, UseInterceptors, UploadedFiles, BadRequestException, Query, Res } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
+import { Response } from 'express'
 import { SellersService } from './sellers.service'
 import { SellersUploadService } from './sellers-upload.service'
 import { CreateSellerDto } from './dto/create-seller.dto'
@@ -220,5 +221,55 @@ export class SellersController {
     return {
       message: 'Ubicación eliminada exitosamente',
     }
+  }
+
+  // Commission Management Endpoints
+
+  @Get(':id/commissions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller commissions by month and year' })
+  async getSellerCommissions(
+    @Param('id') sellerId: string,
+    @Query('month') month: number,
+    @Query('year') year: number,
+    @Request() req,
+  ) {
+    // Ensure seller can only access their own data
+    if (req.user.sellerId !== sellerId && !req.user.isAdmin) {
+      throw new BadRequestException('No autorizado para ver estas comisiones')
+    }
+
+    return this.sellersService.getSellerCommissions(sellerId, Number(month), Number(year))
+  }
+
+  @Get(':id/commissions/report')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Download seller commission report as PDF' })
+  async downloadCommissionReport(
+    @Param('id') sellerId: string,
+    @Query('month') month: number,
+    @Query('year') year: number,
+    @Request() req,
+    @Res() res: Response,
+  ) {
+    // Ensure seller can only access their own data
+    if (req.user.sellerId !== sellerId && !req.user.isAdmin) {
+      throw new BadRequestException('No autorizado para descargar este reporte')
+    }
+
+    const pdf = await this.sellersService.generateCommissionReportPDF(
+      sellerId,
+      Number(month),
+      Number(year),
+    )
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=comisiones_${year}_${month}.pdf`,
+    )
+    return res.send(pdf)
   }
 }

@@ -10,6 +10,8 @@ import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { LiveStream } from '../live/live.entity';
 import { Affiliate } from '../affiliates/entities/affiliate.entity';
+import { ConfigService as PlatformConfigService } from '../config/config.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class OrdersService {
@@ -25,6 +27,8 @@ export class OrdersService {
     @InjectRepository(Affiliate)
     private affiliateRepository: Repository<Affiliate>,
     private dataSource: DataSource,
+    private platformConfigService: PlatformConfigService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: string): Promise<Order> {
@@ -45,9 +49,18 @@ export class OrdersService {
       // Calculate final totals (prices already include VAT)
       const shippingAmount = createOrderDto.shippingAmount || 0;
       const discountAmount = createOrderDto.discountAmount || 0;
-      const totalAmount = subtotal + shippingAmount - discountAmount;
 
-      // Calculate commission if affiliate is involved
+      // Get platform fee rate from configuration
+      const platformFeeRate = await this.platformConfigService.getBuyerPlatformFeeRate();
+      const platformFeeAmount = ((subtotal - discountAmount) * platformFeeRate) / 100;
+
+      // Get seller commission rate from configuration
+      const sellerCommissionRate = await this.platformConfigService.getSellerCommissionRate();
+
+      // Total amount includes platform fee
+      const totalAmount = subtotal + shippingAmount - discountAmount + platformFeeAmount;
+
+      // Calculate commission if affiliate is involved (existing logic)
       let commissionRate = 0;
       let commissionAmount = 0;
 
@@ -62,7 +75,7 @@ export class OrdersService {
         }
       }
 
-      // Create order
+      // Create order with commission/fee fields
       const order = queryRunner.manager.create(Order, {
         orderNumber,
         userId,
@@ -81,6 +94,13 @@ export class OrdersService {
         affiliateId: createOrderDto.affiliateId,
         commissionRate,
         commissionAmount,
+        // New commission/fee fields
+        platformFeeRate,
+        platformFeeAmount,
+        sellerCommissionRate,
+        sellerCommissionAmount: 0, // Will be calculated on delivery
+        sellerNetAmount: 0, // Will be calculated on delivery
+        commissionStatus: 'pending',
       });
 
       const savedOrder = await queryRunner.manager.save(Order, order);
@@ -292,11 +312,27 @@ export class OrdersService {
 
     if (status === OrderStatus.DELIVERED) {
       updateData.deliveredAt = new Date();
+
+      // Calculate seller commission when order is delivered
+      const subtotalAfterDiscount = order.subtotal - order.discountAmount;
+      const sellerCommissionAmount = (subtotalAfterDiscount * order.sellerCommissionRate) / 100;
+      const sellerNetAmount = subtotalAfterDiscount - sellerCommissionAmount;
+
+      updateData.sellerCommissionAmount = sellerCommissionAmount;
+      updateData.sellerNetAmount = sellerNetAmount;
+      updateData.commissionStatus = 'calculated';
     }
 
     await this.orderRepository.update(id, updateData);
 
-    return this.findOne(id);
+    const updatedOrder = await this.findOne(id);
+
+    // Emit event for invoice generation
+    if (status === OrderStatus.DELIVERED) {
+      this.eventEmitter.emit('order.delivered', { order: updatedOrder });
+    }
+
+    return updatedOrder;
   }
 
   async getOrdersByUser(userId: string, query: OrderQueryDto) {

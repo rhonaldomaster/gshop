@@ -15,6 +15,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApi } from '../../hooks/useApi';
+import { api } from '../../services/api';
 import { ordersService, CreateOrderRequest, ShippingAddress } from '../../services/orders.service';
 import { addressesService, Address } from '../../services/addresses.service';
 import { paymentsService, PaymentMethod } from '../../services/payments.service';
@@ -338,13 +339,32 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
     formatPrice,
     getCartSummary,
   } = useCart();
+  const [platformFeeRate, setPlatformFeeRate] = useState(0);
+  const [loadingFeeRate, setLoadingFeeRate] = useState(true);
+
+  // Fetch platform fee rate on mount
+  useEffect(() => {
+    const fetchFeeRate = async () => {
+      try {
+        const response = await api.get<{ rate: number }>('/config/buyer-platform-fee-rate');
+        setPlatformFeeRate(response.data.rate || 0);
+      } catch (error) {
+        console.error('Error fetching platform fee rate:', error);
+        setPlatformFeeRate(0); // Default to 0 if error
+      } finally {
+        setLoadingFeeRate(false);
+      }
+    };
+    fetchFeeRate();
+  }, []);
 
   const summary = getCartSummary();
   const subtotal = Number(summary.subtotal) || 0;
   const shipping = Number(shippingCost) || 0;
+  const platformFee = Number(((subtotal * platformFeeRate) / 100).toFixed(2));
   // NOTE: VAT is already included in product prices (Colombian law)
   // No additional tax calculation needed
-  const total = Number((subtotal + shipping).toFixed(2));
+  const total = Number((subtotal + shipping + platformFee).toFixed(2));
 
   console.log('OrderSummary calculations:', {
     'summary.subtotal': summary.subtotal,
@@ -414,9 +434,35 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
           </GSText>
         </View>
 
+        {/* Platform Fee */}
+        {!loadingFeeRate && platformFee > 0 && (
+          <View style={styles.totalRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <GSText variant="body" color="textSecondary">
+                Cargo de plataforma ({platformFeeRate}%)
+              </GSText>
+              <GSText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
+                ℹ️
+              </GSText>
+            </View>
+            <GSText variant="body" color="textSecondary">
+              {formatPrice(platformFee)}
+            </GSText>
+          </View>
+        )}
+
         <GSText variant="caption" color="textSecondary" style={styles.vatNote}>
           * IVA incluido en los precios
         </GSText>
+
+        {/* Disclaimer about platform fee */}
+        {!loadingFeeRate && platformFee > 0 && (
+          <View style={[styles.infoBox, { backgroundColor: theme.colors.info + '15', borderColor: theme.colors.info }]}>
+            <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
+              💡 El cargo de plataforma ayuda a mantener GSHOP seguro, con soporte 24/7 y protección de compra garantizada
+            </GSText>
+          </View>
+        )}
 
         <View style={[styles.totalRow, styles.finalTotal]}>
           <GSText variant="h4" weight="bold">{t('checkout.total')}</GSText>
@@ -1000,5 +1046,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  infoBox: {
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginVertical: 8,
   },
 });

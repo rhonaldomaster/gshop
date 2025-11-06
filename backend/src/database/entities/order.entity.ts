@@ -211,6 +211,39 @@ export class Order {
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
   commissionAmount: number;
 
+  // Commission and Fee Fields (New System)
+  @ApiProperty()
+  @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'platform_fee_rate' })
+  platformFeeRate: number;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0, name: 'platform_fee_amount' })
+  platformFeeAmount: number;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 5, scale: 2, default: 0, name: 'seller_commission_rate' })
+  sellerCommissionRate: number;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0, name: 'seller_commission_amount' })
+  sellerCommissionAmount: number;
+
+  @ApiProperty()
+  @Column('decimal', { precision: 10, scale: 2, default: 0, name: 'seller_net_amount' })
+  sellerNetAmount: number;
+
+  @ApiProperty()
+  @Column({ type: 'varchar', length: 20, default: 'pending', name: 'commission_status' })
+  commissionStatus: string;
+
+  @ApiProperty()
+  @Column({ type: 'uuid', nullable: true, name: 'commission_invoice_id' })
+  commissionInvoiceId: string;
+
+  @ApiProperty()
+  @Column({ type: 'uuid', nullable: true, name: 'fee_invoice_id' })
+  feeInvoiceId: string;
+
   @ApiProperty()
   @CreateDateColumn()
   createdAt: Date;
@@ -231,4 +264,13 @@ export class Order {
 
   @OneToOne(() => Payment, (payment) => payment.order)
   payment: Payment;
+
+  // Invoice relations (loaded lazily when needed)
+  @ManyToOne(() => require('./invoice.entity').Invoice, { nullable: true })
+  @JoinColumn({ name: 'commission_invoice_id' })
+  commissionInvoice: any;
+
+  @ManyToOne(() => require('./invoice.entity').Invoice, { nullable: true })
+  @JoinColumn({ name: 'fee_invoice_id' })
+  feeInvoice: any;
 }

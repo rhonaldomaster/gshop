@@ -1,10 +1,12 @@
 import { Injectable, ConflictException, UnauthorizedException, NotFoundException, BadRequestException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, Between } from 'typeorm'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
+import * as PDFDocument from 'pdfkit'
 import { Seller, SellerType, DocumentType, VerificationStatus } from './entities/seller.entity'
 import { SellerLocation } from './entities/seller-location.entity'
+import { Order, OrderStatus } from '../database/entities/order.entity'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
@@ -19,6 +21,8 @@ export class SellersService {
     private sellersRepository: Repository<Seller>,
     @InjectRepository(SellerLocation)
     private locationsRepository: Repository<SellerLocation>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
     private jwtService: JwtService,
     private emailService: EmailService,
   ) {}
@@ -402,6 +406,217 @@ export class SellersService {
     return this.locationsRepository.find({
       where: { sellerId },
       order: { isPrimary: 'DESC', createdAt: 'ASC' }
+    })
+  }
+
+  // Commission Management Methods
+
+  // TODO: These methods are temporarily disabled until sellerId is added to Order entity
+  // The commission system requires Orders to have a direct seller relation
+  // For now, admin commission tracking via /admin/commissions works, but seller-specific views don't
+  async getSellerCommissions(sellerId: string, month: number, year: number) {
+    // Temporary mock response until Order entity has sellerId
+    return {
+      totalSales: 0,
+      totalCommissions: 0,
+      netIncome: 0,
+      totalOrders: 0,
+      commissionRate: '0.00',
+      orders: [],
+      monthlyTrend: [],
+    }
+
+    /* Original implementation - requires Order.sellerId:
+    const startDate = new Date(year, month - 1, 1)
+    const endDate = new Date(year, month, 0, 23, 59, 59)
+
+    const orders = await this.orderRepository.find({
+      where: {
+        sellerId,
+        status: OrderStatus.DELIVERED,
+        deliveredAt: Between(startDate, endDate),
+      },
+      relations: ['items'],
+    })
+
+    const totalSales = orders.reduce((sum, o) => {
+      const subtotal = o.items.reduce((s, i) => s + Number(i.totalPrice), 0) - (Number(o.discountAmount) || 0)
+      return sum + subtotal
+    }, 0)
+
+    const totalCommissions = orders.reduce((sum, o) => sum + (o.sellerCommissionAmount || 0), 0)
+    const netIncome = totalSales - totalCommissions
+    const avgCommissionRate = orders.length > 0
+      ? orders.reduce((sum, o) => sum + (o.sellerCommissionRate || 0), 0) / orders.length
+      : 0
+
+    const monthlyTrend = await this.getMonthlyTrend(sellerId, year)
+
+    return {
+      totalSales,
+      totalCommissions,
+      netIncome,
+      totalOrders: orders.length,
+      commissionRate: avgCommissionRate.toFixed(2),
+      orders: orders.map(o => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        deliveredAt: o.deliveredAt,
+        subtotal: o.items.reduce((s, i) => s + Number(i.totalPrice), 0) - (Number(o.discountAmount) || 0),
+        commissionRate: o.sellerCommissionRate || 0,
+        commissionAmount: o.sellerCommissionAmount || 0,
+        netAmount: o.sellerNetAmount || 0,
+        commissionStatus: o.commissionStatus,
+      })),
+      monthlyTrend,
+    }
+    */
+  }
+
+  private async getMonthlyTrend(sellerId: string, year: number) {
+    // Temporary mock response
+    return []
+
+    /* Original implementation - requires Order.sellerId:
+    const trend = []
+
+    for (let month = 1; month <= 12; month++) {
+      const startDate = new Date(year, month - 1, 1)
+      const endDate = new Date(year, month, 0, 23, 59, 59)
+
+      const orders = await this.orderRepository.find({
+        where: {
+          sellerId,
+          status: OrderStatus.DELIVERED,
+          deliveredAt: Between(startDate, endDate),
+        },
+        relations: ['items'],
+      })
+
+      const sales = orders.reduce((sum, o) => {
+        const subtotal = o.items.reduce((s, i) => s + Number(i.totalPrice), 0) - (Number(o.discountAmount) || 0)
+        return sum + subtotal
+      }, 0)
+
+      const commissions = orders.reduce((sum, o) => sum + (o.sellerCommissionAmount || 0), 0)
+
+      trend.push({
+        month: new Date(year, month - 1).toLocaleString('es', { month: 'short' }),
+        sales,
+        commissions,
+        netIncome: sales - commissions,
+      })
+    }
+
+    return trend
+    */
+  }
+
+  async generateCommissionReportPDF(sellerId: string, month: number, year: number): Promise<Buffer> {
+    const data = await this.getSellerCommissions(sellerId, month, year)
+    const seller = await this.findOne(sellerId)
+
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50 })
+      const chunks: Buffer[] = []
+
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', reject)
+
+      // Header
+      doc.fontSize(20).text('Reporte de Comisiones', { align: 'center' })
+      doc.moveDown()
+      doc.fontSize(12).text(`Vendedor: ${seller.businessName}`, { align: 'center' })
+      doc.text(`Período: ${month}/${year}`, { align: 'center' })
+      doc.moveDown(2)
+
+      // Summary Section
+      doc.fontSize(14).text('Resumen', { underline: true })
+      doc.moveDown()
+      doc.fontSize(11)
+      doc.text(`Ventas Totales: $${data.totalSales.toLocaleString('es-CO')}`)
+      doc.text(`Comisiones Cobradas: $${data.totalCommissions.toLocaleString('es-CO')} (${data.commissionRate}%)`)
+      doc.text(`Ingresos Netos: $${data.netIncome.toLocaleString('es-CO')}`)
+      doc.text(`Total Órdenes: ${data.totalOrders}`)
+      doc.moveDown(2)
+
+      // Orders Table
+      doc.fontSize(14).text('Detalle de Órdenes', { underline: true })
+      doc.moveDown()
+
+      if (data.orders.length === 0) {
+        doc.fontSize(10).text('No hay órdenes en este período')
+      } else {
+        // Table headers
+        doc.fontSize(9)
+        const tableTop = doc.y
+        const colWidths = {
+          order: 80,
+          date: 70,
+          subtotal: 70,
+          rate: 50,
+          commission: 70,
+          net: 70,
+        }
+
+        doc.text('Orden', 50, tableTop)
+        doc.text('Fecha', 50 + colWidths.order, tableTop)
+        doc.text('Subtotal', 50 + colWidths.order + colWidths.date, tableTop)
+        doc.text('Tasa', 50 + colWidths.order + colWidths.date + colWidths.subtotal, tableTop)
+        doc.text('Comisión', 50 + colWidths.order + colWidths.date + colWidths.subtotal + colWidths.rate, tableTop)
+        doc.text('Neto', 50 + colWidths.order + colWidths.date + colWidths.subtotal + colWidths.rate + colWidths.commission, tableTop)
+
+        doc.moveDown()
+        doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke()
+        doc.moveDown()
+
+        // Table rows
+        data.orders.forEach((order) => {
+          const rowY = doc.y
+          doc.text(order.orderNumber, 50, rowY, { width: colWidths.order })
+          doc.text(
+            new Date(order.deliveredAt).toLocaleDateString('es-CO'),
+            50 + colWidths.order,
+            rowY,
+            { width: colWidths.date }
+          )
+          doc.text(
+            `$${order.subtotal.toLocaleString('es-CO')}`,
+            50 + colWidths.order + colWidths.date,
+            rowY,
+            { width: colWidths.subtotal }
+          )
+          doc.text(
+            `${order.commissionRate}%`,
+            50 + colWidths.order + colWidths.date + colWidths.subtotal,
+            rowY,
+            { width: colWidths.rate }
+          )
+          doc.text(
+            `$${order.commissionAmount.toLocaleString('es-CO')}`,
+            50 + colWidths.order + colWidths.date + colWidths.subtotal + colWidths.rate,
+            rowY,
+            { width: colWidths.commission }
+          )
+          doc.text(
+            `$${order.netAmount.toLocaleString('es-CO')}`,
+            50 + colWidths.order + colWidths.date + colWidths.subtotal + colWidths.rate + colWidths.commission,
+            rowY,
+            { width: colWidths.net }
+          )
+          doc.moveDown()
+        })
+      }
+
+      // Footer
+      doc.moveDown(2)
+      doc.fontSize(8).text(
+        `Generado el ${new Date().toLocaleString('es-CO')}`,
+        { align: 'center' }
+      )
+
+      doc.end()
     })
   }
 }
