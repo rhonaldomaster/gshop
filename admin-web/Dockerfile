@@ -6,13 +6,13 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package files from the app subdirectory
-COPY app/package*.json app/package-lock.json* ./
+COPY package*.json package-lock.json* ./
 
 # Install dependencies
 RUN npm install && npm cache clean --force
 
 # Copy source code
-COPY app/ ./
+COPY . ./
 
 # Build the application
 RUN npm run build

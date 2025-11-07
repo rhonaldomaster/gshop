@@ -1,5 +1,5 @@
 {
-  "name": "app",
+  "name": "admin-web",
   "private": true,
   "scripts": {
     "dev": "next dev",
