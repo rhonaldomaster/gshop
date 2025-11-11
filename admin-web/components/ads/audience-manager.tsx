@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +26,7 @@ interface Audience {
 }
 
 export function AudienceManager() {
+  const t = useTranslations('ads.audiences')
   const [audiences, setAudiences] = useState<Audience[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -89,7 +91,7 @@ export function AudienceManager() {
   }
 
   const deleteAudience = async (audienceId: string) => {
-    if (!confirm('Are you sure you want to delete this audience?')) {
+    if (!confirm(t('confirmDeleteAudience'))) {
       return
     }
 
@@ -108,10 +110,10 @@ export function AudienceManager() {
 
   const getTypeBadge = (type: string) => {
     const labels = {
-      pixel_based: 'Pixel Based',
-      customer_list: 'Customer List',
-      lookalike: 'Lookalike',
-      custom: 'Custom',
+      pixel_based: t('pixelBased'),
+      customer_list: t('customerList'),
+      lookalike: t('lookalike'),
+      custom: t('custom'),
     }
 
     const variants = {
@@ -134,26 +136,31 @@ export function AudienceManager() {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Events to Track</Label>
+              <Label>{t('eventsToTrack')}</Label>
               <div className="space-y-2">
-                {['page_view', 'product_view', 'add_to_cart', 'purchase'].map((event) => (
-                  <div key={event} className="flex items-center space-x-2">
+                {[
+                  { key: 'page_view', label: t('pageView') },
+                  { key: 'product_view', label: t('productView') },
+                  { key: 'add_to_cart', label: t('addToCart') },
+                  { key: 'purchase', label: t('purchase') }
+                ].map((event) => (
+                  <div key={event.key} className="flex items-center space-x-2">
                     <Checkbox
-                      id={event}
-                      checked={(formData.rules as any).events?.includes(event)}
+                      id={event.key}
+                      checked={(formData.rules as any).events?.includes(event.key)}
                       onCheckedChange={(checked) => {
                         const events = (formData.rules as any).events || []
                         const newEvents = checked
-                          ? [...events, event]
-                          : events.filter((e: string) => e !== event)
+                          ? [...events, event.key]
+                          : events.filter((e: string) => e !== event.key)
                         setFormData({
                           ...formData,
                           rules: { ...formData.rules, events: newEvents }
                         })
                       }}
                     />
-                    <Label htmlFor={event} className="capitalize">
-                      {event.replace('_', ' ')}
+                    <Label htmlFor={event.key}>
+                      {event.label}
                     </Label>
                   </div>
                 ))}
@@ -161,7 +168,7 @@ export function AudienceManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="timeframe">Timeframe (days)</Label>
+              <Label htmlFor="timeframe">{t('timeframeDays')}</Label>
               <Input
                 id="timeframe"
                 type="number"
@@ -182,7 +189,7 @@ export function AudienceManager() {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="userIds">User IDs (one per line)</Label>
+              <Label htmlFor="userIds">{t('userIds')}</Label>
               <Textarea
                 id="userIds"
                 value={(formData.rules as any).userIds?.join('\n') || ''}
@@ -204,7 +211,7 @@ export function AudienceManager() {
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="sourceAudience">Source Audience</Label>
+              <Label htmlFor="sourceAudience">{t('sourceAudience')}</Label>
               <Select
                 value={(formData.rules as any).sourceAudienceId || ''}
                 onValueChange={(value) => setFormData({
@@ -213,12 +220,12 @@ export function AudienceManager() {
                 })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select source audience" />
+                  <SelectValue placeholder={t('selectSourceAudience')} />
                 </SelectTrigger>
                 <SelectContent>
                   {audiences.map((audience) => (
                     <SelectItem key={audience.id} value={audience.id}>
-                      {audience.name} ({audience.size} users)
+                      {audience.name} ({audience.size} {t('users')})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -226,7 +233,7 @@ export function AudienceManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="similarity">Similarity (0.1 = 10%)</Label>
+              <Label htmlFor="similarity">{t('similarity')}</Label>
               <Input
                 id="similarity"
                 type="number"
@@ -250,69 +257,69 @@ export function AudienceManager() {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading audiences...</div>
+    return <div className="text-center py-8">{t('loadingAudiences')}</div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Custom Audiences</h3>
+          <h3 className="text-lg font-semibold">{t('title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Create targeted audiences based on user behavior and customer data
+            {t('description')}
           </p>
         </div>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Audience
+              {t('createAudience')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Create Custom Audience</DialogTitle>
+              <DialogTitle>{t('createCustomAudience')}</DialogTitle>
               <DialogDescription>
-                Define rules to automatically include users in this audience
+                {t('defineRules')}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Audience Name</Label>
+                <Label htmlFor="name">{t('audienceName')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter audience name"
+                  placeholder={t('enterAudienceName')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type">Audience Type</Label>
+                <Label htmlFor="type">{t('audienceType')}</Label>
                 <Select
                   value={formData.type}
                   onValueChange={(value) => setFormData({ ...formData, type: value, rules: {} })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select audience type" />
+                    <SelectValue placeholder={t('selectAudienceType')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pixel_based">Pixel Based</SelectItem>
-                    <SelectItem value="customer_list">Customer List</SelectItem>
-                    <SelectItem value="lookalike">Lookalike</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="pixel_based">{t('pixelBased')}</SelectItem>
+                    <SelectItem value="customer_list">{t('customerList')}</SelectItem>
+                    <SelectItem value="lookalike">{t('lookalike')}</SelectItem>
+                    <SelectItem value="custom">{t('custom')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('description')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe this audience"
+                  placeholder={t('describeAudience')}
                   rows={2}
                 />
               </div>
@@ -322,10 +329,10 @@ export function AudienceManager() {
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={createAudience} disabled={!formData.name || !formData.type}>
-                Create Audience
+                {t('createAudienceButton')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -336,9 +343,9 @@ export function AudienceManager() {
         <Card>
           <CardContent className="text-center py-12">
             <Users className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">No audiences yet</h3>
+            <h3 className="mt-4 text-lg font-semibold">{t('noAudiences')}</h3>
             <p className="text-muted-foreground mt-2">
-              Create custom audiences to target specific user segments with your campaigns.
+              {t('noAudiencesDescription')}
             </p>
           </CardContent>
         </Card>
@@ -347,12 +354,12 @@ export function AudienceManager() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Audience</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Size</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-[120px]">Actions</TableHead>
+                <TableHead>{t('audience')}</TableHead>
+                <TableHead>{t('type')}</TableHead>
+                <TableHead>{t('size')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('created')}</TableHead>
+                <TableHead className="w-[120px]">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -371,11 +378,11 @@ export function AudienceManager() {
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{audience.size.toLocaleString()}</div>
-                    <div className="text-sm text-muted-foreground">users</div>
+                    <div className="text-sm text-muted-foreground">{t('users')}</div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={audience.isActive ? 'default' : 'secondary'}>
-                      {audience.isActive ? 'Active' : 'Inactive'}
+                      {audience.isActive ? t('active') : t('inactive')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -387,7 +394,7 @@ export function AudienceManager() {
                         variant="ghost"
                         size="sm"
                         onClick={() => rebuildAudience(audience.id)}
-                        title="Rebuild audience"
+                        title={t('rebuildAudience')}
                       >
                         <RefreshCw className="h-4 w-4" />
                       </Button>
@@ -395,7 +402,7 @@ export function AudienceManager() {
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteAudience(audience.id)}
-                        title="Delete audience"
+                        title={t('deleteAudience')}
                       >
                         <Trash className="h-4 w-4" />
                       </Button>

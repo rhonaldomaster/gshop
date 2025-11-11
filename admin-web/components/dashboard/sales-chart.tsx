@@ -1,31 +1,33 @@
 
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 
 const mockData = [
-  { name: 'Jan', sales: 12000 },
+  { name: 'Ene', sales: 12000 },
   { name: 'Feb', sales: 19000 },
   { name: 'Mar', sales: 15000 },
-  { name: 'Apr', sales: 25000 },
+  { name: 'Abr', sales: 25000 },
   { name: 'May', sales: 22000 },
   { name: 'Jun', sales: 30000 },
   { name: 'Jul', sales: 28000 },
-  { name: 'Aug', sales: 35000 },
+  { name: 'Ago', sales: 35000 },
   { name: 'Sep', sales: 32000 },
   { name: 'Oct', sales: 38000 },
   { name: 'Nov', sales: 42000 },
-  { name: 'Dec', sales: 45000 },
+  { name: 'Dic', sales: 45000 },
 ];
 
 export function SalesChart() {
+  const t = useTranslations('dashboard');
   return (
     <Card className="gshop-card">
       <CardHeader>
-        <CardTitle>Sales Overview</CardTitle>
+        <CardTitle>{t('salesOverview')}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Monthly sales performance
+          {t('monthlySalesPerformance')}
         </p>
       </CardHeader>
       <CardContent>
@@ -50,7 +52,7 @@ export function SalesChart() {
                       <div className="bg-background border border-border rounded-lg p-2 shadow-sm">
                         <p className="text-sm font-medium">{label}</p>
                         <p className="text-sm text-primary">
-                          Sales: ${payload[0]?.value?.toLocaleString?.()}
+                          {t('sales')}: ${payload[0]?.value?.toLocaleString?.()}
                         </p>
                       </div>
                     );

@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -23,22 +24,24 @@ import {
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Products', href: '/dashboard/products', icon: Package },
-  { name: 'Categories', href: '/dashboard/categories', icon: Tags },
-  { name: 'Orders', href: '/dashboard/orders', icon: ShoppingCart },
-  { name: 'Users', href: '/dashboard/users', icon: Users },
-  { name: 'Payments', href: '/dashboard/payments', icon: CreditCard },
-  { name: 'Ads Manager', href: '/ads', icon: Target },
-  { name: 'Live Shopping', href: '/live', icon: Radio },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+const navigationConfig = [
+  { key: 'dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { key: 'products', href: '/dashboard/products', icon: Package },
+  { key: 'categories', href: '/dashboard/categories', icon: Tags },
+  { key: 'orders', href: '/dashboard/orders', icon: ShoppingCart },
+  { key: 'users', href: '/dashboard/users', icon: Users },
+  { key: 'payments', href: '/dashboard/payments', icon: CreditCard },
+  { key: 'ads', href: '/ads', icon: Target },
+  { key: 'live', href: '/live', icon: Radio },
+  { key: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
+  { key: 'settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const t = useTranslations('navigation');
+  const tHome = useTranslations('home');
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' });
@@ -78,7 +81,7 @@ export function Sidebar() {
               <div className="w-8 h-8 gshop-gradient rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">G</span>
               </div>
-              <span className="text-xl font-bold">GSHOP Admin</span>
+              <span className="text-xl font-bold">{tHome('title')}</span>
             </div>
             <Button
               variant="ghost"
@@ -92,20 +95,20 @@ export function Sidebar() {
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2">
-            {navigation?.map?.((item) => {
+            {navigationConfig?.map?.((item) => {
               const isActive = pathname === item.href || pathname?.startsWith?.(item.href + '/');
               const Icon = item.icon;
 
               return (
                 <Link
-                  key={item.name}
+                  key={item.key}
                   href={item.href}
                   className={cn('gshop-nav-item', isActive && 'bg-primary text-primary-foreground')}
                   data-active={isActive}
                   onClick={() => setIsOpen(false)}
                 >
                   <Icon className="h-5 w-5" />
-                  <span>{item.name}</span>
+                  <span>{t(item.key)}</span>
                 </Link>
               );
             })}
@@ -119,7 +122,7 @@ export function Sidebar() {
               onClick={handleSignOut}
             >
               <LogOut className="h-5 w-5 mr-3" />
-              Sign Out
+              {t('logout')}
             </Button>
           </div>
         </div>

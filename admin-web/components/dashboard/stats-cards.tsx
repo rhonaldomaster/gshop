@@ -2,14 +2,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  ShoppingCart, 
-  Users, 
-  Package 
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  ShoppingCart,
+  Users,
+  Package
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
@@ -25,6 +26,7 @@ interface StatsData {
 }
 
 export function StatsCards() {
+  const t = useTranslations('dashboard');
   const [stats, setStats] = useState<StatsData>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -80,7 +82,7 @@ export function StatsCards() {
 
   const cards = [
     {
-      title: 'Total Revenue',
+      title: t('totalRevenue'),
       value: new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency: 'ARS',
@@ -90,21 +92,21 @@ export function StatsCards() {
       color: 'text-primary',
     },
     {
-      title: 'Total Orders',
+      title: t('totalOrders'),
       value: stats?.totalOrders?.toLocaleString?.() || '0',
       change: stats?.ordersChange || 0,
       icon: ShoppingCart,
       color: 'text-accent',
     },
     {
-      title: 'Total Users',
+      title: t('totalUsers'),
       value: stats?.totalUsers?.toLocaleString?.() || '0',
       change: stats?.usersChange || 0,
       icon: Users,
       color: 'text-blue-600',
     },
     {
-      title: 'Total Products',
+      title: t('totalProducts'),
       value: stats?.totalProducts?.toLocaleString?.() || '0',
       change: stats?.productsChange || 0,
       icon: Package,
@@ -152,15 +154,15 @@ export function StatsCards() {
                 {card?.value}
               </div>
               <div className="flex items-center text-xs text-muted-foreground">
-                <TrendIcon 
+                <TrendIcon
                   className={`h-3 w-3 mr-1 ${
                     isPositive ? 'text-accent' : 'text-red-500'
-                  }`} 
+                  }`}
                 />
                 <span className={isPositive ? 'text-accent' : 'text-red-500'}>
                   {Math.abs(card?.change || 0).toFixed(1)}%
                 </span>
-                <span className="ml-1">from last month</span>
+                <span className="ml-1">{t('fromLastMonth')}</span>
               </div>
             </CardContent>
           </Card>

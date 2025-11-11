@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +33,7 @@ interface CampaignsListProps {
 }
 
 export function CampaignsList({ onRefresh }: CampaignsListProps) {
+  const t = useTranslations('ads')
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -74,7 +76,7 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
   }
 
   const deleteCampaign = async (campaignId: string) => {
-    if (!confirm('Are you sure you want to delete this campaign?')) {
+    if (!confirm(t('confirmDelete'))) {
       return
     }
 
@@ -100,18 +102,25 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
       completed: 'secondary',
     } as const
 
+    const labels = {
+      draft: t('draft'),
+      active: t('active'),
+      paused: t('paused'),
+      completed: t('completed'),
+    }
+
     return (
       <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>
-        {status}
+        {labels[status as keyof typeof labels] || status}
       </Badge>
     )
   }
 
   const getTypeBadge = (type: string) => {
     const labels = {
-      dpa: 'Dynamic Product Ads',
-      retargeting: 'Retargeting',
-      custom: 'Custom',
+      dpa: t('dpaLabel'),
+      retargeting: t('retargetingLabel'),
+      custom: t('customLabel'),
     }
 
     return (
@@ -149,16 +158,16 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading campaigns...</div>
+    return <div className="text-center py-8">{t('loadingCampaigns')}</div>
   }
 
   if (campaigns.length === 0) {
     return (
       <div className="text-center py-12">
         <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-semibold">No campaigns yet</h3>
+        <h3 className="mt-4 text-lg font-semibold">{t('noCampaigns')}</h3>
         <p className="text-muted-foreground">
-          Create your first advertising campaign to start reaching customers.
+          {t('noCampaignsDescription')}
         </p>
       </div>
     )
@@ -170,12 +179,12 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Campaign</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Budget</TableHead>
-              <TableHead>Spent</TableHead>
-              <TableHead>Performance</TableHead>
+              <TableHead>{t('campaign')}</TableHead>
+              <TableHead>{t('type')}</TableHead>
+              <TableHead>{t('status')}</TableHead>
+              <TableHead>{t('budget')}</TableHead>
+              <TableHead>{t('spent')}</TableHead>
+              <TableHead>{t('performance')}</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -188,7 +197,7 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
                     <div>
                       <div className="font-medium">{campaign.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        Created {new Date(campaign.createdAt).toLocaleDateString()}
+                        {t('created')} {new Date(campaign.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   </TableCell>
@@ -202,26 +211,26 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
                     <div>
                       <div className="font-medium">${campaign.budget.toFixed(2)}</div>
                       <div className="text-sm text-muted-foreground">
-                        ${campaign.dailyBudget.toFixed(2)}/day
+                        ${campaign.dailyBudget.toFixed(2)}{t('perDay')}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">${campaign.spent.toFixed(2)}</div>
                     <div className="text-sm text-muted-foreground">
-                      {((campaign.spent / campaign.budget) * 100).toFixed(1)}% of budget
+                      {((campaign.spent / campaign.budget) * 100).toFixed(1)}% {t('ofBudget')}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="text-sm">
-                        <span className="font-medium">{metrics.impressions.toLocaleString()}</span> impressions
+                        <span className="font-medium">{metrics.impressions.toLocaleString()}</span> {t('impressions')}
                       </div>
                       <div className="text-sm">
-                        <span className="font-medium">{(metrics.ctr * 100).toFixed(2)}%</span> CTR
+                        <span className="font-medium">{(metrics.ctr * 100).toFixed(2)}%</span> {t('ctr')}
                       </div>
                       <div className="text-sm">
-                        <span className="font-medium">{metrics.roas.toFixed(2)}x</span> ROAS
+                        <span className="font-medium">{metrics.roas.toFixed(2)}x</span> {t('roas')}
                       </div>
                     </div>
                   </TableCell>
@@ -255,18 +264,18 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                            {t('edit')}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <BarChart3 className="mr-2 h-4 w-4" />
-                            View Analytics
+                            {t('viewAnalytics')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600"
                             onClick={() => deleteCampaign(campaign.id)}
                           >
                             <Trash className="mr-2 h-4 w-4" />
-                            Delete
+                            {t('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

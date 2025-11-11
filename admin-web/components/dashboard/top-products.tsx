@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, TrendingUp, Package } from 'lucide-react';
@@ -17,6 +18,7 @@ interface Product {
 }
 
 export function TopProducts() {
+  const t = useTranslations('dashboard');
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -66,7 +68,7 @@ export function TopProducts() {
     return (
       <Card className="gshop-card">
         <CardHeader>
-          <CardTitle>Top Products</CardTitle>
+          <CardTitle>{t('topProducts')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -90,16 +92,16 @@ export function TopProducts() {
   return (
     <Card className="gshop-card">
       <CardHeader>
-        <CardTitle>Top Products</CardTitle>
+        <CardTitle>{t('topProducts')}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Most ordered products this month
+          {t('topProductsDescription')}
         </p>
       </CardHeader>
       <CardContent>
         {products?.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No products found</p>
+            <p>{t('noProductsFound')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -132,10 +134,10 @@ export function TopProducts() {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <TrendingUp className="h-3 w-3" />
-                      {product?.ordersCount} orders
+                      {product?.ordersCount} {t('orders')}
                     </div>
                     <span>•</span>
-                    <div>{product?.viewsCount?.toLocaleString?.()} views</div>
+                    <div>{product?.viewsCount?.toLocaleString?.()} {t('views')}</div>
                   </div>
                 </div>
                 

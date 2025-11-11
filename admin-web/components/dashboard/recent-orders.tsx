@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,8 @@ interface Order {
 }
 
 export function RecentOrders() {
+  const t = useTranslations('dashboard');
+  const tOrders = useTranslations('orders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -72,7 +75,7 @@ export function RecentOrders() {
     return (
       <Card className="gshop-card">
         <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
+          <CardTitle>{t('recentOrders')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -96,10 +99,10 @@ export function RecentOrders() {
   return (
     <Card className="gshop-card">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Orders</CardTitle>
+        <CardTitle>{t('recentOrders')}</CardTitle>
         <Button variant="outline" size="sm" asChild>
           <Link href="/dashboard/orders">
-            View All
+            {t('viewAll')}
             <ExternalLink className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -108,7 +111,7 @@ export function RecentOrders() {
         {orders?.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No orders found</p>
+            <p>{t('noOrdersFound')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -119,11 +122,11 @@ export function RecentOrders() {
                     <span className="font-mono text-sm font-medium">
                       {order?.orderNumber}
                     </span>
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className={`text-xs ${getStatusColor(order?.status)}`}
                     >
-                      {order?.status?.charAt?.(0)?.toUpperCase?.() + order?.status?.slice?.(1)}
+                      {tOrders(order?.status)}
                     </Badge>
                   </div>
                   <div className="text-sm text-muted-foreground">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,7 @@ interface Campaign {
 }
 
 export function CampaignMetrics() {
+  const t = useTranslations('ads.metrics')
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('')
   const [metrics, setMetrics] = useState<CampaignMetric[]>([])
@@ -130,7 +132,7 @@ export function CampaignMetrics() {
         <div className="flex-1">
           <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
             <SelectTrigger className="w-[300px]">
-              <SelectValue placeholder="Select a campaign" />
+              <SelectValue placeholder={t('selectCampaign')} />
             </SelectTrigger>
             <SelectContent>
               {campaigns.map((campaign) => (
@@ -168,14 +170,14 @@ export function CampaignMetrics() {
             from: subDays(new Date(), 7),
             to: new Date()
           })}>
-            Last 7 days
+            {t('last7Days')}
           </Button>
 
           <Button variant="outline" onClick={() => setDateRange({
             from: subDays(new Date(), 30),
             to: new Date()
           })}>
-            Last 30 days
+            {t('last30Days')}
           </Button>
         </div>
       </div>
@@ -184,52 +186,52 @@ export function CampaignMetrics() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Impressions</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('totalImpressions')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totals.impressions.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {(totals.impressions / Math.max(1, metrics.length)).toFixed(0)} avg per day
+              {(totals.impressions / Math.max(1, metrics.length)).toFixed(0)} {t('avgPerDay')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Click-Through Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('clickThroughRate')}</CardTitle>
             {getPerformanceIcon(averages.ctr, 0.02)}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{(averages.ctr * 100).toFixed(2)}%</div>
             <p className="text-xs text-muted-foreground">
-              {totals.clicks.toLocaleString()} total clicks
+              {totals.clicks.toLocaleString()} {t('totalClicks')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost Per Acquisition</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('costPerAcquisition')}</CardTitle>
             {getPerformanceIcon(50, averages.cpa)}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${averages.cpa.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              {totals.conversions} conversions
+              {totals.conversions} {t('conversions')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Return on Ad Spend</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('returnOnAdSpend')}</CardTitle>
             {getPerformanceIcon(averages.roas, 3)}
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{averages.roas.toFixed(2)}x</div>
             <p className="text-xs text-muted-foreground">
-              ${totals.revenue.toFixed(2)} revenue
+              ${totals.revenue.toFixed(2)} {t('revenue')}
             </p>
           </CardContent>
         </Card>
@@ -238,20 +240,20 @@ export function CampaignMetrics() {
       {/* Daily Performance Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Daily Performance</CardTitle>
+          <CardTitle>{t('dailyPerformance')}</CardTitle>
           <CardDescription>
-            Campaign performance over the selected time period
+            {t('performanceDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">Loading metrics...</div>
+            <div className="text-center py-8">{t('loadingMetrics')}</div>
           ) : metrics.length === 0 ? (
             <div className="text-center py-12">
               <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">No data available</h3>
+              <h3 className="mt-4 text-lg font-semibold">{t('noDataAvailable')}</h3>
               <p className="text-muted-foreground">
-                No metrics found for the selected campaign and date range.
+                {t('noMetricsFound')}
               </p>
             </div>
           ) : (
@@ -259,13 +261,13 @@ export function CampaignMetrics() {
               {/* Simple table view - in a real app, you'd use a charting library */}
               <div className="rounded-md border">
                 <div className="grid grid-cols-7 gap-4 p-4 text-sm font-medium border-b">
-                  <div>Date</div>
-                  <div>Impressions</div>
-                  <div>Clicks</div>
-                  <div>CTR</div>
-                  <div>Conversions</div>
-                  <div>Spend</div>
-                  <div>ROAS</div>
+                  <div>{t('date')}</div>
+                  <div>{t('impressions')}</div>
+                  <div>{t('clicks')}</div>
+                  <div>{t('ctr')}</div>
+                  <div>{t('conversions')}</div>
+                  <div>{t('spend')}</div>
+                  <div>{t('roas')}</div>
                 </div>
                 {metrics.slice().reverse().map((metric) => (
                   <div key={metric.id} className="grid grid-cols-7 gap-4 p-4 text-sm border-b last:border-b-0">

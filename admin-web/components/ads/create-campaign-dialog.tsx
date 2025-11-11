@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,6 +22,7 @@ interface CreateCampaignDialogProps {
 }
 
 export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCampaignDialogProps) {
+  const t = useTranslations('ads')
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -128,20 +130,20 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
   const campaignTypes = [
     {
       value: 'dpa',
-      label: 'Dynamic Product Ads',
-      description: 'Automatically show relevant products from your catalog',
+      label: t('dpaLabel'),
+      description: t('dpaSubtitle'),
       recommended: true,
     },
     {
       value: 'retargeting',
-      label: 'Retargeting Campaign',
-      description: 'Re-engage users who have shown interest in your products',
+      label: t('retargetingLabel'),
+      description: t('retargetingSubtitle'),
       recommended: false,
     },
     {
       value: 'custom',
-      label: 'Custom Campaign',
-      description: 'Create a custom advertising campaign with specific targeting',
+      label: t('customLabel'),
+      description: t('customSubtitle'),
       recommended: false,
     },
   ]
@@ -150,16 +152,16 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Campaign</DialogTitle>
+          <DialogTitle>{t('createNewCampaign')}</DialogTitle>
           <DialogDescription>
-            Set up a new advertising campaign to reach your target audience
+            {t('setupCampaign')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Campaign Type Selection */}
           <div className="space-y-4">
-            <Label>Campaign Type</Label>
+            <Label>{t('campaignType')}</Label>
             <div className="grid gap-3">
               {campaignTypes.map((type) => (
                 <Card
@@ -175,7 +177,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{type.label}</CardTitle>
                       {type.recommended && (
-                        <Badge variant="secondary">Recommended</Badge>
+                        <Badge variant="secondary">{t('recommended')}</Badge>
                       )}
                     </div>
                     <CardDescription>{type.description}</CardDescription>
@@ -188,17 +190,17 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
           {/* Basic Information */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Campaign Name *</Label>
+              <Label htmlFor="name">{t('campaignTypeRequired')}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter campaign name"
+                placeholder={t('enterCampaignName')}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="budget">Total Budget *</Label>
+              <Label htmlFor="budget">{t('totalBudget')}</Label>
               <Input
                 id="budget"
                 type="number"
@@ -213,12 +215,12 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('description')}</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe your campaign goals and target audience"
+              placeholder={t('describeGoals')}
               rows={3}
             />
           </div>
@@ -226,7 +228,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
           {/* Budget and Scheduling */}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="dailyBudget">Daily Budget *</Label>
+              <Label htmlFor="dailyBudget">{t('dailyBudget')}</Label>
               <Input
                 id="dailyBudget"
                 type="number"
@@ -240,7 +242,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
             </div>
 
             <div className="space-y-2">
-              <Label>Start Date</Label>
+              <Label>{t('startDateLabel')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -248,7 +250,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
                     className="w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(formData.startDate, 'PPP') : 'Pick a date'}
+                    {formData.startDate ? format(formData.startDate, 'PPP') : t('pickDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -263,7 +265,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
             </div>
 
             <div className="space-y-2">
-              <Label>End Date</Label>
+              <Label>{t('endDateLabel')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -271,7 +273,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
                     className="w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? format(formData.endDate, 'PPP') : 'Pick a date'}
+                    {formData.endDate ? format(formData.endDate, 'PPP') : t('pickDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -290,11 +292,11 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
           {formData.type && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Campaign Configuration</CardTitle>
+                <CardTitle className="text-base">{t('campaignConfiguration')}</CardTitle>
                 <CardDescription>
-                  {formData.type === 'dpa' && 'This campaign will automatically show products from your catalog to users based on their browsing behavior.'}
-                  {formData.type === 'retargeting' && 'This campaign will target users who have previously visited your store but haven\'t made a purchase.'}
-                  {formData.type === 'custom' && 'You can customize targeting, creative, and other settings after creating the campaign.'}
+                  {formData.type === 'dpa' && t('dpaDescription')}
+                  {formData.type === 'retargeting' && t('retargetingDescription')}
+                  {formData.type === 'custom' && t('customDescription')}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -306,10 +308,10 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Campaign'}
+              {loading ? t('creating') : t('createCampaignButton')}
             </Button>
           </DialogFooter>
         </form>

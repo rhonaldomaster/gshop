@@ -2,6 +2,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import { Bell, Search, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 
 export function Header() {
   const { data: session } = useSession() || {};
+  const t = useTranslations('header');
 
   const getInitials = (name: string) => {
     return name
@@ -27,7 +29,7 @@ export function Header() {
       ?.toUpperCase?.() || 'U';
   };
 
-  const fullName = session?.user?.name || 'User';
+  const fullName = session?.user?.name || t('user');
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
@@ -37,7 +39,7 @@ export function Header() {
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
             <Input
-              placeholder="Search products, orders, users..."
+              placeholder={t('searchPlaceholder')}
               className="pl-10"
             />
           </div>
@@ -64,24 +66,24 @@ export function Header() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden lg:block text-left">
-                  <div className="text-sm font-medium">{fullName || 'User'}</div>
+                  <div className="text-sm font-medium">{fullName}</div>
                   <div className="text-xs text-muted-foreground">{session?.user?.email}</div>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <User className="h-4 w-4 mr-2" />
-                Profile
+                {t('profile')}
               </DropdownMenuItem>
               <DropdownMenuItem>
-                Settings
+                {t('settings')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-red-600">
-                Sign Out
+                {t('signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

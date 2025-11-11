@@ -4,12 +4,14 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { LoginForm } from '@/components/auth/login-form';
 import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
   const { data: session, status } = useSession() || {};
   const router = useRouter();
+  const t = useTranslations('home');
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -22,7 +24,7 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     );
@@ -33,7 +35,7 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Redirecting to dashboard...</p>
+          <p className="text-muted-foreground">{t('redirecting')}</p>
         </div>
       </div>
     );
@@ -47,9 +49,9 @@ export default function HomePage() {
           <div className="mx-auto w-16 h-16 gshop-gradient rounded-2xl flex items-center justify-center mb-4">
             <span className="text-white font-bold text-2xl">G</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2">GSHOP Admin</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
           <p className="text-muted-foreground">
-            Sign in to manage your e-commerce platform
+            {t('description')}
           </p>
         </div>
 

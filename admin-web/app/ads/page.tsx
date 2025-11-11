@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { CampaignMetrics } from '@/components/ads/campaign-metrics'
 import { AudienceManager } from '@/components/ads/audience-manager'
 
 export default function AdsManagerPage() {
+  const t = useTranslations('ads')
   const [activeTab, setActiveTab] = useState('campaigns')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [dashboardStats, setDashboardStats] = useState<any>(null)
@@ -37,14 +39,14 @@ export default function AdsManagerPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Ads Manager</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
           <p className="text-muted-foreground">
-            Create and manage advertising campaigns, audiences, and dynamic product ads
+            {t('pageDescription')}
           </p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Campaign
+          {t('createCampaign')}
         </Button>
       </div>
 
@@ -53,52 +55,52 @@ export default function AdsManagerPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('totalCampaigns')}</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{dashboardStats.totalCampaigns}</div>
               <p className="text-xs text-muted-foreground">
-                {dashboardStats.activeCampaigns} active
+                {dashboardStats.activeCampaigns} {t('activeCampaigns')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('totalSpent')}</CardTitle>
               <span className="h-4 w-4 text-muted-foreground">$</span>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${dashboardStats.totalSpent.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
-                ${dashboardStats.totalRevenue.toFixed(2)} revenue
+                ${dashboardStats.totalRevenue.toFixed(2)} {t('revenue')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average CTR</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('averageCTR')}</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{(dashboardStats.avgCTR * 100).toFixed(2)}%</div>
               <p className="text-xs text-muted-foreground">
-                {dashboardStats.clicks.toLocaleString()} total clicks
+                {dashboardStats.clicks.toLocaleString()} {t('totalClicks')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average ROAS</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('averageROAS')}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{dashboardStats.avgROAS.toFixed(2)}x</div>
               <p className="text-xs text-muted-foreground">
-                {dashboardStats.conversions} conversions
+                {dashboardStats.conversions} {t('conversions')}
               </p>
             </CardContent>
           </Card>
@@ -108,18 +110,18 @@ export default function AdsManagerPage() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-          <TabsTrigger value="audiences">Audiences</TabsTrigger>
-          <TabsTrigger value="metrics">Analytics</TabsTrigger>
-          <TabsTrigger value="dpa">Dynamic Ads</TabsTrigger>
+          <TabsTrigger value="campaigns">{t('campaigns')}</TabsTrigger>
+          <TabsTrigger value="audiences">{t('audiences')}</TabsTrigger>
+          <TabsTrigger value="metrics">{t('analytics')}</TabsTrigger>
+          <TabsTrigger value="dpa">{t('dynamicAds')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="campaigns" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Campaigns</CardTitle>
+              <CardTitle>{t('campaignsTitle')}</CardTitle>
               <CardDescription>
-                Manage your advertising campaigns and track their performance
+                {t('campaignsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -131,9 +133,9 @@ export default function AdsManagerPage() {
         <TabsContent value="audiences" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Audience Manager</CardTitle>
+              <CardTitle>{t('audienceManagerTitle')}</CardTitle>
               <CardDescription>
-                Create and manage custom audiences for targeted advertising
+                {t('audienceManagerDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -145,9 +147,9 @@ export default function AdsManagerPage() {
         <TabsContent value="metrics" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Campaign Analytics</CardTitle>
+              <CardTitle>{t('analyticsTitle')}</CardTitle>
               <CardDescription>
-                Detailed metrics and performance analytics for your campaigns
+                {t('analyticsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -159,21 +161,20 @@ export default function AdsManagerPage() {
         <TabsContent value="dpa" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Dynamic Product Ads</CardTitle>
+              <CardTitle>{t('dpaTitle')}</CardTitle>
               <CardDescription>
-                Automatically generated ads featuring your product catalog
+                {t('dpaDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Dynamic Product Ads</h3>
+                <h3 className="mt-4 text-lg font-semibold">{t('dpaEmptyTitle')}</h3>
                 <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
-                  Automatically show relevant products to users based on their browsing behavior
-                  and purchase history. DPA campaigns are generated from your product catalog.
+                  {t('dpaEmptyDescription')}
                 </p>
                 <Button className="mt-4" onClick={() => setShowCreateDialog(true)}>
-                  Create DPA Campaign
+                  {t('createDPACampaign')}
                 </Button>
               </div>
             </CardContent>
