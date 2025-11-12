@@ -82,7 +82,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   const fetchStreamData = async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/live/streams/${streamId}`);
+      const response = await fetch(`${process.env.API_BASE_URL}/live/streams/${streamId}`);
       if (response.ok) {
         const data = await response.json();
         setStream(data);
@@ -97,7 +97,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const initializeSocket = () => {
-    socketRef.current = io(`${process.env.EXPO_PUBLIC_API_URL}/live`);
+    socketRef.current = io(`${process.env.API_BASE_URL}/live`);
 
     socketRef.current.on('connect', () => {
       socketRef.current?.emit('joinStream', {

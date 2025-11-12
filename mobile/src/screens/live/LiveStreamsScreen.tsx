@@ -56,7 +56,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const fetchLiveStreams = async () => {
     try {
       // In a real app, this would be an API call
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/live/streams/active`);
+      const response = await fetch(`${process.env.API_BASE_URL}/live/streams/active`);
       if (response.ok) {
         const data = await response.json();
         setStreams(data);

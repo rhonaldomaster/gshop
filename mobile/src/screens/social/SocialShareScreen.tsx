@@ -52,7 +52,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/products/${productId}`);
+      const response = await fetch(`${process.env.API_BASE_URL}/products/${productId}`);
       if (response.ok) {
         const data = await response.json();
         setProduct(data);
@@ -132,7 +132,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
   const trackShare = async (platform: string) => {
     try {
       // Track sharing analytics
-      await fetch(`${process.env.EXPO_PUBLIC_API_URL}/analytics/share`, {
+      await fetch(`${process.env.API_BASE_URL}/analytics/share`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

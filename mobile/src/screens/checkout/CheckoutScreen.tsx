@@ -598,7 +598,7 @@ export default function CheckoutScreen() {
       const orderTotal = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
 
       // Call new seller-managed shipping calculation API
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/orders/calculate-shipping`, {
+      const response = await fetch(`${process.env.API_BASE_URL}/orders/calculate-shipping`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

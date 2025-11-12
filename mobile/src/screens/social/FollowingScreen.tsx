@@ -52,7 +52,7 @@ export default function FollowingScreen({ navigation }: any) {
 
   const fetchFollowing = async () => {
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/users/following`);
+      const response = await fetch(`${process.env.API_BASE_URL}/users/following`);
       if (response.ok) {
         const data = await response.json();
         setFollowing(data);
@@ -85,7 +85,7 @@ export default function FollowingScreen({ navigation }: any) {
               setFollowing(prev => prev.filter(item => item.id !== followingId));
 
               const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/users/following/${followingId}`,
+                `${process.env.API_BASE_URL}/users/following/${followingId}`,
                 { method: 'DELETE' }
               );
 
@@ -114,7 +114,7 @@ export default function FollowingScreen({ navigation }: any) {
       ));
 
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/users/following/${followingId}/notifications`,
+        `${process.env.API_BASE_URL}/users/following/${followingId}/notifications`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },

@@ -55,8 +55,8 @@ export default function ReviewsScreen({ navigation, route }: any) {
   const fetchReviews = async () => {
     try {
       const url = productId
-        ? `${process.env.EXPO_PUBLIC_API_URL}/reviews/product/${productId}`
-        : `${process.env.EXPO_PUBLIC_API_URL}/reviews`;
+        ? `${process.env.API_BASE_URL}/reviews/product/${productId}`
+        : `${process.env.API_BASE_URL}/reviews`;
 
       const response = await fetch(url);
       if (response.ok) {
@@ -83,7 +83,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
     }
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/reviews`, {
+      const response = await fetch(`${process.env.API_BASE_URL}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
   const markHelpful = async (reviewId: string) => {
     try {
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/reviews/${reviewId}/helpful`,
+        `${process.env.API_BASE_URL}/reviews/${reviewId}/helpful`,
         { method: 'POST' }
       );
 
