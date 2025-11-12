@@ -10,10 +10,13 @@ import {
   UseGuards,
   Request
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LiveService } from './live.service';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto } from './dto';
+import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
 import { HostType } from './live.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+@ApiTags('Live Shopping')
 
 @Controller('live')
 export class LiveController {
@@ -188,5 +191,31 @@ export class LiveController {
   @UseGuards(JwtAuthGuard)
   async getStreamStats(@Request() req, @Param('id') id: string) {
     return this.liveService.getStreamStats(id, req.user.sellerId);
+  }
+
+  @Get('dashboard-stats')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get live shopping dashboard statistics (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard statistics retrieved successfully',
+    type: LiveDashboardStatsDto,
+  })
+  async getDashboardStats(): Promise<LiveDashboardStatsDto> {
+    return this.liveService.getDashboardStats();
+  }
+
+  @Get('analytics/:streamId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get detailed analytics for a specific live stream' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stream analytics retrieved successfully',
+    type: LiveStreamAnalyticsDto,
+  })
+  async getStreamAnalytics(@Param('streamId') streamId: string): Promise<LiveStreamAnalyticsDto> {
+    return this.liveService.getStreamAnalytics(streamId);
   }
 }

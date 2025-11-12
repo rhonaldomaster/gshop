@@ -1,27 +1,60 @@
 
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+import { apiClient } from '@/lib/api-client';
 
-const mockData = [
-  { name: 'Ene', sales: 12000 },
-  { name: 'Feb', sales: 19000 },
-  { name: 'Mar', sales: 15000 },
-  { name: 'Abr', sales: 25000 },
-  { name: 'May', sales: 22000 },
-  { name: 'Jun', sales: 30000 },
-  { name: 'Jul', sales: 28000 },
-  { name: 'Ago', sales: 35000 },
-  { name: 'Sep', sales: 32000 },
-  { name: 'Oct', sales: 38000 },
-  { name: 'Nov', sales: 42000 },
-  { name: 'Dic', sales: 45000 },
-];
+interface SalesTrendData {
+  date: string;
+  sales: number;
+  orders: number;
+  vatAmount: number;
+}
 
 export function SalesChart() {
   const t = useTranslations('dashboard');
+  const [data, setData] = useState<SalesTrendData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSalesTrends = async () => {
+      try {
+        const response = await apiClient.get('/analytics/sales-trends?period=monthly');
+        setData((response as any)?.data || []);
+      } catch (error) {
+        console.error('Error fetching sales trends:', error);
+        setData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSalesTrends();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <Card className="gshop-card">
+        <CardHeader>
+          <CardTitle>{t('salesOverview')}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {t('monthlySalesPerformance')}
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 flex items-center justify-center">
+            <div className="animate-pulse space-y-4 w-full">
+              <div className="h-64 bg-muted rounded"></div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="gshop-card">
       <CardHeader>
@@ -33,10 +66,10 @@ export function SalesChart() {
       <CardContent>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={mockData}>
+            <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis 
-                dataKey="name" 
+              <XAxis
+                dataKey="date"
                 tickLine={false}
                 tick={{ fontSize: 10 }}
               />

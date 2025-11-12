@@ -6,6 +6,7 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketServer,
+  OnGatewayInit,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { LiveService } from './live.service';
@@ -17,13 +18,19 @@ import { SendMessageDto } from './dto';
     origin: '*',
   },
 })
-export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class LiveGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   private activeViewers = new Map<string, Set<string>>(); // streamId -> Set of socketIds
 
   constructor(private readonly liveService: LiveService) {}
+
+  afterInit(server: Server) {
+    // Set gateway reference in service for notifications
+    this.liveService.setGateway(this);
+    console.log('Live WebSocket Gateway initialized');
+  }
 
   async handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -267,5 +274,60 @@ export class LiveGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // Method to get current viewer count for a stream
   getCurrentViewerCount(streamId: string): number {
     return this.activeViewers.get(streamId)?.size || 0;
+  }
+
+  // Admin-specific events for dashboard real-time updates
+  @SubscribeMessage('subscribeToAdminUpdates')
+  async handleSubscribeToAdminUpdates(@ConnectedSocket() client: Socket) {
+    // Join admin room for dashboard updates
+    await client.join('admin-dashboard');
+    client.emit('subscribedToAdmin', { message: 'Successfully subscribed to admin updates' });
+  }
+
+  @SubscribeMessage('unsubscribeFromAdminUpdates')
+  async handleUnsubscribeFromAdminUpdates(@ConnectedSocket() client: Socket) {
+    await client.leave('admin-dashboard');
+    client.emit('unsubscribedFromAdmin', { message: 'Unsubscribed from admin updates' });
+  }
+
+  // Notify admin dashboard when a purchase happens during a live stream
+  async notifyLivePurchase(streamId: string, purchaseData: {
+    orderId: string;
+    streamId: string;
+    streamTitle: string;
+    productName: string;
+    amount: number;
+    buyerName: string;
+    timestamp: Date;
+  }) {
+    // Notify stream viewers
+    this.server.to(streamId).emit('streamPurchase', {
+      productName: purchaseData.productName,
+      buyerName: purchaseData.buyerName,
+      amount: purchaseData.amount,
+      timestamp: purchaseData.timestamp,
+    });
+
+    // Notify admin dashboard
+    this.server.to('admin-dashboard').emit('livePurchaseNotification', purchaseData);
+  }
+
+  // Notify admin dashboard when stream ends with final stats
+  async notifyStreamEnded(streamId: string, finalStats: {
+    streamId: string;
+    streamTitle: string;
+    totalViewers: number;
+    peakViewers: number;
+    totalSales: number;
+    ordersCount: number;
+    duration: number;
+    endedAt: Date;
+  }) {
+    this.server.to('admin-dashboard').emit('streamEndedWithStats', finalStats);
+  }
+
+  // Broadcast dashboard stats update to all admin clients
+  async broadcastDashboardStatsUpdate(stats: any) {
+    this.server.to('admin-dashboard').emit('dashboardStatsUpdate', stats);
   }
 }

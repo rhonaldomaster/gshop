@@ -68,69 +68,7 @@ export function CategoriesTable() {
       setCategories(response || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      // Mock data for demo
-      setCategories([
-        {
-          id: '1',
-          name: 'Electronics',
-          slug: 'electronics',
-          description: 'Electronic devices and accessories',
-          productCount: 156,
-          createdAt: new Date().toISOString(),
-          children: [
-            {
-              id: '1-1',
-              name: 'Smartphones',
-              slug: 'smartphones',
-              description: 'Mobile phones and smartphones',
-              productCount: 45,
-              parent: { id: '1', name: 'Electronics' },
-              level: 1,
-              createdAt: new Date().toISOString(),
-            },
-            {
-              id: '1-2',
-              name: 'Laptops',
-              slug: 'laptops',
-              description: 'Laptop computers',
-              productCount: 32,
-              parent: { id: '1', name: 'Electronics' },
-              level: 1,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        },
-        {
-          id: '2',
-          name: 'Fashion',
-          slug: 'fashion',
-          description: 'Clothing and fashion accessories',
-          productCount: 234,
-          createdAt: new Date().toISOString(),
-          children: [
-            {
-              id: '2-1',
-              name: "Men's Clothing",
-              slug: 'mens-clothing',
-              description: 'Clothing for men',
-              productCount: 112,
-              parent: { id: '2', name: 'Fashion' },
-              level: 1,
-              createdAt: new Date().toISOString(),
-            },
-            {
-              id: '2-2',
-              name: "Women's Clothing",
-              slug: 'womens-clothing',
-              description: 'Clothing for women',
-              productCount: 122,
-              parent: { id: '2', name: 'Fashion' },
-              level: 1,
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        },
-      ]);
+      setCategories([]);
     } finally {
       setIsLoading(false);
     }

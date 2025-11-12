@@ -17,6 +17,7 @@ import { PaymentsService } from './payments.service';
 import { MercadoPagoService } from './mercadopago.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { AddPaymentMethodDto } from './dto/add-payment-method.dto';
+import { PaymentStatsDto } from './dto/payment-stats.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -67,9 +68,23 @@ export class PaymentsController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get payment statistics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Payment statistics retrieved successfully' })
-  getStats() {
+  @ApiResponse({
+    status: 200,
+    description: 'Payment statistics retrieved successfully',
+    type: PaymentStatsDto,
+  })
+  getStats(): Promise<PaymentStatsDto> {
     return this.paymentsService.getPaymentStats();
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get all payments with pagination (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Payments retrieved successfully' })
+  findAll(@Query() query: any) {
+    return this.paymentsService.findAll(query);
   }
 
   @Get('methods')

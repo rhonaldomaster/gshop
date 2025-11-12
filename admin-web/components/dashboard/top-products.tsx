@@ -25,37 +25,12 @@ export function TopProducts() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await apiClient.get<{ data: Product[] }>('/products?limit=5&sortBy=ordersCount&sortOrder=DESC');
-        setProducts(response?.data || []);
+        const response = await apiClient.get('/products/top?limit=5&metric=orders');
+        setProducts((response as any) || []);
       } catch (error) {
         console.error('Error fetching top products:', error);
-        // Mock data for demo
-        setProducts([
-          {
-            id: '1',
-            name: 'iPhone 15 Pro Max',
-            images: ['/api/placeholder/80/80'],
-            ordersCount: 142,
-            viewsCount: 2847,
-            rating: 4.8,
-          },
-          {
-            id: '2',
-            name: 'MacBook Air M3',
-            images: ['/api/placeholder/80/80'],
-            ordersCount: 89,
-            viewsCount: 1923,
-            rating: 4.9,
-          },
-          {
-            id: '3',
-            name: 'Premium Cotton T-Shirt',
-            images: ['/api/placeholder/80/80'],
-            ordersCount: 234,
-            viewsCount: 5641,
-            rating: 4.6,
-          },
-        ]);
+        // Show empty array on error
+        setProducts([]);
       } finally {
         setIsLoading(false);
       }

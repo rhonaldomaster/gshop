@@ -3,6 +3,8 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole, UserStatus } from '../database/entities/user.entity';
+import { Order } from '../database/entities/order.entity';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcryptjs';
@@ -12,6 +14,10 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
+    @InjectRepository(Affiliate)
+    private affiliateRepository: Repository<Affiliate>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -125,17 +131,59 @@ export class UsersService {
   }
 
   async getUserStats() {
-    const [totalUsers, buyersCount, sellersCount, adminsCount] = await Promise.all([
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Get counts by role
+    const [totalUsers, buyersCount, sellersCount, adminsCount, affiliateCount] = await Promise.all([
       this.userRepository.count(),
       this.userRepository.count({ where: { role: UserRole.BUYER } }),
       this.userRepository.count({ where: { role: UserRole.SELLER } }),
       this.userRepository.count({ where: { role: UserRole.ADMIN } }),
+      this.affiliateRepository.count(),
     ]);
+
+    // Calculate new users this month
+    const newUsersThisMonth = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :start', { start: startOfCurrentMonth })
+      .getCount();
+
+    // Calculate last month users
+    const lastMonthUsers = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.createdAt >= :start', { start: startOfLastMonth })
+      .andWhere('user.createdAt <= :end', { end: endOfLastMonth })
+      .getCount();
+
+    // Calculate users change percentage
+    let usersChange = 0;
+    if (lastMonthUsers > 0) {
+      usersChange = ((newUsersThisMonth - lastMonthUsers) / lastMonthUsers) * 100;
+    } else if (newUsersThisMonth > 0) {
+      usersChange = 100; // If there were no users last month but there are this month, it's 100% growth
+    }
+
+    // Calculate active users (users who made orders in last 30 days)
+    const activeUsersResult = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('COUNT(DISTINCT order.userId)', 'count')
+      .where('order.createdAt >= :thirtyDaysAgo', { thirtyDaysAgo })
+      .getRawOne();
+
+    const activeUsers = parseInt(activeUsersResult.count) || 0;
 
     return {
       totalUsers,
+      usersChange: Math.round(usersChange * 100) / 100,
+      activeUsers,
+      newUsersThisMonth,
+      sellerCount: sellersCount,
+      affiliateCount,
       buyersCount,
-      sellersCount,
       adminsCount,
     };
   }

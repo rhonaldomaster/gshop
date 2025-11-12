@@ -11,15 +11,25 @@ import { format, subDays } from 'date-fns'
 
 interface StreamMetrics {
   streamId: string
+  title: string
   status: string
-  currentViewers: number
-  peakViewers: number
-  totalViewers: number
-  totalMessages: number
-  totalProducts: number
-  totalOrders: number
-  totalSales: number
-  duration: number
+  hostType: string
+  metrics: {
+    peakViewers: number
+    totalViewers: number
+    avgWatchTime: number
+    totalSales: number
+    ordersCount: number
+    conversionRate: number
+    messages: number
+  }
+  viewersByTime: Array<{ timestamp: Date; viewers: number }>
+  topProducts: Array<{
+    productId: string
+    name: string
+    units: number
+    revenue: number
+  }>
 }
 
 interface LiveStream {
@@ -68,13 +78,20 @@ export function LiveStreamMetrics() {
 
     try {
       setLoading(true)
-      const response = await fetch(`/api/live/streams/${selectedStream}/stats`)
+      const response = await fetch(`/api/v1/live/analytics/${selectedStream}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
       if (response.ok) {
         const data = await response.json()
         setMetrics(data)
+      } else {
+        setMetrics(null)
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error)
+      setMetrics(null)
     } finally {
       setLoading(false)
     }
@@ -87,13 +104,13 @@ export function LiveStreamMetrics() {
   }
 
   const calculateEngagementRate = () => {
-    if (!metrics || metrics.totalViewers === 0) return 0
-    return (metrics.totalMessages / metrics.totalViewers) * 100
+    if (!metrics || metrics.metrics.totalViewers === 0) return 0
+    return (metrics.metrics.messages / metrics.metrics.totalViewers) * 100
   }
 
   const calculateConversionRate = () => {
-    if (!metrics || metrics.totalViewers === 0) return 0
-    return (metrics.totalOrders / metrics.totalViewers) * 100
+    if (!metrics) return 0
+    return metrics.metrics.conversionRate * 100
   }
 
   const getStatusColor = (status: string) => {
@@ -158,15 +175,15 @@ export function LiveStreamMetrics() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Current Viewers</CardTitle>
+                <CardTitle className="text-sm font-medium">Peak Viewers</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {metrics.status === 'live' ? metrics.currentViewers : 0}
+                  {metrics.metrics.peakViewers}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Peak: {metrics.peakViewers} viewers
+                  Maximum concurrent viewers
                 </p>
               </CardContent>
             </Card>
@@ -177,7 +194,7 @@ export function LiveStreamMetrics() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{metrics.totalViewers}</div>
+                <div className="text-2xl font-bold">{metrics.metrics.totalViewers}</div>
                 <p className="text-xs text-muted-foreground">
                   {calculateEngagementRate().toFixed(1)}% engagement rate
                 </p>
@@ -186,13 +203,13 @@ export function LiveStreamMetrics() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Stream Duration</CardTitle>
+                <CardTitle className="text-sm font-medium">Avg Watch Time</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatDuration(metrics.duration)}</div>
+                <div className="text-2xl font-bold">{formatDuration(Math.round(metrics.metrics.avgWatchTime / 60))}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.totalMessages} chat messages
+                  {metrics.metrics.messages} chat messages
                 </p>
               </CardContent>
             </Card>
@@ -203,9 +220,9 @@ export function LiveStreamMetrics() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${metrics.totalSales.toFixed(2)}</div>
+                <div className="text-2xl font-bold">${metrics.metrics.totalSales.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.totalOrders} orders ({calculateConversionRate().toFixed(1)}% conv.)
+                  {metrics.metrics.ordersCount} orders ({calculateConversionRate().toFixed(1)}% conv.)
                 </p>
               </CardContent>
             </Card>
@@ -224,15 +241,15 @@ export function LiveStreamMetrics() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Total Viewers</span>
-                    <span className="font-medium">{metrics.totalViewers}</span>
+                    <span className="font-medium">{metrics.metrics.totalViewers}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Peak Concurrent</span>
-                    <span className="font-medium">{metrics.peakViewers}</span>
+                    <span className="font-medium">{metrics.metrics.peakViewers}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Chat Messages</span>
-                    <span className="font-medium">{metrics.totalMessages}</span>
+                    <span className="font-medium">{metrics.metrics.messages}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Engagement Rate</span>
@@ -246,7 +263,7 @@ export function LiveStreamMetrics() {
                     <div
                       className="bg-blue-600 h-2 rounded-full"
                       style={{
-                        width: `${Math.min(100, (metrics.totalViewers / Math.max(1, metrics.peakViewers)) * 100)}%`
+                        width: `${Math.min(100, (metrics.metrics.totalViewers / Math.max(1, metrics.metrics.peakViewers)) * 100)}%`
                       }}
                     ></div>
                   </div>
@@ -268,15 +285,15 @@ export function LiveStreamMetrics() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Products Featured</span>
-                    <span className="font-medium">{metrics.totalProducts}</span>
+                    <span className="font-medium">{metrics.topProducts.length}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Total Orders</span>
-                    <span className="font-medium">{metrics.totalOrders}</span>
+                    <span className="font-medium">{metrics.metrics.ordersCount}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Total Revenue</span>
-                    <span className="font-medium">${metrics.totalSales.toFixed(2)}</span>
+                    <span className="font-medium">${metrics.metrics.totalSales.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Conversion Rate</span>
@@ -287,7 +304,7 @@ export function LiveStreamMetrics() {
                 <div className="pt-4">
                   <div className="text-sm text-muted-foreground mb-2">Revenue per Viewer</div>
                   <div className="text-2xl font-bold">
-                    ${metrics.totalViewers > 0 ? (metrics.totalSales / metrics.totalViewers).toFixed(2) : '0.00'}
+                    ${metrics.metrics.totalViewers > 0 ? (metrics.metrics.totalSales / metrics.metrics.totalViewers).toFixed(2) : '0.00'}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Average revenue generated per viewer
@@ -316,16 +333,16 @@ export function LiveStreamMetrics() {
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium mb-1">Duration</div>
+                  <div className="text-sm font-medium mb-1">Avg Watch Time</div>
                   <div className="text-lg font-semibold">
-                    {formatDuration(metrics.duration)}
+                    {formatDuration(Math.round(metrics.metrics.avgWatchTime / 60))}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium mb-1">Current Viewers</div>
-                  <div className="text-lg font-semibold">
-                    {metrics.status === 'live' ? metrics.currentViewers : 'Stream ended'}
+                  <div className="text-sm font-medium mb-1">Host Type</div>
+                  <div className="text-lg font-semibold capitalize">
+                    {metrics.hostType}
                   </div>
                 </div>
               </div>

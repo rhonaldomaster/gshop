@@ -341,6 +341,12 @@ export class OrdersService {
   }
 
   async getOrderStats() {
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // Get counts for different order statuses
     const [
       totalOrders,
       pendingOrders,
@@ -357,25 +363,36 @@ export class OrdersService {
       this.orderRepository.count({ where: { status: OrderStatus.CANCELLED } }),
     ]);
 
-    // Calculate total revenue
-    const revenueResult = await this.orderRepository
+    // Calculate last month orders
+    const lastMonthOrders = await this.orderRepository
       .createQueryBuilder('order')
-      .select('SUM(order.totalAmount)', 'total')
-      .where('order.status IN (:...statuses)', {
-        statuses: [OrderStatus.CONFIRMED, OrderStatus.SHIPPED, OrderStatus.DELIVERED],
-      })
-      .getRawOne();
+      .where('order.createdAt >= :start', { start: startOfLastMonth })
+      .andWhere('order.createdAt <= :end', { end: endOfLastMonth })
+      .getCount();
 
-    const totalRevenue = parseFloat(revenueResult.total) || 0;
+    // Calculate current month orders
+    const currentMonthOrders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.createdAt >= :start', { start: startOfCurrentMonth })
+      .getCount();
+
+    // Calculate orders change percentage
+    let ordersChange = 0;
+    if (lastMonthOrders > 0) {
+      ordersChange = ((currentMonthOrders - lastMonthOrders) / lastMonthOrders) * 100;
+    } else if (currentMonthOrders > 0) {
+      ordersChange = 100; // If there were no orders last month but there are this month, it's 100% growth
+    }
 
     return {
       totalOrders,
+      ordersChange: Math.round(ordersChange * 100) / 100,
+      lastMonthOrders,
       pendingOrders,
+      deliveredOrders,
       confirmedOrders,
       shippedOrders,
-      deliveredOrders,
       cancelledOrders,
-      totalRevenue,
     };
   }
 

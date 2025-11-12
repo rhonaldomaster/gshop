@@ -17,6 +17,8 @@ import { CategoriesService } from './categories.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { ProductStatsDto } from './dto/product-stats.dto';
+import { TopProductDto } from './dto/top-product.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -86,9 +88,43 @@ export class ProductsController {
   @UseGuards(RolesGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get product statistics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Product statistics retrieved successfully' })
-  getStats() {
+  @ApiResponse({
+    status: 200,
+    description: 'Product statistics retrieved successfully',
+    type: ProductStatsDto,
+  })
+  getStats(): Promise<ProductStatsDto> {
     return this.productsService.getProductStats();
+  }
+
+  @Get('top')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get top performing products (Admin only)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of products to return (default: 5)',
+    example: 5,
+  })
+  @ApiQuery({
+    name: 'metric',
+    required: false,
+    description: 'Metric to sort by: orders, views, or revenue (default: orders)',
+    example: 'orders',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Top products retrieved successfully',
+    type: [TopProductDto],
+  })
+  getTopProducts(
+    @Query('limit') limit?: number,
+    @Query('metric') metric?: 'orders' | 'views' | 'revenue',
+  ): Promise<TopProductDto[]> {
+    return this.productsService.getTopProducts(limit || 5, metric || 'orders');
   }
 
   @Get('category/:categoryId')

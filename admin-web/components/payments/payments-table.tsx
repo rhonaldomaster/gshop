@@ -131,53 +131,11 @@ export function PaymentsTable() {
         params.append('status', statusFilter);
       }
 
-      const response = await apiClient.get<Payment[]>(`/payments?${params}`);
-      setPayments(response || []);
+      const response = await apiClient.get<{ data: Payment[] }>(`/payments?${params}`);
+      setPayments(response?.data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);
-      // Mock data for demo
-      setPayments([
-        {
-          id: '1',
-          transactionId: 'MP-123456789',
-          order: {
-            id: 'o1',
-            orderNumber: 'ORD-2025-001',
-          },
-          user: {
-            id: 'u1',
-            firstName: 'Juan',
-            lastName: 'Pérez',
-            email: 'juan.perez@example.com',
-          },
-          amount: 1314999.99,
-          status: 'paid',
-          method: 'mercadopago',
-          currency: 'COP',
-          createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          transactionId: 'MP-987654321',
-          order: {
-            id: 'o2',
-            orderNumber: 'ORD-2025-002',
-          },
-          user: {
-            id: 'u2',
-            firstName: 'María',
-            lastName: 'González',
-            email: 'maria.gonzalez@example.com',
-          },
-          amount: 1757999.99,
-          status: 'processing',
-          method: 'mercadopago',
-          currency: 'COP',
-          createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ]);
+      setPayments([]);
     } finally {
       setIsLoading(false);
     }

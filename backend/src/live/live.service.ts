@@ -1,13 +1,16 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType } from './live.entity';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto } from './dto';
+import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
+import { Order } from '../database/entities/order.entity';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class LiveService {
+  private liveGateway: any; // Will be set via setGateway method
+
   constructor(
     @InjectRepository(LiveStream)
     private liveStreamRepository: Repository<LiveStream>,
@@ -19,7 +22,14 @@ export class LiveService {
     private streamViewerRepository: Repository<LiveStreamViewer>,
     @InjectRepository(Affiliate)
     private affiliateRepository: Repository<Affiliate>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
   ) {}
+
+  // Method to set gateway reference (called from gateway's onModuleInit)
+  setGateway(gateway: any) {
+    this.liveGateway = gateway;
+  }
 
   async createLiveStream(hostId: string, createLiveStreamDto: CreateLiveStreamDto, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
     const streamKey = uuidv4();
@@ -166,7 +176,36 @@ export class LiveService {
     liveStream.status = StreamStatus.ENDED;
     liveStream.endedAt = new Date();
 
-    return this.liveStreamRepository.save(liveStream);
+    const savedStream = await this.liveStreamRepository.save(liveStream);
+
+    // Calculate final stats and notify admin dashboard
+    if (this.liveGateway) {
+      try {
+        const stats = await this.getStreamStats(id, hostId);
+        const duration = liveStream.startedAt && liveStream.endedAt
+          ? Math.floor((liveStream.endedAt.getTime() - liveStream.startedAt.getTime()) / 1000 / 60)
+          : 0;
+
+        await this.liveGateway.notifyStreamEnded(id, {
+          streamId: id,
+          streamTitle: liveStream.title,
+          totalViewers: stats.totalViewers,
+          peakViewers: stats.peakViewers,
+          totalSales: stats.totalSales,
+          ordersCount: stats.totalOrders,
+          duration,
+          endedAt: liveStream.endedAt,
+        });
+
+        // Also broadcast updated dashboard stats
+        const dashboardStats = await this.getDashboardStats();
+        await this.liveGateway.broadcastDashboardStatsUpdate(dashboardStats);
+      } catch (error) {
+        console.error('Failed to send stream ended notification:', error);
+      }
+    }
+
+    return savedStream;
   }
 
   async addProductToStream(streamId: string, sellerId: string, addProductDto: AddProductToStreamDto): Promise<LiveStreamProduct> {
@@ -349,6 +388,153 @@ export class LiveService {
         : liveStream.startedAt
         ? Math.floor((new Date().getTime() - liveStream.startedAt.getTime()) / 1000 / 60)
         : 0,
+    };
+  }
+
+  async getDashboardStats(): Promise<LiveDashboardStatsDto> {
+    // Get total streams count
+    const totalStreams = await this.liveStreamRepository.count();
+
+    // Get currently live streams
+    const liveStreams = await this.liveStreamRepository.count({
+      where: { status: StreamStatus.LIVE },
+    });
+
+    // Get total viewers (all time unique viewers)
+    const totalViewers = await this.streamViewerRepository.count();
+
+    // Get total sales from live streams (orders with liveSessionId)
+    const salesResult = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .where('order.liveSessionId IS NOT NULL')
+      .getRawOne();
+
+    const totalSales = parseFloat(salesResult?.total) || 0;
+
+    // Calculate average view time
+    const viewTimeResult = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .select('AVG(EXTRACT(EPOCH FROM (viewer.leftAt - viewer.joinedAt)))', 'avgSeconds')
+      .where('viewer.leftAt IS NOT NULL')
+      .getRawOne();
+
+    const avgViewTime = Math.round(parseFloat(viewTimeResult?.avgSeconds) || 0);
+
+    // Calculate conversion rate
+    const ordersCount = await this.orderRepository.count({
+      where: { liveSessionId: Not(IsNull()) },
+    });
+
+    const conversionRate = totalViewers > 0 ? ordersCount / totalViewers : 0;
+
+    // Get total messages
+    const totalMessages = await this.streamMessageRepository.count();
+
+    // Calculate engagement rate (messages per viewer)
+    const engagementRate = totalViewers > 0 ? totalMessages / totalViewers : 0;
+
+    return {
+      totalStreams,
+      liveStreams,
+      totalViewers,
+      totalSales: Math.round(totalSales * 100) / 100,
+      avgViewTime,
+      conversionRate: Math.round(conversionRate * 10000) / 10000,
+      totalMessages,
+      engagementRate: Math.round(engagementRate * 100) / 100,
+    };
+  }
+
+  async getStreamAnalytics(streamId: string): Promise<LiveStreamAnalyticsDto> {
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: { id: streamId },
+      relations: ['products', 'products.product'],
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found');
+    }
+
+    // Get total unique viewers
+    const totalViewers = await this.streamViewerRepository.count({
+      where: { streamId },
+    });
+
+    // Get peak viewers
+    const peakViewers = liveStream.peakViewers;
+
+    // Calculate average watch time
+    const watchTimeResult = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .select('AVG(EXTRACT(EPOCH FROM (viewer.leftAt - viewer.joinedAt)))', 'avgSeconds')
+      .where('viewer.streamId = :streamId', { streamId })
+      .andWhere('viewer.leftAt IS NOT NULL')
+      .getRawOne();
+
+    const avgWatchTime = Math.round(parseFloat(watchTimeResult?.avgSeconds) || 0);
+
+    // Get orders from this stream
+    const ordersResult = await this.orderRepository
+      .createQueryBuilder('order')
+      .select('SUM(order.totalAmount)', 'total')
+      .addSelect('COUNT(order.id)', 'count')
+      .where('order.liveSessionId = :streamId', { streamId })
+      .getRawOne();
+
+    const totalSales = parseFloat(ordersResult?.total) || 0;
+    const ordersCount = parseInt(ordersResult?.count) || 0;
+
+    // Calculate conversion rate
+    const conversionRate = totalViewers > 0 ? ordersCount / totalViewers : 0;
+
+    // Get messages count
+    const messages = await this.streamMessageRepository.count({
+      where: { streamId },
+    });
+
+    // Get viewer count over time (simplified - can be enhanced)
+    const viewersByTime = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .select('viewer.joinedAt', 'timestamp')
+      .addSelect('COUNT(*)', 'viewers')
+      .where('viewer.streamId = :streamId', { streamId })
+      .groupBy('viewer.joinedAt')
+      .orderBy('viewer.joinedAt', 'ASC')
+      .limit(50)
+      .getRawMany();
+
+    // Get top products sold during stream
+    const topProducts = liveStream.products
+      .filter(p => p.orderCount > 0)
+      .sort((a, b) => b.orderCount - a.orderCount)
+      .slice(0, 5)
+      .map(p => ({
+        productId: p.productId,
+        name: p.product?.name || 'Unknown Product',
+        units: p.orderCount,
+        revenue: Math.round(Number(p.revenue) * 100) / 100,
+      }));
+
+    return {
+      streamId,
+      title: liveStream.title,
+      status: liveStream.status,
+      hostType: liveStream.hostType,
+      metrics: {
+        peakViewers,
+        totalViewers,
+        avgWatchTime,
+        totalSales: Math.round(totalSales * 100) / 100,
+        ordersCount,
+        conversionRate: Math.round(conversionRate * 10000) / 10000,
+        messages,
+      },
+      viewersByTime: viewersByTime.map(v => ({
+        timestamp: v.timestamp,
+        viewers: parseInt(v.viewers),
+      })),
+      topProducts,
     };
   }
 }

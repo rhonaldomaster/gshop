@@ -1,7 +1,8 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { VatReportDto } from './dto/vat-report.dto';
+import { SalesTrendsDto, TimePeriod } from './dto/sales-trends.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('analytics')
@@ -50,5 +51,45 @@ export class AnalyticsController {
   @ApiQuery({ name: 'limit', required: false, description: 'Number of sellers to return (default: 10)' })
   async getSellerPerformance(@Query('limit') limit?: number) {
     return await this.analyticsService.getSellerPerformance(limit || 10);
+  }
+
+  @Get('sales-trends')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get sales trends with time-series data for charts' })
+  @ApiQuery({
+    name: 'period',
+    required: false,
+    enum: TimePeriod,
+    description: 'Time period for aggregation (default: monthly)',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date (YYYY-MM-DD) - defaults to start of current year',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date (YYYY-MM-DD) - defaults to end of current year',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Sales trends retrieved successfully',
+    type: SalesTrendsDto,
+  })
+  async getSalesTrends(
+    @Query('period') period?: TimePeriod,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ): Promise<SalesTrendsDto> {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+
+    return await this.analyticsService.generateSalesTrends(
+      period || TimePeriod.MONTHLY,
+      start,
+      end,
+    );
   }
 }

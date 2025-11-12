@@ -107,52 +107,7 @@ export function UsersTable() {
       setUsers(response || []);
     } catch (error) {
       console.error('Error fetching users:', error);
-      // Mock data for demo
-      setUsers([
-        {
-          id: '1',
-          email: 'admin@gshop.com',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin',
-          status: 'active',
-          phone: '+57 300 123 4567',
-          createdAt: new Date(Date.now() - 86400000 * 365).toISOString(),
-          lastLoginAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          email: 'seller@techstore.com',
-          firstName: 'María',
-          lastName: 'Rodríguez',
-          role: 'seller',
-          status: 'active',
-          phone: '+57 310 234 5678',
-          createdAt: new Date(Date.now() - 86400000 * 180).toISOString(),
-          lastLoginAt: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-          id: '3',
-          email: 'affiliate@marketing.com',
-          firstName: 'Carlos',
-          lastName: 'Gómez',
-          role: 'affiliate',
-          status: 'active',
-          phone: '+57 320 345 6789',
-          createdAt: new Date(Date.now() - 86400000 * 90).toISOString(),
-          lastLoginAt: new Date(Date.now() - 7200000).toISOString(),
-        },
-        {
-          id: '4',
-          email: 'customer@example.com',
-          firstName: 'Juan',
-          lastName: 'Pérez',
-          role: 'customer',
-          status: 'active',
-          createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-          lastLoginAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-      ]);
+      setUsers([]);
     } finally {
       setIsLoading(false);
     }

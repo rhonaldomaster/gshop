@@ -7,9 +7,12 @@ import { CategoriesService } from './categories.service';
 import { CategoriesController } from './categories.controller';
 import { Product } from '../database/entities/product.entity';
 import { Category } from '../database/entities/category.entity';
+import { OrderItem } from '../database/entities/order-item.entity';
+import { PixelEvent } from '../pixel/entities/pixel-event.entity';
+import { Review } from '../marketplace/marketplace.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, Category])],
+  imports: [TypeOrmModule.forFeature([Product, Category, OrderItem, PixelEvent, Review])],
   controllers: [ProductsController, CategoriesController],
   providers: [ProductsService, CategoriesService],
   exports: [ProductsService, CategoriesService],

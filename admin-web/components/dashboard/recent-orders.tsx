@@ -36,33 +36,8 @@ export function RecentOrders() {
         setOrders(response?.data || []);
       } catch (error) {
         console.error('Error fetching orders:', error);
-        // Mock data for demo
-        setOrders([
-          {
-            id: '1',
-            orderNumber: 'GSH202412001',
-            user: {
-              firstName: 'Carlos',
-              lastName: 'Martinez',
-              email: 'carlos@example.com'
-            },
-            status: 'confirmed',
-            totalAmount: 89999.99,
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            orderNumber: 'GSH202412002',
-            user: {
-              firstName: 'Ana',
-              lastName: 'Rodriguez',
-              email: 'ana@example.com'
-            },
-            status: 'shipped',
-            totalAmount: 156750.00,
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-          },
-        ]);
+        // Show empty array on error
+        setOrders([]);
       } finally {
         setIsLoading(false);
       }

@@ -126,60 +126,7 @@ export default function OrderDetailPage() {
       setOrder(response);
     } catch (error) {
       console.error('Error fetching order:', error);
-      // Mock data for demo
-      setOrder({
-        id: '1',
-        orderNumber: 'ORD-2025-001',
-        user: {
-          id: 'u1',
-          firstName: 'Juan',
-          lastName: 'Pérez',
-          email: 'juan.perez@example.com',
-          phone: '+57 300 123 4567',
-        },
-        items: [
-          {
-            id: 'i1',
-            product: {
-              id: 'p1',
-              name: 'iPhone 15 Pro Max',
-              images: [],
-            },
-            quantity: 1,
-            price: 1299999.99,
-            vatType: 'general',
-            basePrice: 1092436.97,
-            vatAmountPerUnit: 207563.02,
-            totalBasePrice: 1092436.97,
-            totalVatAmount: 207563.02,
-          },
-        ],
-        totalAmount: 1314999.99,
-        status: 'delivered',
-        paymentStatus: 'paid',
-        paymentMethod: 'mercadopago',
-        shippingType: 'national',
-        shippingCost: 15000,
-        shippingTrackingNumber: 'TRACK-123456789',
-        shippingTrackingUrl: 'https://tracking.example.com/123456789',
-        shippingCarrier: 'Servientrega',
-        shippingAddress: {
-          street: 'Calle 123 #45-67',
-          city: 'Bogotá',
-          state: 'Cundinamarca',
-          postalCode: '110111',
-          country: 'Colombia',
-        },
-        vatBreakdown: {
-          general: {
-            base: 1092436.97,
-            vat: 207563.02,
-            total: 1299999.99,
-          },
-        },
-        createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      setOrder(null);
     } finally {
       setIsLoading(false);
     }

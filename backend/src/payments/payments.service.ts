@@ -160,6 +160,66 @@ export class PaymentsService {
     }
   }
 
+  async findAll(query: any = {}) {
+    const queryBuilder = this.paymentRepository
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.order', 'order')
+      .leftJoinAndSelect('order.user', 'user')
+      .select([
+        'payment',
+        'order.id',
+        'order.orderNumber',
+        'order.totalAmount',
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.email',
+      ]);
+
+    // Apply filters
+    if (query.status) {
+      queryBuilder.andWhere('payment.status = :status', { status: query.status });
+    }
+
+    if (query.method) {
+      queryBuilder.andWhere('payment.method = :method', { method: query.method });
+    }
+
+    if (query.startDate) {
+      queryBuilder.andWhere('payment.createdAt >= :startDate', {
+        startDate: query.startDate,
+      });
+    }
+
+    if (query.endDate) {
+      queryBuilder.andWhere('payment.createdAt <= :endDate', {
+        endDate: query.endDate,
+      });
+    }
+
+    // Apply sorting
+    const sortBy = query.sortBy || 'createdAt';
+    const sortOrder = query.sortOrder || 'DESC';
+    queryBuilder.orderBy(`payment.${sortBy}`, sortOrder);
+
+    // Apply pagination
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const skip = (page - 1) * limit;
+
+    queryBuilder.skip(skip).take(limit);
+
+    const [payments, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: payments,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
   async findOne(id: string): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { id },
@@ -227,21 +287,23 @@ export class PaymentsService {
   }
 
   async getPaymentStats() {
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // Get counts for different payment statuses
     const [
-      totalPayments,
       completedPayments,
       pendingPayments,
       failedPayments,
-      refundedPayments,
     ] = await Promise.all([
-      this.paymentRepository.count(),
       this.paymentRepository.count({ where: { status: PaymentStatus.COMPLETED } }),
       this.paymentRepository.count({ where: { status: PaymentStatus.PENDING } }),
       this.paymentRepository.count({ where: { status: PaymentStatus.FAILED } }),
-      this.paymentRepository.count({ where: { status: PaymentStatus.REFUNDED } }),
     ]);
 
-    // Calculate total revenue
+    // Calculate total revenue (all time)
     const revenueResult = await this.paymentRepository
       .createQueryBuilder('payment')
       .select('SUM(payment.amount - payment.refundedAmount)', 'total')
@@ -250,23 +312,52 @@ export class PaymentsService {
 
     const totalRevenue = parseFloat(revenueResult.total) || 0;
 
-    // Calculate total commissions
-    const commissionResult = await this.paymentRepository
+    // Calculate last month revenue
+    const lastMonthRevenueResult = await this.paymentRepository
       .createQueryBuilder('payment')
-      .select('SUM(payment.commissionAmount)', 'total')
+      .select('SUM(payment.amount - payment.refundedAmount)', 'total')
       .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+      .andWhere('payment.processedAt >= :start', { start: startOfLastMonth })
+      .andWhere('payment.processedAt <= :end', { end: endOfLastMonth })
       .getRawOne();
 
-    const totalCommissions = parseFloat(commissionResult.total) || 0;
+    const lastMonthRevenue = parseFloat(lastMonthRevenueResult.total) || 0;
+
+    // Calculate current month revenue
+    const currentMonthRevenueResult = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .select('SUM(payment.amount - payment.refundedAmount)', 'total')
+      .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+      .andWhere('payment.processedAt >= :start', { start: startOfCurrentMonth })
+      .getRawOne();
+
+    const currentMonthRevenue = parseFloat(currentMonthRevenueResult.total) || 0;
+
+    // Calculate revenue change percentage
+    let revenueChange = 0;
+    if (lastMonthRevenue > 0) {
+      revenueChange = ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
+    } else if (currentMonthRevenue > 0) {
+      revenueChange = 100; // If there was no revenue last month but there is this month, it's 100% growth
+    }
+
+    // Calculate total refunds
+    const refundsResult = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .select('SUM(payment.refundedAmount)', 'total')
+      .where('payment.refundedAmount > 0')
+      .getRawOne();
+
+    const totalRefunds = parseFloat(refundsResult.total) || 0;
 
     return {
-      totalPayments,
+      totalRevenue: Math.round(totalRevenue * 100) / 100,
+      revenueChange: Math.round(revenueChange * 100) / 100,
+      lastMonthRevenue: Math.round(lastMonthRevenue * 100) / 100,
+      totalRefunds: Math.round(totalRefunds * 100) / 100,
       completedPayments,
       pendingPayments,
       failedPayments,
-      refundedPayments,
-      totalRevenue,
-      totalCommissions,
     };
   }
 

@@ -5,15 +5,46 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Radio, Users, ShoppingCart, Calendar, Play, Square } from 'lucide-react'
+import { Plus, Radio, Users, ShoppingCart, Calendar, Play, Square, Wifi, WifiOff } from 'lucide-react'
 import { LiveStreamsList } from '@/components/live/live-streams-list'
 import { CreateStreamDialog } from '@/components/live/create-stream-dialog'
 import { LiveStreamMetrics } from '@/components/live/live-stream-metrics'
+import { useLiveWebSocket } from '@/hooks/useLiveWebSocket'
+import { useToast } from '@/hooks/use-toast'
 
 export default function LiveShoppingPage() {
   const [activeTab, setActiveTab] = useState('streams')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [dashboardStats, setDashboardStats] = useState<any>(null)
+  const { toast } = useToast()
+
+  // WebSocket connection for real-time updates
+  const { isConnected } = useLiveWebSocket({
+    onPurchase: (purchase) => {
+      // Show toast notification for live purchases
+      toast({
+        title: '🎉 Live Purchase!',
+        description: `${purchase.buyerName} bought ${purchase.productName} for $${purchase.amount.toFixed(2)} during ${purchase.streamTitle}`,
+      })
+
+      // Refresh dashboard stats
+      fetchDashboardStats()
+    },
+    onStreamEnded: (stats) => {
+      // Show toast with stream summary
+      toast({
+        title: '📺 Stream Ended',
+        description: `${stats.streamTitle} ended with ${stats.totalViewers} viewers and $${stats.totalSales.toFixed(2)} in sales`,
+      })
+
+      // Refresh dashboard stats
+      fetchDashboardStats()
+    },
+    onDashboardUpdate: (stats) => {
+      // Update dashboard stats in real-time
+      setDashboardStats(stats)
+    },
+  })
 
   useEffect(() => {
     fetchDashboardStats()
@@ -21,17 +52,21 @@ export default function LiveShoppingPage() {
 
   const fetchDashboardStats = async () => {
     try {
-      // This would be an actual API call to get live shopping stats
-      setDashboardStats({
-        totalStreams: 12,
-        liveStreams: 2,
-        totalViewers: 1420,
-        totalSales: 8950.00,
-        avgViewTime: 850, // seconds
-        conversionRate: 0.035,
+      const response = await fetch('/api/v1/live/dashboard-stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
       })
+
+      if (response.ok) {
+        const data = await response.json()
+        setDashboardStats(data)
+      } else {
+        setDashboardStats(null)
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error)
+      setDashboardStats(null)
     }
   }
 
@@ -46,7 +81,20 @@ export default function LiveShoppingPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Live Shopping</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">Live Shopping</h1>
+            {isConnected ? (
+              <Badge variant="outline" className="gap-1">
+                <Wifi className="h-3 w-3 text-green-500" />
+                <span className="text-green-500">Live Updates</span>
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="gap-1">
+                <WifiOff className="h-3 w-3 text-gray-400" />
+                <span className="text-gray-400">Offline</span>
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
             Manage live streaming sessions and real-time product showcases
           </p>
@@ -105,9 +153,11 @@ export default function LiveShoppingPage() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">89%</div>
+              <div className="text-2xl font-bold">
+                {dashboardStats.engagementRate?.toFixed(2) || 0}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Interactive engagement rate
+                {dashboardStats.totalMessages?.toLocaleString() || 0} messages sent
               </p>
             </CardContent>
           </Card>

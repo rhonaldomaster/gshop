@@ -18,6 +18,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
 import { AddTrackingDto } from './dto/add-tracking.dto';
+import { OrderStatsDto } from './dto/order-stats.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -55,8 +56,12 @@ export class OrdersController {
   @Roles(UserRole.ADMIN)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Get order statistics (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Order statistics retrieved successfully' })
-  getStats() {
+  @ApiResponse({
+    status: 200,
+    description: 'Order statistics retrieved successfully',
+    type: OrderStatsDto,
+  })
+  getStats(): Promise<OrderStatsDto> {
     return this.ordersService.getOrderStats();
   }
 

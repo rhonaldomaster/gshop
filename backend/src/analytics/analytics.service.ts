@@ -5,6 +5,7 @@ import { PixelEvent } from '../pixel/entities/pixel-event.entity'
 import { Order } from '../orders/entities/order.entity'
 import { Seller } from '../sellers/entities/seller.entity'
 import { VatReportDto, VatBreakdownDto, VatCategoryDto } from './dto/vat-report.dto'
+import { SalesTrendsDto, TimePeriod, SalesTrendDataPoint } from './dto/sales-trends.dto'
 
 @Injectable()
 export class AnalyticsService {
@@ -197,5 +198,144 @@ export class AnalyticsService {
       totalWithVat: Math.round(totalWithVat * 100) / 100,
       totalOrders: orders.length,
     }
+  }
+
+  /**
+   * Generate sales trends report with time-series data
+   * @param period Time period for aggregation (daily, weekly, monthly, yearly)
+   * @param startDate Start date for report
+   * @param endDate End date for report
+   * @returns Sales trends with aggregated data by period
+   */
+  async generateSalesTrends(
+    period: TimePeriod,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<SalesTrendsDto> {
+    // Default to current year if no dates provided
+    const now = new Date();
+    const defaultStart = new Date(now.getFullYear(), 0, 1);
+    const defaultEnd = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+
+    const start = startDate || defaultStart;
+    const end = endDate || defaultEnd;
+
+    // Get orders within date range (only confirmed, shipped, or delivered orders)
+    const orders = await this.orderRepository
+      .createQueryBuilder('order')
+      .where('order.createdAt >= :start', { start })
+      .andWhere('order.createdAt <= :end', { end })
+      .andWhere('order.status IN (:...statuses)', {
+        statuses: ['confirmed', 'shipped', 'delivered'],
+      })
+      .getMany();
+
+    // Group orders by period and calculate totals
+    const dataMap = new Map<string, SalesTrendDataPoint>();
+    let totalSales = 0;
+    let totalOrders = 0;
+    let totalVat = 0;
+
+    orders.forEach(order => {
+      const periodKey = this.getPeriodKey(order.createdAt, period);
+      const periodLabel = this.getPeriodLabel(order.createdAt, period);
+
+      if (!dataMap.has(periodKey)) {
+        dataMap.set(periodKey, {
+          date: periodLabel,
+          sales: 0,
+          orders: 0,
+          vatAmount: 0,
+        });
+      }
+
+      const dataPoint = dataMap.get(periodKey)!;
+      dataPoint.sales += Number(order.totalAmount || 0);
+      dataPoint.orders += 1;
+      dataPoint.vatAmount += Number(order.totalVatAmount || 0);
+
+      totalSales += Number(order.totalAmount || 0);
+      totalOrders += 1;
+      totalVat += Number(order.totalVatAmount || 0);
+    });
+
+    // Convert map to array and sort by date
+    const data = Array.from(dataMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([_, dataPoint]) => ({
+        ...dataPoint,
+        sales: Math.round(dataPoint.sales * 100) / 100,
+        vatAmount: Math.round(dataPoint.vatAmount * 100) / 100,
+      }));
+
+    return {
+      period,
+      data,
+      startDate: start,
+      endDate: end,
+      totalSales: Math.round(totalSales * 100) / 100,
+      totalOrders,
+      totalVat: Math.round(totalVat * 100) / 100,
+    };
+  }
+
+  /**
+   * Get period key for grouping (sortable format)
+   */
+  private getPeriodKey(date: Date, period: TimePeriod): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    switch (period) {
+      case TimePeriod.DAILY:
+        return `${year}-${month}-${day}`;
+      case TimePeriod.WEEKLY:
+        const weekNumber = this.getWeekNumber(date);
+        return `${year}-W${String(weekNumber).padStart(2, '0')}`;
+      case TimePeriod.MONTHLY:
+        return `${year}-${month}`;
+      case TimePeriod.YEARLY:
+        return `${year}`;
+      default:
+        return `${year}-${month}`;
+    }
+  }
+
+  /**
+   * Get period label for display
+   */
+  private getPeriodLabel(date: Date, period: TimePeriod): string {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const monthNamesSpanish = [
+      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+    ];
+
+    switch (period) {
+      case TimePeriod.DAILY:
+        return `${date.getDate()} ${monthNamesSpanish[month]}`;
+      case TimePeriod.WEEKLY:
+        const weekNumber = this.getWeekNumber(date);
+        return `Sem ${weekNumber}`;
+      case TimePeriod.MONTHLY:
+        return monthNamesSpanish[month];
+      case TimePeriod.YEARLY:
+        return `${year}`;
+      default:
+        return monthNamesSpanish[month];
+    }
+  }
+
+  /**
+   * Get ISO week number
+   */
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
 }

@@ -3,9 +3,13 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Product, ProductStatus } from '../database/entities/product.entity';
+import { OrderItem } from '../database/entities/order-item.entity';
+import { PixelEvent } from '../pixel/entities/pixel-event.entity';
+import { Review } from '../marketplace/marketplace.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { TopProductDto } from './dto/top-product.dto';
 import { UserRole } from '../database/entities/user.entity';
 
 @Injectable()
@@ -13,6 +17,12 @@ export class ProductsService {
   constructor(
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    @InjectRepository(OrderItem)
+    private orderItemRepository: Repository<OrderItem>,
+    @InjectRepository(PixelEvent)
+    private pixelEventRepository: Repository<PixelEvent>,
+    @InjectRepository(Review)
+    private reviewRepository: Repository<Review>,
   ) {}
 
   async create(createProductDto: CreateProductDto, sellerId: string): Promise<Product> {
@@ -202,6 +212,12 @@ export class ProductsService {
   }
 
   async getProductStats() {
+    const now = new Date();
+    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // Get counts by status
     const [
       totalProducts,
       activeProducts,
@@ -214,12 +230,114 @@ export class ProductsService {
       this.productRepository.count({ where: { status: ProductStatus.DRAFT } }),
     ]);
 
+    // Calculate low stock products (inventory < 10)
+    const lowStockProducts = await this.productRepository
+      .createQueryBuilder('product')
+      .where('product.inventory < :threshold', { threshold: 10 })
+      .andWhere('product.inventory > 0')
+      .andWhere('product.status = :status', { status: ProductStatus.ACTIVE })
+      .getCount();
+
+    // Calculate last month products
+    const lastMonthProducts = await this.productRepository
+      .createQueryBuilder('product')
+      .where('product.createdAt >= :start', { start: startOfLastMonth })
+      .andWhere('product.createdAt <= :end', { end: endOfLastMonth })
+      .getCount();
+
+    // Calculate current month products
+    const currentMonthProducts = await this.productRepository
+      .createQueryBuilder('product')
+      .where('product.createdAt >= :start', { start: startOfCurrentMonth })
+      .getCount();
+
+    // Calculate products change percentage
+    let productsChange = 0;
+    if (lastMonthProducts > 0) {
+      productsChange = ((currentMonthProducts - lastMonthProducts) / lastMonthProducts) * 100;
+    } else if (currentMonthProducts > 0) {
+      productsChange = 100; // If there were no products last month but there are this month, it's 100% growth
+    }
+
     return {
       totalProducts,
+      productsChange: Math.round(productsChange * 100) / 100,
       activeProducts,
-      outOfStockProducts,
+      outOfStock: outOfStockProducts,
+      lowStock: lowStockProducts,
       draftProducts,
     };
+  }
+
+  async getTopProducts(limit: number = 5, metric: 'orders' | 'views' | 'revenue' = 'orders'): Promise<TopProductDto[]> {
+    // Get all products with their basic info
+    const products = await this.productRepository.find({
+      where: { status: ProductStatus.ACTIVE },
+    });
+
+    // Build product stats
+    const productStats = await Promise.all(
+      products.map(async (product) => {
+        // Count orders containing this product
+        const ordersCount = await this.orderItemRepository
+          .createQueryBuilder('orderItem')
+          .where('orderItem.productId = :productId', { productId: product.id })
+          .getCount();
+
+        // Count product views from pixel events
+        const viewsCount = await this.pixelEventRepository
+          .createQueryBuilder('event')
+          .where('event.eventType = :eventType', { eventType: 'product_view' })
+          .andWhere("event.eventData->>'productId' = :productId", { productId: product.id })
+          .getCount();
+
+        // Calculate average rating from reviews
+        const ratingResult = await this.reviewRepository
+          .createQueryBuilder('review')
+          .select('AVG(review.rating)', 'avgRating')
+          .where('review.productId = :productId', { productId: product.id })
+          .getRawOne();
+
+        const rating = parseFloat(ratingResult?.avgRating) || 0;
+
+        // Calculate total revenue for this product
+        const revenueResult = await this.orderItemRepository
+          .createQueryBuilder('orderItem')
+          .select('SUM(orderItem.totalPrice)', 'total')
+          .where('orderItem.productId = :productId', { productId: product.id })
+          .getRawOne();
+
+        const totalRevenue = parseFloat(revenueResult?.total) || 0;
+
+        return {
+          id: product.id,
+          name: product.name,
+          images: product.images || [],
+          ordersCount,
+          viewsCount,
+          rating: Math.round(rating * 10) / 10,
+          totalRevenue: Math.round(totalRevenue * 100) / 100,
+          price: product.price,
+          slug: product.slug,
+        };
+      }),
+    );
+
+    // Sort by selected metric and limit results
+    const sortedProducts = productStats.sort((a, b) => {
+      switch (metric) {
+        case 'orders':
+          return b.ordersCount - a.ordersCount;
+        case 'views':
+          return b.viewsCount - a.viewsCount;
+        case 'revenue':
+          return b.totalRevenue - a.totalRevenue;
+        default:
+          return b.ordersCount - a.ordersCount;
+      }
+    });
+
+    return sortedProducts.slice(0, limit);
   }
 
   private createBaseQuery(): SelectQueryBuilder<Product> {

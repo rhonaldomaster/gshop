@@ -54,23 +54,23 @@ export function StatsCards() {
           totalOrders: (ordersStats as any)?.totalOrders || 0,
           totalUsers: (usersStats as any)?.totalUsers || 0,
           totalProducts: (productsStats as any)?.totalProducts || 0,
-          revenueChange: 12.5,
-          ordersChange: 8.2,
-          usersChange: 15.3,
-          productsChange: 5.7,
+          revenueChange: (paymentsStats as any)?.revenueChange || 0,
+          ordersChange: (ordersStats as any)?.ordersChange || 0,
+          usersChange: (usersStats as any)?.usersChange || 0,
+          productsChange: (productsStats as any)?.productsChange || 0,
         });
       } catch (error) {
         console.error('Error fetching stats:', error);
-        // Set mock data for demo
+        // Show zeros on error instead of mock data
         setStats({
-          totalRevenue: 142350.50,
-          totalOrders: 1283,
-          totalUsers: 5847,
-          totalProducts: 234,
-          revenueChange: 12.5,
-          ordersChange: 8.2,
-          usersChange: 15.3,
-          productsChange: 5.7,
+          totalRevenue: 0,
+          totalOrders: 0,
+          totalUsers: 0,
+          totalProducts: 0,
+          revenueChange: 0,
+          ordersChange: 0,
+          usersChange: 0,
+          productsChange: 0,
         });
       } finally {
         setIsLoading(false);

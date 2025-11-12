@@ -141,3 +141,5 @@ export class PaymentStatsQueryDto {
   @IsString()
   endDate?: string;
 }
+
+export { PaymentStatsDto } from './payment-stats.dto';

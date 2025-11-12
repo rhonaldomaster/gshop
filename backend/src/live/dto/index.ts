@@ -78,3 +78,5 @@ export class JoinStreamDto {
   @IsString()
   userAgent?: string;
 }
+
+export { LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './live-stats.dto';
