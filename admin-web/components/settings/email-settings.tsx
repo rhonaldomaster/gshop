@@ -25,10 +25,10 @@ export function EmailSettings() {
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('emailSettingsSaved'));
+      alert(t('changesSaved'));
     } catch (error) {
       console.error('Error saving email settings:', error);
-      alert(t('errorSavingEmail'));
+      alert(t('error'));
     } finally {
       setIsSaving(false);
     }
@@ -53,7 +53,7 @@ export function EmailSettings() {
         <CardHeader>
           <CardTitle>{t('smtpConfig')}</CardTitle>
           <CardDescription>
-            {t('smtpConfigDesc')}
+            {t('smtpDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -103,9 +103,9 @@ export function EmailSettings() {
 
       <Card className="gshop-card">
         <CardHeader>
-          <CardTitle>{t('emailSenderDetails')}</CardTitle>
+          <CardTitle>{t('emailSender')}</CardTitle>
           <CardDescription>
-            {t('emailSenderDetailsDesc')}
+            {t('emailSenderDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

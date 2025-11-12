@@ -27,10 +27,10 @@ export function SecuritySettings() {
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('securitySettingsSaved'));
+      alert(t('changesSaved'));
     } catch (error) {
       console.error('Error saving security settings:', error);
-      alert(t('errorSavingSecurity'));
+      alert(t('error'));
     } finally {
       setIsSaving(false);
     }
@@ -40,9 +40,9 @@ export function SecuritySettings() {
     <div className="space-y-6">
       <Card className="gshop-card">
         <CardHeader>
-          <CardTitle>{t('authenticationSecurity')}</CardTitle>
+          <CardTitle>{t('authSecurity')}</CardTitle>
           <CardDescription>
-            {t('authenticationSecurityDesc')}
+            {t('authSecurityDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -50,7 +50,7 @@ export function SecuritySettings() {
             <div className="space-y-1">
               <Label htmlFor="twoFactorEnabled">{t('twoFactorAuth')}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('twoFactorAuthDesc')}
+                {t('require2FA')}
               </p>
             </div>
             <Switch
@@ -69,7 +69,7 @@ export function SecuritySettings() {
               onChange={(e) => setSettings({ ...settings, sessionTimeout: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              {t('sessionTimeoutDesc')}
+              {t('autoLogout')}
             </p>
           </div>
         </CardContent>
@@ -79,7 +79,7 @@ export function SecuritySettings() {
         <CardHeader>
           <CardTitle>{t('passwordPolicy')}</CardTitle>
           <CardDescription>
-            {t('passwordPolicyDesc')}
+            {t('passwordPolicyDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -99,7 +99,7 @@ export function SecuritySettings() {
             <div className="space-y-1">
               <Label htmlFor="passwordRequireUppercase">{t('requireUppercase')}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('requireUppercaseDesc')}
+                {t('uppercaseDescription')}
               </p>
             </div>
             <Switch
@@ -113,7 +113,7 @@ export function SecuritySettings() {
             <div className="space-y-1">
               <Label htmlFor="passwordRequireNumbers">{t('requireNumbers')}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('requireNumbersDesc')}
+                {t('numbersDescription')}
               </p>
             </div>
             <Switch
@@ -127,7 +127,7 @@ export function SecuritySettings() {
             <div className="space-y-1">
               <Label htmlFor="passwordRequireSymbols">{t('requireSymbols')}</Label>
               <p className="text-sm text-muted-foreground">
-                {t('requireSymbolsDesc')}
+                {t('symbolsDescription')}
               </p>
             </div>
             <Switch
@@ -143,7 +143,7 @@ export function SecuritySettings() {
         <CardHeader>
           <CardTitle>{t('loginSecurity')}</CardTitle>
           <CardDescription>
-            {t('loginSecurityDesc')}
+            {t('loginSecurityDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -159,7 +159,7 @@ export function SecuritySettings() {
                 onChange={(e) => setSettings({ ...settings, maxLoginAttempts: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                {t('maxLoginAttemptsDesc')}
+                {t('lockAccount')}
               </p>
             </div>
 
@@ -172,7 +172,7 @@ export function SecuritySettings() {
                 onChange={(e) => setSettings({ ...settings, lockoutDuration: e.target.value })}
               />
               <p className="text-xs text-muted-foreground">
-                {t('lockoutDurationDesc')}
+                {t('lockDuration')}
               </p>
             </div>
           </div>

@@ -21,7 +21,7 @@ export default function CategoriesPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
             <p className="text-muted-foreground">
-              {t('description')}
+              {t('subtitle')}
             </p>
           </div>
           <Button className="gshop-button-primary" asChild>

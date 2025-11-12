@@ -27,10 +27,10 @@ export function GeneralSettings() {
     try {
       // TODO: API call to save settings
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('settingsSaved'));
+      alert(t('changesSaved'));
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert(t('errorSaving'));
+      alert(t('error'));
     } finally {
       setIsSaving(false);
     }
@@ -40,9 +40,9 @@ export function GeneralSettings() {
     <div className="space-y-6">
       <Card className="gshop-card">
         <CardHeader>
-          <CardTitle>{t('siteInformation')}</CardTitle>
+          <CardTitle>{t('siteInfo')}</CardTitle>
           <CardDescription>
-            {t('siteInformationDesc')}
+            {t('siteInfoDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -102,7 +102,7 @@ export function GeneralSettings() {
         <CardHeader>
           <CardTitle>{t('localization')}</CardTitle>
           <CardDescription>
-            {t('localizationDesc')}
+            {t('localizationDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

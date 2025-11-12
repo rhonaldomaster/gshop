@@ -2,17 +2,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import {
   Table,
@@ -28,15 +29,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Edit, 
-  Eye, 
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  Edit,
+  Eye,
   Trash2,
   Package,
-  ImageIcon 
+  ImageIcon
 } from 'lucide-react';
 import { apiClient, formatCurrency, formatDate, getStatusColor } from '@/lib/api-client';
 
@@ -82,6 +83,9 @@ const getVatBadgeColor = (vatType?: string): string => {
 };
 
 export function ProductsTable() {
+  const t = useTranslations('products');
+  const tCommon = useTranslations('common');
+  const tOrders = useTranslations('orders');
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -145,7 +149,7 @@ export function ProductsTable() {
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
+    if (confirm(t('confirmDelete'))) {
       try {
         await apiClient.delete(`/products/${id}`);
         setProducts(prev => prev?.filter?.(p => p?.id !== id));
@@ -159,7 +163,7 @@ export function ProductsTable() {
     return (
       <Card className="gshop-card">
         <CardHeader>
-          <CardTitle>Loading products...</CardTitle>
+          <CardTitle>{tCommon('loading')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -184,12 +188,12 @@ export function ProductsTable() {
     <Card className="gshop-card">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Products Catalog</CardTitle>
+          <CardTitle>{t('allProducts')}</CardTitle>
           <div className="flex items-center gap-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
               <Input
-                placeholder="Search products..."
+                placeholder={t('search')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-64"
@@ -200,11 +204,11 @@ export function ProductsTable() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                <SelectItem value="all">{tCommon('status')}</SelectItem>
+                <SelectItem value="active">{tCommon('active')}</SelectItem>
+                <SelectItem value="draft">{t('draft')}</SelectItem>
+                <SelectItem value="inactive">{tCommon('inactive')}</SelectItem>
+                <SelectItem value="out_of_stock">{t('stock')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -214,11 +218,11 @@ export function ProductsTable() {
         {products?.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <Package className="h-16 w-16 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">No products found</h3>
-            <p className="mb-4">Start by creating your first product</p>
+            <h3 className="text-lg font-medium mb-2">{t('noProducts')}</h3>
+            <p className="mb-4">{t('noProducts')}</p>
             <Button className="gshop-button-primary" asChild>
               <Link href="/dashboard/products/create">
-                Add Product
+                {t('addProduct')}
               </Link>
             </Button>
           </div>
@@ -228,15 +232,15 @@ export function ProductsTable() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16"></TableHead>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>VAT Type</TableHead>
-                  <TableHead>Stock</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Seller</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead>{t('productName')}</TableHead>
+                  <TableHead>{t('sku')}</TableHead>
+                  <TableHead>{t('price')}</TableHead>
+                  <TableHead>IVA</TableHead>
+                  <TableHead>{t('stock')}</TableHead>
+                  <TableHead>{tCommon('status')}</TableHead>
+                  <TableHead>{t('category')}</TableHead>
+                  <TableHead>{t('seller')}</TableHead>
+                  <TableHead>{tOrders('date')}</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -300,7 +304,7 @@ export function ProductsTable() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-muted-foreground">
-                        {product?.category?.name || 'Uncategorized'}
+                        {product?.category?.name || 'Sin categoría'}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -324,21 +328,21 @@ export function ProductsTable() {
                           <DropdownMenuItem asChild>
                             <Link href={`/dashboard/products/${product?.id}`}>
                               <Eye className="mr-2 h-4 w-4" />
-                              View
+                              {tCommon('viewDetails')}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
                             <Link href={`/dashboard/products/${product?.id}/edit`}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                              {tCommon('edit')}
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDeleteProduct(product?.id)}
                             className="text-red-600"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            {tCommon('delete')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

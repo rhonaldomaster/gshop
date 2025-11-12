@@ -24,10 +24,10 @@ export function PaymentSettings() {
     setIsSaving(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('paymentSettingsSaved'));
+      alert(t('changesSaved'));
     } catch (error) {
       console.error('Error saving payment settings:', error);
-      alert(t('errorSavingPayment'));
+      alert(t('error'));
     } finally {
       setIsSaving(false);
     }
@@ -39,7 +39,7 @@ export function PaymentSettings() {
         <CardHeader>
           <CardTitle>{t('mercadoPagoConfig')}</CardTitle>
           <CardDescription>
-            {t('mercadoPagoConfigDesc')}
+            {t('mercadoPagoDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -79,7 +79,7 @@ export function PaymentSettings() {
         <CardHeader>
           <CardTitle>{t('commissionSettings')}</CardTitle>
           <CardDescription>
-            {t('commissionSettingsDesc')}
+            {t('commissionDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -95,7 +95,7 @@ export function PaymentSettings() {
               onChange={(e) => setSettings({ ...settings, defaultCommissionRate: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              {t('commissionRateDesc')}
+              {t('appliedToAllOrders')}
             </p>
           </div>
 

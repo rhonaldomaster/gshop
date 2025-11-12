@@ -144,11 +144,17 @@ const getOrderStatusIcon = (status: string) => {
 
 export function OrdersTable() {
   const t = useTranslations('orders');
+  const tCommon = useTranslations('common');
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const getStatusLabel = (status: string): string => {
+    const statusKey = status as any;
+    return t(statusKey) || status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -318,11 +324,11 @@ export function OrdersTable() {
                 <SelectItem value="pending">{t('pending')}</SelectItem>
                 <SelectItem value="confirmed">{t('confirmed')}</SelectItem>
                 <SelectItem value="processing">{t('processing')}</SelectItem>
-                <SelectItem value="in_transit">In Transit</SelectItem>
+                <SelectItem value="in_transit">{t('in_transit')}</SelectItem>
                 <SelectItem value="shipped">{t('shipped')}</SelectItem>
                 <SelectItem value="delivered">{t('delivered')}</SelectItem>
                 <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-                <SelectItem value="return_requested">Return Requested</SelectItem>
+                <SelectItem value="return_requested">{t('return_requested')}</SelectItem>
                 <SelectItem value="refunded">{t('refunded')}</SelectItem>
               </SelectContent>
             </Select>
@@ -366,7 +372,7 @@ export function OrdersTable() {
                     <TableCell>
                       <div>
                         <div className="font-medium">
-                          {order.user?.firstName || ''} {order.user?.lastName || 'Guest'}
+                          {order.user?.firstName || ''} {order.user?.lastName || t('guest')}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {order.user?.email}
@@ -375,7 +381,7 @@ export function OrdersTable() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? 's' : ''}
+                        {order.items?.length || 0} {(order.items?.length || 0) === 1 ? t('item') : t('items')}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -384,7 +390,7 @@ export function OrdersTable() {
                       </span>
                       {order.commissionAmount && (
                         <div className="text-xs text-muted-foreground">
-                          Commission: {formatCurrency(order.commissionAmount)}
+                          {t('commission')}: {formatCurrency(order.commissionAmount)}
                         </div>
                       )}
                     </TableCell>
@@ -394,7 +400,7 @@ export function OrdersTable() {
                         className={`flex items-center gap-1 w-fit ${getOrderStatusColor(order.status)}`}
                       >
                         {getOrderStatusIcon(order.status)}
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
+                        {getStatusLabel(order.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -402,8 +408,7 @@ export function OrdersTable() {
                         variant="outline"
                         className={getPaymentStatusColor(order.paymentStatus || 'pending')}
                       >
-                        {(order.paymentStatus || 'pending').charAt(0).toUpperCase() +
-                         (order.paymentStatus || 'pending').slice(1)}
+                        {getStatusLabel(order.paymentStatus || 'pending')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -414,7 +419,7 @@ export function OrdersTable() {
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">
-                          {order.shippingType || 'N/A'}
+                          {order.shippingType || t('na')}
                         </span>
                       )}
                     </TableCell>

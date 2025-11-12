@@ -97,6 +97,11 @@ export function WithdrawalsTable() {
   const [actionNotes, setActionNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const getStatusLabel = (status: string): string => {
+    const statusKey = status as any;
+    return t(statusKey) || status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   useEffect(() => {
     fetchWithdrawals();
   }, [searchTerm, statusFilter]);
@@ -173,7 +178,7 @@ export function WithdrawalsTable() {
       setActionNotes('');
     } catch (error) {
       console.error('Error approving withdrawal:', error);
-      alert('Error approving withdrawal. Please try again.');
+      alert(t('errorApprovingWithdrawal'));
     } finally {
       setIsProcessing(false);
     }
@@ -191,7 +196,7 @@ export function WithdrawalsTable() {
       setActionNotes('');
     } catch (error) {
       console.error('Error rejecting withdrawal:', error);
-      alert('Error rejecting withdrawal. Please try again.');
+      alert(t('errorRejectingWithdrawal'));
     } finally {
       setIsProcessing(false);
     }
@@ -293,7 +298,7 @@ export function WithdrawalsTable() {
                         className={`flex items-center gap-1 w-fit ${getWithdrawalStatusColor(withdrawal.status)}`}
                       >
                         {getWithdrawalStatusIcon(withdrawal.status)}
-                        {withdrawal.status.charAt(0).toUpperCase() + withdrawal.status.slice(1)}
+                        {getStatusLabel(withdrawal.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
