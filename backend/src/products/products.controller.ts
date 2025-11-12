@@ -72,7 +72,7 @@ export class ProductsController {
     const result = await this.productsService.findAll({
       limit: queryLimit,
       page: 1,
-      sortBy: 'viewsCount',
+      sortBy: 'views',
       sortOrder: 'DESC',
     });
 
