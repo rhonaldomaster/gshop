@@ -4,6 +4,8 @@ import { Repository, Between } from 'typeorm'
 import { PixelEvent } from '../pixel/entities/pixel-event.entity'
 import { Order } from '../orders/entities/order.entity'
 import { Seller } from '../sellers/entities/seller.entity'
+import { User } from '../database/entities/user.entity'
+import { Product } from '../database/entities/product.entity'
 import { VatReportDto, VatBreakdownDto, VatCategoryDto } from './dto/vat-report.dto'
 import { SalesTrendsDto, TimePeriod, SalesTrendDataPoint } from './dto/sales-trends.dto'
 
@@ -16,6 +18,10 @@ export class AnalyticsService {
     private orderRepository: Repository<Order>,
     @InjectRepository(Seller)
     private sellerRepository: Repository<Seller>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
   ) {}
 
   async getGlobalStats(startDate?: Date, endDate?: Date) {
@@ -62,6 +68,47 @@ export class AnalyticsService {
         startDate: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         endDate: endDate || new Date(),
       }
+    }
+  }
+
+  /**
+   * Get analytics overview data for admin dashboard
+   * Returns key metrics: revenue, orders, users, products, avg order value, conversion rate
+   */
+  async getAnalyticsOverview() {
+    // Get all completed orders
+    const orders = await this.orderRepository.find({
+      where: { status: 'delivered' as any }, // Only count delivered orders as revenue
+    })
+
+    const totalOrders = orders.length
+    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount || order.total || 0), 0)
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+
+    // Get total users
+    const totalUsers = await this.userRepository.count()
+
+    // Get total products
+    const totalProducts = await this.productRepository.count()
+
+    // Calculate conversion rate (orders / unique visitors from last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const recentPixelEvents = await this.pixelEventRepository.find({
+      where: {
+        createdAt: Between(thirtyDaysAgo, new Date()),
+      },
+    })
+
+    const uniqueVisitors = new Set(recentPixelEvents.map(e => e.sessionId)).size
+    const conversionRate = uniqueVisitors > 0 ? (totalOrders / uniqueVisitors) * 100 : 0
+
+    return {
+      totalRevenue,
+      totalOrders,
+      totalUsers,
+      totalProducts,
+      averageOrderValue,
+      conversionRate,
     }
   }
 

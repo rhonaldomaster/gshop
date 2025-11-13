@@ -1,3 +1,4 @@
+import { getSession } from 'next-auth/react';
 
 interface ApiClientOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -15,12 +16,21 @@ class ApiClient {
   private async request<T>(endpoint: string, options: ApiClientOptions = {}): Promise<T> {
     const { method = 'GET', body, headers = {} } = options;
 
+    // Get session and add auth token
+    const session = await getSession();
+    const authHeaders: Record<string, string> = {};
+
+    if (session?.user?.accessToken) {
+      authHeaders['Authorization'] = `Bearer ${session.user.accessToken}`;
+    }
+
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const config: RequestInit = {
       method,
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...headers,
       },
     };
@@ -31,7 +41,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`API Error: ${response.status} ${errorText}`);

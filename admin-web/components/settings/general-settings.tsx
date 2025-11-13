@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,33 +8,94 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Save } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/hooks/use-toast';
+
+interface SettingsData {
+  siteName?: string;
+  siteDescription?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  defaultLanguage?: string;
+  defaultCurrency?: string;
+}
 
 export function GeneralSettings() {
   const t = useTranslations('settings');
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
-    siteName: 'GSHOP',
-    siteDescription: 'Colombia\'s Leading Social Commerce Platform',
-    contactEmail: 'support@gshop.com',
-    contactPhone: '+57 1 234 5678',
-    address: 'Bogotá, Colombia',
-    defaultLanguage: 'es',
-    defaultCurrency: 'COP',
+    siteName: '',
+    siteDescription: '',
+    contactEmail: '',
+    contactPhone: '',
+    address: '',
+    defaultLanguage: '',
+    defaultCurrency: '',
   });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get<SettingsData>('/settings');
+      setSettings({
+        siteName: response.siteName || '',
+        siteDescription: response.siteDescription || '',
+        contactEmail: response.contactEmail || '',
+        contactPhone: response.contactPhone || '',
+        address: response.address || '',
+        defaultLanguage: response.defaultLanguage || '',
+        defaultCurrency: response.defaultCurrency || '',
+      });
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast({
+        title: t('error'),
+        description: t('errorFetchingSettings'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // TODO: API call to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('changesSaved'));
+      await apiClient.put('/settings/general', settings);
+      toast({
+        title: t('success'),
+        description: t('changesSaved'),
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert(t('error'));
+      toast({
+        title: t('error'),
+        description: t('errorSavingSettings'),
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card className="gshop-card">
+          <CardContent className="py-8">
+            <p className="text-center text-muted-foreground">{t('loading')}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

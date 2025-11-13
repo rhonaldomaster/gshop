@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs'
 import * as PDFDocument from 'pdfkit'
 import { Seller, SellerType, DocumentType, VerificationStatus } from './entities/seller.entity'
 import { SellerLocation } from './entities/seller-location.entity'
+import { Withdrawal, WithdrawalStatus } from './entities/withdrawal.entity'
 import { Order, OrderStatus } from '../database/entities/order.entity'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
@@ -21,6 +22,8 @@ export class SellersService {
     private sellersRepository: Repository<Seller>,
     @InjectRepository(SellerLocation)
     private locationsRepository: Repository<SellerLocation>,
+    @InjectRepository(Withdrawal)
+    private withdrawalsRepository: Repository<Withdrawal>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
     private jwtService: JwtService,
@@ -155,13 +158,132 @@ export class SellersService {
 
     await this.sellersRepository.save(seller)
 
-    // TODO: Integrate with MercadoPago API for actual withdrawal
-    // For now, just simulate the process
+    // Create withdrawal record
+    const withdrawal = this.withdrawalsRepository.create({
+      sellerId,
+      amount,
+      status: WithdrawalStatus.PENDING,
+    })
+
+    await this.withdrawalsRepository.save(withdrawal)
 
     return {
       message: 'Withdrawal request submitted',
+      withdrawalId: withdrawal.id,
       amount,
       remainingBalance: seller.availableBalance
+    }
+  }
+
+  /**
+   * Get all withdrawal requests (Admin only)
+   */
+  async getAllWithdrawals(status?: string, search?: string) {
+    const queryBuilder = this.withdrawalsRepository
+      .createQueryBuilder('withdrawal')
+      .leftJoinAndSelect('withdrawal.seller', 'seller')
+      .select([
+        'withdrawal',
+        'seller.id',
+        'seller.businessName',
+        'seller.email',
+      ])
+
+    if (status && status !== 'all') {
+      queryBuilder.andWhere('withdrawal.status = :status', { status })
+    }
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(seller.businessName ILIKE :search OR seller.email ILIKE :search)',
+        { search: `%${search}%` }
+      )
+    }
+
+    queryBuilder.orderBy('withdrawal.requestedAt', 'DESC')
+
+    return await queryBuilder.getMany()
+  }
+
+  /**
+   * Approve withdrawal request (Admin only)
+   */
+  async approveWithdrawal(withdrawalId: string, adminId: string, notes?: string) {
+    const withdrawal = await this.withdrawalsRepository.findOne({
+      where: { id: withdrawalId },
+      relations: ['seller'],
+    })
+
+    if (!withdrawal) {
+      throw new NotFoundException('Withdrawal not found')
+    }
+
+    if (withdrawal.status !== WithdrawalStatus.PENDING) {
+      throw new BadRequestException('Withdrawal has already been processed')
+    }
+
+    const seller = withdrawal.seller
+
+    // Move money from pending to paid
+    seller.pendingBalance = Number(seller.pendingBalance) - Number(withdrawal.amount)
+    seller.totalEarnings = Number(seller.totalEarnings) + Number(withdrawal.amount)
+
+    await this.sellersRepository.save(seller)
+
+    // Update withdrawal status
+    withdrawal.status = WithdrawalStatus.COMPLETED
+    withdrawal.processedAt = new Date()
+    withdrawal.processedBy = adminId
+    withdrawal.notes = notes || null
+
+    await this.withdrawalsRepository.save(withdrawal)
+
+    return {
+      message: 'Withdrawal approved successfully',
+      withdrawal,
+    }
+  }
+
+  /**
+   * Reject withdrawal request (Admin only)
+   */
+  async rejectWithdrawal(withdrawalId: string, adminId: string, notes: string) {
+    const withdrawal = await this.withdrawalsRepository.findOne({
+      where: { id: withdrawalId },
+      relations: ['seller'],
+    })
+
+    if (!withdrawal) {
+      throw new NotFoundException('Withdrawal not found')
+    }
+
+    if (withdrawal.status !== WithdrawalStatus.PENDING) {
+      throw new BadRequestException('Withdrawal has already been processed')
+    }
+
+    if (!notes) {
+      throw new BadRequestException('Rejection reason is required')
+    }
+
+    const seller = withdrawal.seller
+
+    // Return money from pending back to available
+    seller.pendingBalance = Number(seller.pendingBalance) - Number(withdrawal.amount)
+    seller.availableBalance = Number(seller.availableBalance) + Number(withdrawal.amount)
+
+    await this.sellersRepository.save(seller)
+
+    // Update withdrawal status
+    withdrawal.status = WithdrawalStatus.REJECTED
+    withdrawal.processedAt = new Date()
+    withdrawal.processedBy = adminId
+    withdrawal.notes = notes
+
+    await this.withdrawalsRepository.save(withdrawal)
+
+    return {
+      message: 'Withdrawal rejected',
+      withdrawal,
     }
   }
 

@@ -1,34 +1,76 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Save, Send } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/hooks/use-toast';
 
 export function EmailSettings() {
   const t = useTranslations('settings');
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
-    smtpHost: 'smtp.gmail.com',
-    smtpPort: '587',
-    smtpUser: 'noreply@gshop.com',
-    smtpPassword: '****',
-    fromName: 'GSHOP',
-    fromEmail: 'noreply@gshop.com',
+    smtpHost: '',
+    smtpPort: '',
+    smtpUser: '',
+    smtpPassword: '',
+    fromName: '',
+    fromEmail: '',
   });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get('/settings');
+      setSettings({
+        smtpHost: response.smtpHost || '',
+        smtpPort: response.smtpPort?.toString() || '',
+        smtpUser: response.smtpUser || '',
+        smtpPassword: response.smtpPassword || '****',
+        fromName: response.fromName || '',
+        fromEmail: response.fromEmail || '',
+      });
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast({
+        title: t('error'),
+        description: t('errorFetchingSettings'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('changesSaved'));
+      await apiClient.put('/settings/email', {
+        ...settings,
+        smtpPort: parseInt(settings.smtpPort),
+      });
+      toast({
+        title: t('success'),
+        description: t('changesSaved'),
+      });
     } catch (error) {
       console.error('Error saving email settings:', error);
-      alert(t('error'));
+      toast({
+        title: t('error'),
+        description: t('errorSavingSettings'),
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -37,11 +79,18 @@ export function EmailSettings() {
   const handleTestEmail = async () => {
     setIsTesting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('testEmailSent'));
+      await apiClient.post(`/settings/email/test?to=${settings.fromEmail}`);
+      toast({
+        title: t('success'),
+        description: t('testEmailSent'),
+      });
     } catch (error) {
       console.error('Error sending test email:', error);
-      alert(t('errorSendingTest'));
+      toast({
+        title: t('error'),
+        description: t('errorSendingTest'),
+        variant: 'destructive',
+      });
     } finally {
       setIsTesting(false);
     }

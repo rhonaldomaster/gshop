@@ -119,48 +119,11 @@ export function WithdrawalsTable() {
         params.append('status', statusFilter);
       }
 
-      // Note: This endpoint doesn't exist in backend yet
       const response = await apiClient.get<Withdrawal[]>(`/sellers/withdrawals?${params}`);
       setWithdrawals(response || []);
     } catch (error) {
       console.error('Error fetching withdrawals:', error);
-      // Mock data for demo
-      setWithdrawals([
-        {
-          id: '1',
-          seller: {
-            id: 's1',
-            businessName: 'TechStore Colombia',
-            email: 'seller@techstore.com',
-          },
-          amount: 5000000,
-          status: 'pending',
-          requestedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        },
-        {
-          id: '2',
-          seller: {
-            id: 's2',
-            businessName: 'Fashion Boutique',
-            email: 'seller@fashionboutique.com',
-          },
-          amount: 3500000,
-          status: 'pending',
-          requestedAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-          id: '3',
-          seller: {
-            id: 's3',
-            businessName: 'Electronics Plus',
-            email: 'seller@electronicsplus.com',
-          },
-          amount: 8000000,
-          status: 'completed',
-          requestedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-          processedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-        },
-      ]);
+      setWithdrawals([]);
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +132,7 @@ export function WithdrawalsTable() {
   const handleApproveWithdrawal = async (withdrawalId: string, notes: string) => {
     setIsProcessing(true);
     try {
-      await apiClient.post(`/payments/withdrawals/${withdrawalId}/approve`, {
+      await apiClient.post(`/sellers/withdrawals/${withdrawalId}/approve`, {
         notes,
       });
       // Refresh withdrawals
@@ -187,7 +150,7 @@ export function WithdrawalsTable() {
   const handleRejectWithdrawal = async (withdrawalId: string, notes: string) => {
     setIsProcessing(true);
     try {
-      await apiClient.post(`/payments/withdrawals/${withdrawalId}/reject`, {
+      await apiClient.post(`/sellers/withdrawals/${withdrawalId}/reject`, {
         notes,
       });
       // Refresh withdrawals

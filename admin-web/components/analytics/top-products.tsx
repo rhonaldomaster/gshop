@@ -29,53 +29,20 @@ export function TopProducts() {
   const fetchTopProducts = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get<TopProduct[]>('/analytics/top-products?limit=10');
-      setProducts(response || []);
+      const response = await apiClient.get<any[]>('/products/top?limit=10&metric=orders');
+      // Map backend response to frontend interface
+      const mappedProducts: TopProduct[] = response?.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category?.name,
+        totalSales: item.ordersCount || 0,
+        unitsSold: item.ordersCount || 0,
+        revenue: item.totalRevenue || 0,
+      })) || [];
+      setProducts(mappedProducts);
     } catch (error) {
       console.error('Error fetching top products:', error);
-      // Mock data for demo
-      setProducts([
-        {
-          id: '1',
-          name: 'iPhone 15 Pro Max',
-          category: 'Smartphones',
-          totalSales: 45,
-          unitsSold: 45,
-          revenue: 58500000,
-        },
-        {
-          id: '2',
-          name: 'MacBook Air 15" M3',
-          category: 'Laptops',
-          totalSales: 32,
-          unitsSold: 32,
-          revenue: 56000000,
-        },
-        {
-          id: '3',
-          name: 'AirPods Pro 2',
-          category: 'Audio',
-          totalSales: 156,
-          unitsSold: 156,
-          revenue: 38750000,
-        },
-        {
-          id: '4',
-          name: 'Samsung Galaxy S24 Ultra',
-          category: 'Smartphones',
-          totalSales: 38,
-          unitsSold: 38,
-          revenue: 45600000,
-        },
-        {
-          id: '5',
-          name: 'PlayStation 5',
-          category: 'Gaming',
-          totalSales: 28,
-          unitsSold: 28,
-          revenue: 14000000,
-        },
-      ]);
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,29 +8,79 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Save, Shield } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/hooks/use-toast';
 
 export function SecuritySettings() {
   const t = useTranslations('settings');
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
     twoFactorEnabled: false,
-    sessionTimeout: '60',
-    passwordMinLength: '8',
+    sessionTimeout: '',
+    passwordMinLength: '',
     passwordRequireUppercase: true,
     passwordRequireNumbers: true,
     passwordRequireSymbols: true,
-    maxLoginAttempts: '5',
-    lockoutDuration: '30',
+    maxLoginAttempts: '',
+    lockoutDuration: '',
   });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get('/settings');
+      setSettings({
+        twoFactorEnabled: response.twoFactorEnabled || false,
+        sessionTimeout: response.sessionTimeout?.toString() || '',
+        passwordMinLength: response.passwordMinLength?.toString() || '',
+        passwordRequireUppercase: response.passwordRequireUppercase || true,
+        passwordRequireNumbers: response.passwordRequireNumbers || true,
+        passwordRequireSymbols: response.passwordRequireSymbols || true,
+        maxLoginAttempts: response.maxLoginAttempts?.toString() || '',
+        lockoutDuration: response.lockoutDuration?.toString() || '',
+      });
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast({
+        title: t('error'),
+        description: t('errorFetchingSettings'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('changesSaved'));
+      await apiClient.put('/settings/security', {
+        twoFactorEnabled: settings.twoFactorEnabled,
+        sessionTimeout: parseInt(settings.sessionTimeout),
+        passwordMinLength: parseInt(settings.passwordMinLength),
+        passwordRequireUppercase: settings.passwordRequireUppercase,
+        passwordRequireNumbers: settings.passwordRequireNumbers,
+        passwordRequireSymbols: settings.passwordRequireSymbols,
+        maxLoginAttempts: parseInt(settings.maxLoginAttempts),
+        lockoutDuration: parseInt(settings.lockoutDuration),
+      });
+      toast({
+        title: t('success'),
+        description: t('changesSaved'),
+      });
     } catch (error) {
       console.error('Error saving security settings:', error);
-      alert(t('error'));
+      toast({
+        title: t('error'),
+        description: t('errorSavingSettings'),
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }

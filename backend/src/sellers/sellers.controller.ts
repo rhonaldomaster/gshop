@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Param, UseGuards, Request, Patch, Put, UseInterceptors, UploadedFiles, BadRequestException, Query, Res } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { Response } from 'express'
 import { SellersService } from './sellers.service'
@@ -9,6 +9,9 @@ import { SellerLoginDto } from './dto/seller-login.dto'
 import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
 import { AddSellerLocationDto } from './dto/add-seller-location.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from '../auth/guards/roles.guard'
+import { Roles } from '../auth/decorators/roles.decorator'
+import { UserRole } from '../database/entities/user.entity'
 
 @ApiTags('sellers')
 @Controller('sellers')
@@ -52,6 +55,46 @@ export class SellersController {
   @ApiOperation({ summary: 'Request withdrawal' })
   async requestWithdrawal(@Request() req, @Body() body: { amount: number }) {
     return this.sellersService.requestWithdrawal(req.user.sellerId, body.amount)
+  }
+
+  @Get('withdrawals')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all withdrawal requests (Admin only)' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by status (pending, approved, rejected, completed)' })
+  @ApiQuery({ name: 'search', required: false, description: 'Search by seller name or email' })
+  async getAllWithdrawals(
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.sellersService.getAllWithdrawals(status, search)
+  }
+
+  @Post('withdrawals/:id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve withdrawal request (Admin only)' })
+  async approveWithdrawal(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() body: { notes?: string },
+  ) {
+    return this.sellersService.approveWithdrawal(id, req.user.id, body.notes)
+  }
+
+  @Post('withdrawals/:id/reject')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reject withdrawal request (Admin only)' })
+  async rejectWithdrawal(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() body: { notes: string },
+  ) {
+    return this.sellersService.rejectWithdrawal(id, req.user.id, body.notes)
   }
 
   @Get(':id')

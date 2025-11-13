@@ -28,6 +28,29 @@ export class AnalyticsController {
     return await this.analyticsService.generateVatReport(start, end, sellerId);
   }
 
+  @Get('overview')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get analytics overview for admin dashboard' })
+  @ApiResponse({
+    status: 200,
+    description: 'Analytics overview retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        totalRevenue: { type: 'number', example: 125000000 },
+        totalOrders: { type: 'number', example: 1250 },
+        totalUsers: { type: 'number', example: 3450 },
+        totalProducts: { type: 'number', example: 567 },
+        averageOrderValue: { type: 'number', example: 100000 },
+        conversionRate: { type: 'number', example: 3.2 },
+      },
+    },
+  })
+  async getAnalyticsOverview() {
+    return await this.analyticsService.getAnalyticsOverview();
+  }
+
   @Get('stats')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

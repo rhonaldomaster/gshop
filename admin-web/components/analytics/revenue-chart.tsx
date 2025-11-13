@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown } from 'lucide-react';
 import { apiClient, formatCurrency } from '@/lib/api-client';
 
 interface RevenueData {
@@ -25,16 +24,23 @@ export function RevenueChart() {
   const fetchRevenueData = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get<RevenueData[]>(`/analytics/revenue?period=${period}`);
-      setData(response || []);
+      const periodMap = {
+        week: 'weekly',
+        month: 'monthly',
+        year: 'yearly',
+      };
+      const response = await apiClient.get<{ data: { date: string; sales: number }[] }>(
+        `/analytics/sales-trends?period=${periodMap[period]}`
+      );
+      // Map sales to revenue to match component interface
+      const mappedData = response?.data?.map(item => ({
+        date: item.date,
+        revenue: item.sales,
+      })) || [];
+      setData(mappedData);
     } catch (error) {
       console.error('Error fetching revenue data:', error);
-      // Mock data for demo
-      const mockData = Array.from({ length: 12 }, (_, i) => ({
-        date: new Date(2025, i, 1).toISOString(),
-        revenue: Math.random() * 10000000 + 5000000,
-      }));
-      setData(mockData);
+      setData([]);
     } finally {
       setIsLoading(false);
     }
@@ -65,10 +71,6 @@ export function RevenueChart() {
             <CardTitle>{t('revenueTrends')}</CardTitle>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-2xl font-bold">{formatCurrency(totalRevenue)}</span>
-              <div className="flex items-center text-sm text-green-600">
-                <TrendingUp className="h-4 w-4 mr-1" />
-                +12.5%
-              </div>
             </div>
           </div>
           <div className="flex gap-2">

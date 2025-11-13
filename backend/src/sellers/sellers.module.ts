@@ -7,12 +7,13 @@ import { SellersService } from './sellers.service'
 import { SellersUploadService } from './sellers-upload.service'
 import { Seller } from './entities/seller.entity'
 import { SellerLocation } from './entities/seller-location.entity'
+import { Withdrawal } from './entities/withdrawal.entity'
 import { Order } from '../database/entities/order.entity'
 import { EmailModule } from '../email/email.module'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Seller, SellerLocation, Order]),
+    TypeOrmModule.forFeature([Seller, SellerLocation, Withdrawal, Order]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
       signOptions: { expiresIn: '7d' },

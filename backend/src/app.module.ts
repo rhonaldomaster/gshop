@@ -15,6 +15,7 @@ import { SellersModule } from './sellers/sellers.module';
 import { AffiliatesModule } from './affiliates/affiliates.module';
 import { PixelModule } from './pixel/pixel.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SettingsModule } from './settings/settings.module';
 import { AdsModule } from './ads/ads.module';
 import { AudiencesModule } from './audiences/audiences.module';
 import { LiveModule } from './live/live.module';
@@ -70,6 +71,7 @@ import { AppService } from './app.service';
     AffiliatesModule,
     PixelModule,
     AnalyticsModule,
+    SettingsModule,
     AdsModule,
     AudiencesModule,
     LiveModule,

@@ -38,15 +38,7 @@ export function AnalyticsOverview() {
       setData(response);
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      // Mock data for demo
-      setData({
-        totalRevenue: 125000000,
-        totalOrders: 1250,
-        totalUsers: 3450,
-        totalProducts: 567,
-        averageOrderValue: 100000,
-        conversionRate: 3.2,
-      });
+      setData(null);
     } finally {
       setIsLoading(false);
     }

@@ -29,58 +29,21 @@ export function TopSellers() {
   const fetchTopSellers = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get<TopSeller[]>('/analytics/top-sellers?limit=10');
-      setSellers(response || []);
+      const response = await apiClient.get<any[]>('/analytics/seller-performance?limit=10');
+      // Map backend response to frontend interface
+      const mappedSellers: TopSeller[] = response?.map(item => ({
+        id: item.id,
+        businessName: item.businessName || 'Unknown Seller',
+        email: item.email || '',
+        totalOrders: 0, // Not available in current endpoint
+        totalRevenue: item.totalEarnings || 0,
+        averageRating: item.averageRating,
+        productsCount: item.productCount || 0,
+      })) || [];
+      setSellers(mappedSellers);
     } catch (error) {
       console.error('Error fetching top sellers:', error);
-      // Mock data for demo
-      setSellers([
-        {
-          id: '1',
-          businessName: 'TechStore Colombia',
-          email: 'seller@techstore.com',
-          totalOrders: 245,
-          totalRevenue: 125000000,
-          averageRating: 4.8,
-          productsCount: 45,
-        },
-        {
-          id: '2',
-          businessName: 'Fashion Boutique',
-          email: 'seller@fashionboutique.com',
-          totalOrders: 189,
-          totalRevenue: 95000000,
-          averageRating: 4.6,
-          productsCount: 78,
-        },
-        {
-          id: '3',
-          businessName: 'Electronics Plus',
-          email: 'seller@electronicsplus.com',
-          totalOrders: 156,
-          totalRevenue: 87500000,
-          averageRating: 4.9,
-          productsCount: 34,
-        },
-        {
-          id: '4',
-          businessName: 'Home Essentials',
-          email: 'seller@homeessentials.com',
-          totalOrders: 134,
-          totalRevenue: 65000000,
-          averageRating: 4.5,
-          productsCount: 112,
-        },
-        {
-          id: '5',
-          businessName: 'Sports World',
-          email: 'seller@sportsworld.com',
-          totalOrders: 98,
-          totalRevenue: 52000000,
-          averageRating: 4.7,
-          productsCount: 67,
-        },
-      ]);
+      setSellers([]);
     } finally {
       setIsLoading(false);
     }

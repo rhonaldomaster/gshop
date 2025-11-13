@@ -1,33 +1,76 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Save } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
+import { useToast } from '@/hooks/use-toast';
 
 export function PaymentSettings() {
   const t = useTranslations('settings');
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
-    mercadoPagoClientId: '****',
-    mercadoPagoClientSecret: '****',
-    mercadoPagoAccessToken: '****',
-    defaultCommissionRate: '7',
-    minWithdrawalAmount: '100000',
-    withdrawalFrequency: 'weekly',
+    mercadoPagoClientId: '',
+    mercadoPagoClientSecret: '',
+    mercadoPagoAccessToken: '',
+    defaultCommissionRate: '',
+    minWithdrawalAmount: '',
+    withdrawalFrequency: '',
   });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get('/settings');
+      setSettings({
+        mercadoPagoClientId: response.mercadoPagoClientId || '',
+        mercadoPagoClientSecret: response.mercadoPagoClientSecret || '****',
+        mercadoPagoAccessToken: response.mercadoPagoAccessToken || '****',
+        defaultCommissionRate: response.defaultCommissionRate?.toString() || '',
+        minWithdrawalAmount: response.minWithdrawalAmount?.toString() || '',
+        withdrawalFrequency: response.withdrawalFrequency || '',
+      });
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      toast({
+        title: t('error'),
+        description: t('errorFetchingSettings'),
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(t('changesSaved'));
+      await apiClient.put('/settings/payment', {
+        ...settings,
+        defaultCommissionRate: parseFloat(settings.defaultCommissionRate),
+        minWithdrawalAmount: parseFloat(settings.minWithdrawalAmount),
+      });
+      toast({
+        title: t('success'),
+        description: t('changesSaved'),
+      });
     } catch (error) {
       console.error('Error saving payment settings:', error);
-      alert(t('error'));
+      toast({
+        title: t('error'),
+        description: t('errorSavingSettings'),
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
