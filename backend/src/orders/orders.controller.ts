@@ -22,6 +22,7 @@ import { OrderStatsDto } from './dto/order-stats.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../database/entities/user.entity';
 import { OrderStatus } from '../database/entities/order.entity';
 
@@ -35,12 +36,14 @@ export class OrdersController {
     private readonly shippingService: ShippingService,
   ) {}
 
+  @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new order' })
   @ApiResponse({ status: 201, description: 'Order created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid order data or insufficient stock' })
   create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
-    return this.ordersService.create(createOrderDto, req.user.id);
+    const userId = req.user?.id || null;
+    return this.ordersService.create(createOrderDto, userId);
   }
 
   @Get()
@@ -104,6 +107,7 @@ export class OrdersController {
 
   // Shipping Endpoints
 
+  @Public()
   @Post('calculate-shipping')
   @ApiOperation({ summary: 'Calculate shipping cost for buyer location' })
   @ApiResponse({ status: 200, description: 'Shipping cost calculated successfully' })

@@ -22,6 +22,7 @@ import { PaymentStatsDto } from './dto/payment-stats.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../database/entities/user.entity';
 
 @ApiTags('Payments')
@@ -32,9 +33,8 @@ export class PaymentsController {
     private readonly mercadoPagoService: MercadoPagoService,
   ) {}
 
+  @Public()
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new payment' })
   @ApiResponse({ status: 201, description: 'Payment created successfully' })
   @ApiResponse({ status: 400, description: 'Payment creation failed' })

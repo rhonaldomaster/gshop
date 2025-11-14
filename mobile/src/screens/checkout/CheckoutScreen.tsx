@@ -598,25 +598,24 @@ export default function CheckoutScreen() {
       const orderTotal = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
 
       // Call new seller-managed shipping calculation API
-      const response = await fetch(`${process.env.API_BASE_URL}/orders/calculate-shipping`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sellerId,
-          buyerCity: shippingAddress.city,
-          buyerState: shippingAddress.state,
-          orderTotal,
-        }),
+      const response = await api.post<{
+        shippingType: 'local' | 'national';
+        shippingCost: number;
+        isFree: boolean;
+        message: string;
+      }>('/orders/calculate-shipping', {
+        sellerId,
+        buyerCity: shippingAddress.city,
+        buyerState: shippingAddress.state,
+        orderTotal,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data) {
+      if (response.success && response.data) {
         setShippingInfo({
-          shippingType: data.shippingType,
-          shippingCost: data.shippingCost,
-          isFree: data.isFree,
-          message: data.message || '',
+          shippingType: response.data.shippingType,
+          shippingCost: response.data.shippingCost,
+          isFree: response.data.isFree,
+          message: response.data.message || '',
         });
         setCurrentStep(1);
       } else {
