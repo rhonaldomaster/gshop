@@ -69,7 +69,7 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     // Recommendation system entities
     UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics
   ],
-  migrations: ['dist/database/migrations/*.js'],
+  migrations: ['dist/src/database/migrations/*.js'],
   synchronize: false, // Disabled to prevent schema conflicts with manual migrations
   logging: configService.get('NODE_ENV') === 'development',
   ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
