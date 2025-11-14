@@ -14,6 +14,7 @@ import { CalendarIcon } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { format } from 'date-fns'
+import { useToast } from '@/components/ui/use-toast'
 
 interface CreateCampaignDialogProps {
   open: boolean
@@ -23,6 +24,7 @@ interface CreateCampaignDialogProps {
 
 export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCampaignDialogProps) {
   const t = useTranslations('ads')
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     name: '',
     type: '',
@@ -33,11 +35,50 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
     endDate: undefined as Date | undefined,
   })
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Campaign name is required'
+    }
+
+    if (!formData.type) {
+      newErrors.type = 'Campaign type is required'
+    }
+
+    const budget = parseFloat(formData.budget)
+    if (!formData.budget || isNaN(budget) || budget <= 0) {
+      newErrors.budget = 'Budget must be greater than 0'
+    }
+
+    const dailyBudget = parseFloat(formData.dailyBudget)
+    if (!formData.dailyBudget || isNaN(dailyBudget) || dailyBudget <= 0) {
+      newErrors.dailyBudget = 'Daily budget must be greater than 0'
+    }
+
+    if (budget > 0 && dailyBudget > 0 && dailyBudget > budget) {
+      newErrors.dailyBudget = 'Daily budget cannot exceed total budget'
+    }
+
+    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+      newErrors.endDate = 'End date must be after start date'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.type || !formData.budget || !formData.dailyBudget) {
+    if (!validateForm()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the errors in the form.',
+        variant: 'destructive',
+      })
       return
     }
 
@@ -63,13 +104,27 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
       })
 
       if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Campaign created successfully!',
+        })
         onSuccess()
         resetForm()
       } else {
-        console.error('Failed to create campaign')
+        const errorData = await response.json().catch(() => null)
+        toast({
+          title: 'Error',
+          description: errorData?.message || 'Failed to create campaign. Please try again.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Error creating campaign:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create campaign. Please check your connection.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -85,6 +140,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
       startDate: undefined,
       endDate: undefined,
     })
+    setErrors({})
   }
 
   const getDefaultTargetAudience = (type: string) => {
@@ -162,6 +218,7 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
           {/* Campaign Type Selection */}
           <div className="space-y-4">
             <Label>{t('campaignType')}</Label>
+            {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
             <div className="grid gap-3">
               {campaignTypes.map((type) => (
                 <Card
@@ -197,7 +254,9 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={t('enterCampaignName')}
                 required
+                className={errors.name ? 'border-red-500' : ''}
               />
+              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="budget">{t('totalBudget')}</Label>
@@ -210,7 +269,9 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
                 onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                 placeholder="0.00"
                 required
+                className={errors.budget ? 'border-red-500' : ''}
               />
+              {errors.budget && <p className="text-sm text-red-500">{errors.budget}</p>}
             </div>
           </div>
 
@@ -238,7 +299,9 @@ export function CreateCampaignDialog({ open, onOpenChange, onSuccess }: CreateCa
                 onChange={(e) => setFormData({ ...formData, dailyBudget: e.target.value })}
                 placeholder="0.00"
                 required
+                className={errors.dailyBudget ? 'border-red-500' : ''}
               />
+              {errors.dailyBudget && <p className="text-sm text-red-500">{errors.dailyBudget}</p>}
             </div>
 
             <div className="space-y-2">

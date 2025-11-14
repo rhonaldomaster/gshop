@@ -34,7 +34,7 @@ export class AnalyticsService {
     // Get orders data
     const orders = await this.orderRepository.find({ where })
     const totalOrders = orders.length
-    const totalGMV = orders.reduce((sum, order) => sum + Number(order.total), 0)
+    const totalGMV = orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
     const avgOrderValue = totalOrders > 0 ? totalGMV / totalOrders : 0
 
     // Get seller stats
@@ -82,7 +82,7 @@ export class AnalyticsService {
     })
 
     const totalOrders = orders.length
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount || order.total || 0), 0)
+    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
     // Get total users

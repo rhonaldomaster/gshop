@@ -27,7 +27,7 @@ import { OrderStatus } from '../database/entities/order.entity';
 
 @ApiTags('Orders')
 @Controller('orders')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('access-token')
 export class OrdersController {
   constructor(
@@ -45,7 +45,6 @@ export class OrdersController {
 
   @Get()
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Get all orders (Admin only)' })
   @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
   findAll(@Query() query: OrderQueryDto) {
@@ -54,7 +53,6 @@ export class OrdersController {
 
   @Get('stats')
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Get order statistics (Admin only)' })
   @ApiResponse({
     status: 200,
@@ -90,7 +88,6 @@ export class OrdersController {
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.SELLER)
-  @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Update order (Admin/Seller only)' })
   @ApiResponse({ status: 200, description: 'Order updated successfully' })
   update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
@@ -99,7 +96,6 @@ export class OrdersController {
 
   @Patch(':id/status')
   @Roles(UserRole.ADMIN, UserRole.SELLER)
-  @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Update order status (Admin/Seller only)' })
   @ApiResponse({ status: 200, description: 'Order status updated successfully' })
   updateStatus(@Param('id') id: string, @Body() body: { status: OrderStatus }) {

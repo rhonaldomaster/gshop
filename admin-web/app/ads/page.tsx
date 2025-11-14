@@ -17,6 +17,7 @@ export default function AdsManagerPage() {
   const [activeTab, setActiveTab] = useState('campaigns')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [dashboardStats, setDashboardStats] = useState<any>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
 
   useEffect(() => {
     fetchDashboardStats()
@@ -24,6 +25,7 @@ export default function AdsManagerPage() {
 
   const fetchDashboardStats = async () => {
     try {
+      setStatsLoading(true)
       const response = await fetch('/api/ads/dashboard')
       if (response.ok) {
         const stats = await response.json()
@@ -31,6 +33,8 @@ export default function AdsManagerPage() {
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error)
+    } finally {
+      setStatsLoading(false)
     }
   }
 
@@ -51,7 +55,22 @@ export default function AdsManagerPage() {
       </div>
 
       {/* Dashboard Stats */}
-      {dashboardStats && (
+      {statsLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-4 bg-muted animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-20 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : dashboardStats ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -105,7 +124,7 @@ export default function AdsManagerPage() {
             </CardContent>
           </Card>
         </div>
-      )}
+      ) : null}
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { PlayCircle, PauseCircle, MoreHorizontal, Edit, Trash, BarChart3 } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 interface Campaign {
   id: string
@@ -34,6 +35,7 @@ interface CampaignsListProps {
 
 export function CampaignsList({ onRefresh }: CampaignsListProps) {
   const t = useTranslations('ads')
+  const { toast } = useToast()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -48,9 +50,20 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
       if (response.ok) {
         const data = await response.json()
         setCampaigns(data)
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch campaigns. Please try again.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to fetch campaigns:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load campaigns. Please check your connection.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -69,9 +82,24 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
       if (response.ok) {
         await fetchCampaigns()
         onRefresh?.()
+        toast({
+          title: 'Success',
+          description: `Campaign ${status === 'active' ? 'activated' : 'paused'} successfully.`,
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to update campaign status.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to update campaign status:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update campaign status. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -88,9 +116,24 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
       if (response.ok) {
         await fetchCampaigns()
         onRefresh?.()
+        toast({
+          title: 'Success',
+          description: 'Campaign deleted successfully.',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete campaign.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to delete campaign:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete campaign. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -146,14 +189,17 @@ export function CampaignsList({ onRefresh }: CampaignsListProps) {
 
     const ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0
     const cpa = totals.conversions > 0 ? campaign.spent / totals.conversions : 0
-    const revenue = campaign.metrics.reduce((acc, m) => acc + (m.roas * campaign.spent), 0)
-    const roas = campaign.spent > 0 ? revenue / campaign.spent : 0
+
+    // Calculate average ROAS from metrics (weighted by daily performance)
+    const avgRoas = campaign.metrics.length > 0
+      ? campaign.metrics.reduce((acc, m) => acc + m.roas, 0) / campaign.metrics.length
+      : 0
 
     return {
       ...totals,
       ctr,
       cpa,
-      roas,
+      roas: avgRoas,
     }
   }
 

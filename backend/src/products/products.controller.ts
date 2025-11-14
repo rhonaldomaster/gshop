@@ -34,9 +34,8 @@ export class ProductsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
@@ -83,9 +82,8 @@ export class ProductsController {
   }
 
   @Get('stats')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get product statistics (Admin only)' })
   @ApiResponse({
@@ -98,9 +96,8 @@ export class ProductsController {
   }
 
   @Get('top')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get top performing products (Admin only)' })
   @ApiQuery({
@@ -178,9 +175,8 @@ export class ProductsController {
   }
 
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  @UseGuards(RolesGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update product status (Admin only)' })
   @ApiResponse({ status: 200, description: 'Product status updated successfully' })

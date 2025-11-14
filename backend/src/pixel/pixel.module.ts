@@ -10,6 +10,6 @@ import { PixelEvent } from './entities/pixel-event.entity'
   ],
   controllers: [PixelController],
   providers: [PixelService],
-  exports: [PixelService],
+  exports: [PixelService, TypeOrmModule],
 })
 export class PixelModule {}

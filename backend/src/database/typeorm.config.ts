@@ -24,6 +24,9 @@ import { AffiliateNotification } from '../affiliates/entities/affiliate-notifica
 // Live Streaming Entities
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer } from '../live/live.entity';
 
+// Pixel/Analytics Entities
+import { PixelEvent } from '../pixel/entities/pixel-event.entity';
+
 // Seller Entities
 import { Seller } from '../sellers/entities/seller.entity';
 import { SellerLocation } from '../sellers/entities/seller-location.entity';
@@ -57,6 +60,8 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     PlatformConfig, CommissionInvoice, AuditLog,
     // Live streaming entities
     LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer,
+    // Pixel/Analytics entities
+    PixelEvent,
     // Affiliates/Creator system entities
     Affiliate, AffiliateLink, AffiliateClick, AffiliateFollower,
     AffiliateVideo, AffiliateVideoProduct, VideoInteraction,

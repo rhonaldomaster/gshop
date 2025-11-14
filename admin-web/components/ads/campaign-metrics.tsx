@@ -9,6 +9,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { CalendarIcon, TrendingUp, TrendingDown, BarChart3, DollarSign } from 'lucide-react'
 import { format, subDays } from 'date-fns'
+import { useToast } from '@/components/ui/use-toast'
 
 interface CampaignMetric {
   id: string
@@ -31,6 +32,7 @@ interface Campaign {
 
 export function CampaignMetrics() {
   const t = useTranslations('ads.metrics')
+  const { toast } = useToast()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<string>('')
   const [metrics, setMetrics] = useState<CampaignMetric[]>([])
@@ -59,9 +61,20 @@ export function CampaignMetrics() {
         if (data.length > 0) {
           setSelectedCampaign(data[0].id)
         }
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch campaigns.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to fetch campaigns:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load campaigns. Please check your connection.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -79,9 +92,20 @@ export function CampaignMetrics() {
       if (response.ok) {
         const data = await response.json()
         setMetrics(data)
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch campaign metrics.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load metrics. Please check your connection.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }

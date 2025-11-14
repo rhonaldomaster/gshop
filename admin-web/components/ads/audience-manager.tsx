@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Plus, Users, RefreshCw, Edit, Trash } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 interface Audience {
   id: string
@@ -27,6 +28,7 @@ interface Audience {
 
 export function AudienceManager() {
   const t = useTranslations('ads.audiences')
+  const { toast } = useToast()
   const [audiences, setAudiences] = useState<Audience[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -48,9 +50,20 @@ export function AudienceManager() {
       if (response.ok) {
         const data = await response.json()
         setAudiences(data)
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch audiences.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to fetch audiences:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load audiences. Please check your connection.',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -70,9 +83,24 @@ export function AudienceManager() {
         setShowCreateDialog(false)
         setFormData({ name: '', type: '', description: '', rules: {} })
         fetchAudiences()
+        toast({
+          title: 'Success',
+          description: 'Audience created successfully!',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to create audience.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to create audience:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create audience. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -84,9 +112,24 @@ export function AudienceManager() {
 
       if (response.ok) {
         fetchAudiences()
+        toast({
+          title: 'Success',
+          description: 'Audience rebuilt successfully!',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to rebuild audience.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to rebuild audience:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to rebuild audience. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -102,9 +145,24 @@ export function AudienceManager() {
 
       if (response.ok) {
         fetchAudiences()
+        toast({
+          title: 'Success',
+          description: 'Audience deleted successfully.',
+        })
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete audience.',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('Failed to delete audience:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete audience. Please try again.',
+        variant: 'destructive',
+      })
     }
   }
 

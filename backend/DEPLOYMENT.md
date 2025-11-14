@@ -1,254 +1,337 @@
-# GSHOP Backend - Production Deployment Guide
+# 🚀 GSHOP Backend Deployment Guide
 
-## 📦 Vercel Serverless Architecture
+## How Database Migrations Work
 
-This backend uses a **serverless function adapter** to run NestJS on Vercel:
+### TypeORM Migration System
 
-- `src/main.ts` - Local development server (runs with `npm start`)
-- `src/serverless.ts` - Vercel serverless handler (exports for Vercel)
-- `vercel.json` - Vercel configuration for routing and builds
+TypeORM automatically tracks which migrations have been executed using a special table called `migrations` in your database. This means:
 
-The serverless adapter:
-- ✅ Caches the NestJS app instance between requests (warm starts)
-- ✅ Supports all NestJS features (guards, pipes, interceptors)
-- ✅ Handles CORS and validation automatically
-- ✅ Includes Swagger docs at `/api/docs`
-- ✅ 60-second timeout for long operations
+✅ **First deployment**: All migrations run automatically
+✅ **Subsequent deployments**: Only NEW migrations run
+✅ **No manual tracking needed**: TypeORM handles everything
+✅ **Safe to run multiple times**: Already-executed migrations are skipped
 
-## 🚀 Deploying to Vercel
+### Migration Table Structure
 
-### 1. Initial Vercel Deployment
+TypeORM creates a `migrations` table with:
+- `id` - Auto-increment ID
+- `timestamp` - Migration timestamp (from filename)
+- `name` - Migration name
+- `executed_at` - When it was executed
+
+## Deployment Methods
+
+### Method 1: Using npm scripts (Simple)
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# First time setup (just migrations)
+npm run deploy:init
 
-# Deploy from backend directory
-cd backend
-vercel --prod
+# Full deployment (build + migrations + start)
+npm run deploy:prod
 ```
 
-### 2. Configure Environment Variables in Vercel
+### Method 2: Using deploy.sh script (Recommended)
 
-Go to your Vercel project settings and add:
+```bash
+# First time setup
+./deploy.sh init
+
+# Run only pending migrations
+./deploy.sh migrate
+
+# Full deployment
+./deploy.sh deploy
+
+# Just build
+./deploy.sh build
+
+# Just start (without migrations)
+./deploy.sh start
+```
+
+## Production Deployment Steps
+
+### Initial Setup (First Time)
+
+```bash
+# 1. Clone repository and install dependencies
+git clone <your-repo>
+cd backend
+npm install
+
+# 2. Set environment variables
+export DATABASE_URL="postgresql://user:password@host:5432/dbname"
+export JWT_SECRET="your-secret-key"
+
+# 3. Initialize database
+./deploy.sh init
+
+# 4. (Optional) Seed production data
+npm run seed:prod
+
+# 5. Start application
+./deploy.sh start
+```
+
+### Updates (Subsequent Deployments)
+
+```bash
+# 1. Pull latest changes
+git pull
+
+# 2. Install new dependencies (if any)
+npm install
+
+# 3. Run full deployment
+./deploy.sh deploy
+```
+
+## Environment Variables Required
 
 ```bash
 # Database
-DATABASE_URL=postgresql://user:password@host:5432/database
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+# OR individual variables:
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=gshop_user
+DB_PASSWORD=gshop_password
+DB_DATABASE=gshop_db
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-production
-JWT_EXPIRATION=7d
+# App
+NODE_ENV=production
+PORT=3000
+JWT_SECRET=your-super-secret-jwt-key-change-this
 
-# Payments
-MERCAPAGO_CLIENT_ID=your-prod-mercadopago-client-id
-MERCAPAGO_CLIENT_SECRET=your-prod-mercadopago-client-secret
-MERCAPAGO_ACCESS_TOKEN=your-prod-mercadopago-access-token
-
-STRIPE_SECRET_KEY=sk_live_your_stripe_secret_key
-STRIPE_PUBLISHABLE_KEY=pk_live_your_stripe_publishable_key
-
-# Blockchain
-POLYGON_RPC_URL=https://polygon-rpc.com
-USDC_CONTRACT_ADDRESS=0x2791bca1f2de4661ed88a30c99a7a9449aa84174
-
-# Shipping
-EASYPOST_API_KEY=EZAK_your_production_easypost_api_key
-
-# Live Streaming
-RTMP_SERVER_URL=rtmp://your-streaming-server:1935/live
-HLS_SERVER_URL=https://your-streaming-server/hls
-WEBSOCKET_URL=https://your-backend-domain.vercel.app
-
-# Admin Password for Seeding
-ADMIN_PASSWORD=your-secure-admin-password
+# MercadoPago
+MERCAPAGO_CLIENT_ID=your-client-id
+MERCAPAGO_CLIENT_SECRET=your-client-secret
+MERCAPAGO_ACCESS_TOKEN=your-access-token
 ```
 
-### 3. Run Database Migrations & Seeds
+## Docker Deployment Example
 
-**⚠️ IMPORTANT**: Vercel does NOT run migrations automatically. You must run them manually.
-
-#### Option A: Run from Local Machine (Recommended)
-
-```bash
-# Go to backend directory
-cd backend
-
-# Set your production DATABASE_URL
-export DATABASE_URL="postgresql://user:password@host:5432/database"
-
-# Run migrations
-npm run migration:run
-
-# Run production seed (creates admin, categories, commissions)
-npm run seed:prod
-```
-
-#### Option B: Use Setup Script
-
-```bash
-cd backend
-chmod +x scripts/setup-prod-db.sh
-
-# Run with your production database URL
-DATABASE_URL="postgresql://user:password@host:5432/database" ./scripts/setup-prod-db.sh
-```
-
-#### Option C: GitHub Actions (Automated)
-
-Create `.github/workflows/deploy-migrations.yml`:
+### Using docker-compose
 
 ```yaml
-name: Run Database Migrations
+version: '3.8'
+services:
+  backend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/gshop
+      - JWT_SECRET=production-secret
+      - NODE_ENV=production
+    depends_on:
+      - db
+    command: ["./deploy.sh", "deploy"]
 
-on:
-  workflow_dispatch:  # Manual trigger
-  push:
-    branches: [main]
-    paths:
-      - 'backend/src/database/migrations/**'
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=gshop
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-jobs:
-  migrate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install dependencies
-        run: cd backend && npm install
-
-      - name: Run migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: cd backend && npm run migration:run
+volumes:
+  postgres_data:
 ```
 
-## 📊 Production Database Setup
+### Dockerfile
 
-### First Time Setup (Creates Essential Data)
+```dockerfile
+FROM node:18-alpine
 
-The `seed:prod` script creates:
-- ✅ Admin user account
-- ✅ Basic product categories (Electronics, Fashion, Home & Garden)
-- ✅ Commission structure (7% platform fee)
+WORKDIR /app
 
-**Safe to run multiple times** - checks if data exists before creating.
+# Copy package files
+COPY package*.json ./
 
-### After Seeding
+# Install dependencies
+RUN npm ci --only=production
 
-1. Log in to admin panel: `https://your-admin-domain/login`
-   - Email: `admin@gshop.com`
-   - Password: Value from `ADMIN_PASSWORD` env var
+# Copy source code
+COPY . .
 
-2. **IMMEDIATELY** change the admin password
+# Build application
+RUN npm run build
 
-3. Create your seller accounts and products
+# Make deploy script executable
+RUN chmod +x deploy.sh
 
-## 🔄 Updating Production
+# Expose port
+EXPOSE 3000
 
-### For Code Changes
+# Default command: full deployment
+CMD ["./deploy.sh", "deploy"]
+```
+
+## Platform-Specific Guides
+
+### Heroku
 
 ```bash
-# Just push to main or run
-vercel --prod
+# Add buildpack
+heroku buildpacks:set heroku/nodejs
+
+# Set environment variables
+heroku config:set DATABASE_URL="your-database-url"
+heroku config:set JWT_SECRET="your-secret"
+
+# Deploy
+git push heroku main
+
+# Run migrations (if not automatic)
+heroku run npm run migration:run
 ```
 
-### For Database Schema Changes
+Add to `package.json`:
+```json
+{
+  "scripts": {
+    "heroku-postbuild": "npm run build && npm run migration:run"
+  }
+}
+```
+
+### Railway
 
 ```bash
-# 1. Generate migration
-npm run migration:generate -- -n YourMigrationName
+# Set environment variables in Railway dashboard
+DATABASE_URL=<provided-by-railway>
+JWT_SECRET=your-secret
 
-# 2. Test locally first
-npm run migration:run
-
-# 3. Run on production
-DATABASE_URL="your-prod-url" npm run migration:run
+# Add start command in Railway settings:
+npm run deploy:prod
 ```
 
-## 🐛 Troubleshooting
+### Vercel (Serverless)
 
-### "Migration table not found"
+⚠️ **Note**: Vercel is serverless and not ideal for NestJS with database migrations.
+Consider using Railway, Heroku, or DigitalOcean instead.
+
+### DigitalOcean App Platform
+
+```yaml
+# app.yaml
+name: gshop-backend
+services:
+  - name: api
+    github:
+      repo: your-org/gshop
+      branch: main
+      deploy_on_push: true
+    build_command: npm run build
+    run_command: ./deploy.sh deploy
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+databases:
+  - name: db
+    engine: PG
+    version: "15"
+```
+
+## Migration Management
+
+### Check pending migrations
 
 ```bash
-# Create migrations table manually
-DATABASE_URL="your-prod-url" npm run migration:run
+npm run migration:show
 ```
 
-### "Table already exists"
-
-This means migrations ran partially. Check:
-```bash
-# Connect to your database and check
-SELECT * FROM migrations;
-```
-
-### "Connection timeout"
-
-- Check if your database allows connections from your IP
-- Verify DATABASE_URL is correct
-- Check firewall rules
-
-### Vercel Function Timeout
-
-If your backend times out:
-1. Go to Vercel project settings
-2. Functions → Max Duration → Increase to 60s (Pro plan)
-
-## 📦 Production Checklist
-
-- [ ] Environment variables configured in Vercel
-- [ ] Database migrations executed
-- [ ] Production seed executed
-- [ ] Admin password changed
-- [ ] Webhook URLs configured in payment providers:
-  - MercadoPago: `https://your-domain/api/v1/payments/webhook/mercadopago`
-  - Stripe: `https://your-domain/api/v1/payments/webhook/stripe`
-- [ ] CORS origins configured for your frontend domains
-- [ ] SSL/HTTPS enabled
-- [ ] Error monitoring configured (Sentry recommended)
-
-## 🔐 Security Notes
-
-1. **Never commit** `.env` files with production credentials
-2. **Rotate secrets** regularly (JWT_SECRET, API keys)
-3. **Use strong passwords** for admin accounts
-4. **Enable 2FA** where available (Vercel, database provider)
-5. **Monitor** your production logs for suspicious activity
-
-## 📝 Database Backup
-
-Always backup before migrations:
+### Create new migration
 
 ```bash
-# PostgreSQL backup
-pg_dump -h hostname -U username -d database > backup_$(date +%Y%m%d).sql
-
-# Restore if needed
-psql -h hostname -U username -d database < backup_20250127.sql
+# After modifying entities, generate migration
+npm run migration:generate -- -n DescriptiveName
 ```
 
-## 🆘 Emergency Rollback
-
-If a migration breaks production:
+### Revert last migration (if needed)
 
 ```bash
-# Revert last migration
-DATABASE_URL="your-prod-url" npm run migration:revert
-
-# Deploy previous Vercel version
-vercel rollback
+npm run migration:revert
 ```
 
-## 📞 Support
+### Production migration tips
 
-If you encounter issues:
-1. Check Vercel logs: `vercel logs`
-2. Check database logs in your provider dashboard
-3. Review this guide's troubleshooting section
-4. Contact your database provider support
+✅ **DO:**
+- Test migrations locally first
+- Backup database before running migrations
+- Review generated migration files
+- Use transactions in migrations
+
+❌ **DON'T:**
+- Enable `synchronize: true` in production (data loss risk!)
+- Skip migration testing
+- Modify already-deployed migrations
+- Delete migration files
+
+## Troubleshooting
+
+### "Migration has already been executed"
+
+✅ **Normal behavior** - This means TypeORM detected the migration was already run. No action needed.
+
+### "QueryFailedError: relation does not exist"
+
+❌ **Migrations not run** - Run `npm run migration:run`
+
+### "Cannot find module"
+
+❌ **Dependencies not installed** - Run `npm install`
+
+### "Connection refused"
+
+❌ **Database not running** - Check DATABASE_URL and database server
+
+## Monitoring
+
+### Check migration status
+
+```bash
+# Show all migrations and their status
+npm run migration:show
+
+# Example output:
+# [X] CreateUsersTable1234567890123
+# [X] AddVatFieldsToProducts1761860408199
+# [ ] NewMigration1763000000000  <- Pending
+```
+
+## Best Practices
+
+1. **Always test migrations locally first**
+   ```bash
+   npm run migration:run  # Test locally
+   npm run migration:revert  # Revert if needed
+   ```
+
+2. **Backup database before deployment**
+   ```bash
+   pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
+   ```
+
+3. **Use CI/CD pipelines**
+   - Run migrations automatically on deployment
+   - Run tests before deploying
+   - Keep deployment logs
+
+4. **Monitor migration execution time**
+   - Large migrations may lock tables
+   - Consider running heavy migrations during low-traffic hours
+
+## Support
+
+For issues or questions:
+- Check logs: `./deploy.sh migrate`
+- Review migration files: `backend/src/database/migrations/`
+- TypeORM docs: https://typeorm.io/migrations
