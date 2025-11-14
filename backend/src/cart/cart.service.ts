@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Cart } from '../database/entities/cart.entity';
 import { CartItem } from '../database/entities/cart-item.entity';
 import { Product } from '../database/entities/product.entity';
+import { User } from '../database/entities/user.entity';
 import { CouponsService } from '../coupons/coupons.service';
 
 interface AddToCartDto {
@@ -42,6 +43,8 @@ export class CartService {
     private readonly cartItemRepository: Repository<CartItem>,
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly couponsService: CouponsService,
   ) {}
 
@@ -55,6 +58,15 @@ export class CartService {
     });
 
     if (!cart) {
+      // Validate user exists before creating cart
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
       cart = this.cartRepository.create({
         userId,
         items: [],
