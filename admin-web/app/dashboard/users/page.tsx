@@ -2,6 +2,9 @@ import { useTranslations } from 'next-intl';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { UsersTable } from '@/components/users/users-table';
 import { UserStats } from '@/components/users/user-stats';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Users - GSHOP Admin',
@@ -22,6 +25,12 @@ export default function UsersPage() {
               {t('description')}
             </p>
           </div>
+          <Button className="gshop-button-primary" asChild>
+            <Link href="/dashboard/users/create">
+              <Plus className="mr-2 h-4 w-4" />
+              {t('addUser')}
+            </Link>
+          </Button>
         </div>
 
         {/* User Statistics */}

@@ -6,7 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Save, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -75,6 +82,23 @@ export function PaymentSettings() {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card className="gshop-card">
+          <CardHeader>
+            <CardTitle>Cargando configuración...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -155,11 +179,19 @@ export function PaymentSettings() {
 
             <div className="space-y-2">
               <Label htmlFor="withdrawalFrequency">{t('withdrawalFrequency')}</Label>
-              <Input
-                id="withdrawalFrequency"
+              <Select
                 value={settings.withdrawalFrequency}
-                onChange={(e) => setSettings({ ...settings, withdrawalFrequency: e.target.value })}
-              />
+                onValueChange={(value) => setSettings({ ...settings, withdrawalFrequency: value })}
+              >
+                <SelectTrigger id="withdrawalFrequency">
+                  <SelectValue placeholder="Seleccionar frecuencia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">{t('weekly')}</SelectItem>
+                  <SelectItem value="biweekly">{t('biweekly')}</SelectItem>
+                  <SelectItem value="monthly">{t('monthly')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -171,8 +203,17 @@ export function PaymentSettings() {
           disabled={isSaving}
           className="gshop-button-primary"
         >
-          <Save className="mr-2 h-4 w-4" />
-          {isSaving ? t('saving') : t('saveChanges')}
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {t('saving')}
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              {t('saveChanges')}
+            </>
+          )}
         </Button>
       </div>
     </div>

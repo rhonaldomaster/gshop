@@ -142,15 +142,9 @@ export default function WishlistScreen({ navigation }: any) {
         >
           <MaterialIcons
             name="add-shopping-cart"
-            size={20}
+            size={24}
             color={item.product.isAvailable ? "white" : "#9ca3af"}
           />
-          <Text style={[
-            styles.addToCartText,
-            !item.product.isAvailable && styles.disabledText
-          ]}>
-            {t('wishlist.addToCart')}
-          </Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -276,11 +270,11 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     position: 'relative',
-    marginRight: 16,
+    marginRight: 12,
   },
   productImage: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
   },
@@ -329,29 +323,29 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   itemActions: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginLeft: 12,
+    marginLeft: 8,
   },
   removeButton: {
-    padding: 8,
+    padding: 4,
   },
   addToCartButton: {
-    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#8b5cf6',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 4,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   disabledButton: {
     backgroundColor: '#f3f4f6',
   },
   addToCartText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: '600',
+    textAlign: 'center',
   },
   disabledText: {
     color: '#9ca3af',

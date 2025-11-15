@@ -359,7 +359,7 @@ export function OrdersTable() {
                           <DropdownMenuItem asChild>
                             <Link href={`/dashboard/orders/${order.id}`}>
                               <Eye className="mr-2 h-4 w-4" />
-                              {t('viewDetails')}
+                              {tCommon('viewDetails')}
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />

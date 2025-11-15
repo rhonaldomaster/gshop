@@ -157,7 +157,7 @@ export function UsersTable() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground transform -translate-y-1/2" />
               <Input
-                placeholder={t('searchUsers')}
+                placeholder={t('search')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-64"
@@ -242,7 +242,7 @@ export function UsersTable() {
                         variant="outline"
                         className={getUserRoleColor(user.role)}
                       >
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        {t(user.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -250,7 +250,7 @@ export function UsersTable() {
                         variant="outline"
                         className={getUserStatusColor(user.status)}
                       >
-                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                        {t(user.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
