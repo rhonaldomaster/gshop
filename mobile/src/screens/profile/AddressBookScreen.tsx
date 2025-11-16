@@ -14,8 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useTranslation } from 'react-i18next';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
+import { addressesService, Address, DocumentType } from '../../services/addresses.service';
 
 // Simple Input Component
 interface InputProps {
@@ -92,16 +94,7 @@ interface Props {
   route: AddressBookScreenRouteProp;
 }
 
-interface Address {
-  id: string;
-  fullName: string;
-  phoneNumber: string;
-  address: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  isDefault: boolean;
-}
+// Document types will be loaded from i18n
 
 const COLOMBIAN_STATES = [
   'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá',
@@ -114,6 +107,14 @@ const COLOMBIAN_STATES = [
 
 export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
+
+  const DOCUMENT_TYPES: { value: DocumentType; label: string }[] = [
+    { value: 'CC', label: t('addresses.documentTypes.CC') },
+    { value: 'CE', label: t('addresses.documentTypes.CE') },
+    { value: 'PA', label: t('addresses.documentTypes.PA') },
+    { value: 'TI', label: t('addresses.documentTypes.TI') },
+  ];
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -125,9 +126,12 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
     city: '',
     state: '',
     postalCode: '',
+    documentType: 'CC' as DocumentType,
+    documentNumber: '',
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [showStateSelector, setShowStateSelector] = useState(false);
+  const [showDocTypeSelector, setShowDocTypeSelector] = useState(false);
 
   useEffect(() => {
     loadAddresses();
@@ -136,33 +140,15 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
   const loadAddresses = async () => {
     try {
       setLoading(true);
-      // Mock data - replace with actual API call
-      const mockAddresses: Address[] = [
-        {
-          id: '1',
-          fullName: 'Juan Pérez',
-          phoneNumber: '+57 300 123 4567',
-          address: 'Carrera 15 #93-45, Apto 501',
-          city: 'Bogotá',
-          state: 'Bogotá D.C.',
-          postalCode: '110221',
-          isDefault: true,
-        },
-        {
-          id: '2',
-          fullName: 'María González',
-          phoneNumber: '+57 310 987 6543',
-          address: 'Calle 10 #5-25',
-          city: 'Medellín',
-          state: 'Antioquia',
-          postalCode: '050001',
-          isDefault: false,
-        },
-      ];
-      setAddresses(mockAddresses);
+      const fetchedAddresses = await addressesService.getAddresses();
+      // Filter out any addresses without required fields (old format)
+      const validAddresses = fetchedAddresses.filter(addr =>
+        addr.id && addr.fullName && addr.documentType && addr.documentNumber
+      );
+      setAddresses(validAddresses);
     } catch (error) {
       console.error('Error loading addresses:', error);
-      Alert.alert('Error', 'No se pudieron cargar las direcciones');
+      Alert.alert(t('common.error'), t('addresses.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -172,33 +158,43 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
     const errors: Record<string, string> = {};
 
     if (!formData.fullName.trim()) {
-      errors.fullName = 'El nombre completo es requerido';
+      errors.fullName = t('addresses.errors.fullNameRequired');
     }
 
     const phoneRegex = /^(\+57\s?)?(3[0-9]{2}|[1-8][0-9]{2})\s?[0-9]{3}\s?[0-9]{4}$/;
     if (!formData.phoneNumber.trim()) {
-      errors.phoneNumber = 'El teléfono es requerido';
+      errors.phoneNumber = t('addresses.errors.phoneRequired');
     } else if (!phoneRegex.test(formData.phoneNumber.replace(/\s/g, ''))) {
-      errors.phoneNumber = 'Formato de teléfono inválido';
+      errors.phoneNumber = t('addresses.errors.phoneInvalid');
     }
 
     if (!formData.address.trim()) {
-      errors.address = 'La dirección es requerida';
+      errors.address = t('addresses.errors.addressRequired');
     }
 
     if (!formData.city.trim()) {
-      errors.city = 'La ciudad es requerida';
+      errors.city = t('addresses.errors.cityRequired');
     }
 
     if (!formData.state) {
-      errors.state = 'El departamento es requerido';
+      errors.state = t('addresses.errors.stateRequired');
     }
 
     const postalCodeRegex = /^[0-9]{6}$/;
     if (!formData.postalCode.trim()) {
-      errors.postalCode = 'El código postal es requerido';
+      errors.postalCode = t('addresses.errors.postalCodeRequired');
     } else if (!postalCodeRegex.test(formData.postalCode)) {
-      errors.postalCode = 'Código postal debe tener 6 dígitos';
+      errors.postalCode = t('addresses.errors.postalCodeInvalid');
+    }
+
+    if (!formData.documentType) {
+      errors.documentType = t('addresses.errors.documentTypeRequired');
+    }
+
+    if (!formData.documentNumber.trim()) {
+      errors.documentNumber = t('addresses.errors.documentNumberRequired');
+    } else if (formData.documentNumber.length < 5 || formData.documentNumber.length > 15) {
+      errors.documentNumber = t('addresses.errors.documentNumberInvalid');
     }
 
     setFormErrors(errors);
@@ -213,28 +209,24 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
 
       if (editingAddress) {
         // Update existing address
-        const updatedAddresses = addresses.map(addr =>
-          addr.id === editingAddress.id
-            ? { ...addr, ...formData }
-            : addr
-        );
-        setAddresses(updatedAddresses);
+        await addressesService.updateAddress(editingAddress.id, formData);
       } else {
         // Add new address
-        const newAddress: Address = {
-          id: Date.now().toString(),
+        await addressesService.createAddress({
           ...formData,
-          isDefault: addresses.length === 0, // First address is default
-        };
-        setAddresses([...addresses, newAddress]);
+          isDefault: addresses.length === 0,
+        });
       }
+
+      // Reload addresses from backend
+      await loadAddresses();
 
       resetForm();
       setShowAddModal(false);
       setEditingAddress(null);
     } catch (error) {
       console.error('Error saving address:', error);
-      Alert.alert('Error', 'No se pudo guardar la dirección');
+      Alert.alert(t('common.error'), t('addresses.errors.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -242,25 +234,21 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleDeleteAddress = (addressId: string) => {
     Alert.alert(
-      'Eliminar Dirección',
-      '¿Estás seguro de que quieres eliminar esta dirección?',
+      t('addresses.deleteTitle'),
+      t('addresses.deleteConfirm'),
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: t('addresses.cancel'), style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: t('addresses.delete'),
           style: 'destructive',
-          onPress: () => {
-            const filteredAddresses = addresses.filter(addr => addr.id !== addressId);
-
-            // If we deleted the default address, make the first remaining address default
-            if (filteredAddresses.length > 0) {
-              const deletedAddress = addresses.find(addr => addr.id === addressId);
-              if (deletedAddress?.isDefault) {
-                filteredAddresses[0].isDefault = true;
-              }
+          onPress: async () => {
+            try {
+              await addressesService.deleteAddress(addressId);
+              await loadAddresses();
+            } catch (error) {
+              console.error('Error deleting address:', error);
+              Alert.alert(t('common.error'), t('addresses.errors.deleteFailed'));
             }
-
-            setAddresses(filteredAddresses);
           },
         },
       ]
@@ -269,14 +257,11 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSetDefault = async (addressId: string) => {
     try {
-      const updatedAddresses = addresses.map(addr => ({
-        ...addr,
-        isDefault: addr.id === addressId,
-      }));
-      setAddresses(updatedAddresses);
+      await addressesService.setDefaultAddress(addressId);
+      await loadAddresses();
     } catch (error) {
       console.error('Error setting default address:', error);
-      Alert.alert('Error', 'No se pudo establecer como dirección predeterminada');
+      Alert.alert(t('common.error'), t('addresses.errors.setDefaultFailed'));
     }
   };
 
@@ -288,6 +273,8 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       city: address.city,
       state: address.state,
       postalCode: address.postalCode,
+      documentType: address.documentType,
+      documentNumber: address.documentNumber,
     });
     setEditingAddress(address);
     setShowAddModal(true);
@@ -301,6 +288,8 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       city: '',
       state: '',
       postalCode: '',
+      documentType: 'CC',
+      documentNumber: '',
     });
     setFormErrors({});
   };
@@ -510,7 +499,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       <SafeAreaView style={styles.container}>
         <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <GSText variant="body" style={{ marginTop: 12 }}>Loading addresses...</GSText>
+          <GSText variant="body" style={{ marginTop: 12 }}>{t('addresses.loading')}</GSText>
         </View>
       </SafeAreaView>
     );
@@ -526,7 +515,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
           >
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
-          <GSText style={styles.title}>Mis Direcciones</GSText>
+          <GSText style={styles.title}>{t('addresses.title')}</GSText>
         </View>
 
         {addresses.length === 0 ? (
@@ -537,12 +526,12 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
               color={theme.colors.textSecondary}
               style={styles.emptyIcon}
             />
-            <GSText style={styles.emptyTitle}>No tienes direcciones guardadas</GSText>
+            <GSText style={styles.emptyTitle}>{t('addresses.empty')}</GSText>
             <GSText style={styles.emptySubtitle}>
-              Agrega una dirección para hacer tus compras más rápidas
+              {t('addresses.emptyMessage')}
             </GSText>
             <GSButton
-              title="Agregar Primera Dirección"
+              title={t('addresses.addFirst')}
               onPress={handleOpenAddModal}
               style={{ paddingHorizontal: 32 }}
             />
@@ -553,12 +542,15 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
               <View key={address.id} style={styles.addressCard}>
                 {address.isDefault && (
                   <View style={styles.defaultBadge}>
-                    <GSText style={styles.defaultText}>PREDETERMINADA</GSText>
+                    <GSText style={styles.defaultText}>{t('addresses.default')}</GSText>
                   </View>
                 )}
 
                 <GSText style={styles.addressName}>{address.fullName}</GSText>
                 <GSText style={styles.addressDetails}>{address.phoneNumber}</GSText>
+                <GSText style={styles.addressDetails}>
+                  {address.documentType} {address.documentNumber}
+                </GSText>
                 <GSText style={styles.addressDetails}>
                   {address.address}
                 </GSText>
@@ -572,7 +564,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
                     onPress={() => handleEditAddress(address)}
                   >
                     <Ionicons name="pencil" size={16} color={theme.colors.primary} />
-                    <GSText style={[styles.actionText, styles.editText]}>Editar</GSText>
+                    <GSText style={[styles.actionText, styles.editText]}>{t('addresses.edit')}</GSText>
                   </TouchableOpacity>
 
                   {!address.isDefault && (
@@ -582,7 +574,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
                     >
                       <Ionicons name="checkmark-circle" size={16} color={theme.colors.success} />
                       <GSText style={[styles.actionText, styles.defaultActionText]}>
-                        Predeterminada
+                        {t('addresses.setDefault')}
                       </GSText>
                     </TouchableOpacity>
                   )}
@@ -592,7 +584,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
                     onPress={() => handleDeleteAddress(address.id)}
                   >
                     <Ionicons name="trash" size={16} color={theme.colors.error} />
-                    <GSText style={[styles.actionText, styles.deleteText]}>Eliminar</GSText>
+                    <GSText style={[styles.actionText, styles.deleteText]}>{t('addresses.delete')}</GSText>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -602,7 +594,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <GSButton
-        title="Agregar Nueva Dirección"
+        title={t('addresses.addNew')}
         onPress={handleOpenAddModal}
         style={styles.addButton}
         leftIcon={<Ionicons name="add" size={20} color="white" />}
@@ -619,7 +611,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <GSText style={styles.modalTitle}>
-                {editingAddress ? 'Editar Dirección' : 'Nueva Dirección'}
+                {editingAddress ? t('addresses.editAddress') : t('addresses.newAddress')}
               </GSText>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -636,35 +628,35 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
             <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
               <View style={styles.inputGroup}>
                 <GSInput
-                  label="Nombre Completo"
+                  label={t('addresses.fullName')}
                   value={formData.fullName}
                   onChangeText={(text) => setFormData({ ...formData, fullName: text })}
                   error={formErrors.fullName}
-                  placeholder="Ej: Juan Pérez"
+                  placeholder={t('addresses.fullNamePlaceholder')}
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <GSInput
-                  label="Teléfono"
+                  label={t('addresses.phone')}
                   value={formData.phoneNumber}
                   onChangeText={(text) => {
                     const formatted = formatPhoneNumber(text);
                     setFormData({ ...formData, phoneNumber: formatted });
                   }}
                   error={formErrors.phoneNumber}
-                  placeholder="Ej: 300 123 4567"
+                  placeholder={t('addresses.phonePlaceholder')}
                   keyboardType="phone-pad"
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <GSInput
-                  label="Dirección"
+                  label={t('addresses.address')}
                   value={formData.address}
                   onChangeText={(text) => setFormData({ ...formData, address: text })}
                   error={formErrors.address}
-                  placeholder="Ej: Carrera 15 #93-45, Apto 501"
+                  placeholder={t('addresses.addressPlaceholder')}
                   multiline
                   numberOfLines={2}
                 />
@@ -672,24 +664,24 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
 
               <View style={styles.inputGroup}>
                 <GSInput
-                  label="Ciudad"
+                  label={t('addresses.city')}
                   value={formData.city}
                   onChangeText={(text) => setFormData({ ...formData, city: text })}
                   error={formErrors.city}
-                  placeholder="Ej: Bogotá"
+                  placeholder={t('addresses.cityPlaceholder')}
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <GSText style={{ fontSize: 16, fontWeight: '500', marginBottom: 8, color: theme.colors.text }}>
-                  Departamento
+                  {t('addresses.state')}
                 </GSText>
                 <TouchableOpacity
                   style={styles.stateSelector}
                   onPress={() => setShowStateSelector(true)}
                 >
                   <GSText style={styles.stateSelectorText}>
-                    {formData.state || 'Seleccionar departamento'}
+                    {formData.state || t('addresses.statePlaceholder')}
                   </GSText>
                 </TouchableOpacity>
                 {formErrors.state && (
@@ -701,20 +693,51 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
 
               <View style={styles.inputGroup}>
                 <GSInput
-                  label="Código Postal"
+                  label={t('addresses.postalCode')}
                   value={formData.postalCode}
                   onChangeText={(text) => setFormData({ ...formData, postalCode: text.replace(/\D/g, '').slice(0, 6) })}
                   error={formErrors.postalCode}
-                  placeholder="Ej: 110221"
+                  placeholder={t('addresses.postalCodePlaceholder')}
                   keyboardType="numeric"
                   maxLength={6}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <GSText style={{ fontSize: 16, fontWeight: '500', marginBottom: 8, color: theme.colors.text }}>
+                  {t('addresses.documentType')}
+                </GSText>
+                <TouchableOpacity
+                  style={styles.stateSelector}
+                  onPress={() => setShowDocTypeSelector(true)}
+                >
+                  <GSText style={styles.stateSelectorText}>
+                    {DOCUMENT_TYPES.find(dt => dt.value === formData.documentType)?.label || t('addresses.documentTypePlaceholder')}
+                  </GSText>
+                </TouchableOpacity>
+                {formErrors.documentType && (
+                  <GSText style={{ color: theme.colors.error, fontSize: 14, marginTop: 4 }}>
+                    {formErrors.documentType}
+                  </GSText>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <GSInput
+                  label={t('addresses.documentNumber')}
+                  value={formData.documentNumber}
+                  onChangeText={(text) => setFormData({ ...formData, documentNumber: text.replace(/\D/g, '') })}
+                  error={formErrors.documentNumber}
+                  placeholder={t('addresses.documentNumberPlaceholder')}
+                  keyboardType="numeric"
+                  maxLength={15}
                 />
               </View>
             </ScrollView>
 
             <View style={styles.modalActions}>
               <GSButton
-                title="Cancelar"
+                title={t('addresses.cancel')}
                 variant="outline"
                 onPress={() => {
                   setShowAddModal(false);
@@ -724,7 +747,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
                 style={styles.cancelButton}
               />
               <GSButton
-                title={editingAddress ? 'Actualizar' : 'Guardar'}
+                title={editingAddress ? t('addresses.update') : t('addresses.save')}
                 onPress={handleSaveAddress}
                 style={styles.saveButton}
                 loading={loading}
@@ -744,7 +767,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <GSText style={styles.modalTitle}>Seleccionar Departamento</GSText>
+              <GSText style={styles.modalTitle}>{t('addresses.selectState')}</GSText>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setShowStateSelector(false)}
@@ -764,6 +787,46 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
                   }}
                 >
                   <GSText style={styles.stateOptionText}>{state}</GSText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Document Type Selector Modal */}
+      <Modal
+        visible={showDocTypeSelector}
+        animationType="slide"
+        transparent={true}
+        statusBarTranslucent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <GSText style={styles.modalTitle}>{t('addresses.selectDocumentType')}</GSText>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowDocTypeSelector(false)}
+              >
+                <Ionicons name="close" size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.stateList} showsVerticalScrollIndicator={false}>
+              {DOCUMENT_TYPES.map((docType) => (
+                <TouchableOpacity
+                  key={docType.value}
+                  style={styles.stateOption}
+                  onPress={() => {
+                    setFormData({ ...formData, documentType: docType.value });
+                    setShowDocTypeSelector(false);
+                  }}
+                >
+                  <GSText style={styles.stateOptionText}>{docType.label}</GSText>
+                  {formData.documentType === docType.value && (
+                    <Ionicons name="checkmark" size={20} color={theme.colors.primary} />
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>

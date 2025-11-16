@@ -1,5 +1,7 @@
 import { apiClient } from './api';
 
+export type DocumentType = 'CC' | 'CE' | 'PA' | 'TI';
+
 export interface Address {
   id: string;
   fullName: string;
@@ -8,6 +10,8 @@ export interface Address {
   city: string;
   state: string;
   postalCode: string;
+  documentType: DocumentType;
+  documentNumber: string;
   isDefault: boolean;
 }
 
@@ -17,35 +21,13 @@ class AddressesService {
    */
   async getAddresses(): Promise<Address[]> {
     try {
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await apiClient.get<Address[]>('/addresses');
-      // return response.data;
+      const response = await apiClient.get<Address[]>('/users/me/addresses');
 
-      // Mock data for now
-      const mockAddresses: Address[] = [
-        {
-          id: '1',
-          fullName: 'Juan Pérez',
-          phoneNumber: '+57 300 123 4567',
-          address: 'Carrera 15 #93-45, Apto 501',
-          city: 'Bogotá',
-          state: 'Bogotá D.C.',
-          postalCode: '110221',
-          isDefault: true,
-        },
-        {
-          id: '2',
-          fullName: 'María González',
-          phoneNumber: '+57 310 987 6543',
-          address: 'Calle 10 #5-25',
-          city: 'Medellín',
-          state: 'Antioquia',
-          postalCode: '050001',
-          isDefault: false,
-        },
-      ];
+      if (response.success && response.data) {
+        return response.data;
+      }
 
-      return mockAddresses;
+      return [];
     } catch (error) {
       console.error('AddressesService: Failed to get addresses', error);
       throw error;
@@ -84,16 +66,13 @@ class AddressesService {
    */
   async createAddress(address: Omit<Address, 'id'>): Promise<Address> {
     try {
-      // TODO: Replace with actual API call
-      // const response = await apiClient.post<Address>('/addresses', address);
-      // return response.data;
+      const response = await apiClient.post<Address>('/users/me/addresses', address);
 
-      const newAddress: Address = {
-        ...address,
-        id: Date.now().toString(),
-      };
+      if (response.success && response.data) {
+        return response.data;
+      }
 
-      return newAddress;
+      throw new Error('Failed to create address');
     } catch (error) {
       console.error('AddressesService: Failed to create address', error);
       throw error;
@@ -105,18 +84,13 @@ class AddressesService {
    */
   async updateAddress(id: string, address: Partial<Address>): Promise<Address> {
     try {
-      // TODO: Replace with actual API call
-      // const response = await apiClient.put<Address>(`/addresses/${id}`, address);
-      // return response.data;
+      const response = await apiClient.patch<Address>(`/users/me/addresses/${id}`, address);
 
-      const addresses = await this.getAddresses();
-      const existingAddress = addresses.find(addr => addr.id === id);
-
-      if (!existingAddress) {
-        throw new Error('Address not found');
+      if (response.success && response.data) {
+        return response.data;
       }
 
-      return { ...existingAddress, ...address };
+      throw new Error('Failed to update address');
     } catch (error) {
       console.error('AddressesService: Failed to update address', error);
       throw error;
@@ -128,9 +102,7 @@ class AddressesService {
    */
   async deleteAddress(id: string): Promise<void> {
     try {
-      // TODO: Replace with actual API call
-      // await apiClient.delete(`/addresses/${id}`);
-      console.log('Address deleted:', id);
+      await apiClient.delete(`/users/me/addresses/${id}`);
     } catch (error) {
       console.error('AddressesService: Failed to delete address', error);
       throw error;
@@ -142,9 +114,7 @@ class AddressesService {
    */
   async setDefaultAddress(id: string): Promise<void> {
     try {
-      // TODO: Replace with actual API call
-      // await apiClient.post(`/addresses/${id}/set-default`);
-      console.log('Set as default:', id);
+      await apiClient.post(`/users/me/addresses/${id}/set-default`);
     } catch (error) {
       console.error('AddressesService: Failed to set default address', error);
       throw error;

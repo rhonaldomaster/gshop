@@ -187,4 +187,96 @@ export class UsersService {
       adminsCount,
     };
   }
+
+  // Address Management Methods
+
+  async getUserAddresses(userId: string): Promise<any[]> {
+    const user = await this.findOne(userId);
+    return user.addresses || [];
+  }
+
+  async addAddress(userId: string, addressDto: any): Promise<any> {
+    const user = await this.findOne(userId);
+    const addresses = user.addresses || [];
+
+    // Generate unique ID for new address
+    const newAddress = {
+      id: Date.now().toString(),
+      ...addressDto,
+      isDefault: addresses.length === 0 ? true : (addressDto.isDefault || false),
+    };
+
+    // If setting as default, unset other default addresses
+    if (newAddress.isDefault) {
+      addresses.forEach(addr => addr.isDefault = false);
+    }
+
+    addresses.push(newAddress);
+
+    await this.userRepository.update(userId, { addresses });
+    return newAddress;
+  }
+
+  async updateAddress(userId: string, addressId: string, addressDto: any): Promise<any> {
+    const user = await this.findOne(userId);
+    const addresses = user.addresses || [];
+
+    const addressIndex = addresses.findIndex(addr => addr.id === addressId);
+    if (addressIndex === -1) {
+      throw new NotFoundException('Address not found');
+    }
+
+    // If setting as default, unset other default addresses
+    if (addressDto.isDefault) {
+      addresses.forEach(addr => addr.isDefault = false);
+    }
+
+    addresses[addressIndex] = {
+      ...addresses[addressIndex],
+      ...addressDto,
+      id: addressId, // Preserve the ID
+    };
+
+    await this.userRepository.update(userId, { addresses });
+    return addresses[addressIndex];
+  }
+
+  async deleteAddress(userId: string, addressId: string): Promise<void> {
+    const user = await this.findOne(userId);
+    const addresses = user.addresses || [];
+
+    const addressIndex = addresses.findIndex(addr => addr.id === addressId);
+    if (addressIndex === -1) {
+      throw new NotFoundException('Address not found');
+    }
+
+    const wasDefault = addresses[addressIndex].isDefault;
+    addresses.splice(addressIndex, 1);
+
+    // If deleted address was default, set first remaining address as default
+    if (wasDefault && addresses.length > 0) {
+      addresses[0].isDefault = true;
+    }
+
+    await this.userRepository.update(userId, { addresses });
+  }
+
+  async setDefaultAddress(userId: string, addressId: string): Promise<any> {
+    const user = await this.findOne(userId);
+    const addresses = user.addresses || [];
+
+    const addressIndex = addresses.findIndex(addr => addr.id === addressId);
+    if (addressIndex === -1) {
+      throw new NotFoundException('Address not found');
+    }
+
+    // Unset all default addresses
+    addresses.forEach(addr => addr.isDefault = false);
+
+    // Set the selected address as default
+    addresses[addressIndex].isDefault = true;
+
+    await this.userRepository.update(userId, { addresses });
+    return addresses[addressIndex];
+  }
 }

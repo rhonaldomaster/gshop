@@ -74,7 +74,8 @@ export default function WishlistScreen({ navigation }: any) {
   };
 
   const addToCart = async (product: WishlistItem['product']) => {
-    if (!product.isAvailable) {
+    const isAvailable = product.status === 'active' && product.quantity > 0;
+    if (!isAvailable) {
       Alert.alert(t('wishlist.unavailable'), t('wishlist.outOfStock'));
       return;
     }
@@ -94,7 +95,7 @@ export default function WishlistScreen({ navigation }: any) {
   const renderWishlistItem = ({ item }: { item: WishlistItem }) => (
     <TouchableOpacity
       style={styles.itemCard}
-      onPress={() => navigation.navigate('ProductDetails', { productId: item.productId })}
+      onPress={() => navigation.navigate('ProductDetail', { productId: item.productId })}
       activeOpacity={0.7}
     >
       <View style={styles.imageContainer}>
@@ -104,7 +105,7 @@ export default function WishlistScreen({ navigation }: any) {
           }}
           style={styles.productImage}
         />
-        {!item.product.isAvailable && (
+        {!(item.product.status === 'active' && item.product.quantity > 0) && (
           <View style={styles.unavailableBadge}>
             <Text style={styles.unavailableText}>{t('wishlist.outOfStock')}</Text>
           </View>
@@ -116,7 +117,7 @@ export default function WishlistScreen({ navigation }: any) {
           {item.product.name}
         </Text>
         <Text style={styles.sellerName}>
-          {t('social.by')} {item.product.seller?.businessName || t('wishlist.unknownSeller')}
+          {t('social.by')} {item.product.seller?.name || t('wishlist.unknownSeller')}
         </Text>
         <Text style={styles.price}>${Number(item.product.price).toFixed(2)}</Text>
         <Text style={styles.addedDate}>
@@ -135,15 +136,15 @@ export default function WishlistScreen({ navigation }: any) {
         <TouchableOpacity
           style={[
             styles.addToCartButton,
-            !item.product.isAvailable && styles.disabledButton
+            !(item.product.status === 'active' && item.product.quantity > 0) && styles.disabledButton
           ]}
           onPress={() => addToCart(item.product)}
-          disabled={!item.product.isAvailable}
+          disabled={!(item.product.status === 'active' && item.product.quantity > 0)}
         >
           <MaterialIcons
             name="add-shopping-cart"
             size={24}
-            color={item.product.isAvailable ? "white" : "#9ca3af"}
+            color={(item.product.status === 'active' && item.product.quantity > 0) ? "white" : "#9ca3af"}
           />
         </TouchableOpacity>
       </View>

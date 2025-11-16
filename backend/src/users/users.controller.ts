@@ -97,4 +97,45 @@ export class UsersController {
   remove(@Param('id') id: string, @Request() req) {
     return this.usersService.remove(id, req.user.role);
   }
+
+  // Address Management Endpoints
+
+  @Get('me/addresses')
+  @ApiOperation({ summary: 'Get current user addresses' })
+  @ApiResponse({ status: 200, description: 'Addresses retrieved successfully' })
+  getMyAddresses(@Request() req) {
+    return this.usersService.getUserAddresses(req.user.id);
+  }
+
+  @Post('me/addresses')
+  @ApiOperation({ summary: 'Add new address for current user' })
+  @ApiResponse({ status: 201, description: 'Address created successfully' })
+  addAddress(@Request() req, @Body() addressDto: any) {
+    return this.usersService.addAddress(req.user.id, addressDto);
+  }
+
+  @Patch('me/addresses/:addressId')
+  @ApiOperation({ summary: 'Update address for current user' })
+  @ApiResponse({ status: 200, description: 'Address updated successfully' })
+  updateAddress(
+    @Request() req,
+    @Param('addressId') addressId: string,
+    @Body() addressDto: any
+  ) {
+    return this.usersService.updateAddress(req.user.id, addressId, addressDto);
+  }
+
+  @Delete('me/addresses/:addressId')
+  @ApiOperation({ summary: 'Delete address for current user' })
+  @ApiResponse({ status: 200, description: 'Address deleted successfully' })
+  deleteAddress(@Request() req, @Param('addressId') addressId: string) {
+    return this.usersService.deleteAddress(req.user.id, addressId);
+  }
+
+  @Post('me/addresses/:addressId/set-default')
+  @ApiOperation({ summary: 'Set address as default for current user' })
+  @ApiResponse({ status: 200, description: 'Default address set successfully' })
+  setDefaultAddress(@Request() req, @Param('addressId') addressId: string) {
+    return this.usersService.setDefaultAddress(req.user.id, addressId);
+  }
 }

@@ -70,7 +70,7 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
         return {
           title: method.provider,
           subtitle: t('payments.paymentMethodType'),
-          icon: 'payment-outline' as const,
+          icon: 'cash-outline' as const,
         };
     }
   };
@@ -114,7 +114,7 @@ const PaymentMethodItem: React.FC<PaymentMethodItemProps> = ({
 
         <View style={styles.methodInfo}>
           <View style={styles.methodHeader}>
-            <GSText variant="body" weight="medium">
+            <GSText variant="body" weight="semiBold">
               {details.title}
             </GSText>
             {method.isDefault && (
@@ -336,7 +336,7 @@ const AddCardModal: React.FC<AddCardModalProps> = ({ visible, onClose, onSubmit,
                 style={[
                   styles.checkbox,
                   {
-                    borderColor: theme.colors.border,
+                    borderColor: theme.colors.gray300,
                     backgroundColor: saveCard ? theme.colors.primary : 'transparent',
                   },
                 ]}
@@ -505,7 +505,7 @@ export default function PaymentMethodsScreen() {
           </GSText>
           <GSButton
             title={t('payments.signIn')}
-            onPress={() => navigation.navigate('Auth' as any)}
+            onPress={() => (navigation as any).navigate('Auth')}
             style={styles.signInButton}
           />
         </View>

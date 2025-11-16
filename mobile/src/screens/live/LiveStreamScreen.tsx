@@ -162,7 +162,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   const onProductPress = (productId: string) => {
     // Pass live stream context for attribution
-    navigation.navigate('ProductDetails', {
+    navigation.navigate('ProductDetail', {
       productId,
       liveSessionId: streamId,
       affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined

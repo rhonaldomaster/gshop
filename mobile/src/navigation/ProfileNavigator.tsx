@@ -11,6 +11,7 @@ import SupportScreen from '../screens/profile/SupportScreen';
 import AddressBookScreen from '../screens/profile/AddressBookScreen';
 import WishlistScreen from '../screens/social/WishlistScreen';
 import PaymentMethodsScreen from '../screens/payments/PaymentMethodsScreen';
+import ProductDetailScreen from '../screens/products/ProductDetailScreen';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -23,6 +24,7 @@ export type ProfileStackParamList = {
   Addresses: undefined;
   Wishlist: undefined;
   PaymentMethods: undefined;
+  ProductDetail: { productId: string };
 };
 
 const Stack = createStackNavigator<ProfileStackParamList>();
@@ -45,6 +47,7 @@ export default function ProfileNavigator() {
       <Stack.Screen name="Addresses" component={AddressBookScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
     </Stack.Navigator>
   );
 }

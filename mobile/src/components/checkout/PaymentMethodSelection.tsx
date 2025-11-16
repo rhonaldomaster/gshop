@@ -78,8 +78,8 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     {
       id: 'mercadopago_new',
       type: 'mercadopago' as const,
-      label: 'MercadoPago',
-      description: 'Paga con tarjeta de crédito/débito, PSE o efectivo',
+      label: t('checkout.mercadoPago'),
+      description: t('checkout.payment.mercadopagoDescription'),
       icon: '💵',
       isNew: true,
     },
@@ -171,12 +171,12 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
                         {method.provider}
                       </GSText>
                       <GSText variant="caption" color="textSecondary">
-                        {method.details.last4 ? `•••• ${method.details.last4}` : 'Saved method'}
+                        {method.details.last4 ? `•••• ${method.details.last4}` : t('checkout.payment.savedMethod')}
                       </GSText>
                       {method.isDefault && (
                         <View style={[styles.defaultBadge, { backgroundColor: theme.colors.success + '20' }]}>
                           <GSText variant="caption" color="success" weight="semiBold">
-                            Default
+                            {t('checkout.payment.default')}
                           </GSText>
                         </View>
                       )}
@@ -210,7 +210,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
 
         {/* New Payment Options */}
         <GSText variant="body" weight="semiBold" style={styles.subsectionTitle}>
-          {paymentMethods.length > 0 ? 'Or Pay With' : 'Payment Options'}
+          {paymentMethods.length > 0 ? t('checkout.payment.orPayWith') : t('checkout.payment.paymentOptions')}
         </GSText>
         {availablePaymentOptions.map((option) => (
           <TouchableOpacity

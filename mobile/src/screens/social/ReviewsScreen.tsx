@@ -176,7 +176,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
       {item.product && (
         <TouchableOpacity
           style={styles.productInfo}
-          onPress={() => navigation.navigate('ProductDetails', { productId: item.productId })}
+          onPress={() => navigation.navigate('ProductDetail', { productId: item.productId })}
         >
           <Image
             source={{ uri: item.product.images[0] || 'https://via.placeholder.com/40x40' }}
