@@ -33,6 +33,7 @@
     "categories": "Categorías",
     "orders": "Pedidos",
     "users": "Usuarios",
+    "verifySellers": "Verificar Vendedores",
     "payments": "Pagos",
     "sellers": "Vendedores",
     "affiliates": "Afiliados",
@@ -387,7 +388,11 @@
     "balance": "Saldo",
     "withdrawals": "Retiros",
     "approveWithdrawal": "Aprobar retiro",
-    "rejectWithdrawal": "Rechazar retiro"
+    "rejectWithdrawal": "Rechazar retiro",
+    "verifyTitle": "Verificar Vendedores",
+    "verifyDescription": "Revisa y aprueba solicitudes de registro de vendedores conforme a la legislación colombiana",
+    "noPendingSellers": "No hay vendedores pendientes de verificación",
+    "selectSellerToView": "Selecciona un vendedor para ver los detalles"
   },
   "affiliates": {
     "title": "Afiliados",
@@ -661,6 +666,7 @@
     "shipping": "Envíos",
     "notifications": "Notificaciones",
     "security": "Seguridad",
+    "loading": "Cargando configuración...",
     "siteInfo": "Información del sitio",
     "siteInfoDescription": "Información básica sobre tu plataforma",
     "siteName": "Nombre del sitio",

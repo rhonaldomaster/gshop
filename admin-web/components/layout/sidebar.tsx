@@ -20,6 +20,7 @@ import {
   LogOut,
   Target,
   Radio,
+  Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
@@ -30,6 +31,7 @@ const navigationConfig = [
   { key: 'categories', href: '/dashboard/categories', icon: Tags },
   { key: 'orders', href: '/dashboard/orders', icon: ShoppingCart },
   { key: 'users', href: '/dashboard/users', icon: Users },
+  { key: 'verifySellers', href: '/dashboard/sellers/verify', icon: Store },
   { key: 'payments', href: '/dashboard/payments', icon: CreditCard },
   { key: 'ads', href: '/ads', icon: Target },
   { key: 'live', href: '/live', icon: Radio },

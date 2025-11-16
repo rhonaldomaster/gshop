@@ -6,8 +6,9 @@ import { GeneralSettings } from '@/components/settings/general-settings';
 import { PaymentSettings } from '@/components/settings/payment-settings';
 import { EmailSettings } from '@/components/settings/email-settings';
 import { SecuritySettings } from '@/components/settings/security-settings';
+import { CommissionSettings } from '@/components/settings/commission-settings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, CreditCard, Mail, Shield } from 'lucide-react';
+import { Settings, CreditCard, Mail, Shield, Percent } from 'lucide-react';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -27,10 +28,14 @@ export default function SettingsPage() {
 
         {/* Settings Tabs */}
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">{t('general')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="commission" className="flex items-center gap-2">
+              <Percent className="h-4 w-4" />
+              <span className="hidden sm:inline">Comisiones</span>
             </TabsTrigger>
             <TabsTrigger value="payment" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
@@ -48,6 +53,10 @@ export default function SettingsPage() {
 
           <TabsContent value="general">
             <GeneralSettings />
+          </TabsContent>
+
+          <TabsContent value="commission">
+            <CommissionSettings />
           </TabsContent>
 
           <TabsContent value="payment">

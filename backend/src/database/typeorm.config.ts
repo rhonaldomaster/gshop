@@ -31,6 +31,9 @@ import { PixelEvent } from '../pixel/entities/pixel-event.entity';
 import { Seller } from '../sellers/entities/seller.entity';
 import { SellerLocation } from '../sellers/entities/seller-location.entity';
 
+// Settings Entity
+import { Setting } from '../settings/entities/setting.entity';
+
 // Payment V2 Entities
 import { PaymentMethodEntity, PaymentV2, Invoice, CryptoTransaction } from '../payments/payments-v2.entity';
 
@@ -54,6 +57,8 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     User, Product, Category, Order, OrderItem, Payment, Commission, WishlistItem, Cart, CartItem,
     // Seller entities
     Seller, SellerLocation,
+    // Settings entity
+    Setting,
     // Payment V2 entities
     PaymentMethodEntity, PaymentV2, Invoice, CryptoTransaction,
     // Commission & Fee System entities

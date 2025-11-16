@@ -20,7 +20,7 @@ import { UpdateConfigDto, CreateConfigDto } from './dto/config.dto';
 import { UserRole } from '../database/entities/user.entity';
 
 @ApiTags('Config')
-@Controller('api/v1/config')
+@Controller('config')
 export class ConfigController {
   constructor(private readonly configService: ConfigService) {}
 
