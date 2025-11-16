@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -22,6 +23,7 @@ import GSButton from '../../components/ui/GSButton';
 export default function EditProfileScreen() {
   const { theme } = useTheme();
   const { user, updateProfile } = useAuth();
+  const { t } = useTranslation();
   const navigation = useNavigation();
 
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,7 @@ export default function EditProfileScreen() {
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
-  const [bio, setBio] = useState('');
+  const [bio, setBio] = useState(user?.bio || '');
 
   // Validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,21 +43,21 @@ export default function EditProfileScreen() {
     const newErrors: Record<string, string> = {};
 
     if (!firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = t('profile.firstNameRequired');
     }
 
     if (!lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = t('profile.lastNameRequired');
     }
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = t('auth.emailInvalid');
     }
 
     if (phone && !/^\+?[\d\s-()]+$/.test(phone)) {
-      newErrors.phone = 'Phone number is invalid';
+      newErrors.phone = t('addresses.errors.phoneInvalid');
     }
 
     setErrors(newErrors);
@@ -68,8 +70,8 @@ export default function EditProfileScreen() {
 
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'We need camera roll permissions to change your avatar.'
+          t('profile.permissionRequired'),
+          t('profile.cameraRollPermission')
         );
         return;
       }
@@ -86,7 +88,7 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error('Failed to pick image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('common.error'), t('profile.failedToPickImage'));
     }
   };
 
@@ -95,7 +97,7 @@ export default function EditProfileScreen() {
       const { status} = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'We need camera permissions to take a photo.');
+        Alert.alert(t('profile.permissionRequired'), t('profile.cameraPermission'));
         return;
       }
 
@@ -110,22 +112,22 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error('Failed to take photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      Alert.alert(t('common.error'), t('profile.failedToTakePhoto'));
     }
   };
 
   const showAvatarOptions = () => {
-    Alert.alert('Change Avatar', 'Choose an option', [
+    Alert.alert(t('profile.changeAvatar'), t('profile.chooseOption'), [
       {
-        text: 'Take Photo',
+        text: t('profile.takePhoto'),
         onPress: handleTakePhoto,
       },
       {
-        text: 'Choose from Library',
+        text: t('profile.chooseFromLibrary'),
         onPress: handlePickImage,
       },
       {
-        text: 'Cancel',
+        text: t('common.cancel'),
         style: 'cancel',
       },
     ]);
@@ -133,36 +135,24 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fix the errors before saving');
+      Alert.alert(t('profile.validationError'), t('profile.fixErrorsBeforeSaving'));
       return;
     }
 
     try {
       setLoading(true);
 
-      // TODO: Replace with actual API call
-      // await authService.updateProfile({
-      //   firstName,
-      //   lastName,
-      //   email,
-      //   phone,
-      //   bio,
-      //   avatar: avatarUri,
-      // });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Update context
+      // Update profile via context (calls authService.updateProfile internally)
       await updateProfile({
         firstName,
         lastName,
         email,
         phone,
+        bio,
         avatar: avatarUri || undefined,
       });
 
-      Alert.alert('Success', 'Profile updated successfully', [
+      Alert.alert(t('common.success'), t('profile.profileUpdatedSuccessfully'), [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
@@ -170,7 +160,7 @@ export default function EditProfileScreen() {
       ]);
     } catch (error) {
       console.error('Failed to update profile:', error);
-      Alert.alert('Error', 'Failed to update profile');
+      Alert.alert(t('common.error'), t('profile.failedToUpdateProfile'));
     } finally {
       setLoading(false);
     }
@@ -204,7 +194,7 @@ export default function EditProfileScreen() {
             </TouchableOpacity>
 
             <GSText variant="body" color="textSecondary" style={styles.avatarHint}>
-              Tap to change photo
+              {t('profile.tapToChangePhoto')}
             </GSText>
           </View>
 
@@ -213,7 +203,7 @@ export default function EditProfileScreen() {
             {/* First Name */}
             <View style={styles.formGroup}>
               <GSText variant="body" weight="semiBold" style={styles.label}>
-                First Name *
+                {t('auth.firstName')} *
               </GSText>
               <TextInput
                 style={[
@@ -224,7 +214,7 @@ export default function EditProfileScreen() {
                     borderColor: errors.firstName ? theme.colors.error : '#E5E7EB',
                   },
                 ]}
-                placeholder="John"
+                placeholder={t('profile.firstNamePlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={firstName}
                 onChangeText={(text) => {
@@ -244,7 +234,7 @@ export default function EditProfileScreen() {
             {/* Last Name */}
             <View style={styles.formGroup}>
               <GSText variant="body" weight="semiBold" style={styles.label}>
-                Last Name *
+                {t('auth.lastName')} *
               </GSText>
               <TextInput
                 style={[
@@ -255,7 +245,7 @@ export default function EditProfileScreen() {
                     borderColor: errors.lastName ? theme.colors.error : '#E5E7EB',
                   },
                 ]}
-                placeholder="Doe"
+                placeholder={t('profile.lastNamePlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={lastName}
                 onChangeText={(text) => {
@@ -276,7 +266,7 @@ export default function EditProfileScreen() {
             <View style={styles.formGroup}>
               <View style={styles.labelRow}>
                 <GSText variant="body" weight="semiBold" style={styles.label}>
-                  Email *
+                  {t('auth.email')} *
                 </GSText>
               </View>
               <TextInput
@@ -288,7 +278,7 @@ export default function EditProfileScreen() {
                     borderColor: errors.email ? theme.colors.error : '#E5E7EB',
                   },
                 ]}
-                placeholder="john@example.com"
+                placeholder={t('profile.emailPlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={email}
                 onChangeText={(text) => {
@@ -310,7 +300,7 @@ export default function EditProfileScreen() {
             {/* Phone */}
             <View style={styles.formGroup}>
               <GSText variant="body" weight="semiBold" style={styles.label}>
-                Phone (optional)
+                {t('profile.phoneOptional')}
               </GSText>
               <TextInput
                 style={[
@@ -321,7 +311,7 @@ export default function EditProfileScreen() {
                     borderColor: errors.phone ? theme.colors.error : '#E5E7EB',
                   },
                 ]}
-                placeholder="+54 11 1234 5678"
+                placeholder={t('profile.phonePlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={phone}
                 onChangeText={(text) => {
@@ -342,7 +332,7 @@ export default function EditProfileScreen() {
             {/* Bio */}
             <View style={styles.formGroup}>
               <GSText variant="body" weight="semiBold" style={styles.label}>
-                Bio (optional)
+                {t('profile.bioOptional')}
               </GSText>
               <TextInput
                 style={[
@@ -353,7 +343,7 @@ export default function EditProfileScreen() {
                     borderColor: '#E5E7EB',
                   },
                 ]}
-                placeholder="Tell us about yourself..."
+                placeholder={t('profile.bioPlaceholder')}
                 placeholderTextColor={theme.colors.textSecondary}
                 value={bio}
                 onChangeText={setBio}
@@ -368,7 +358,7 @@ export default function EditProfileScreen() {
         {/* Save Button */}
         <View style={[styles.footer, { backgroundColor: theme.colors.surface, borderTopColor: '#E5E7EB' }]}>
           <GSButton
-            title="Save Changes"
+            title={t('profile.saveChanges')}
             onPress={handleSave}
             loading={loading}
             style={styles.saveButton}
