@@ -256,7 +256,7 @@ export class Order {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @Column()
+  @Column({ nullable: true })
   userId: string;
 
   @OneToMany(() => OrderItem, (orderItem) => orderItem.order, { cascade: true })

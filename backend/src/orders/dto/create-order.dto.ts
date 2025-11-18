@@ -8,6 +8,7 @@ import {
   IsUUID,
   ValidateNested,
   IsObject,
+  IsBoolean,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -135,4 +136,14 @@ export class CreateOrderDto {
   @IsOptional()
   @IsUUID()
   affiliateId?: string;
+
+  // Guest Checkout Support
+  @ApiProperty({
+    example: false,
+    required: false,
+    description: 'Whether this is a guest order (no user account)'
+  })
+  @IsOptional()
+  @IsBoolean()
+  isGuestOrder?: boolean;
 }

@@ -281,10 +281,10 @@ const ShippingSummary: React.FC<ShippingSummaryProps> = ({
       <View style={[styles.shippingCard, { backgroundColor: isFree ? theme.colors.success + '10' : theme.colors.surface, borderColor: isFree ? theme.colors.success : theme.colors.gray300 }]}>
         <View style={styles.shippingCardHeader}>
           <GSText variant="body" weight="semiBold">
-            {shippingType === 'local' ? '📍 Envío Local' : '🚚 Envío Nacional'}
+            {t(`checkout.shippingType.${shippingType}`)}
           </GSText>
           <GSText variant="h5" weight="bold" color={isFree ? 'success' : 'primary'}>
-            {isFree ? '¡GRATIS!' : formatPrice(shippingCost)}
+            {isFree ? t('checkout.free').toUpperCase() + '!' : formatPrice(shippingCost)}
           </GSText>
         </View>
 
@@ -295,7 +295,7 @@ const ShippingSummary: React.FC<ShippingSummaryProps> = ({
         {isFree && (
           <View style={[styles.freeShippingBadge, { backgroundColor: theme.colors.success }]}>
             <GSText variant="caption" color="white" weight="semiBold">
-              🎉 ¡Felicidades! Tu compra califica para envío gratis
+              {t('checkout.freeShippingBadge')}
             </GSText>
           </View>
         )}
@@ -439,7 +439,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
           <View style={styles.totalRow}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <GSText variant="body" color="textSecondary">
-                Cargo de plataforma ({platformFeeRate}%)
+                {t('checkout.platformFee', { rate: platformFeeRate })}
               </GSText>
               <GSText variant="caption" color="textSecondary" style={{ fontSize: 10 }}>
                 ℹ️
@@ -452,14 +452,14 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
         )}
 
         <GSText variant="caption" color="textSecondary" style={styles.vatNote}>
-          * IVA incluido en los precios
+          {t('checkout.vatIncludedNote')}
         </GSText>
 
         {/* Disclaimer about platform fee */}
         {!loadingFeeRate && platformFee > 0 && (
           <View style={[styles.infoBox, { backgroundColor: theme.colors.info + '15', borderColor: theme.colors.info }]}>
             <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-              💡 El cargo de plataforma ayuda a mantener GSHOP seguro, con soporte 24/7 y protección de compra garantizada
+              {t('checkout.platformFeeInfo')}
             </GSText>
           </View>
         )}
@@ -540,8 +540,8 @@ export default function CheckoutScreen() {
       state: address.state,
       postalCode: address.postalCode,
       phone: address.phoneNumber,
-      document: '',
-      documentType: 'CC',
+      document: address.documentNumber || '',
+      documentType: address.documentType || 'CC',
     };
   };
 
@@ -590,7 +590,7 @@ export default function CheckoutScreen() {
       // Get seller ID from first cart item (assuming single seller per order)
       const sellerId = items[0]?.product?.sellerId;
       if (!sellerId) {
-        Alert.alert(t('common.error'), 'No se pudo obtener información del vendedor');
+        Alert.alert(t('common.error'), t('checkout.errors.sellerNotFound'));
         return;
       }
 
@@ -619,11 +619,11 @@ export default function CheckoutScreen() {
         });
         setCurrentStep(1);
       } else {
-        Alert.alert(t('common.error'), 'No se pudo calcular el costo de envío');
+        Alert.alert(t('common.error'), t('checkout.errors.shippingCalculationFailed'));
       }
     } catch (error) {
       console.error('Shipping calculation error:', error);
-      Alert.alert(t('common.error'), 'Error al calcular el costo de envío');
+      Alert.alert(t('common.error'), t('checkout.errors.shippingCalculationError'));
     } finally {
       setCalculatingShipping(false);
     }
@@ -645,7 +645,7 @@ export default function CheckoutScreen() {
   const handlePlaceOrder = async () => {
     try {
       if (!shippingInfo) {
-        Alert.alert(t('common.error'), 'No se ha calculado el costo de envío');
+        Alert.alert(t('common.error'), t('checkout.errors.shippingNotCalculated'));
         return;
       }
 

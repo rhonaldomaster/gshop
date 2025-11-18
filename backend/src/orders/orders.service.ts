@@ -101,6 +101,8 @@ export class OrdersService {
         sellerCommissionAmount: 0, // Will be calculated on delivery
         sellerNetAmount: 0, // Will be calculated on delivery
         commissionStatus: 'pending',
+        // Guest checkout support
+        isGuestOrder: createOrderDto.isGuestOrder || !userId,
       });
 
       const savedOrder = await queryRunner.manager.save(Order, order);

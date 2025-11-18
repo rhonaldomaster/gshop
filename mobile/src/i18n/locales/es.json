@@ -307,7 +307,8 @@
     "free": "Gratis",
     "deliveryIn": "Entrega en {{days}} día{{days, plural, =1 {} other {s}}} hábil{{days, plural, =1 {} other {es}}}",
     "quantity": "Cant",
-    "subtotal": "Subtotal ({{count}} artículo{{count, plural, =1 {} other {s}}})",
+    "subtotal_one": "Subtotal ({{count}} artículo)",
+    "subtotal_other": "Subtotal ({{count}} artículos)",
     "shipping": "Envío",
     "taxEstimated": "IVA (estimado)",
     "total": "Total",
@@ -332,6 +333,20 @@
     "validation": {
       "missingInfo": "Información faltante",
       "pleaseFill": "Por favor completa el campo {{field}}"
+    },
+    "shippingType": {
+      "local": "📍 Envío Local",
+      "national": "🚚 Envío Nacional"
+    },
+    "freeShippingBadge": "🎉 ¡Felicidades! Tu compra califica para envío gratis",
+    "platformFee": "Cargo de plataforma ({{rate}}%)",
+    "vatIncludedNote": "* IVA incluido en los precios",
+    "platformFeeInfo": "💡 El cargo de plataforma ayuda a mantener GSHOP seguro, con soporte 24/7 y protección de compra garantizada",
+    "errors": {
+      "sellerNotFound": "No se pudo obtener información del vendedor",
+      "shippingCalculationFailed": "No se pudo calcular el costo de envío",
+      "shippingCalculationError": "Error al calcular el costo de envío",
+      "shippingNotCalculated": "No se ha calculado el costo de envío"
     },
     "alerts": {
       "emptyCart": "Carrito vacío",
