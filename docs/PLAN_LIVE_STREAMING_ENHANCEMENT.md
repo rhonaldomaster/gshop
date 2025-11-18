@@ -1,0 +1,2543 @@
+# 📺 Plan de Implementación: Live Streaming Enhancement - GSHOP
+
+**Proyecto:** GSHOP - TikTok Shop Clone MVP
+**Módulo:** Enhanced Live Shopping Platform
+**Fecha:** Noviembre 2025
+**Estado:** Planificación
+
+---
+
+## 📋 Resumen Ejecutivo
+
+Este documento presenta el plan de trabajo para transformar el sistema actual de Live Shopping de GSHOP en una plataforma escalable y completa similar a TikTok Shop, incluyendo streaming de baja latencia, overlay de productos, chat en tiempo real, descubrimiento inteligente de lives y checkout integrado.
+
+### Estado Actual (Phase 2 - Implementado)
+
+✅ **Ya implementado:**
+- Live streaming básico con RTMP/HLS
+- WebSocket para chat en tiempo real
+- Entidades de base de datos: `live_streams`, `live_stream_products`, `live_stream_messages`, `live_stream_viewers`
+- API REST básica: crear streams, listar activos, agregar productos
+- Panel de vendedor básico para gestión de lives
+- Mobile app con visualización de lives y chat
+- Sistema de comisiones para affiliates en lives
+
+### Objetivos del Enhancement
+
+🎯 **Mejoras principales:**
+1. **Streaming escalable** con baja latencia (< 3 segundos)
+2. **Overlay de productos** interactivo en el video
+3. **Chat avanzado** con reacciones, likes, moderación
+4. **Descubrimiento inteligente** con algoritmos de recomendación
+5. **Live Checkout** integrado sin salir del stream
+6. **Infraestructura cloud** escalable y optimizada
+7. **Analytics en tiempo real** para vendedores
+8. **Soporte multi-protocolo** (RTMP + WebRTC)
+
+---
+
+## 🏗️ Arquitectura Propuesta
+
+### Diagrama de Alto Nivel
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND LAYER                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Seller Panel (Next.js)    │    Mobile App (React Native)      │
+│  - OBS/RTMP Config          │    - Live Player (HLS/WebRTC)    │
+│  - Product Management       │    - Product Overlay             │
+│  - Analytics Dashboard      │    - Chat Interface              │
+│  - Stream Controls          │    - Quick Checkout              │
+└─────────────────┬───────────┴──────────────┬───────────────────┘
+                  │                          │
+┌─────────────────▼──────────────────────────▼───────────────────┐
+│                     API GATEWAY LAYER                           │
+├─────────────────────────────────────────────────────────────────┤
+│  NestJS Backend (3000)                                          │
+│  - REST API (lives, products, orders)                           │
+│  - WebSocket Gateway (chat, reactions, presence)                │
+│  - GraphQL Subscriptions (real-time metrics)                    │
+└─────────────────┬───────────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────────────────┐
+│                    BUSINESS LOGIC LAYER                          │
+├─────────────────────────────────────────────────────────────────┤
+│  Live Service     │  Chat Service    │  Recommendation Engine  │
+│  Product Service  │  Order Service   │  Analytics Service      │
+│  Payment Service  │  Moderation      │  Notification Service   │
+└─────────┬─────────┴──────────┬───────┴─────────────────┬───────┘
+          │                    │                         │
+┌─────────▼────────────────────▼─────────────────────────▼───────┐
+│                      DATA LAYER                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  PostgreSQL      │   Redis Cache    │   S3/CDN (Videos)        │
+│  (TypeORM)       │   (Sessions,     │   (Thumbnails, Images)   │
+│                  │    Leaderboards) │                          │
+└──────────────────┴──────────────────┴──────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                   MEDIA STREAMING LAYER                         │
+├─────────────────────────────────────────────────────────────────┤
+│  Option 1 (Recommended for MVP):                                │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │ AWS IVS (Interactive Video Service)                     │    │
+│  │ - Managed RTMP ingest                                   │    │
+│  │ - Auto HLS transcoding                                  │    │
+│  │ - Global CDN distribution                               │    │
+│  │ - < 3s latency                                          │    │
+│  │ - Pay per viewer hour (~$0.015/hour)                    │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Option 2 (Self-hosted for cost optimization):                 │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │ Nginx-RTMP + Node Media Server                          │    │
+│  │ + FFmpeg Transcoding                                    │    │
+│  │ + CloudFront CDN                                        │    │
+│  │ Cost: ~$50-100/month (EC2 t3.medium + CDN)              │    │
+│  └────────────────────────────────────────────────────────┘    │
+│                                                                 │
+│  Option 3 (Future - Ultra Low Latency):                        │
+│  ┌────────────────────────────────────────────────────────┐    │
+│  │ Agora.io / 100ms WebRTC                                 │    │
+│  │ - < 500ms latency                                       │    │
+│  │ - Interactive features                                  │    │
+│  │ - Pay per minute (~$0.0099/min)                         │    │
+│  └────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    MONITORING & ANALYTICS                       │
+├─────────────────────────────────────────────────────────────────┤
+│  CloudWatch/Datadog  │  Sentry (Errors)  │  Mixpanel (Events) │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Flujo Técnico Completo
+
+#### 1. Vendedor Inicia Live Stream
+
+```
+┌─────────────┐
+│ Seller Panel│
+│ or OBS      │
+└──────┬──────┘
+       │ 1. POST /api/v1/live/streams
+       │    { title, description, products[] }
+       ▼
+┌──────────────┐
+│ Backend API  │ → 2. Create stream record in DB
+│              │ → 3. Request stream key from AWS IVS
+│              │ → 4. Return RTMP ingest URL + stream key
+└──────┬───────┘
+       │ 5. Seller starts streaming (OBS → RTMP)
+       ▼
+┌──────────────┐
+│  AWS IVS     │ → 6. Transcode to HLS
+│  (or Nginx)  │ → 7. Distribute via CloudFront CDN
+└──────┬───────┘
+       │ 8. Notify backend: stream_started webhook
+       ▼
+┌──────────────┐
+│ Backend      │ → 9. Update stream status: "live"
+│              │ → 10. Publish to WebSocket: "stream_started"
+│              │ → 11. Send push notifications to followers
+└──────────────┘
+```
+
+#### 2. Comprador Ve Live Stream
+
+```
+┌─────────────┐
+│ Mobile App  │
+└──────┬──────┘
+       │ 1. GET /api/v1/live/streams/active
+       │    (or /discover with recommendations)
+       ▼
+┌──────────────┐
+│ Backend API  │ → 2. Query active streams from DB
+│              │ → 3. Apply recommendation algorithm
+│              │ → 4. Return streams with HLS URLs
+└──────┬───────┘
+       │ 5. User taps stream to watch
+       ▼
+┌─────────────┐
+│ Video Player│ → 6. Load HLS manifest from CDN
+│ (Expo AV)   │ → 7. Start playing video
+└──────┬──────┘
+       │ 8. Connect WebSocket for chat/events
+       ▼
+┌──────────────┐
+│ WebSocket    │ → 9. Join room: "stream_{streamId}"
+│ Gateway      │ → 10. Receive chat messages
+│              │ → 11. Receive product highlights
+│              │ → 12. Receive reactions/likes
+└──────────────┘
+```
+
+#### 3. Overlay de Productos Durante Live
+
+```
+┌─────────────┐
+│ Seller Panel│
+└──────┬──────┘
+       │ 1. Click "Show Product" during live
+       │    PUT /api/v1/live/streams/:id/products/:productId/highlight
+       ▼
+┌──────────────┐
+│ Backend API  │ → 2. Update product visibility in DB
+│              │ → 3. Publish WebSocket event: "product_highlighted"
+└──────┬───────┘
+       │ 4. WebSocket broadcast to all viewers
+       ▼
+┌─────────────┐
+│ Mobile App  │ → 5. Show product overlay animation
+│ (Viewers)   │ → 6. Display product carousel at bottom
+│             │ → 7. Enable "Add to Cart" button
+└─────────────┘
+```
+
+#### 4. Compra Durante Live ("Live Checkout")
+
+```
+┌─────────────┐
+│ Mobile App  │
+└──────┬──────┘
+       │ 1. User taps "Add to Cart" on product overlay
+       │    POST /api/v1/orders/live-checkout
+       │    { streamId, productId, quantity }
+       ▼
+┌──────────────┐
+│ Backend API  │ → 2. Create order with liveSessionId
+│              │ → 3. Calculate commission if affiliate stream
+│              │ → 4. Process payment (MercadoPago)
+└──────┬───────┘
+       │ 5. Payment success webhook
+       ▼
+┌──────────────┐
+│ Order Service│ → 6. Confirm order
+│              │ → 7. Update stream metrics (GMV, conversions)
+│              │ → 8. Send notification to seller
+└──────┬───────┘
+       │ 9. WebSocket event: "purchase_celebration"
+       ▼
+┌─────────────┐
+│ Live Stream │ → 10. Show celebration animation
+│ (All viewers)│ → 11. "X users bought this product!"
+└─────────────┘
+```
+
+---
+
+## 🗄️ Diseño de Base de Datos
+
+### Entidades Existentes (Phase 2) - A Extender
+
+#### `live_streams` (Existente - Requiere Mejoras)
+
+```typescript
+interface LiveStream {
+  // Campos existentes
+  id: string; // UUID
+  title: string;
+  description?: string;
+  status: 'scheduled' | 'live' | 'ended'; // ✅ Mantener
+  hostType: 'seller' | 'affiliate'; // ✅ Mantener
+  sellerId?: string; // FK to sellers
+  affiliateId?: string; // FK to affiliates
+  rtmpUrl?: string;
+  hlsUrl?: string;
+  streamKey?: string;
+  scheduledAt?: Date;
+  startedAt?: Date;
+  endedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+
+  // 🆕 NUEVOS CAMPOS REQUERIDOS
+  thumbnailUrl?: string; // Image for discovery feed
+  category?: string; // Electronics, Fashion, Food, etc.
+  tags?: string[]; // Searchable tags
+  viewerCount: number; // Real-time viewer count
+  peakViewerCount: number; // Max concurrent viewers
+  totalViews: number; // Unique views
+  totalLikes: number; // Heart reactions
+  totalMessages: number; // Chat messages count
+  totalPurchases: number; // Orders during stream
+  gmv: number; // Gross Merchandise Value
+  streamQuality?: '720p' | '1080p' | 'auto'; // Video quality
+  latencyMode?: 'low' | 'ultra-low'; // < 3s or < 500ms
+  isRecorded: boolean; // Save VOD after stream ends
+  recordingUrl?: string; // VOD playback URL
+  language?: string; // es, en, pt (for i18n)
+  moderators?: string[]; // User IDs who can moderate chat
+  isPrivate: boolean; // Private stream (only followers)
+  allowedViewers?: string[]; // User IDs for private streams
+
+  // Relaciones
+  products?: LiveStreamProduct[];
+  messages?: LiveStreamMessage[];
+  viewers?: LiveStreamViewer[];
+  metrics?: LiveStreamMetric[];
+}
+```
+
+#### `live_stream_products` (Existente - Mejorar)
+
+```typescript
+interface LiveStreamProduct {
+  // Campos existentes
+  id: string;
+  streamId: string; // FK
+  productId: string; // FK
+  isVisible: boolean; // ✅ Mantener para overlay
+  createdAt: Date;
+
+  // 🆕 NUEVOS CAMPOS
+  highlightedAt?: Date; // When product was shown
+  position: number; // Order in product list (1, 2, 3...)
+  discountPercent?: number; // Live-exclusive discount
+  livePrice?: number; // Special price for live viewers
+  stock?: number; // Available stock during live
+  soldCount: number; // Units sold during stream
+  clickCount: number; // Times product was clicked
+  addToCartCount: number; // Times added to cart
+  purchaseCount: number; // Completed purchases
+  revenue: number; // Total revenue from this product in stream
+  isPinned: boolean; // Pin to top of product carousel
+}
+```
+
+#### `live_stream_messages` (Existente - Extender)
+
+```typescript
+interface LiveStreamMessage {
+  // Campos existentes
+  id: string;
+  streamId: string; // FK
+  userId: string; // FK
+  message: string;
+  createdAt: Date;
+
+  // 🆕 NUEVOS CAMPOS
+  type: 'message' | 'reaction' | 'system' | 'product_alert' | 'purchase';
+  reactionType?: '❤️' | '🔥' | '😍' | '👏' | '💰'; // Emoji reactions
+  metadata?: {
+    productId?: string; // If message is about a product
+    purchaseAmount?: number; // If message announces purchase
+    username?: string; // Display name
+    userAvatar?: string; // User profile pic
+    isModerator?: boolean; // Show moderator badge
+    isSeller?: boolean; // Show seller badge
+  };
+  isDeleted: boolean; // Moderation
+  deletedBy?: string; // Moderator who deleted
+  deletedAt?: Date;
+  isPinned: boolean; // Pin important messages
+}
+```
+
+#### `live_stream_viewers` (Existente - Extender)
+
+```typescript
+interface LiveStreamViewer {
+  // Campos existentes
+  id: string;
+  streamId: string; // FK
+  userId: string; // FK
+  sessionId: string; // ✅ Mantener
+  joinedAt: Date;
+  leftAt?: Date;
+
+  // 🆕 NUEVOS CAMPOS
+  watchDuration: number; // Seconds watched
+  isActive: boolean; // Currently watching
+  lastPingAt: Date; // Heartbeat for presence
+  messagesCount: number; // Messages sent by this viewer
+  reactionsCount: number; // Reactions sent
+  productsViewed: number; // Products clicked
+  purchasesMade: number; // Orders completed
+  totalSpent: number; // Revenue from this viewer
+  referralSource?: string; // How they found the stream
+  device?: 'mobile' | 'web' | 'tablet'; // Device type
+  location?: {
+    country?: string;
+    city?: string;
+  };
+}
+```
+
+### 🆕 Nuevas Entidades Requeridas
+
+#### `live_stream_metrics` (NUEVA)
+
+```typescript
+interface LiveStreamMetric {
+  id: string;
+  streamId: string; // FK
+  timestamp: Date; // Every 30 seconds or 1 minute
+  viewerCount: number; // Concurrent viewers at this time
+  messagesPerMinute: number; // Chat activity
+  reactionsPerMinute: number; // Engagement rate
+  productsHighlighted: number; // Products shown so far
+  purchasesCount: number; // Orders completed so far
+  revenue: number; // GMV so far
+  averageWatchTime: number; // Avg seconds per viewer
+  bounceRate: number; // % of viewers who left in < 10s
+  engagementScore: number; // Calculated engagement metric
+  createdAt: Date;
+}
+```
+
+#### `live_stream_highlights` (NUEVA)
+
+```typescript
+interface LiveStreamHighlight {
+  id: string;
+  streamId: string; // FK
+  timestamp: number; // Seconds from stream start
+  type: 'product_show' | 'big_purchase' | 'milestone' | 'reaction_burst';
+  title: string; // "iPhone 15 Reveal", "100 Viewers!"
+  description?: string;
+  thumbnailUrl?: string; // Screenshot from video
+  videoClipUrl?: string; // Short clip (10-30s)
+  metadata?: {
+    productId?: string;
+    viewerCount?: number;
+    purchaseAmount?: number;
+  };
+  isPublic: boolean; // Show in highlights reel
+  createdAt: Date;
+}
+```
+
+#### `live_stream_recommendations` (NUEVA)
+
+```typescript
+interface LiveStreamRecommendation {
+  id: string;
+  userId: string; // FK - Who is this recommendation for
+  streamId: string; // FK - Recommended stream
+  score: number; // 0-100 recommendation score
+  reasons: string[]; // ["popular", "follows_seller", "viewed_category"]
+  position: number; // Ranking in recommendation list
+  viewed: boolean; // User saw this recommendation
+  clicked: boolean; // User clicked on it
+  watched: boolean; // User watched the stream
+  watchDuration?: number; // If watched, for how long
+  purchased: boolean; // User made a purchase
+  createdAt: Date;
+  expiresAt: Date; // Recommendations expire after stream ends
+}
+```
+
+#### `live_stream_chat_moderation` (NUEVA)
+
+```typescript
+interface LiveStreamChatModeration {
+  id: string;
+  streamId: string; // FK
+  userId: string; // FK - User who was moderated
+  moderatorId: string; // FK - Who performed the action
+  action: 'timeout' | 'ban' | 'delete_message' | 'warning';
+  reason?: string;
+  duration?: number; // Timeout duration in minutes
+  messageId?: string; // If specific message was deleted
+  createdAt: Date;
+  expiresAt?: Date; // When timeout expires
+}
+```
+
+#### `live_stream_schedules` (NUEVA)
+
+```typescript
+interface LiveStreamSchedule {
+  id: string;
+  sellerId?: string; // FK
+  affiliateId?: string; // FK
+  title: string;
+  description?: string;
+  scheduledDate: Date; // When stream will start
+  estimatedDuration: number; // Minutes
+  category?: string;
+  tags?: string[];
+  products?: string[]; // Product IDs to be featured
+  notifyFollowers: boolean; // Send push notifications
+  remindersSent: number; // Count of reminders sent
+  status: 'scheduled' | 'cancelled' | 'completed';
+  streamId?: string; // FK - Once stream starts
+  thumbnailUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+### Índices Recomendados (PostgreSQL)
+
+```sql
+-- High-performance queries for live discovery
+CREATE INDEX idx_live_streams_status_viewers ON live_streams (status, viewerCount DESC);
+CREATE INDEX idx_live_streams_category_status ON live_streams (category, status);
+CREATE INDEX idx_live_streams_started_at ON live_streams (startedAt DESC);
+
+-- Real-time chat performance
+CREATE INDEX idx_live_messages_stream_created ON live_stream_messages (streamId, createdAt DESC);
+CREATE INDEX idx_live_messages_type ON live_stream_messages (streamId, type);
+
+-- Viewer analytics
+CREATE INDEX idx_live_viewers_stream_active ON live_stream_viewers (streamId, isActive);
+CREATE INDEX idx_live_viewers_user_joined ON live_stream_viewers (userId, joinedAt DESC);
+
+-- Product performance
+CREATE INDEX idx_live_products_stream_visible ON live_stream_products (streamId, isVisible);
+CREATE INDEX idx_live_products_sold_count ON live_stream_products (streamId, soldCount DESC);
+
+-- Recommendations
+CREATE INDEX idx_recommendations_user_score ON live_stream_recommendations (userId, score DESC, expiresAt);
+CREATE INDEX idx_recommendations_stream ON live_stream_recommendations (streamId, viewed);
+
+-- Metrics for analytics
+CREATE INDEX idx_metrics_stream_timestamp ON live_stream_metrics (streamId, timestamp DESC);
+```
+
+---
+
+## 🔌 API Endpoints & WebSocket Events
+
+### REST API Endpoints
+
+#### Live Stream Management
+
+```typescript
+// Create scheduled stream
+POST /api/v1/live/streams
+Body: {
+  title: string;
+  description?: string;
+  scheduledAt?: Date;
+  category?: string;
+  tags?: string[];
+  productIds?: string[];
+  thumbnailUrl?: string;
+  isPrivate?: boolean;
+}
+
+// Start stream (get RTMP credentials)
+POST /api/v1/live/streams/:id/start
+Response: {
+  streamId: string;
+  rtmpIngestUrl: string; // rtmp://live.gshop.com/live
+  streamKey: string; // secret_key_abc123
+  hlsPlaybackUrl: string; // https://cdn.gshop.com/live/{streamId}/index.m3u8
+  status: 'live';
+}
+
+// End stream
+POST /api/v1/live/streams/:id/end
+Response: { status: 'ended', recordingUrl?: string }
+
+// Get active streams (discovery feed)
+GET /api/v1/live/streams/active
+Query: { category?, tags?, limit?, offset?, sort? }
+Response: { streams: LiveStream[], total: number }
+
+// Get recommended streams for user
+GET /api/v1/live/streams/recommended
+Query: { userId, limit? }
+Response: { streams: LiveStream[], reasons: string[] }
+
+// Get stream details
+GET /api/v1/live/streams/:id
+Response: LiveStream with products, metrics, host info
+
+// Get stream analytics (seller only)
+GET /api/v1/live/streams/:id/analytics
+Response: {
+  viewerCount: number;
+  peakViewers: number;
+  totalViews: number;
+  avgWatchTime: number;
+  messagesCount: number;
+  reactionsCount: number;
+  productsShown: number;
+  purchases: number;
+  revenue: number;
+  topProducts: Product[];
+  viewersByHour: MetricPoint[];
+  revenueByProduct: MetricPoint[];
+}
+
+// Search live streams
+GET /api/v1/live/streams/search
+Query: { q: string, category?, tags?, limit? }
+Response: { streams: LiveStream[], total: number }
+```
+
+#### Product Management During Live
+
+```typescript
+// Add product to stream
+POST /api/v1/live/streams/:id/products
+Body: { productId: string, position?: number, livePrice?: number, discountPercent?: number }
+
+// Highlight product (show overlay to viewers)
+PUT /api/v1/live/streams/:id/products/:productId/highlight
+Response: { success: true, highlightedAt: Date }
+
+// Hide product from overlay
+PUT /api/v1/live/streams/:id/products/:productId/hide
+Response: { success: true, isVisible: false }
+
+// Pin product (stays at top)
+PUT /api/v1/live/streams/:id/products/:productId/pin
+Response: { success: true, isPinned: true }
+
+// Remove product from stream
+DELETE /api/v1/live/streams/:id/products/:productId
+
+// Get product performance in stream
+GET /api/v1/live/streams/:id/products/:productId/stats
+Response: {
+  soldCount: number;
+  revenue: number;
+  clickCount: number;
+  addToCartCount: number;
+  conversionRate: number;
+}
+```
+
+#### Chat & Moderation
+
+```typescript
+// Send chat message (via WebSocket primarily, but REST backup)
+POST /api/v1/live/streams/:id/messages
+Body: { message: string, type?: 'message' | 'reaction' }
+
+// Get chat history (on join)
+GET /api/v1/live/streams/:id/messages
+Query: { limit?, before?: Date }
+Response: { messages: LiveStreamMessage[] }
+
+// Delete message (moderator)
+DELETE /api/v1/live/streams/:id/messages/:messageId
+Body: { reason?: string }
+
+// Timeout user (moderator)
+POST /api/v1/live/streams/:id/moderation/timeout
+Body: { userId: string, duration: number, reason?: string }
+
+// Ban user from stream (moderator)
+POST /api/v1/live/streams/:id/moderation/ban
+Body: { userId: string, reason?: string }
+
+// Add moderator to stream
+POST /api/v1/live/streams/:id/moderators
+Body: { userId: string }
+
+// Remove moderator
+DELETE /api/v1/live/streams/:id/moderators/:userId
+```
+
+#### Live Checkout
+
+```typescript
+// Quick add to cart from live
+POST /api/v1/orders/live-checkout/add-to-cart
+Body: {
+  streamId: string;
+  productId: string;
+  quantity: number;
+}
+Response: { cartId: string, itemId: string, total: number }
+
+// Complete purchase during live
+POST /api/v1/orders/live-checkout/purchase
+Body: {
+  streamId: string;
+  cartId: string;
+  paymentMethodId: string;
+  shippingAddressId: string;
+}
+Response: {
+  orderId: string;
+  total: number;
+  liveSessionId: string;
+  affiliateId?: string;
+  commissionAmount?: number;
+}
+
+// Get live checkout stats (seller)
+GET /api/v1/live/streams/:id/checkout-stats
+Response: {
+  cartsCreated: number;
+  purchasesCompleted: number;
+  conversionRate: number;
+  averageOrderValue: number;
+  totalRevenue: number;
+}
+```
+
+#### Recommendations & Discovery
+
+```typescript
+// Get trending streams
+GET /api/v1/live/streams/trending
+Query: { category?, limit? }
+Response: { streams: LiveStream[] }
+
+// Get "For You" personalized feed
+GET /api/v1/live/streams/for-you
+Query: { userId, limit?, offset? }
+Response: {
+  streams: LiveStream[];
+  reasons: { [streamId]: string[] };
+}
+
+// Track recommendation interaction
+POST /api/v1/live/recommendations/track
+Body: {
+  streamId: string;
+  action: 'viewed' | 'clicked' | 'watched' | 'purchased';
+  metadata?: { watchDuration?: number };
+}
+
+// Get upcoming scheduled streams
+GET /api/v1/live/streams/scheduled
+Query: { category?, date?, limit? }
+Response: { schedules: LiveStreamSchedule[] }
+
+// Subscribe to stream notification
+POST /api/v1/live/streams/:id/subscribe
+Response: { subscribed: true, willNotify: true }
+```
+
+### WebSocket Events
+
+#### Connection & Presence
+
+```typescript
+// Client connects to WebSocket
+socket.connect('https://api.gshop.com', {
+  auth: { token: 'jwt_token_here' }
+});
+
+// Join stream room
+socket.emit('live:join', {
+  streamId: 'stream_123',
+  userId: 'user_456',
+  sessionId: 'session_789'
+});
+
+// Server acknowledges join
+socket.on('live:joined', {
+  streamId: 'stream_123',
+  viewerCount: 142,
+  currentProducts: Product[],
+  recentMessages: Message[]
+});
+
+// Leave stream
+socket.emit('live:leave', { streamId, sessionId });
+
+// Heartbeat (every 30s to stay active)
+socket.emit('live:ping', { streamId, sessionId });
+socket.on('live:pong', { serverTime: Date });
+```
+
+#### Chat Events
+
+```typescript
+// Send message
+socket.emit('live:message', {
+  streamId: 'stream_123',
+  message: 'This product looks amazing!',
+  type: 'message'
+});
+
+// Receive message (broadcast to all viewers)
+socket.on('live:message', {
+  id: 'msg_abc',
+  streamId: 'stream_123',
+  userId: 'user_456',
+  username: 'JohnDoe',
+  userAvatar: 'https://...',
+  message: 'This product looks amazing!',
+  type: 'message',
+  createdAt: Date,
+  metadata: { isModerator: false, isSeller: false }
+});
+
+// Send reaction
+socket.emit('live:reaction', {
+  streamId: 'stream_123',
+  reaction: '❤️'
+});
+
+// Receive reaction burst (aggregated)
+socket.on('live:reactions', {
+  streamId: 'stream_123',
+  reactions: { '❤️': 45, '🔥': 23, '😍': 12 },
+  recentReactions: [
+    { userId: 'user_1', reaction: '❤️', timestamp: Date },
+    { userId: 'user_2', reaction: '🔥', timestamp: Date }
+  ]
+});
+
+// Message deleted (moderation)
+socket.on('live:message:deleted', {
+  messageId: 'msg_abc',
+  reason: 'spam'
+});
+
+// User timeout
+socket.on('live:user:timeout', {
+  userId: 'user_456',
+  duration: 300, // seconds
+  reason: 'inappropriate language'
+});
+```
+
+#### Product Events
+
+```typescript
+// Product highlighted (seller triggers)
+socket.emit('live:product:highlight', {
+  streamId: 'stream_123',
+  productId: 'prod_789'
+});
+
+// Receive product highlight (all viewers)
+socket.on('live:product:highlighted', {
+  streamId: 'stream_123',
+  product: {
+    id: 'prod_789',
+    name: 'iPhone 15 Pro Max',
+    price: 1299.99,
+    livePrice: 1199.99, // Special live discount
+    discountPercent: 8,
+    imageUrl: 'https://...',
+    stock: 25,
+    soldCount: 5
+  },
+  position: 1, // First in carousel
+  isPinned: false
+});
+
+// Product hidden
+socket.emit('live:product:hide', { streamId, productId });
+socket.on('live:product:hidden', { streamId, productId });
+
+// Product stock update (real-time)
+socket.on('live:product:stock', {
+  streamId: 'stream_123',
+  productId: 'prod_789',
+  stock: 23, // 2 units sold
+  soldCount: 7
+});
+```
+
+#### Purchase Events
+
+```typescript
+// Purchase completed
+socket.emit('live:purchase', {
+  streamId: 'stream_123',
+  productId: 'prod_789',
+  quantity: 1,
+  amount: 1199.99
+});
+
+// Broadcast purchase celebration (anonymized)
+socket.on('live:purchase:celebration', {
+  streamId: 'stream_123',
+  productId: 'prod_789',
+  productName: 'iPhone 15 Pro Max',
+  quantity: 1,
+  message: '🎉 Someone just bought this product!',
+  totalPurchases: 8, // Total for this product in stream
+  showAnimation: true
+});
+
+// Purchase milestone (e.g., 100th purchase)
+socket.on('live:milestone:purchase', {
+  streamId: 'stream_123',
+  milestone: 100,
+  message: '🎊 100 products sold during this live!',
+  totalRevenue: 45000.00
+});
+```
+
+#### Stream Events
+
+```typescript
+// Stream started
+socket.on('live:stream:started', {
+  streamId: 'stream_123',
+  title: 'iPhone 15 Launch Event',
+  hlsUrl: 'https://cdn.gshop.com/live/stream_123/index.m3u8',
+  thumbnailUrl: 'https://...'
+});
+
+// Stream ended
+socket.on('live:stream:ended', {
+  streamId: 'stream_123',
+  duration: 3600, // seconds
+  totalViews: 1250,
+  peakViewers: 342,
+  totalPurchases: 87,
+  revenue: 52000.00,
+  recordingUrl: 'https://...' // VOD if recorded
+});
+
+// Viewer count update (every 10-30s)
+socket.on('live:viewers:update', {
+  streamId: 'stream_123',
+  viewerCount: 156,
+  change: +4 // +4 viewers in last period
+});
+
+// Engagement milestone
+socket.on('live:milestone:viewers', {
+  streamId: 'stream_123',
+  milestone: 100,
+  message: '🔥 100 viewers watching now!',
+  peakViewers: 100
+});
+```
+
+#### Analytics Events (Seller Only)
+
+```typescript
+// Real-time analytics update (every 30s)
+socket.on('live:analytics:update', {
+  streamId: 'stream_123',
+  timestamp: Date,
+  viewerCount: 156,
+  messagesPerMinute: 24,
+  reactionsPerMinute: 67,
+  purchasesCount: 12,
+  revenue: 14500.00,
+  topProduct: {
+    id: 'prod_789',
+    name: 'iPhone 15',
+    soldCount: 5,
+    revenue: 6000.00
+  }
+});
+
+// Product performance alert
+socket.on('live:product:alert', {
+  streamId: 'stream_123',
+  productId: 'prod_789',
+  type: 'low_stock', // or 'hot_selling', 'no_interest'
+  message: 'Only 3 units left!',
+  stock: 3
+});
+```
+
+---
+
+## ☁️ Infraestructura Cloud Recomendada
+
+### Opción 1: AWS (Recomendado para MVP)
+
+#### Servicios Clave
+
+| Servicio               | Propósito                         | Costo Estimado (MVP)  |
+| ---------------------- | --------------------------------- | --------------------- |
+| **AWS IVS**            | Streaming RTMP → HLS              | $0.015/viewer-hour    |
+|                        | - Managed transcoding             | ~$200-500/month       |
+|                        | - Global CDN                      | (100-500 viewers)     |
+|                        | - < 3s latency                    |                       |
+| **EC2 (t3.medium)**    | NestJS Backend API                | $30/month             |
+|                        | 2 vCPU, 4 GB RAM                  |                       |
+| **RDS PostgreSQL**     | Primary database                  | $50/month             |
+|                        | db.t3.small                       | (t3.micro)            |
+| **ElastiCache Redis**  | Sessions, chat cache, leaderboard | $15/month             |
+|                        | cache.t3.micro                    |                       |
+| **CloudFront**         | CDN for videos, images            | $10-50/month          |
+|                        |                                   | (50-500 GB transfer)  |
+| **S3**                 | Video recordings, thumbnails      | $5-10/month           |
+|                        |                                   | (100-500 GB storage)  |
+| **Lambda**             | Webhooks, async processing        | $5/month              |
+|                        |                                   | (1M requests)         |
+| **CloudWatch**         | Monitoring, logs, alerts          | $10/month             |
+| **SES (Simple Email)** | Notifications                     | $1/month              |
+|                        |                                   | (10K emails)          |
+| **Total**              |                                   | **~$350-700/month**   |
+
+#### Arquitectura AWS
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                         AWS REGION (us-east-1)                 │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  ┌─────────────────┐         ┌─────────────────┐             │
+│  │  CloudFront CDN │◄────────┤   AWS IVS       │             │
+│  │  (Video Dist.)  │         │  (Live Streams) │             │
+│  └────────┬────────┘         └────────┬────────┘             │
+│           │                           │                        │
+│           │ HLS Playback              │ RTMP Ingest           │
+│           ▼                           ▼                        │
+│  ┌─────────────────────────────────────────────────┐          │
+│  │              Viewers (Mobile/Web)               │          │
+│  └─────────────────────────────────────────────────┘          │
+│                                                                │
+│  ┌─────────────────┐         ┌─────────────────┐             │
+│  │  ALB (Load      │────────►│  EC2 (NestJS)   │             │
+│  │  Balancer)      │         │  Auto Scaling   │             │
+│  └─────────────────┘         │  Group (2-10)   │             │
+│                              └────────┬────────┘             │
+│                                       │                        │
+│                    ┌──────────────────┼──────────────────┐    │
+│                    │                  │                  │    │
+│           ┌────────▼────────┐ ┌──────▼──────┐ ┌────────▼───┐│
+│           │ RDS PostgreSQL  │ │ ElastiCache │ │   S3       ││
+│           │ (Multi-AZ)      │ │   Redis     │ │  (Media)   ││
+│           └─────────────────┘ └─────────────┘ └────────────┘│
+│                                                                │
+│  ┌─────────────────┐         ┌─────────────────┐             │
+│  │  Lambda         │         │  EventBridge    │             │
+│  │  (Webhooks)     │◄────────┤  (Scheduler)    │             │
+│  └─────────────────┘         └─────────────────┘             │
+│                                                                │
+│  ┌─────────────────────────────────────────────────────┐     │
+│  │  CloudWatch (Monitoring + Logs + Alarms)            │     │
+│  └─────────────────────────────────────────────────────┘     │
+└────────────────────────────────────────────────────────────────┘
+```
+
+#### Setup AWS IVS
+
+```bash
+# Install AWS CLI
+aws configure
+
+# Create IVS channel
+aws ivs create-channel \
+  --name "gshop-live-stream" \
+  --latency-mode NORMAL \
+  --type STANDARD \
+  --region us-east-1
+
+# Response
+{
+  "channel": {
+    "arn": "arn:aws:ivs:us-east-1:123456789:channel/abc123",
+    "name": "gshop-live-stream",
+    "latencyMode": "NORMAL",
+    "ingestEndpoint": "rtmp://a1b2c3d4e5.global-contribute.live-video.net:443/app/",
+    "playbackUrl": "https://a1b2c3d4e5.us-east-1.playback.live-video.net/api/video/v1/us-east-1.123456789.channel.abc123.m3u8",
+    "streamKey": {
+      "value": "sk_us-east-1_a1b2c3d4e5f6g7h8"
+    }
+  }
+}
+
+# Store these values in your database/config
+RTMP_INGEST_URL="rtmp://a1b2c3d4e5.global-contribute.live-video.net:443/app/"
+STREAM_KEY="sk_us-east-1_a1b2c3d4e5f6g7h8"
+HLS_PLAYBACK_URL="https://a1b2c3d4e5.us-east-1.playback.live-video.net/api/video/v1/us-east-1.123456789.channel.abc123.m3u8"
+```
+
+### Opción 2: Self-Hosted (Cost Optimization)
+
+#### Nginx RTMP + FFmpeg Setup
+
+```bash
+# EC2 t3.medium (Ubuntu 22.04)
+sudo apt update
+sudo apt install -y nginx libnginx-mod-rtmp ffmpeg
+
+# Configure Nginx RTMP
+sudo nano /etc/nginx/nginx.conf
+```
+
+```nginx
+rtmp {
+    server {
+        listen 1935;
+        chunk_size 4096;
+
+        application live {
+            live on;
+            record off;
+
+            # HLS transcoding
+            hls on;
+            hls_path /var/www/hls;
+            hls_fragment 3s;
+            hls_playlist_length 60s;
+
+            # Low latency settings
+            hls_fragment_naming sequential;
+            hls_cleanup on;
+
+            # Authentication webhook
+            on_publish http://localhost:3000/api/v1/live/auth/publish;
+            on_publish_done http://localhost:3000/api/v1/live/auth/done;
+
+            # Notifications
+            on_play http://localhost:3000/api/v1/live/auth/play;
+        }
+    }
+}
+
+http {
+    server {
+        listen 8080;
+
+        # Serve HLS files
+        location /hls {
+            types {
+                application/vnd.apple.mpegurl m3u8;
+                video/mp2t ts;
+            }
+            root /var/www;
+            add_header Cache-Control no-cache;
+            add_header Access-Control-Allow-Origin *;
+        }
+    }
+}
+```
+
+```bash
+# Start Nginx
+sudo systemctl restart nginx
+
+# Test RTMP stream with OBS
+# Server: rtmp://your-ec2-ip:1935/live
+# Stream Key: test_stream_key
+```
+
+#### Cost Comparison
+
+| Option             | Setup Time | Monthly Cost | Latency    | Scalability |
+| ------------------ | ---------- | ------------ | ---------- | ----------- |
+| **AWS IVS**        | 1 hour     | $200-500     | < 3s       | Auto        |
+| **Self-hosted**    | 1-2 days   | $50-100      | 5-10s      | Manual      |
+| **Agora WebRTC**   | 2-4 hours  | $300-800     | < 500ms    | Auto        |
+
+**Recomendación:** Empezar con **AWS IVS** para MVP, luego evaluar costos vs. self-hosted cuando tengas tráfico predecible.
+
+### Opción 3: Ultra Low Latency (WebRTC)
+
+#### Agora.io Integration
+
+```bash
+# Install Agora SDK
+npm install agora-rtc-sdk-ng --save
+
+# Backend: Generate token
+import { RtcTokenBuilder, RtcRole } from 'agora-access-token';
+
+function generateAgoraToken(channelName: string, uid: number) {
+  const appId = process.env.AGORA_APP_ID;
+  const appCertificate = process.env.AGORA_APP_CERTIFICATE;
+  const role = RtcRole.PUBLISHER; // or SUBSCRIBER
+  const expirationTimeInSeconds = 3600;
+  const currentTimestamp = Math.floor(Date.now() / 1000);
+  const privilegeExpiredTs = currentTimestamp + expirationTimeInSeconds;
+
+  return RtcTokenBuilder.buildTokenWithUid(
+    appId,
+    appCertificate,
+    channelName,
+    uid,
+    role,
+    privilegeExpiredTs
+  );
+}
+```
+
+```typescript
+// Mobile app: Join channel
+import AgoraRTC from "agora-rtc-sdk-ng";
+
+const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
+
+// Seller starts streaming
+await client.join(
+  AGORA_APP_ID,
+  "stream_123", // channel name
+  token, // from backend
+  sellerId // UID
+);
+await client.setClientRole("host");
+
+const localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+await client.publish([localVideoTrack]);
+
+// Viewer watches
+await client.join(AGORA_APP_ID, "stream_123", token, viewerId);
+await client.setClientRole("audience");
+
+client.on("user-published", async (user, mediaType) => {
+  await client.subscribe(user, mediaType);
+  if (mediaType === "video") {
+    const remoteVideoTrack = user.videoTrack;
+    remoteVideoTrack.play("video-container");
+  }
+});
+```
+
+**Pricing:** $0.0099/min = ~$30/hour per viewer (expensive for many viewers)
+
+---
+
+## 📊 Estrategia de Escalabilidad
+
+### Horizontal Scaling
+
+#### Backend API (NestJS)
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  api-1:
+    image: gshop-backend:latest
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "3001:3000"
+
+  api-2:
+    image: gshop-backend:latest
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    ports:
+      - "3002:3000"
+
+  nginx-lb:
+    image: nginx:alpine
+    volumes:
+      - ./nginx-lb.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - api-1
+      - api-2
+```
+
+```nginx
+# nginx-lb.conf
+upstream backend {
+    least_conn; # Load balancing method
+    server api-1:3000;
+    server api-2:3000;
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+#### WebSocket Scaling with Redis Adapter
+
+```typescript
+// backend/src/live/live.gateway.ts
+import { IoAdapter } from '@nestjs/platform-socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
+
+export class RedisIoAdapter extends IoAdapter {
+  private adapterConstructor: ReturnType<typeof createAdapter>;
+
+  async connectToRedis(): Promise<void> {
+    const pubClient = createClient({ url: process.env.REDIS_URL });
+    const subClient = pubClient.duplicate();
+
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+
+    this.adapterConstructor = createAdapter(pubClient, subClient);
+  }
+
+  createIOServer(port: number, options?: any): any {
+    const server = super.createIOServer(port, options);
+    server.adapter(this.adapterConstructor);
+    return server;
+  }
+}
+
+// Multiple NestJS instances can now share WebSocket state
+```
+
+### Caching Strategy
+
+```typescript
+// backend/src/live/live.service.ts
+import { Injectable, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+
+@Injectable()
+export class LiveService {
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+  ) {}
+
+  async getActiveStreams() {
+    const cacheKey = 'live:active_streams';
+
+    // Try cache first (30s TTL)
+    let streams = await this.cacheManager.get(cacheKey);
+
+    if (!streams) {
+      // Query database
+      streams = await this.liveStreamRepository.find({
+        where: { status: 'live' },
+        order: { viewerCount: 'DESC' },
+      });
+
+      // Cache for 30 seconds
+      await this.cacheManager.set(cacheKey, streams, 30000);
+    }
+
+    return streams;
+  }
+
+  async incrementViewerCount(streamId: string) {
+    // Use Redis INCR for atomic counter
+    const key = `live:viewers:${streamId}`;
+    const count = await this.cacheManager.store.client.incr(key);
+
+    // Update DB every 10 increments (batch write)
+    if (count % 10 === 0) {
+      await this.liveStreamRepository.update(streamId, {
+        viewerCount: count,
+      });
+    }
+
+    return count;
+  }
+}
+```
+
+### Database Query Optimization
+
+```typescript
+// Efficient query for discovery feed
+async getDiscoveryFeed(userId: string, limit: number) {
+  // Use materialized view for recommendations (refreshed every 5 min)
+  const recommended = await this.db.query(`
+    SELECT ls.*,
+           lsr.score,
+           lsr.reasons,
+           s.name as seller_name,
+           s.avatar_url as seller_avatar
+    FROM live_streams ls
+    INNER JOIN live_stream_recommendations lsr
+      ON ls.id = lsr.stream_id
+    INNER JOIN sellers s
+      ON ls.seller_id = s.id
+    WHERE lsr.user_id = $1
+      AND lsr.expires_at > NOW()
+      AND ls.status = 'live'
+    ORDER BY lsr.score DESC
+    LIMIT $2
+  `, [userId, limit]);
+
+  return recommended;
+}
+
+// Materialized view (refresh every 5 min via cron)
+CREATE MATERIALIZED VIEW live_trending AS
+SELECT
+  ls.*,
+  COALESCE(ls.viewer_count, 0) +
+  COALESCE(ls.total_likes, 0) * 0.5 +
+  COALESCE(ls.total_purchases, 0) * 2 AS trending_score
+FROM live_streams ls
+WHERE ls.status = 'live'
+  AND ls.started_at > NOW() - INTERVAL '24 hours'
+ORDER BY trending_score DESC;
+
+CREATE INDEX idx_live_trending_score ON live_trending (trending_score DESC);
+
+REFRESH MATERIALIZED VIEW CONCURRENTLY live_trending;
+```
+
+### Rate Limiting & DDoS Protection
+
+```typescript
+// backend/src/common/guards/rate-limit.guard.ts
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
+
+@Injectable()
+export class LiveRateLimitGuard extends ThrottlerGuard {
+  protected async getTracker(req: Record<string, any>): Promise<string> {
+    // Rate limit by user ID + IP
+    const userId = req.user?.id || 'anonymous';
+    const ip = req.ip || req.connection.remoteAddress;
+    return `${userId}:${ip}`;
+  }
+}
+
+// Apply to controllers
+@Controller('live')
+@UseGuards(LiveRateLimitGuard)
+@Throttle({ default: { limit: 100, ttl: 60000 } }) // 100 req/min
+export class LiveController {
+  // ...
+}
+
+// WebSocket rate limiting
+@WebSocketGateway()
+export class LiveGateway {
+  private messageLimiter = new Map<string, number>();
+
+  @SubscribeMessage('live:message')
+  handleMessage(client: Socket, payload: any) {
+    const userId = client.data.userId;
+    const key = `${userId}:messages`;
+    const count = this.messageLimiter.get(key) || 0;
+
+    if (count > 10) { // 10 messages per 10 seconds
+      throw new WsException('Rate limit exceeded');
+    }
+
+    this.messageLimiter.set(key, count + 1);
+    setTimeout(() => {
+      this.messageLimiter.delete(key);
+    }, 10000);
+
+    // Process message...
+  }
+}
+```
+
+### Monitoring & Alerts
+
+```typescript
+// backend/src/monitoring/metrics.service.ts
+import { Injectable } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
+
+@Injectable()
+export class MetricsService {
+  trackStreamStarted(streamId: string, hostType: string) {
+    Sentry.captureMessage('Stream Started', {
+      level: 'info',
+      tags: { streamId, hostType },
+    });
+
+    // Send to Datadog/CloudWatch
+    this.publishMetric('live.stream.started', 1, {
+      stream_id: streamId,
+      host_type: hostType,
+    });
+  }
+
+  trackViewerJoined(streamId: string, viewerCount: number) {
+    this.publishMetric('live.viewers', viewerCount, {
+      stream_id: streamId,
+    });
+
+    // Alert if > 1000 viewers (scale up)
+    if (viewerCount > 1000) {
+      this.sendAlert('High viewer count', {
+        streamId,
+        viewerCount,
+        action: 'scale_up',
+      });
+    }
+  }
+
+  trackPurchase(streamId: string, amount: number) {
+    this.publishMetric('live.purchase', amount, {
+      stream_id: streamId,
+    });
+  }
+
+  private publishMetric(name: string, value: number, tags: any) {
+    // Send to monitoring service (Datadog, CloudWatch, etc.)
+    console.log(`[METRIC] ${name}:${value}`, tags);
+  }
+
+  private sendAlert(message: string, context: any) {
+    Sentry.captureMessage(message, {
+      level: 'warning',
+      extra: context,
+    });
+  }
+}
+```
+
+---
+
+## 🚀 Fases de Trabajo & Estimaciones
+
+### **FASE 1: Fundamentos & Infraestructura** (2-3 semanas)
+
+#### Semana 1: Setup de Infraestructura Cloud
+
+**Tareas:**
+
+1. **AWS Setup**
+   - Crear cuenta AWS y configurar IAM roles
+   - Setup AWS IVS channel para streaming
+   - Configurar CloudFront CDN
+   - Setup S3 buckets para thumbnails/recordings
+   - **Estimación:** 1 día
+
+2. **Database Schema Migration**
+   - Extender entidades existentes (`live_streams`, `live_stream_products`, etc.)
+   - Crear nuevas entidades (`live_stream_metrics`, `live_stream_recommendations`, etc.)
+   - Generar y ejecutar migrations de TypeORM
+   - Crear índices optimizados
+   - **Estimación:** 2 días
+
+3. **Redis Setup**
+   - Configurar ElastiCache Redis o Redis local
+   - Implementar Redis adapter para WebSocket scaling
+   - Setup cache para active streams, viewer counts
+   - **Estimación:** 1 día
+
+4. **Environment Configuration**
+   - Actualizar `.env` con credenciales AWS
+   - Configurar variables para RTMP, HLS, WebSocket
+   - Setup secrets management (AWS Secrets Manager)
+   - **Estimación:** 0.5 días
+
+**Entregables:**
+- ✅ AWS IVS funcionando con RTMP ingest y HLS playback
+- ✅ PostgreSQL con schema completo migrado
+- ✅ Redis configurado y funcionando
+- ✅ CloudFront CDN activo
+
+---
+
+#### Semana 2-3: Backend API Core
+
+**Tareas:**
+
+5. **Enhanced Live Stream Service**
+   - Extender `LiveService` con nuevos métodos
+   - Integración con AWS IVS API (create channel, get credentials)
+   - Lógica de stream lifecycle (start, live, end)
+   - Grabación de VOD y generación de thumbnails
+   - **Estimación:** 3 días
+
+6. **Product Overlay System**
+   - API para highlight/hide productos durante live
+   - WebSocket events para sincronizar overlay en tiempo real
+   - Lógica de posicionamiento y pinning de productos
+   - **Estimación:** 2 días
+
+7. **Advanced Chat System**
+   - Mejoras en `LiveGateway` para reacciones, moderación
+   - Implementar rate limiting para mensajes
+   - Sistema de badges (moderator, seller, VIP)
+   - Funciones de moderación (timeout, ban, delete message)
+   - **Estimación:** 3 días
+
+8. **Real-time Metrics Service**
+   - Servicio para rastrear métricas cada 30-60 segundos
+   - Agregación de viewer count, messages/min, purchases
+   - Almacenar en `live_stream_metrics`
+   - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ API REST completa para gestión de lives
+- ✅ WebSocket events funcionando (chat, products, reactions)
+- ✅ Sistema de moderación operativo
+- ✅ Métricas en tiempo real almacenándose
+
+---
+
+### **FASE 2: Descubrimiento & Recomendaciones** (2 semanas)
+
+#### Semana 4: Discovery Feed
+
+**Tareas:**
+
+9. **Active Streams Endpoint**
+   - `GET /api/v1/live/streams/active` con paginación
+   - Filtros por categoría, tags
+   - Ordenamiento por viewers, trending score
+   - Caching con Redis (30s TTL)
+   - **Estimación:** 2 días
+
+10. **Search & Categories**
+    - `GET /api/v1/live/streams/search` con full-text search
+    - Categorización de streams (Electronics, Fashion, Food, etc.)
+    - Filtros avanzados (precio, vendedor, ubicación)
+    - **Estimación:** 2 días
+
+11. **Trending Algorithm**
+    - Calcular trending score basado en:
+      - Viewer count (peso 1x)
+      - Likes/reactions (peso 0.5x)
+      - Purchases (peso 2x)
+      - Recency (decay function)
+    - Materialized view para performance
+    - Refresh cada 5 minutos
+    - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ Discovery feed funcionando
+- ✅ Búsqueda de streams activa
+- ✅ Algoritmo de trending implementado
+
+---
+
+#### Semana 5: Recommendation Engine
+
+**Tareas:**
+
+12. **Collaborative Filtering**
+    - Análisis de historial de visualización de usuarios
+    - "Users who watched X also watched Y"
+    - Almacenar en `live_stream_recommendations`
+    - **Estimación:** 3 días
+
+13. **Content-Based Filtering**
+    - Recomendar basado en:
+      - Categorías vistas previamente
+      - Vendedores seguidos
+      - Productos en wishlist
+    - Combinar con collaborative filtering (hybrid approach)
+    - **Estimación:** 2 días
+
+14. **Personalized "For You" Feed**
+    - `GET /api/v1/live/streams/for-you` endpoint
+    - Scoring system (0-100) para cada stream
+    - Razones de recomendación (follows seller, popular, similar category)
+    - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ Motor de recomendaciones funcionando
+- ✅ Feed personalizado "For You"
+- ✅ Tracking de efectividad de recomendaciones
+
+---
+
+### **FASE 3: Seller Panel & Analytics** (2 semanas)
+
+#### Semana 6: Seller Dashboard
+
+**Tareas:**
+
+15. **Live Stream Creation UI**
+    - Formulario para crear scheduled stream
+    - Selector de productos a mostrar
+    - Upload de thumbnail
+    - Configuración de categoría y tags
+    - **Internacionalización:** Usar `i18n` para todos los textos
+    - **Estimación:** 3 días
+
+16. **Stream Management Interface**
+    - Dashboard para streams activos, pasados, programados
+    - Botón "Go Live" que muestra RTMP credentials
+    - Instrucciones para configurar OBS
+    - Control de productos durante live (highlight/hide/pin)
+    - **Internacionalización:** Traducciones completas
+    - **Estimación:** 3 días
+
+17. **Real-time Analytics Panel**
+    - Gráfico de viewer count en tiempo real (Chart.js/Recharts)
+    - Métricas: total views, peak viewers, avg watch time
+    - Chat activity (messages/min, top reactions)
+    - Product performance (clicks, add to cart, purchases)
+    - Revenue tracking en vivo
+    - **Internacionalización:** Números, fechas, monedas localizadas
+    - **Estimación:** 3 días
+
+**Entregables:**
+- ✅ Seller panel con gestión completa de lives
+- ✅ Dashboard de analytics en tiempo real
+- ✅ UI 100% traducible
+
+---
+
+#### Semana 7: Moderation & Notifications
+
+**Tareas:**
+
+18. **Chat Moderation Tools**
+    - UI para ver chat en seller panel
+    - Botones para timeout, ban, delete message
+    - Asignar moderadores adicionales
+    - Log de acciones de moderación
+    - **Internacionalización:** Mensajes de moderación traducidos
+    - **Estimación:** 2 días
+
+19. **Push Notifications**
+    - Notificar followers cuando seller inicia live
+    - Notificaciones de compras a vendedor
+    - Recordatorios de streams programados
+    - Integrar con Firebase Cloud Messaging (FCM)
+    - **Estimación:** 2 días
+
+20. **Scheduled Streams**
+    - UI para programar lives futuros
+    - Botón "Remind Me" para usuarios
+    - Email/push notifications 15 min antes
+    - Mostrar countdown en app
+    - **Internacionalización:** Fechas y timezones
+    - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ Herramientas de moderación funcionales
+- ✅ Sistema de notificaciones activo
+- ✅ Scheduled streams implementado
+
+---
+
+### **FASE 4: Mobile App & Live Checkout** (2-3 semanas)
+
+#### Semana 8: Mobile Live Player
+
+**Tareas:**
+
+21. **Video Player Component**
+    - Integrar HLS player (Expo AV o react-native-video)
+    - Controls: play, pause, volume, fullscreen
+    - Overlay de información (viewer count, likes)
+    - Loading states y error handling
+    - **Estimación:** 3 días
+
+22. **Product Overlay UI**
+    - Carousel de productos en bottom del video
+    - Animación cuando producto es highlighted
+    - Detalles de producto (nombre, precio, descuento live)
+    - Botón "Add to Cart" prominente
+    - **Internacionalización:** Usar `i18n-js` o `react-i18next`
+    - **Estimación:** 3 días
+
+23. **Live Chat Interface**
+    - Input para escribir mensajes
+    - Lista de mensajes con scroll automático
+    - Botones de reacciones (❤️ 🔥 😍 👏 💰)
+    - Badges para seller, moderator
+    - **Internacionalización:** Placeholders y labels traducidos
+    - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ Video player funcionando con HLS
+- ✅ Product overlay interactivo
+- ✅ Chat en tiempo real en mobile
+
+---
+
+#### Semana 9-10: Live Checkout & Discovery
+
+**Tareas:**
+
+24. **Quick Checkout Flow**
+    - Botón "Buy Now" desde product overlay
+    - Modal de confirmación con:
+      - Resumen de producto
+      - Precio (con descuento live)
+      - Shipping address (pre-filled)
+      - Payment method (guardado)
+    - Compra en 1-2 taps
+    - **Estimación:** 3 días
+
+25. **Purchase Attribution**
+    - Asociar orden a `liveSessionId`
+    - Calcular comisión si es affiliate stream
+    - Actualizar métricas del stream en tiempo real
+    - WebSocket event de celebración de compra
+    - **Estimación:** 2 días
+
+26. **Discovery Feed UI**
+    - Screen "Live Now" con grid de streams activos
+    - Thumbnails con viewer count, categoria badge
+    - Pull-to-refresh para actualizar
+    - Infinite scroll para paginación
+    - **Internacionalización:** Categorías y badges traducidos
+    - **Estimación:** 2 días
+
+27. **"For You" Personalized Feed**
+    - Integrar con recommendation API
+    - Mostrar razones de recomendación ("Popular", "Siguiendo vendedor")
+    - Swipeable cards para navegar recomendaciones
+    - **Internacionalización:** Razones traducidas
+    - **Estimación:** 2 días
+
+28. **Search & Filters**
+    - Barra de búsqueda de streams
+    - Filtros por categoría, tags
+    - Ordenamiento (viewers, reciente, trending)
+    - **Internacionalización:** Placeholders y filtros traducidos
+    - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ Live checkout funcional con atribución
+- ✅ Discovery feed completo
+- ✅ Feed personalizado "For You"
+- ✅ Búsqueda y filtros implementados
+
+---
+
+### **FASE 5: Optimización & Testing** (1-2 semanas)
+
+#### Semana 11: Performance & Scalability
+
+**Tareas:**
+
+29. **Load Testing**
+    - Simular 100+ viewers concurrentes con Locust/k6
+    - Test de WebSocket connections (1000+ sockets)
+    - Identificar bottlenecks en DB queries
+    - Optimizar índices y queries lentas
+    - **Estimación:** 2 días
+
+30. **Caching Improvements**
+    - Cache discovery feed (30s TTL)
+    - Cache product details (5 min TTL)
+    - Implementar cache invalidation estratégico
+    - CDN caching para HLS segments
+    - **Estimación:** 2 días
+
+31. **Database Optimization**
+    - Analizar slow queries con pgAdmin/pgHero
+    - Agregar índices faltantes
+    - Optimizar joins complejos
+    - Partitioning de `live_stream_metrics` por fecha
+    - **Estimación:** 2 días
+
+32. **Auto-Scaling Configuration**
+    - AWS Auto Scaling Groups para EC2
+    - Scaling policies basadas en:
+      - CPU > 70%
+      - Viewer count > 500
+      - WebSocket connections > 1000
+    - **Estimación:** 1 día
+
+**Entregables:**
+- ✅ Sistema soporta 500+ viewers concurrentes
+- ✅ Sub-100ms response time para APIs críticas
+- ✅ Auto-scaling configurado y probado
+
+---
+
+#### Semana 12: Testing & QA
+
+**Tareas:**
+
+33. **Unit Tests**
+    - Backend services (LiveService, ChatService, RecommendationEngine)
+    - Target: 80% code coverage
+    - **Estimación:** 3 días
+
+34. **Integration Tests**
+    - Test completo del flow: start stream → watch → purchase
+    - WebSocket event testing
+    - API endpoint testing con Supertest
+    - **Estimación:** 2 días
+
+35. **E2E Testing (Mobile)**
+    - Detox/Appium tests para critical flows
+    - Test: Join live → send message → purchase
+    - Test: Discovery feed → search → watch
+    - **Estimación:** 2 días
+
+36. **Security Audit**
+    - Review de autenticación JWT
+    - Rate limiting en todos los endpoints
+    - Input validation y sanitization
+    - CORS y CSP headers
+    - **Estimación:** 1 día
+
+**Entregables:**
+- ✅ Test coverage > 80%
+- ✅ E2E tests passing
+- ✅ Security vulnerabilities mitigadas
+
+---
+
+### **FASE 6: Launch & Monitoring** (1 semana)
+
+#### Semana 13: Production Deployment
+
+**Tareas:**
+
+37. **Production Deployment**
+    - Deploy backend a AWS EC2/ECS
+    - Deploy seller panel a Vercel/Netlify
+    - Release mobile app a TestFlight/Play Console (beta)
+    - Configurar DNS y SSL certificates
+    - **Estimación:** 2 días
+
+38. **Monitoring Setup**
+    - Sentry para error tracking
+    - Datadog/CloudWatch para métricas
+    - Alertas para:
+      - Error rate > 1%
+      - Response time > 1s
+      - Viewer count > 1000 (scale alert)
+    - **Estimación:** 1 día
+
+39. **Documentation**
+    - API documentation (Swagger/Postman)
+    - Seller guide: "How to Go Live"
+    - Developer documentation para WebSocket events
+    - Runbook para incidents
+    - **Estimación:** 2 días
+
+40. **Beta Launch**
+    - Invitar 10-20 sellers para beta testing
+    - Monitorear first live streams de cerca
+    - Recolectar feedback y bugs
+    - Hotfixes según sea necesario
+    - **Estimación:** Ongoing (1-2 semanas)
+
+**Entregables:**
+- ✅ Plataforma en producción
+- ✅ Monitoring y alertas activas
+- ✅ Documentación completa
+- ✅ Beta exitoso con feedback positivo
+
+---
+
+## 📅 Cronograma Resumido
+
+| Fase                                    | Duración    | Fechas Estimadas  | Hitos                            |
+| --------------------------------------- | ----------- | ----------------- | -------------------------------- |
+| **Fase 1: Infraestructura**             | 3 semanas   | Semana 1-3        | AWS setup, DB migrations, Redis  |
+| **Fase 2: Descubrimiento**              | 2 semanas   | Semana 4-5        | Discovery feed, recommendations  |
+| **Fase 3: Seller Panel**                | 2 semanas   | Semana 6-7        | Stream management, analytics     |
+| **Fase 4: Mobile App**                  | 3 semanas   | Semana 8-10       | Player, checkout, discovery      |
+| **Fase 5: Optimización**                | 2 semanas   | Semana 11-12      | Performance, testing, security   |
+| **Fase 6: Launch**                      | 1 semana    | Semana 13         | Production deployment, monitoring |
+| **TOTAL**                               | **13 semanas** | **~3 meses**     | MVP completo en producción       |
+
+---
+
+## 🎯 Priorización de Features
+
+### Must Have (MVP)
+
+- ✅ Live streaming con RTMP → HLS (AWS IVS)
+- ✅ Product overlay durante live
+- ✅ Chat en tiempo real con WebSocket
+- ✅ Discovery feed (active streams)
+- ✅ Live checkout con atribución
+- ✅ Seller panel básico (create, manage streams)
+- ✅ Mobile player con chat
+
+### Should Have (Post-MVP v1.1)
+
+- 🔶 Advanced recommendations ("For You" feed)
+- 🔶 Scheduled streams con notificaciones
+- 🔶 Chat moderation tools
+- 🔶 Real-time analytics dashboard
+- 🔶 VOD recordings playback
+- 🔶 Trending algorithm
+
+### Nice to Have (v1.2+)
+
+- 🔷 WebRTC ultra-low latency (< 500ms)
+- 🔷 Interactive features (polls, quizzes durante live)
+- 🔷 Multi-host streams (co-streaming)
+- 🔷 Automated highlight clips generation
+- 🔷 Affiliate co-hosting con revenue split en vivo
+- 🔷 Loyalty program (watch to earn rewards)
+
+---
+
+## 🌐 Internacionalización (i18n)
+
+### Backend (NestJS)
+
+```bash
+npm install nestjs-i18n
+```
+
+```typescript
+// backend/src/i18n/i18n.module.ts
+import { Module } from '@nestjs/common';
+import { I18nModule, QueryResolver, AcceptLanguageResolver } from 'nestjs-i18n';
+import * as path from 'path';
+
+@Module({
+  imports: [
+    I18nModule.forRoot({
+      fallbackLanguage: 'en',
+      loaderOptions: {
+        path: path.join(__dirname, '/i18n/'),
+        watch: true,
+      },
+      resolvers: [
+        { use: QueryResolver, options: ['lang'] },
+        AcceptLanguageResolver,
+      ],
+    }),
+  ],
+})
+export class I18nConfigModule {}
+```
+
+```json
+// backend/src/i18n/en/live.json
+{
+  "stream": {
+    "started": "Stream started successfully",
+    "ended": "Stream ended",
+    "not_found": "Stream not found",
+    "error": {
+      "create": "Failed to create stream",
+      "start": "Failed to start stream"
+    }
+  },
+  "chat": {
+    "message_sent": "Message sent",
+    "timeout": "You have been timed out for {duration} minutes",
+    "banned": "You have been banned from this stream"
+  },
+  "product": {
+    "highlighted": "{productName} is now available!",
+    "out_of_stock": "This product is out of stock"
+  }
+}
+```
+
+```json
+// backend/src/i18n/es/live.json
+{
+  "stream": {
+    "started": "Transmisión iniciada exitosamente",
+    "ended": "Transmisión finalizada",
+    "not_found": "Transmisión no encontrada",
+    "error": {
+      "create": "Error al crear transmisión",
+      "start": "Error al iniciar transmisión"
+    }
+  },
+  "chat": {
+    "message_sent": "Mensaje enviado",
+    "timeout": "Has sido suspendido por {duration} minutos",
+    "banned": "Has sido bloqueado de esta transmisión"
+  },
+  "product": {
+    "highlighted": "¡{productName} está ahora disponible!",
+    "out_of_stock": "Este producto está agotado"
+  }
+}
+```
+
+### Seller Panel (Next.js)
+
+```bash
+npm install next-i18next react-i18next
+```
+
+```javascript
+// seller-panel/next-i18next.config.js
+module.exports = {
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'es', 'pt'],
+  },
+};
+```
+
+```json
+// seller-panel/public/locales/en/live.json
+{
+  "create_stream": {
+    "title": "Create Live Stream",
+    "form": {
+      "title_label": "Stream Title",
+      "title_placeholder": "Enter a catchy title",
+      "description_label": "Description",
+      "category_label": "Category",
+      "tags_label": "Tags",
+      "products_label": "Products to Show",
+      "submit": "Create Stream"
+    }
+  },
+  "dashboard": {
+    "active_streams": "Active Streams",
+    "scheduled": "Scheduled",
+    "past_streams": "Past Streams",
+    "go_live": "Go Live",
+    "analytics": {
+      "viewers": "Viewers",
+      "peak": "Peak",
+      "purchases": "Purchases",
+      "revenue": "Revenue"
+    }
+  }
+}
+```
+
+```json
+// seller-panel/public/locales/es/live.json
+{
+  "create_stream": {
+    "title": "Crear Transmisión en Vivo",
+    "form": {
+      "title_label": "Título de la Transmisión",
+      "title_placeholder": "Ingresa un título atractivo",
+      "description_label": "Descripción",
+      "category_label": "Categoría",
+      "tags_label": "Etiquetas",
+      "products_label": "Productos a Mostrar",
+      "submit": "Crear Transmisión"
+    }
+  },
+  "dashboard": {
+    "active_streams": "Transmisiones Activas",
+    "scheduled": "Programadas",
+    "past_streams": "Transmisiones Pasadas",
+    "go_live": "Iniciar Transmisión",
+    "analytics": {
+      "viewers": "Espectadores",
+      "peak": "Pico",
+      "purchases": "Compras",
+      "revenue": "Ingresos"
+    }
+  }
+}
+```
+
+### Mobile App (React Native)
+
+```bash
+npm install i18n-js expo-localization
+```
+
+```typescript
+// mobile/src/i18n/config.ts
+import { I18n } from 'i18n-js';
+import * as Localization from 'expo-localization';
+
+import en from './locales/en.json';
+import es from './locales/es.json';
+import pt from './locales/pt.json';
+
+const i18n = new I18n({
+  en,
+  es,
+  pt,
+});
+
+i18n.locale = Localization.locale;
+i18n.enableFallback = true;
+i18n.defaultLocale = 'en';
+
+export default i18n;
+```
+
+```json
+// mobile/src/i18n/locales/en.json
+{
+  "live": {
+    "watching": "Watching",
+    "viewers": "viewers",
+    "chat": {
+      "placeholder": "Say something...",
+      "send": "Send"
+    },
+    "products": {
+      "buy_now": "Buy Now",
+      "add_to_cart": "Add to Cart",
+      "live_price": "Live Price",
+      "discount": "off"
+    },
+    "discovery": {
+      "live_now": "Live Now",
+      "for_you": "For You",
+      "trending": "Trending",
+      "search_placeholder": "Search live streams"
+    }
+  }
+}
+```
+
+```json
+// mobile/src/i18n/locales/es.json
+{
+  "live": {
+    "watching": "Viendo",
+    "viewers": "espectadores",
+    "chat": {
+      "placeholder": "Escribe algo...",
+      "send": "Enviar"
+    },
+    "products": {
+      "buy_now": "Comprar Ahora",
+      "add_to_cart": "Agregar al Carrito",
+      "live_price": "Precio en Vivo",
+      "discount": "descuento"
+    },
+    "discovery": {
+      "live_now": "En Vivo Ahora",
+      "for_you": "Para Ti",
+      "trending": "Tendencias",
+      "search_placeholder": "Buscar transmisiones en vivo"
+    }
+  }
+}
+```
+
+### Uso en Componentes
+
+```typescript
+// Mobile component example
+import i18n from '@/i18n/config';
+
+function LiveChatInput() {
+  return (
+    <TextInput
+      placeholder={i18n.t('live.chat.placeholder')}
+    />
+  );
+}
+
+// Seller panel example
+import { useTranslation } from 'next-i18next';
+
+function CreateStreamForm() {
+  const { t } = useTranslation('live');
+
+  return (
+    <form>
+      <label>{t('create_stream.form.title_label')}</label>
+      <input placeholder={t('create_stream.form.title_placeholder')} />
+    </form>
+  );
+}
+```
+
+---
+
+## 🔒 Seguridad & Compliance
+
+### Autenticación & Autorización
+
+```typescript
+// JWT verification for stream access
+@UseGuards(JwtAuthGuard, LiveStreamAccessGuard)
+@Get(':id')
+async getStream(@Param('id') id: string, @User() user) {
+  const stream = await this.liveService.findOne(id);
+
+  // Check if private stream
+  if (stream.isPrivate) {
+    if (!stream.allowedViewers.includes(user.id)) {
+      throw new ForbiddenException('Access denied to private stream');
+    }
+  }
+
+  return stream;
+}
+```
+
+### Content Moderation
+
+```typescript
+// AI-powered chat moderation
+import Perspective from 'perspective-api-client';
+
+async moderateMessage(message: string): Promise<boolean> {
+  const perspective = new Perspective({ apiKey: process.env.PERSPECTIVE_API_KEY });
+
+  const result = await perspective.analyze(message, {
+    attributes: ['TOXICITY', 'SEVERE_TOXICITY', 'SPAM'],
+  });
+
+  const toxicity = result.TOXICITY.summaryScore.value;
+  const spam = result.SPAM.summaryScore.value;
+
+  // Block if toxicity > 80% or spam > 90%
+  if (toxicity > 0.8 || spam > 0.9) {
+    return false; // Message blocked
+  }
+
+  return true; // Message allowed
+}
+```
+
+### GDPR Compliance
+
+```typescript
+// User data export
+@Get('export-data')
+async exportUserData(@User() user) {
+  const streams = await this.liveService.findByViewer(user.id);
+  const messages = await this.chatService.findByUser(user.id);
+  const purchases = await this.orderService.findByUser(user.id);
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      createdAt: user.createdAt,
+    },
+    streams_watched: streams,
+    messages_sent: messages,
+    purchases_made: purchases,
+  };
+}
+
+// Right to be forgotten
+@Delete('delete-account')
+async deleteAccount(@User() user) {
+  await this.liveService.anonymizeViewer(user.id);
+  await this.chatService.deleteUserMessages(user.id);
+  await this.userService.deleteUser(user.id);
+
+  return { message: 'Account deleted successfully' };
+}
+```
+
+---
+
+## 📊 KPIs & Success Metrics
+
+### Streaming Performance
+
+- **Latency:** < 3s (HLS) or < 500ms (WebRTC)
+- **Uptime:** 99.9% availability
+- **Start time:** Video playback starts < 2s
+- **Buffering:** < 1% of viewing time
+
+### User Engagement
+
+- **Concurrent viewers per stream:** Target 50-200
+- **Average watch time:** > 5 minutes
+- **Chat activity:** > 10 messages/min during peak
+- **Reaction rate:** > 50% of viewers send at least 1 reaction
+
+### Commerce Metrics
+
+- **Conversion rate:** 3-5% of viewers make a purchase
+- **Average order value (AOV):** $50-100
+- **GMV per stream:** $1,000-5,000
+- **Click-to-purchase time:** < 2 minutes
+
+### Platform Growth
+
+- **Daily active streams:** 20+ streams/day
+- **Monthly active sellers:** 50+ sellers using live
+- **Retention:** 70% of sellers go live again within 7 days
+- **Discovery:** 60% of viewers come from recommendations
+
+---
+
+## 🧪 Testing Strategy
+
+### Load Testing Script (k6)
+
+```javascript
+// tests/load-test.js
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { WebSocket } from 'k6/experimental/websockets';
+
+export let options = {
+  stages: [
+    { duration: '1m', target: 50 }, // Ramp up to 50 users
+    { duration: '3m', target: 100 }, // Stay at 100 users
+    { duration: '1m', target: 200 }, // Spike to 200 users
+    { duration: '2m', target: 0 }, // Ramp down
+  ],
+};
+
+export default function () {
+  // Test 1: Get active streams
+  let res = http.get('https://api.gshop.com/api/v1/live/streams/active');
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 200ms': (r) => r.timings.duration < 200,
+  });
+
+  const streams = JSON.parse(res.body).streams;
+  if (streams.length === 0) return;
+
+  const streamId = streams[0].id;
+
+  // Test 2: Join stream WebSocket
+  const ws = new WebSocket(`wss://api.gshop.com?token=${__ENV.JWT_TOKEN}`);
+
+  ws.on('open', () => {
+    ws.send(JSON.stringify({
+      event: 'live:join',
+      data: { streamId }
+    }));
+  });
+
+  ws.on('message', (msg) => {
+    const data = JSON.parse(msg);
+    check(data, {
+      'received join confirmation': (d) => d.event === 'live:joined',
+    });
+  });
+
+  // Simulate watching for 30 seconds
+  sleep(30);
+
+  // Test 3: Send chat message
+  ws.send(JSON.stringify({
+    event: 'live:message',
+    data: { streamId, message: 'Great product!' }
+  }));
+
+  sleep(5);
+  ws.close();
+}
+```
+
+```bash
+# Run load test
+k6 run --vus 100 --duration 5m tests/load-test.js
+```
+
+---
+
+## 📝 Checklist de Lanzamiento
+
+### Pre-Launch (1 semana antes)
+
+- [ ] Todos los tests (unit, integration, e2e) pasan
+- [ ] Performance testing completado (500+ concurrent viewers)
+- [ ] Security audit realizado
+- [ ] SSL certificates instalados
+- [ ] DNS configurado correctamente
+- [ ] Monitoring y alertas activas (Sentry, Datadog)
+- [ ] Backup strategy implementada (DB snapshots cada 6 horas)
+- [ ] Runbook de incidents documentado
+- [ ] Team training completado (cómo responder a incidents)
+
+### Launch Day
+
+- [ ] Deploy backend a producción (AWS EC2/ECS)
+- [ ] Deploy seller panel a Vercel
+- [ ] Release mobile app beta (TestFlight + Play Console)
+- [ ] Smoke tests en producción (API health, WebSocket connection)
+- [ ] Monitor error rates y response times de cerca
+- [ ] On-call engineer disponible 24/7
+
+### Post-Launch (1 semana después)
+
+- [ ] Recolectar feedback de beta users
+- [ ] Analizar métricas de engagement (watch time, chat activity)
+- [ ] Revisar error logs y crashlytics
+- [ ] Identificar bugs críticos y crear hotfixes
+- [ ] Optimizar queries lentas identificadas en producción
+- [ ] Escalar infraestructura si es necesario
+
+---
+
+## 💡 Trade-offs & Recomendaciones
+
+### RTMP vs WebRTC
+
+| Protocolo     | Latencia | Costo        | Complejidad | Recomendación |
+| ------------- | -------- | ------------ | ----------- | ------------- |
+| **RTMP+HLS**  | 3-10s    | Bajo         | Baja        | ✅ **MVP**    |
+| **WebRTC**    | < 500ms  | Alto         | Alta        | ⏳ Post-MVP   |
+
+**Decisión:** Empezar con RTMP → HLS (AWS IVS) para MVP. La latencia de 3-5 segundos es aceptable para e-commerce. WebRTC es overkill y costoso para MVP.
+
+### Self-hosted vs Managed Streaming
+
+| Opción           | Setup     | Costo/mes  | Escalabilidad | Recomendación |
+| ---------------- | --------- | ---------- | ------------- | ------------- |
+| **AWS IVS**      | 1 hour    | $200-500   | Auto          | ✅ **MVP**    |
+| **Self-hosted**  | 2 days    | $50-100    | Manual        | 💰 Si budget limitado |
+| **Agora.io**     | 4 hours   | $300-800   | Auto          | 🚀 Si ultra-low latency crítico |
+
+**Decisión:** AWS IVS para MVP por rapidez y confiabilidad. Considerar self-hosted si costos escalan mucho (> $1000/mes).
+
+### Database: SQL vs NoSQL para Chat
+
+| Database       | Pros                         | Cons                      | Recomendación |
+| -------------- | ---------------------------- | ------------------------- | ------------- |
+| **PostgreSQL** | ACID, relations, SQL queries | Slower writes             | ✅ **Usar**   |
+| **MongoDB**    | Fast writes, flexible schema | No ACID, harder queries   | ❌ No necesario |
+| **Redis**      | Ultra-fast, pub/sub          | No persistence (by default) | ✅ **Cache only** |
+
+**Decisión:** PostgreSQL + Redis. Postgres para persistencia, Redis para cache y pub/sub en tiempo real.
+
+---
+
+## 🎉 Conclusión
+
+Este plan de trabajo proporciona una ruta clara para transformar GSHOP en una plataforma de Live Shopping completa similar a TikTok Shop. Con una estimación de **13 semanas (3 meses)** y un **presupuesto mensual de ~$350-700 en cloud**, el MVP puede estar listo para lanzamiento beta.
+
+### Próximos Pasos Inmediatos
+
+1. **Aprobar este plan** con stakeholders
+2. **Configurar AWS account** y crear IVS channels
+3. **Iniciar Fase 1** (Infraestructura) inmediatamente
+4. **Reclutar beta testers** (10-20 vendedores) para Semana 13
+
+### Riesgos & Mitigaciones
+
+| Riesgo                          | Probabilidad | Impacto | Mitigación                          |
+| ------------------------------- | ------------ | ------- | ----------------------------------- |
+| Latencia alta (> 10s)           | Baja         | Alto    | Usar AWS IVS (garantiza < 3s)       |
+| Costos escalan rápido           | Media        | Alto    | Monitor costos semanalmente, alertas a $500 |
+| Baja adopción de sellers        | Media        | Alto    | Incentivos (comisión 0% primer mes) |
+| WebSocket no escala             | Baja         | Medio   | Redis adapter + load balancing      |
+| Bugs críticos en producción     | Media        | Alto    | Testing exhaustivo + rollback plan  |
+
+---
+
+**Documento creado:** Noviembre 2025
+**Última actualización:** Noviembre 2025
+**Autor:** GSHOP Engineering Team
+**Versión:** 1.0
+
+---
+
+## Anexos
+
+### A. Recursos Útiles
+
+- **AWS IVS Documentation:** https://docs.aws.amazon.com/ivs/
+- **Socket.IO Scaling Guide:** https://socket.io/docs/v4/using-multiple-nodes/
+- **OBS RTMP Setup:** https://obsproject.com/wiki/Streaming-With-SRT-Or-RIST-Protocols
+- **HLS Specification:** https://datatracker.ietf.org/doc/html/rfc8216
+- **WebRTC Guide:** https://webrtc.org/getting-started/overview
+
+### B. Comandos Útiles
+
+```bash
+# Check PostgreSQL performance
+psql -U gshop_user -d gshop_db -c "SELECT * FROM pg_stat_statements ORDER BY total_time DESC LIMIT 10;"
+
+# Monitor Redis cache hit rate
+redis-cli INFO stats | grep keyspace_hits
+
+# AWS IVS list channels
+aws ivs list-channels --region us-east-1
+
+# Load test with k6
+k6 run --vus 100 --duration 5m tests/load-test.js
+
+# Database backup
+pg_dump -U gshop_user -d gshop_db > backup_$(date +%Y%m%d).sql
+```
+
+### C. Contactos Clave
+
+- **AWS Support:** support@aws.amazon.com
+- **Sentry:** support@sentry.io
+- **OBS Forums:** https://obsproject.com/forum/
+
+---
+
+**¡Éxito con la implementación de GSHOP Live Shopping! 🚀📺🛒**
