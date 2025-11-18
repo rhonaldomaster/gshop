@@ -51,6 +51,24 @@ export class LiveStream {
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   totalSales: number;
 
+  @Column({ nullable: true })
+  thumbnailUrl: string;
+
+  @Column({ nullable: true })
+  ivsChannelArn: string;
+
+  @Column({ nullable: true })
+  category: string;
+
+  @Column('simple-array', { nullable: true })
+  tags: string[];
+
+  @Column('int', { default: 0 })
+  likesCount: number;
+
+  @Column('int', { default: 0 })
+  sharesCount: number;
+
   @Column({ type: 'timestamp', nullable: true })
   scheduledAt: Date;
 
@@ -121,6 +139,15 @@ export class LiveStreamProduct {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ default: false })
+  isHighlighted: boolean;
+
+  @Column('int', { nullable: true })
+  position: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  highlightedAt: Date;
+
   @CreateDateColumn()
   addedAt: Date;
 }
@@ -149,6 +176,15 @@ export class LiveStreamMessage {
 
   @Column('text')
   message: string;
+
+  @Column({ default: false })
+  isDeleted: boolean;
+
+  @Column({ nullable: true })
+  deletedBy: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  deletedAt: Date;
 
   @CreateDateColumn()
   sentAt: Date;
@@ -182,9 +218,96 @@ export class LiveStreamViewer {
   @Column({ nullable: true })
   userAgent: string;
 
+  @Column({ default: false })
+  isBanned: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  timeoutUntil: Date;
+
+  @Column({ nullable: true })
+  bannedBy: string;
+
+  @Column('text', { nullable: true })
+  banReason: string;
+
   @CreateDateColumn()
   joinedAt: Date;
 
   @Column({ type: 'timestamp', nullable: true })
   leftAt: Date;
+}
+
+export enum ReactionType {
+  LIKE = 'like',
+  HEART = 'heart',
+  FIRE = 'fire',
+  CLAP = 'clap',
+  LAUGH = 'laugh',
+  WOW = 'wow',
+}
+
+@Entity('live_stream_reactions')
+export class LiveStreamReaction {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column('uuid')
+  streamId: string;
+
+  @ManyToOne(() => LiveStream)
+  @JoinColumn({ name: 'streamId' })
+  stream: LiveStream;
+
+  @Column('uuid', { nullable: true })
+  userId: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user: User;
+
+  @Column({ nullable: true })
+  sessionId: string;
+
+  @Column({ type: 'enum', enum: ReactionType })
+  type: ReactionType;
+
+  @CreateDateColumn()
+  createdAt: Date;
+}
+
+@Entity('live_stream_metrics')
+export class LiveStreamMetrics {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column('uuid')
+  streamId: string;
+
+  @ManyToOne(() => LiveStream)
+  @JoinColumn({ name: 'streamId' })
+  stream: LiveStream;
+
+  @Column('int')
+  viewerCount: number;
+
+  @Column('int')
+  messagesPerMinute: number;
+
+  @Column('int')
+  reactionsCount: number;
+
+  @Column('int')
+  purchasesCount: number;
+
+  @Column('decimal', { precision: 10, scale: 2 })
+  revenue: number;
+
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  conversionRate: number;
+
+  @Column('int', { nullable: true })
+  avgWatchTimeSeconds: number;
+
+  @CreateDateColumn()
+  recordedAt: Date;
 }

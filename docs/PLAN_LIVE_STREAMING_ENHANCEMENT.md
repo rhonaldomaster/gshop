@@ -3,13 +3,119 @@
 **Proyecto:** GSHOP - TikTok Shop Clone MVP
 **Módulo:** Enhanced Live Shopping Platform
 **Fecha:** Noviembre 2025
-**Estado:** Planificación
+**Estado:** 🚀 En Progreso - Fase 1 (Infraestructura & Backend Core)
+**Última Actualización:** 2025-01-18
 
 ---
 
 ## 📋 Resumen Ejecutivo
 
 Este documento presenta el plan de trabajo para transformar el sistema actual de Live Shopping de GSHOP en una plataforma escalable y completa similar a TikTok Shop, incluyendo streaming de baja latencia, overlay de productos, chat en tiempo real, descubrimiento inteligente de lives y checkout integrado.
+
+## 📍 Progreso Actual (Enero 2025)
+
+### ✅ FASE 1 - Semana 1: Setup de Infraestructura Cloud (COMPLETADO)
+
+#### 1. AWS Setup ✅
+- ✅ Servicio mock de AWS IVS implementado (`aws-ivs-mock.service.ts`)
+- ✅ Creación de canales IVS con stream keys
+- ✅ URLs de ingest RTMP y playback HLS generadas
+- ✅ Simulación de webhooks de stream start/end
+- ✅ Generación de URLs de thumbnails y recordings
+- 📝 **Nota:** Usando credenciales mock hasta obtener keys reales de AWS
+
+#### 2. Database Schema Migration ✅
+- ✅ Extendida entidad `LiveStream` con nuevos campos:
+  - `thumbnailUrl`, `ivsChannelArn`, `category`, `tags`
+  - `likesCount`, `sharesCount`
+- ✅ Extendida entidad `LiveStreamProduct` con:
+  - `isHighlighted`, `position`, `highlightedAt`
+- ✅ Extendida entidad `LiveStreamMessage` con:
+  - `isDeleted`, `deletedBy`, `deletedAt` (moderación)
+- ✅ Extendida entidad `LiveStreamViewer` con:
+  - `isBanned`, `timeoutUntil`, `bannedBy`, `banReason`
+- ✅ Nueva entidad `LiveStreamReaction` (likes, hearts, fire, etc.)
+- ✅ Nueva entidad `LiveStreamMetrics` (métricas cada 30-60s)
+- ✅ Migración generada: `1763400000000-EnhanceLiveStreamingEntities.ts`
+- ✅ Índices optimizados creados
+
+#### 3. Redis Setup ✅
+- ✅ Servicio mock de cache implementado (`cache-mock.service.ts`)
+- ✅ Operaciones soportadas: get, set, del, expire, incr, decr, sadd, smembers
+- ✅ TTL automático y cleanup de entradas expiradas
+- ✅ Módulo global de cache (`CacheModule`)
+- 📝 **Nota:** Usando in-memory mock, puede cambiarse a Redis real cuando esté disponible
+
+#### 4. Environment Configuration ✅
+- ✅ Variables de AWS IVS agregadas a `.env` y `.env.example`
+- ✅ Configuración de RTMP/HLS URLs
+- ✅ WebSocket configuration
+- ✅ Live streaming features (metrics interval, max viewers, rate limits)
+- ✅ CDN y S3 configuration (mock)
+
+### ✅ FASE 1 - Semana 2-3: Backend API Core (EN PROGRESO - 66% Completado)
+
+#### 5. Enhanced Live Stream Service ✅
+- ✅ Integración con AWS IVS Mock Service
+- ✅ `createLiveStream`: Crea canal IVS + entidad de DB
+- ✅ `startLiveStream`: Simula stream started webhook
+- ✅ `endLiveStream`: Simula stream ended webhook + analytics
+- ✅ Generación automática de thumbnails y URLs de playback
+
+#### 6. Product Overlay System ✅
+- ✅ API para highlight/hide productos durante live
+- ✅ Método `highlightProduct`: Muestra producto en overlay
+- ✅ Método `hideProduct`: Oculta producto del overlay
+- ✅ Método `reorderProducts`: Reordena productos por posición
+- ✅ Método `getHighlightedProducts`: Obtiene productos visibles
+- ✅ WebSocket events para sincronizar overlay en tiempo real
+- ✅ Endpoints REST agregados al `LiveController`:
+  - `PUT /live/streams/:id/products/:productId/highlight`
+  - `PUT /live/streams/:id/products/:productId/hide`
+  - `PUT /live/streams/:id/products/reorder`
+  - `GET /live/streams/:id/products/highlighted`
+
+#### 7. Advanced Chat System ⏳ (Pendiente)
+- ⏳ Mejoras en `LiveGateway` para reacciones y moderación
+- ⏳ Rate limiting para mensajes
+- ⏳ Sistema de badges (moderator, seller, VIP)
+- ⏳ Funciones de moderación (timeout, ban, delete message)
+
+#### 8. Real-time Metrics Service ⏳ (Pendiente)
+- ⏳ Servicio para rastrear métricas cada 30-60 segundos
+- ⏳ Agregación de viewer count, messages/min, purchases
+- ⏳ Almacenar en `live_stream_metrics`
+
+### 📊 Resumen de Progreso
+
+| Componente | Estado | Progreso |
+|-----------|--------|----------|
+| **Semana 1: Infraestructura** | ✅ Completado | 100% |
+| - AWS IVS Mock | ✅ | 100% |
+| - DB Migrations | ✅ | 100% |
+| - Redis Mock | ✅ | 100% |
+| - Environment Config | ✅ | 100% |
+| **Semana 2-3: Backend Core** | 🚧 En Progreso | 66% |
+| - Live Stream Service | ✅ | 100% |
+| - Product Overlay System | ✅ | 100% |
+| - Advanced Chat System | ⏳ | 0% |
+| - Metrics Service | ⏳ | 0% |
+
+### 🎯 Próximos Pasos
+
+1. **Completar Advanced Chat System**
+   - Agregar soporte para reacciones (like, heart, fire, etc.)
+   - Implementar moderación (ban, timeout, delete)
+   - Sistema de badges para usuarios
+
+2. **Implementar Real-time Metrics Service**
+   - Scheduled task para capturar métricas cada 60s
+   - Almacenar en `live_stream_metrics`
+   - Dashboard real-time para sellers
+
+3. **Continuar con Fase 2: Descubrimiento & Recomendaciones**
+
+---
 
 ### Estado Actual (Phase 2 - Implementado)
 
@@ -33,6 +139,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 6. **Infraestructura cloud** escalable y optimizada
 7. **Analytics en tiempo real** para vendedores
 8. **Soporte multi-protocolo** (RTMP + WebRTC)
+9. **📱 Mobile Streaming** - Sellers y affiliates pueden iniciar lives desde la app móvil
 
 ---
 
@@ -45,10 +152,16 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 │                         FRONTEND LAYER                          │
 ├─────────────────────────────────────────────────────────────────┤
 │  Seller Panel (Next.js)    │    Mobile App (React Native)      │
-│  - OBS/RTMP Config          │    - Live Player (HLS/WebRTC)    │
-│  - Product Management       │    - Product Overlay             │
-│  - Analytics Dashboard      │    - Chat Interface              │
-│  - Stream Controls          │    - Quick Checkout              │
+│  - OBS/RTMP Config          │    🆕 Mobile Streamer (Seller):  │
+│  - Product Management       │    - Camera Streaming (RTMP)     │
+│  - Analytics Dashboard      │    - Live Product Management     │
+│  - Stream Controls          │    - Real-time Analytics         │
+│                             │                                   │
+│                             │    Mobile Viewer (Buyer):        │
+│                             │    - Live Player (HLS/WebRTC)    │
+│                             │    - Product Overlay             │
+│                             │    - Chat Interface              │
+│                             │    - Quick Checkout              │
 └─────────────────┬───────────┴──────────────┬───────────────────┘
                   │                          │
 ┌─────────────────▼──────────────────────────▼───────────────────┐
@@ -175,11 +288,51 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 └──────────────┘
 ```
 
-#### 3. Overlay de Productos Durante Live
+#### 3. 🆕 Seller/Affiliate Inicia Live desde Mobile
+
+```
+┌─────────────┐
+│ Mobile App  │
+│ (Seller)    │
+└──────┬──────┘
+       │ 1. Tap "Go Live" button
+       │    POST /api/v1/live/streams
+       │    { title, description, products[] }
+       ▼
+┌──────────────┐
+│ Backend API  │ → 2. Create stream record in DB
+│              │ → 3. Request RTMP credentials from AWS IVS
+│              │ → 4. Return RTMP ingest URL + stream key
+└──────┬───────┘
+       │ 5. Mobile app initializes RTMP publisher
+       ▼
+┌──────────────┐
+│ React Native │ → 6. Access device camera/microphone
+│ RTMP Client  │ → 7. Start encoding video (H.264) + audio (AAC)
+│ (NodeMedia)  │ → 8. Push RTMP stream to AWS IVS ingest URL
+└──────┬───────┘
+       │ 9. Stream live to viewers via HLS/CDN
+       ▼
+┌──────────────┐
+│ AWS IVS      │ → 10. Transcode to HLS
+│              │ → 11. Distribute via CloudFront CDN
+│              │ → 12. Notify backend: stream_started webhook
+└──────┬───────┘
+       │ 13. Update stream status: "live"
+       ▼
+┌──────────────┐
+│ Mobile App   │ → 14. Show live controls (end stream, add products)
+│ (Seller)     │ → 15. Real-time viewer count and chat
+│              │ → 16. Toggle product visibility during stream
+└──────────────┘
+```
+
+#### 4. Overlay de Productos Durante Live
 
 ```
 ┌─────────────┐
 │ Seller Panel│
+│ or Mobile   │  🆕 Can also be triggered from mobile app
 └──────┬──────┘
        │ 1. Click "Show Product" during live
        │    PUT /api/v1/live/streams/:id/products/:productId/highlight
@@ -1701,20 +1854,79 @@ export class MetricsService {
 
 ---
 
-### **FASE 4: Mobile App & Live Checkout** (2-3 semanas)
+### **FASE 4: Mobile App & Live Checkout** (3-4 semanas)
 
-#### Semana 8: Mobile Live Player
+#### Semana 8: 🆕 Mobile Streaming (Seller/Affiliate)
 
 **Tareas:**
 
-21. **Video Player Component**
+**21. Camera Access & RTMP Publisher Integration**
+   - Instalar `react-native-nodemediaclient` o `react-native-live-stream`
+   - Request camera y microphone permissions
+   - Implementar RTMP publisher con device camera
+   - Video encoding: H.264, Audio: AAC
+   - Configuración de bitrate (720p: 2.5Mbps, 1080p: 4.5Mbps)
+   - **Estimación:** 3 días
+
+**22. "Go Live" Flow para Sellers**
+   - UI para crear stream desde mobile
+   - Formulario: título, descripción, productos
+   - Preview de cámara antes de ir live
+   - Botón "Start Streaming" que inicia RTMP push
+   - **Internacionalización:** Labels y placeholders traducidos
+   - **Estimación:** 3 días
+
+**23. Live Stream Controls (Mobile Streamer)**
+   - Bottom control panel durante streaming:
+     - Botón "End Stream"
+     - Toggle camera (front/back)
+     - Mute/unmute microphone
+     - Flash toggle (si disponible)
+   - Viewer count display en vivo
+   - Chat overlay (read-only para streamer, o collapsible)
+   - **Estimación:** 2 días
+
+**24. Product Management During Mobile Live**
+   - Lista de productos agregados al stream
+   - Botón "Show" para highlight producto en viewers
+   - Botón "Hide" para ocultar overlay
+   - Pin producto (stays at top)
+   - Stock y sold count en tiempo real
+   - **Internacionalización:** Product actions traducidas
+   - **Estimación:** 3 días
+
+**25. Mobile Streaming Analytics (Streamer View)**
+   - Mini dashboard durante live:
+     - Current viewers (real-time)
+     - Peak viewers
+     - Messages/min
+     - Products clicked
+     - Purchases count
+     - Revenue so far
+   - Gráfico simple de viewer trend
+   - **Estimación:** 2 días
+
+**Entregables:**
+- ✅ Sellers pueden iniciar live desde mobile app
+- ✅ RTMP streaming funcional desde cámara nativa
+- ✅ Controles de stream completos (camera flip, mute, end)
+- ✅ Gestión de productos durante live desde mobile
+- ✅ Analytics en tiempo real para streamer
+
+---
+
+#### Semana 9: Mobile Live Player (Viewer)
+
+**Tareas:**
+
+26. **Video Player Component**
     - Integrar HLS player (Expo AV o react-native-video)
     - Controls: play, pause, volume, fullscreen
     - Overlay de información (viewer count, likes)
     - Loading states y error handling
     - **Estimación:** 3 días
 
-22. **Product Overlay UI**
+27. **Product Overlay UI**
     - Carousel de productos en bottom del video
     - Animación cuando producto es highlighted
     - Detalles de producto (nombre, precio, descuento live)
@@ -1722,7 +1934,7 @@ export class MetricsService {
     - **Internacionalización:** Usar `i18n-js` o `react-i18next`
     - **Estimación:** 3 días
 
-23. **Live Chat Interface**
+28. **Live Chat Interface**
     - Input para escribir mensajes
     - Lista de mensajes con scroll automático
     - Botones de reacciones (❤️ 🔥 😍 👏 💰)
@@ -1737,11 +1949,11 @@ export class MetricsService {
 
 ---
 
-#### Semana 9-10: Live Checkout & Discovery
+#### Semana 10-11: Live Checkout & Discovery
 
 **Tareas:**
 
-24. **Quick Checkout Flow**
+29. **Quick Checkout Flow**
     - Botón "Buy Now" desde product overlay
     - Modal de confirmación con:
       - Resumen de producto
@@ -1751,14 +1963,14 @@ export class MetricsService {
     - Compra en 1-2 taps
     - **Estimación:** 3 días
 
-25. **Purchase Attribution**
+30. **Purchase Attribution**
     - Asociar orden a `liveSessionId`
     - Calcular comisión si es affiliate stream
     - Actualizar métricas del stream en tiempo real
     - WebSocket event de celebración de compra
     - **Estimación:** 2 días
 
-26. **Discovery Feed UI**
+31. **Discovery Feed UI**
     - Screen "Live Now" con grid de streams activos
     - Thumbnails con viewer count, categoria badge
     - Pull-to-refresh para actualizar
@@ -1766,14 +1978,14 @@ export class MetricsService {
     - **Internacionalización:** Categorías y badges traducidos
     - **Estimación:** 2 días
 
-27. **"For You" Personalized Feed**
+32. **"For You" Personalized Feed**
     - Integrar con recommendation API
     - Mostrar razones de recomendación ("Popular", "Siguiendo vendedor")
     - Swipeable cards para navegar recomendaciones
     - **Internacionalización:** Razones traducidas
     - **Estimación:** 2 días
 
-28. **Search & Filters**
+33. **Search & Filters**
     - Barra de búsqueda de streams
     - Filtros por categoría, tags
     - Ordenamiento (viewers, reciente, trending)
@@ -1790,32 +2002,32 @@ export class MetricsService {
 
 ### **FASE 5: Optimización & Testing** (1-2 semanas)
 
-#### Semana 11: Performance & Scalability
+#### Semana 12: Performance & Scalability
 
 **Tareas:**
 
-29. **Load Testing**
+34. **Load Testing**
     - Simular 100+ viewers concurrentes con Locust/k6
     - Test de WebSocket connections (1000+ sockets)
     - Identificar bottlenecks en DB queries
     - Optimizar índices y queries lentas
     - **Estimación:** 2 días
 
-30. **Caching Improvements**
+35. **Caching Improvements**
     - Cache discovery feed (30s TTL)
     - Cache product details (5 min TTL)
     - Implementar cache invalidation estratégico
     - CDN caching para HLS segments
     - **Estimación:** 2 días
 
-31. **Database Optimization**
+36. **Database Optimization**
     - Analizar slow queries con pgAdmin/pgHero
     - Agregar índices faltantes
     - Optimizar joins complejos
     - Partitioning de `live_stream_metrics` por fecha
     - **Estimación:** 2 días
 
-32. **Auto-Scaling Configuration**
+37. **Auto-Scaling Configuration**
     - AWS Auto Scaling Groups para EC2
     - Scaling policies basadas en:
       - CPU > 70%
@@ -1830,29 +2042,34 @@ export class MetricsService {
 
 ---
 
-#### Semana 12: Testing & QA
+#### Semana 13: Testing & QA
 
 **Tareas:**
 
-33. **Unit Tests**
+38. **Unit Tests**
     - Backend services (LiveService, ChatService, RecommendationEngine)
+    - Mobile streaming components (RTMP publisher, camera controls)
     - Target: 80% code coverage
     - **Estimación:** 3 días
 
-34. **Integration Tests**
+39. **Integration Tests**
     - Test completo del flow: start stream → watch → purchase
+    - Test mobile streaming: camera → RTMP → AWS IVS → HLS playback
     - WebSocket event testing
     - API endpoint testing con Supertest
     - **Estimación:** 2 días
 
-35. **E2E Testing (Mobile)**
+40. **E2E Testing (Mobile)**
     - Detox/Appium tests para critical flows
+    - Test: Start live from mobile → manage products → end stream
     - Test: Join live → send message → purchase
     - Test: Discovery feed → search → watch
     - **Estimación:** 2 días
 
-36. **Security Audit**
+41. **Security Audit**
     - Review de autenticación JWT
+    - Camera/microphone permissions security
+    - RTMP stream key protection
     - Rate limiting en todos los endpoints
     - Input validation y sanitization
     - CORS y CSP headers
@@ -1867,35 +2084,38 @@ export class MetricsService {
 
 ### **FASE 6: Launch & Monitoring** (1 semana)
 
-#### Semana 13: Production Deployment
+#### Semana 14: Production Deployment
 
 **Tareas:**
 
-37. **Production Deployment**
+42. **Production Deployment**
     - Deploy backend a AWS EC2/ECS
     - Deploy seller panel a Vercel/Netlify
     - Release mobile app a TestFlight/Play Console (beta)
     - Configurar DNS y SSL certificates
     - **Estimación:** 2 días
 
-38. **Monitoring Setup**
+43. **Monitoring Setup**
     - Sentry para error tracking
     - Datadog/CloudWatch para métricas
     - Alertas para:
       - Error rate > 1%
       - Response time > 1s
       - Viewer count > 1000 (scale alert)
+      - Mobile streaming failures (RTMP connection drops)
     - **Estimación:** 1 día
 
-39. **Documentation**
+44. **Documentation**
     - API documentation (Swagger/Postman)
-    - Seller guide: "How to Go Live"
+    - Seller guide: "How to Go Live from Mobile"
+    - Seller guide: "How to Go Live from OBS/Desktop"
     - Developer documentation para WebSocket events
     - Runbook para incidents
     - **Estimación:** 2 días
 
-40. **Beta Launch**
+45. **Beta Launch**
     - Invitar 10-20 sellers para beta testing
+    - Test both mobile and desktop streaming
     - Monitorear first live streams de cerca
     - Recolectar feedback y bugs
     - Hotfixes según sea necesario
@@ -1916,10 +2136,10 @@ export class MetricsService {
 | **Fase 1: Infraestructura**             | 3 semanas   | Semana 1-3        | AWS setup, DB migrations, Redis  |
 | **Fase 2: Descubrimiento**              | 2 semanas   | Semana 4-5        | Discovery feed, recommendations  |
 | **Fase 3: Seller Panel**                | 2 semanas   | Semana 6-7        | Stream management, analytics     |
-| **Fase 4: Mobile App**                  | 3 semanas   | Semana 8-10       | Player, checkout, discovery      |
-| **Fase 5: Optimización**                | 2 semanas   | Semana 11-12      | Performance, testing, security   |
-| **Fase 6: Launch**                      | 1 semana    | Semana 13         | Production deployment, monitoring |
-| **TOTAL**                               | **13 semanas** | **~3 meses**     | MVP completo en producción       |
+| **Fase 4: Mobile App** 🆕               | 4 semanas   | Semana 8-11       | Mobile streaming, player, checkout, discovery |
+| **Fase 5: Optimización**                | 2 semanas   | Semana 12-13      | Performance, testing, security   |
+| **Fase 6: Launch**                      | 1 semana    | Semana 14         | Production deployment, monitoring |
+| **TOTAL**                               | **14 semanas** | **~3.5 meses**  | MVP completo con mobile streaming |
 
 ---
 
@@ -1928,12 +2148,14 @@ export class MetricsService {
 ### Must Have (MVP)
 
 - ✅ Live streaming con RTMP → HLS (AWS IVS)
+- ✅ 🆕 **Mobile streaming** - Sellers inician lives desde app móvil
 - ✅ Product overlay durante live
 - ✅ Chat en tiempo real con WebSocket
 - ✅ Discovery feed (active streams)
 - ✅ Live checkout con atribución
 - ✅ Seller panel básico (create, manage streams)
 - ✅ Mobile player con chat
+- ✅ 🆕 Mobile live controls (camera flip, mute, product management)
 
 ### Should Have (Post-MVP v1.1)
 
@@ -2411,6 +2633,9 @@ k6 run --vus 100 --duration 5m tests/load-test.js
 ### Pre-Launch (1 semana antes)
 
 - [ ] Todos los tests (unit, integration, e2e) pasan
+- [ ] 🆕 Mobile streaming tests completados (iOS + Android)
+- [ ] 🆕 Camera/microphone permissions funcionan correctamente
+- [ ] 🆕 RTMP streaming desde mobile probado con AWS IVS
 - [ ] Performance testing completado (500+ concurrent viewers)
 - [ ] Security audit realizado
 - [ ] SSL certificates instalados
@@ -2489,6 +2714,9 @@ Este plan de trabajo proporciona una ruta clara para transformar GSHOP en una pl
 | Riesgo                          | Probabilidad | Impacto | Mitigación                          |
 | ------------------------------- | ------------ | ------- | ----------------------------------- |
 | Latencia alta (> 10s)           | Baja         | Alto    | Usar AWS IVS (garantiza < 3s)       |
+| 🆕 RTMP mobile inestable        | Media        | Medio   | Reconexión automática + buffering adaptativo |
+| 🆕 Camera/mic permissions iOS/Android | Baja    | Alto    | Testing exhaustivo + UI clara de permisos |
+| 🆕 Battery drain en streaming   | Media        | Medio   | Optimización de bitrate + alertas de batería |
 | Costos escalan rápido           | Media        | Alto    | Monitor costos semanalmente, alertas a $500 |
 | Baja adopción de sellers        | Media        | Alto    | Incentivos (comisión 0% primer mes) |
 | WebSocket no escala             | Baja         | Medio   | Redis adapter + load balancing      |
@@ -2497,9 +2725,9 @@ Este plan de trabajo proporciona una ruta clara para transformar GSHOP en una pl
 ---
 
 **Documento creado:** Noviembre 2025
-**Última actualización:** Noviembre 2025
+**Última actualización:** Noviembre 2025 (v1.1 - Mobile Streaming Added)
 **Autor:** GSHOP Engineering Team
-**Versión:** 1.0
+**Versión:** 1.1 - 🆕 Incluye Mobile Streaming para Sellers/Affiliates
 
 ---
 
@@ -2512,6 +2740,10 @@ Este plan de trabajo proporciona una ruta clara para transformar GSHOP en una pl
 - **OBS RTMP Setup:** https://obsproject.com/wiki/Streaming-With-SRT-Or-RIST-Protocols
 - **HLS Specification:** https://datatracker.ietf.org/doc/html/rfc8216
 - **WebRTC Guide:** https://webrtc.org/getting-started/overview
+- 🆕 **React Native NodeMediaClient:** https://github.com/NodeMedia/react-native-nodemediaclient
+- 🆕 **React Native Live Stream:** https://github.com/toystars/react-native-live-stream
+- 🆕 **Expo Camera:** https://docs.expo.dev/versions/latest/sdk/camera/
+- 🆕 **React Native Permissions:** https://github.com/zoontek/react-native-permissions
 
 ### B. Comandos Útiles
 
@@ -2538,6 +2770,142 @@ pg_dump -U gshop_user -d gshop_db > backup_$(date +%Y%m%d).sql
 - **Sentry:** support@sentry.io
 - **OBS Forums:** https://obsproject.com/forum/
 
+### D. 🆕 Dependencias Técnicas Mobile Streaming
+
+#### React Native Packages
+
+```bash
+# Core RTMP streaming library
+npm install react-native-nodemediaclient
+# Alternative: npm install react-native-live-stream
+
+# Camera and microphone access
+npm install expo-camera expo-av
+# Or for bare React Native:
+npm install react-native-vision-camera
+
+# Permissions handling
+npm install react-native-permissions
+
+# Device info (detect battery, network)
+npm install react-native-device-info
+
+# Optional: Background task handling
+npm install react-native-background-timer
+```
+
+#### iOS Setup (Info.plist)
+
+```xml
+<!-- mobile/ios/GShop/Info.plist -->
+<key>NSCameraUsageDescription</key>
+<string>GSHOP needs camera access to allow you to stream live videos</string>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>GSHOP needs microphone access for live streaming audio</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>GSHOP needs photo library access to upload stream thumbnails</string>
+```
+
+#### Android Setup (AndroidManifest.xml)
+
+```xml
+<!-- mobile/android/app/src/main/AndroidManifest.xml -->
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+<uses-feature android:name="android.hardware.camera" android:required="true" />
+<uses-feature android:name="android.hardware.camera.autofocus" />
+```
+
+#### Código de Ejemplo: RTMP Publisher
+
+```typescript
+// mobile/src/components/LiveStreamPublisher.tsx
+import { NodePlayerView } from 'react-native-nodemediaclient';
+import { Camera } from 'expo-camera';
+
+export function LiveStreamPublisher({ rtmpUrl, streamKey }: Props) {
+  const [hasPermission, setHasPermission] = useState(false);
+  const publisherRef = useRef<any>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    })();
+  }, []);
+
+  const startStreaming = async () => {
+    const fullRtmpUrl = `${rtmpUrl}/${streamKey}`;
+
+    publisherRef.current?.startPublish(fullRtmpUrl, {
+      videoEnabled: true,
+      audioEnabled: true,
+      videoCodec: 'H264', // H.264 encoding
+      audioCodec: 'AAC',  // AAC audio
+      videoBitrate: 2500000, // 2.5 Mbps for 720p
+      audioBitrate: 128000,  // 128 kbps
+      fps: 30,
+      videoWidth: 1280,
+      videoHeight: 720,
+    });
+  };
+
+  const stopStreaming = () => {
+    publisherRef.current?.stopPublish();
+  };
+
+  return (
+    <NodePlayerView
+      ref={publisherRef}
+      style={{ flex: 1 }}
+      inputUrl=""
+      scaleMode="aspectFit"
+      bufferTime={300}
+      maxBufferTime={1000}
+      autoplay={false}
+    />
+  );
+}
+```
+
+#### Configuración Recomendada de Bitrate
+
+| Resolución | Bitrate Video | Bitrate Audio | FPS | Uso Recomendado |
+|------------|---------------|---------------|-----|-----------------|
+| **360p**   | 600 kbps      | 64 kbps       | 30  | Red 3G/4G débil |
+| **480p**   | 1000 kbps     | 96 kbps       | 30  | 4G estándar     |
+| **720p**   | 2500 kbps     | 128 kbps      | 30  | 4G/5G, WiFi ✅  |
+| **1080p**  | 4500 kbps     | 192 kbps      | 30  | 5G, WiFi rápido |
+
+**Recomendación:** Usar 720p @ 2.5 Mbps como default para balance entre calidad y consumo de datos/batería.
+
+#### Manejo de Errores Comunes
+
+```typescript
+// Auto-reconnect on network issues
+publisherRef.current?.on('NetStream.Publish.Start', () => {
+  console.log('Stream started successfully');
+  setStreamStatus('live');
+});
+
+publisherRef.current?.on('NetConnection.Connect.Failed', () => {
+  console.error('RTMP connection failed');
+  // Retry logic
+  setTimeout(() => startStreaming(), 3000);
+});
+
+publisherRef.current?.on('NetStream.Publish.BadName', () => {
+  console.error('Invalid stream key');
+  Alert.alert('Error', 'Invalid stream credentials. Please try again.');
+});
+```
+
 ---
 
-**¡Éxito con la implementación de GSHOP Live Shopping! 🚀📺🛒**
+**¡Éxito con la implementación de GSHOP Live Shopping con Mobile Streaming! 🚀📺🛒📱**

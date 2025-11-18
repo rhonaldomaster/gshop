@@ -5,10 +5,14 @@ import { Order } from '../database/entities/order.entity';
 import { Invoice } from '../database/entities/invoice.entity';
 import { AuditLogService } from './services/audit-log.service';
 import { MonitoringService } from './services/monitoring.service';
+import { CacheModule } from './cache/cache.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AuditLog, Order, Invoice])],
+  imports: [
+    TypeOrmModule.forFeature([AuditLog, Order, Invoice]),
+    CacheModule
+  ],
   providers: [AuditLogService, MonitoringService],
-  exports: [AuditLogService, MonitoringService],
+  exports: [AuditLogService, MonitoringService, CacheModule],
 })
 export class CommonModule {}

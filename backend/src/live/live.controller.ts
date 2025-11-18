@@ -218,4 +218,52 @@ export class LiveController {
   async getStreamAnalytics(@Param('streamId') streamId: string): Promise<LiveStreamAnalyticsDto> {
     return this.liveService.getStreamAnalytics(streamId);
   }
+
+  // Product Overlay System Endpoints
+  @Put('streams/:streamId/products/:productId/highlight')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Highlight product in live stream overlay' })
+  @ApiResponse({ status: 200, description: 'Product highlighted successfully' })
+  async highlightProduct(
+    @Param('streamId') streamId: string,
+    @Param('productId') productId: string,
+    @Request() req
+  ) {
+    return this.liveService.highlightProduct(streamId, productId, req.user.sellerId);
+  }
+
+  @Put('streams/:streamId/products/:productId/hide')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Hide highlighted product from overlay' })
+  @ApiResponse({ status: 200, description: 'Product hidden successfully' })
+  async hideProduct(
+    @Param('streamId') streamId: string,
+    @Param('productId') productId: string,
+    @Request() req
+  ) {
+    return this.liveService.hideProduct(streamId, productId, req.user.sellerId);
+  }
+
+  @Put('streams/:streamId/products/reorder')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Reorder products in stream' })
+  @ApiResponse({ status: 200, description: 'Products reordered successfully' })
+  async reorderProducts(
+    @Param('streamId') streamId: string,
+    @Request() req,
+    @Body() body: { productOrder: { productId: string; position: number }[] }
+  ) {
+    await this.liveService.reorderProducts(streamId, req.user.sellerId, body.productOrder);
+    return { message: 'Products reordered successfully' };
+  }
+
+  @Get('streams/:streamId/products/highlighted')
+  @ApiOperation({ summary: 'Get highlighted products for stream' })
+  @ApiResponse({ status: 200, description: 'Highlighted products retrieved successfully' })
+  async getHighlightedProducts(@Param('streamId') streamId: string) {
+    return this.liveService.getHighlightedProducts(streamId);
+  }
 }

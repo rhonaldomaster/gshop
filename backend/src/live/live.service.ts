@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, IsNull } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType } from './live.entity';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
+import { IIvsService } from './interfaces/ivs-service.interface';
+import { IVS_SERVICE } from './live.module';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -24,6 +26,8 @@ export class LiveService {
     private affiliateRepository: Repository<Affiliate>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    @Inject(IVS_SERVICE)
+    private ivsService: IIvsService,
   ) {}
 
   // Method to set gateway reference (called from gateway's onModuleInit)
@@ -32,10 +36,6 @@ export class LiveService {
   }
 
   async createLiveStream(hostId: string, createLiveStreamDto: CreateLiveStreamDto, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
-    const streamKey = uuidv4();
-    const rtmpUrl = `rtmp://localhost:1935/live/${streamKey}`;
-    const hlsUrl = `http://localhost:8080/hls/${streamKey}.m3u8`;
-
     // Validate affiliate exists if creating affiliate stream
     if (hostType === HostType.AFFILIATE) {
       const affiliate = await this.affiliateRepository.findOne({
@@ -46,17 +46,31 @@ export class LiveService {
       }
     }
 
+    // Create AWS IVS channel (automatically uses mock or real based on config)
+    const channelName = `${hostType}-${hostId}-${Date.now()}`;
+    const ivsChannel = await this.ivsService.createChannel(channelName);
+
+    // Generate thumbnail URL
+    const thumbnailUrl = this.ivsService.getThumbnailUrl(ivsChannel.channel.arn);
+
+    // Create live stream entity
     const liveStream = this.liveStreamRepository.create({
       ...createLiveStreamDto,
       hostType,
       sellerId: hostType === HostType.SELLER ? hostId : null,
       affiliateId: hostType === HostType.AFFILIATE ? hostId : null,
-      streamKey,
-      rtmpUrl,
-      hlsUrl,
+      streamKey: ivsChannel.streamKey.value,
+      rtmpUrl: ivsChannel.channel.ingestEndpoint,
+      hlsUrl: ivsChannel.channel.playbackUrl,
+      ivsChannelArn: ivsChannel.channel.arn,
+      thumbnailUrl,
     });
 
-    return this.liveStreamRepository.save(liveStream);
+    const savedStream = await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Created stream ${savedStream.id} with IVS channel ${ivsChannel.channel.arn}`);
+
+    return savedStream;
   }
 
   async findLiveStreamsBySeller(sellerId: string): Promise<LiveStream[]> {
@@ -153,7 +167,11 @@ export class LiveService {
     liveStream.status = StreamStatus.LIVE;
     liveStream.startedAt = new Date();
 
-    return this.liveStreamRepository.save(liveStream);
+    const savedStream = await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Stream ${savedStream.id} started`);
+
+    return savedStream;
   }
 
   async endLiveStream(id: string, hostId: string, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
@@ -177,6 +195,8 @@ export class LiveService {
     liveStream.endedAt = new Date();
 
     const savedStream = await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Stream ${savedStream.id} ended`);
 
     // Calculate final stats and notify admin dashboard
     if (this.liveGateway) {
@@ -536,5 +556,115 @@ export class LiveService {
       })),
       topProducts,
     };
+  }
+
+  /**
+   * Highlight product in stream overlay
+   */
+  async highlightProduct(streamId: string, productId: string, sellerId: string): Promise<LiveStreamProduct> {
+    const streamProduct = await this.streamProductRepository.findOne({
+      where: { streamId, productId },
+      relations: ['stream', 'product'],
+    });
+
+    if (!streamProduct) {
+      throw new NotFoundException('Product not found in stream');
+    }
+
+    // Verify ownership
+    if (streamProduct.stream.sellerId !== sellerId) {
+      throw new BadRequestException('You do not have permission to manage this stream');
+    }
+
+    // Unhighlight all other products
+    await this.streamProductRepository.update(
+      { streamId, isHighlighted: true },
+      { isHighlighted: false }
+    );
+
+    // Highlight this product
+    streamProduct.isHighlighted = true;
+    streamProduct.highlightedAt = new Date();
+
+    const updated = await this.streamProductRepository.save(streamProduct);
+
+    // Broadcast via WebSocket
+    if (this.liveGateway) {
+      await this.liveGateway.broadcastProductHighlighted(streamId, {
+        productId,
+        product: streamProduct.product,
+        specialPrice: streamProduct.specialPrice,
+      });
+    }
+
+    console.log(`[Live Service] Product ${productId} highlighted in stream ${streamId}`);
+
+    return updated;
+  }
+
+  /**
+   * Hide highlighted product
+   */
+  async hideProduct(streamId: string, productId: string, sellerId: string): Promise<LiveStreamProduct> {
+    const streamProduct = await this.streamProductRepository.findOne({
+      where: { streamId, productId },
+      relations: ['stream'],
+    });
+
+    if (!streamProduct) {
+      throw new NotFoundException('Product not found in stream');
+    }
+
+    // Verify ownership
+    if (streamProduct.stream.sellerId !== sellerId) {
+      throw new BadRequestException('You do not have permission to manage this stream');
+    }
+
+    streamProduct.isHighlighted = false;
+
+    const updated = await this.streamProductRepository.save(streamProduct);
+
+    // Broadcast via WebSocket
+    if (this.liveGateway) {
+      await this.liveGateway.broadcastProductHidden(streamId, { productId });
+    }
+
+    console.log(`[Live Service] Product ${productId} hidden in stream ${streamId}`);
+
+    return updated;
+  }
+
+  /**
+   * Reorder products in stream
+   */
+  async reorderProducts(streamId: string, sellerId: string, productOrder: { productId: string; position: number }[]): Promise<void> {
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: { id: streamId, sellerId },
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found');
+    }
+
+    // Update positions
+    for (const item of productOrder) {
+      await this.streamProductRepository.update(
+        { streamId, productId: item.productId },
+        { position: item.position }
+      );
+    }
+
+    console.log(`[Live Service] Reordered ${productOrder.length} products in stream ${streamId}`);
+  }
+
+  /**
+   * Get highlighted products for stream
+   */
+  async getHighlightedProducts(streamId: string): Promise<LiveStreamProduct[]> {
+    return this.streamProductRepository.find({
+      where: { streamId, isHighlighted: true },
+      relations: ['product'],
+      order: { position: 'ASC' },
+    });
   }
 }
