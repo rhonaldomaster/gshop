@@ -46,12 +46,20 @@ interface LiveStream {
 export default function LiveStreamsScreen({ navigation }: any) {
   const { t } = useTranslation('translation');
   const [streams, setStreams] = useState<LiveStream[]>([]);
+  const [filteredStreams, setFilteredStreams] = useState<LiveStream[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'live' | 'scheduled'>('all');
+  const [sortBy, setSortBy] = useState<'viewers' | 'recent' | 'trending'>('viewers');
 
   useEffect(() => {
     fetchLiveStreams();
   }, []);
+
+  useEffect(() => {
+    filterAndSortStreams();
+  }, [streams, searchQuery, selectedFilter, sortBy]);
 
   const fetchLiveStreams = async () => {
     try {
@@ -72,6 +80,49 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const onRefresh = () => {
     setRefreshing(true);
     fetchLiveStreams();
+  };
+
+  const filterAndSortStreams = () => {
+    let filtered = [...streams];
+
+    // Apply text search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(stream =>
+        stream.title.toLowerCase().includes(query) ||
+        (stream.hostType === 'seller' && stream.seller?.businessName.toLowerCase().includes(query)) ||
+        (stream.hostType === 'affiliate' && stream.affiliate?.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Apply status filter
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(stream => stream.status === selectedFilter);
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'viewers':
+        filtered.sort((a, b) => b.viewerCount - a.viewerCount);
+        break;
+      case 'recent':
+        filtered.sort((a, b) => {
+          const dateA = new Date(a.startedAt || a.scheduledAt || 0).getTime();
+          const dateB = new Date(b.startedAt || b.scheduledAt || 0).getTime();
+          return dateB - dateA;
+        });
+        break;
+      case 'trending':
+        // Trending = combination of viewers and recency
+        filtered.sort((a, b) => {
+          const scoreA = a.viewerCount * (a.status === 'live' ? 2 : 1);
+          const scoreB = b.viewerCount * (b.status === 'live' ? 2 : 1);
+          return scoreB - scoreA;
+        });
+        break;
+    }
+
+    setFilteredStreams(filtered);
   };
 
   const formatViewerCount = (count: number) => {
@@ -248,8 +299,94 @@ export default function LiveStreamsScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder={t('live.searchStreams')}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholderTextColor="#9ca3af"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <MaterialIcons name="close" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Filter Tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filtersContainer}
+        contentContainerStyle={styles.filtersContent}
+      >
+        <TouchableOpacity
+          style={[styles.filterChip, selectedFilter === 'all' && styles.filterChipActive]}
+          onPress={() => setSelectedFilter('all')}
+        >
+          <Text style={[styles.filterText, selectedFilter === 'all' && styles.filterTextActive]}>
+            {t('live.all')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, selectedFilter === 'live' && styles.filterChipActive]}
+          onPress={() => setSelectedFilter('live')}
+        >
+          <View style={styles.liveDot} />
+          <Text style={[styles.filterText, selectedFilter === 'live' && styles.filterTextActive]}>
+            {t('live.liveNow')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, selectedFilter === 'scheduled' && styles.filterChipActive]}
+          onPress={() => setSelectedFilter('scheduled')}
+        >
+          <MaterialIcons name="schedule" size={16} color={selectedFilter === 'scheduled' ? '#8b5cf6' : '#6b7280'} />
+          <Text style={[styles.filterText, selectedFilter === 'scheduled' && styles.filterTextActive]}>
+            {t('live.scheduled')}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.filterDivider} />
+
+        <TouchableOpacity
+          style={[styles.filterChip, sortBy === 'viewers' && styles.filterChipActive]}
+          onPress={() => setSortBy('viewers')}
+        >
+          <MaterialIcons name="visibility" size={16} color={sortBy === 'viewers' ? '#8b5cf6' : '#6b7280'} />
+          <Text style={[styles.filterText, sortBy === 'viewers' && styles.filterTextActive]}>
+            {t('live.mostViewers')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, sortBy === 'recent' && styles.filterChipActive]}
+          onPress={() => setSortBy('recent')}
+        >
+          <MaterialIcons name="access-time" size={16} color={sortBy === 'recent' ? '#8b5cf6' : '#6b7280'} />
+          <Text style={[styles.filterText, sortBy === 'recent' && styles.filterTextActive]}>
+            {t('live.recent')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, sortBy === 'trending' && styles.filterChipActive]}
+          onPress={() => setSortBy('trending')}
+        >
+          <MaterialIcons name="trending-up" size={16} color={sortBy === 'trending' ? '#8b5cf6' : '#6b7280'} />
+          <Text style={[styles.filterText, sortBy === 'trending' && styles.filterTextActive]}>
+            {t('live.trending')}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+
       <FlatList
-        data={streams}
+        data={filteredStreams}
         renderItem={renderStreamCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -482,5 +619,69 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#111827',
+  },
+  filtersContainer: {
+    maxHeight: 48,
+    marginBottom: 8,
+  },
+  filtersContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+    alignItems: 'center',
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    gap: 6,
+  },
+  filterChipActive: {
+    backgroundColor: '#ede9fe',
+    borderWidth: 1,
+    borderColor: '#8b5cf6',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  filterTextActive: {
+    color: '#8b5cf6',
+    fontWeight: '600',
+  },
+  filterDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#d1d5db',
+    marginHorizontal: 8,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ef4444',
   },
 });

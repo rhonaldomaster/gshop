@@ -10,9 +10,11 @@ import HomeNavigator from './HomeNavigator';
 import CategoriesNavigator from './CategoriesNavigator';
 import CartNavigator from './CartNavigator';
 import ProfileNavigator from './ProfileNavigator';
+import LiveNavigator from './LiveNavigator';
 
 export type AppTabParamList = {
   Home: undefined;
+  Live: undefined;
   Categories: undefined;
   Cart: undefined;
   Profile: undefined;
@@ -36,6 +38,9 @@ export default function AppNavigator() {
           switch (route.name) {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'Live':
+              iconName = focused ? 'videocam' : 'videocam-outline';
               break;
             case 'Categories':
               iconName = focused ? 'grid' : 'grid-outline';
@@ -72,6 +77,13 @@ export default function AppNavigator() {
         name="Home"
         component={HomeNavigator}
         options={{ tabBarLabel: t('home.title') }}
+      />
+      <Tab.Screen
+        name="Live"
+        component={LiveNavigator}
+        options={{
+          tabBarLabel: t('live.title'),
+        }}
       />
       <Tab.Screen
         name="Categories"

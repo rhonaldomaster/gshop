@@ -16,6 +16,7 @@ import io, { Socket } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../../components/live/ProductCard';
 import { ChatMessage } from '../../components/live/ChatMessage';
+import { QuickCheckoutModal } from '../../components/live/QuickCheckoutModal';
 
 interface LiveStreamData {
   id: string;
@@ -64,6 +65,8 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [showProducts, setShowProducts] = useState(false);
   const [showChat, setShowChat] = useState(true);
+  const [showQuickCheckout, setShowQuickCheckout] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<Video>(null);
@@ -170,28 +173,19 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const quickBuyProduct = (product: any) => {
-    Alert.alert(
-      t('live.quickBuy'),
-      t('live.addToCartQuestion', { product: product.product.name }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('products.addToCart'),
-          onPress: () => {
-            // Add to cart with live stream context
-            // In a real app, use cart context here
-            console.log('Adding to cart:', {
-              productId: product.product.id,
-              liveSessionId: streamId,
-              affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined,
-              specialPrice: product.specialPrice
-            });
+    setSelectedProduct(product);
+    setShowQuickCheckout(true);
+  };
 
-            Alert.alert(t('common.success'), t('live.productAddedToCart'));
-          }
-        }
-      ]
-    );
+  const handleCheckoutSuccess = () => {
+    // Notify via WebSocket that purchase was made
+    if (socketRef.current) {
+      socketRef.current.emit('streamPurchase', {
+        streamId,
+        productId: selectedProduct?.product.id,
+        amount: selectedProduct?.specialPrice || selectedProduct?.product.price,
+      });
+    }
   };
 
   const formatViewerCount = (count: number) => {
@@ -357,6 +351,24 @@ export default function LiveStreamScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      {/* Quick Checkout Modal */}
+      {selectedProduct && (
+        <QuickCheckoutModal
+          visible={showQuickCheckout}
+          product={{
+            id: selectedProduct.product.id,
+            name: selectedProduct.product.name,
+            price: selectedProduct.product.price,
+            images: selectedProduct.product.images,
+            specialPrice: selectedProduct.specialPrice,
+          }}
+          liveSessionId={streamId}
+          affiliateId={stream?.hostType === 'affiliate' ? stream?.affiliate?.id : undefined}
+          onClose={() => setShowQuickCheckout(false)}
+          onSuccess={handleCheckoutSuccess}
+        />
       )}
     </SafeAreaView>
   );
