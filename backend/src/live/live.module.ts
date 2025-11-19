@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { LiveController } from './live.controller';
 import { LiveService } from './live.service';
 import { LiveGateway } from './live.gateway';
 import { LiveMetricsService } from './live-metrics.service';
+import { LiveSchedulerService } from './live-scheduler.service';
 import {
   LiveStream,
   LiveStreamProduct,
@@ -37,6 +39,7 @@ export const IVS_SERVICE = 'IVS_SERVICE';
       Affiliate,
       Order
     ]),
+    ScheduleModule.forRoot(),
     NotificationsModule,
   ],
   controllers: [LiveController],
@@ -44,6 +47,7 @@ export const IVS_SERVICE = 'IVS_SERVICE';
     LiveService,
     LiveGateway,
     LiveMetricsService,
+    LiveSchedulerService,
     {
       provide: IVS_SERVICE,
       useFactory: (configService: ConfigService) => {

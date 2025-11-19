@@ -28,6 +28,7 @@ interface LiveStream {
   rtmpUrl: string
   hlsUrl: string
   products: any[]
+  scheduledAt?: string
   startedAt?: string
   endedAt?: string
   createdAt: string
@@ -44,6 +45,27 @@ export default function LivePage() {
   useEffect(() => {
     fetchStreams()
   }, [])
+
+  // Helper function to calculate time remaining
+  const getCountdown = (scheduledAt: string) => {
+    const now = new Date().getTime()
+    const scheduledTime = new Date(scheduledAt).getTime()
+    const diff = scheduledTime - now
+
+    if (diff <= 0) return 'Starting soon...'
+
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+
+    if (hours > 24) {
+      const days = Math.floor(hours / 24)
+      return `In ${days} day${days > 1 ? 's' : ''}`
+    }
+    if (hours > 0) {
+      return `In ${hours}h ${minutes}m`
+    }
+    return `In ${minutes} min`
+  }
 
   const fetchStreams = async () => {
     try {
@@ -206,6 +228,14 @@ export default function LivePage() {
                     <p className="mt-2 text-gray-600">{stream.description}</p>
                   )}
 
+                  {stream.status === 'scheduled' && stream.scheduledAt && (
+                    <div className="mt-2 inline-flex items-center px-3 py-1 bg-yellow-50 border border-yellow-200 rounded-full">
+                      <span className="text-xs font-medium text-yellow-800">
+                        📅 {new Date(stream.scheduledAt).toLocaleString()} • {getCountdown(stream.scheduledAt)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="mt-3 flex items-center space-x-6 text-sm text-gray-500">
                     <div className="flex items-center space-x-1">
                       <Eye className="h-4 w-4" />
@@ -298,6 +328,8 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('')
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [scheduledAt, setScheduledAt] = useState<string>('')
+  const [isScheduled, setIsScheduled] = useState(false)
 
   useEffect(() => {
     fetchProducts()
@@ -353,6 +385,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
 
       if (category) streamData.category = category
       if (tags) streamData.tags = tags.split(',').map(t => t.trim())
+      if (isScheduled && scheduledAt) streamData.scheduledAt = new Date(scheduledAt).toISOString()
 
       const response = await fetch('/api/live/streams', {
         method: 'POST',
@@ -431,6 +464,40 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
               rows={3}
             />
           </div>
+
+          {/* Schedule Toggle */}
+          <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+            <input
+              type="checkbox"
+              id="schedule-toggle"
+              checked={isScheduled}
+              onChange={(e) => setIsScheduled(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="schedule-toggle" className="text-sm font-medium text-gray-700 cursor-pointer">
+              Schedule for later
+            </label>
+          </div>
+
+          {/* Scheduled Date/Time */}
+          {isScheduled && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Scheduled Date & Time
+              </label>
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required={isScheduled}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Your stream will be available to start at this time
+              </p>
+            </div>
+          )}
 
           {/* Category & Tags Row */}
           <div className="grid grid-cols-2 gap-4">
