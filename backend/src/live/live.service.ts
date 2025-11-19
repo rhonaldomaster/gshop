@@ -8,6 +8,7 @@ import { Order } from '../database/entities/order.entity';
 import { IIvsService } from './interfaces/ivs-service.interface';
 import { IVS_SERVICE } from './live.module';
 import { v4 as uuidv4 } from 'uuid';
+import { CacheMockService } from '../common/cache/cache-mock.service';
 
 @Injectable()
 export class LiveService {
@@ -30,6 +31,7 @@ export class LiveService {
     private orderRepository: Repository<Order>,
     @Inject(IVS_SERVICE)
     private ivsService: IIvsService,
+    private cacheService: CacheMockService,
   ) {}
 
   // Method to set gateway reference (called from gateway's onModuleInit)
@@ -863,5 +865,473 @@ export class LiveService {
    */
   clearRateLimit(userId: string): void {
     this.messageRateLimiter.delete(userId);
+  }
+
+  // ==================== DISCOVERY & RECOMMENDATIONS ====================
+
+  /**
+   * Get active streams with pagination and filters (with caching)
+   */
+  async getActiveStreamsWithFilters(params: {
+    page?: number;
+    limit?: number;
+    category?: string;
+    tags?: string[];
+    sortBy?: 'viewers' | 'likes' | 'trending' | 'recent';
+  }): Promise<{
+    streams: LiveStream[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const skip = (page - 1) * limit;
+
+    // Create cache key from params
+    const cacheKey = `active_streams:${JSON.stringify(params)}`;
+
+    // Try to get from cache first (30s TTL)
+    const cached = await this.cacheService.get(cacheKey);
+    if (cached) {
+      console.log(`[Live Service] Cache HIT for ${cacheKey}`);
+      return cached;
+    }
+
+    console.log(`[Live Service] Cache MISS for ${cacheKey}`);
+
+    const queryBuilder = this.liveStreamRepository
+      .createQueryBuilder('stream')
+      .leftJoinAndSelect('stream.seller', 'seller')
+      .leftJoinAndSelect('stream.affiliate', 'affiliate')
+      .leftJoinAndSelect('stream.products', 'products')
+      .leftJoinAndSelect('products.product', 'product')
+      .where('stream.status = :status', { status: StreamStatus.LIVE });
+
+    // Filter by category
+    if (params.category) {
+      queryBuilder.andWhere('stream.category = :category', { category: params.category });
+    }
+
+    // Filter by tags
+    if (params.tags && params.tags.length > 0) {
+      queryBuilder.andWhere('stream.tags && :tags', { tags: params.tags });
+    }
+
+    // Sorting
+    switch (params.sortBy) {
+      case 'viewers':
+        queryBuilder.orderBy('stream.viewerCount', 'DESC');
+        break;
+      case 'likes':
+        queryBuilder.orderBy('stream.likesCount', 'DESC');
+        break;
+      case 'trending':
+        // Trending score = viewerCount + (likesCount * 0.5) + (totalSales * 2) - age penalty
+        queryBuilder
+          .addSelect(
+            `(stream.viewerCount + (stream.likesCount * 0.5) + (stream.totalSales * 2) -
+            EXTRACT(EPOCH FROM (NOW() - stream.startedAt)) / 3600)`,
+            'trendingScore'
+          )
+          .orderBy('trendingScore', 'DESC');
+        break;
+      case 'recent':
+      default:
+        queryBuilder.orderBy('stream.startedAt', 'DESC');
+        break;
+    }
+
+    // Get total count
+    const total = await queryBuilder.getCount();
+
+    // Get paginated results
+    const streams = await queryBuilder.skip(skip).take(limit).getMany();
+
+    const totalPages = Math.ceil(total / limit);
+
+    const result = {
+      streams,
+      total,
+      page,
+      totalPages,
+    };
+
+    // Cache for 30 seconds
+    await this.cacheService.set(cacheKey, result, 30);
+
+    return result;
+  }
+
+  /**
+   * Search streams with full-text search
+   */
+  async searchStreams(params: {
+    query: string;
+    page?: number;
+    limit?: number;
+    category?: string;
+    status?: StreamStatus;
+  }): Promise<{
+    streams: LiveStream[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.liveStreamRepository
+      .createQueryBuilder('stream')
+      .leftJoinAndSelect('stream.seller', 'seller')
+      .leftJoinAndSelect('stream.affiliate', 'affiliate')
+      .leftJoinAndSelect('stream.products', 'products')
+      .leftJoinAndSelect('products.product', 'product');
+
+    // Full-text search on title and description
+    if (params.query) {
+      queryBuilder.where(
+        '(LOWER(stream.title) LIKE LOWER(:query) OR LOWER(stream.description) LIKE LOWER(:query))',
+        { query: `%${params.query}%` }
+      );
+    }
+
+    // Filter by status (default to LIVE)
+    const status = params.status || StreamStatus.LIVE;
+    queryBuilder.andWhere('stream.status = :status', { status });
+
+    // Filter by category
+    if (params.category) {
+      queryBuilder.andWhere('stream.category = :category', { category: params.category });
+    }
+
+    // Order by relevance (viewer count as proxy)
+    queryBuilder.orderBy('stream.viewerCount', 'DESC');
+
+    // Get total count
+    const total = await queryBuilder.getCount();
+
+    // Get paginated results
+    const streams = await queryBuilder.skip(skip).take(limit).getMany();
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      streams,
+      total,
+      page,
+      totalPages,
+    };
+  }
+
+  /**
+   * Get trending streams
+   */
+  async getTrendingStreams(limit: number = 10): Promise<LiveStream[]> {
+    return this.liveStreamRepository
+      .createQueryBuilder('stream')
+      .leftJoinAndSelect('stream.seller', 'seller')
+      .leftJoinAndSelect('stream.affiliate', 'affiliate')
+      .leftJoinAndSelect('stream.products', 'products')
+      .leftJoinAndSelect('products.product', 'product')
+      .where('stream.status = :status', { status: StreamStatus.LIVE })
+      .addSelect(
+        `(stream.viewerCount + (stream.likesCount * 0.5) + (stream.totalSales * 2) -
+        EXTRACT(EPOCH FROM (NOW() - stream.startedAt)) / 3600)`,
+        'trendingScore'
+      )
+      .orderBy('trendingScore', 'DESC')
+      .take(limit)
+      .getMany();
+  }
+
+  /**
+   * Get available categories
+   */
+  async getCategories(): Promise<string[]> {
+    const result = await this.liveStreamRepository
+      .createQueryBuilder('stream')
+      .select('DISTINCT stream.category', 'category')
+      .where('stream.category IS NOT NULL')
+      .andWhere('stream.category != :empty', { empty: '' })
+      .getRawMany();
+
+    return result.map(r => r.category).filter(Boolean);
+  }
+
+  // ==================== RECOMMENDATION ENGINE ====================
+
+  /**
+   * Collaborative Filtering: "Users who watched X also watched Y"
+   */
+  async getCollaborativeRecommendations(
+    userId: string,
+    limit: number = 10,
+  ): Promise<{ stream: LiveStream; score: number; reason: string }[]> {
+    // Get streams the user has watched
+    const userViewHistory = await this.streamViewerRepository.find({
+      where: { userId },
+      select: ['streamId'],
+      order: { joinedAt: 'DESC' },
+      take: 20, // Last 20 watched streams
+    });
+
+    if (userViewHistory.length === 0) {
+      return [];
+    }
+
+    const watchedStreamIds = userViewHistory.map(v => v.streamId);
+
+    // Find other users who watched the same streams
+    const similarUsers = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .select('viewer.userId')
+      .addSelect('COUNT(DISTINCT viewer.streamId)', 'commonStreams')
+      .where('viewer.streamId IN (:...streamIds)', { streamIds: watchedStreamIds })
+      .andWhere('viewer.userId != :userId', { userId })
+      .andWhere('viewer.userId IS NOT NULL')
+      .groupBy('viewer.userId')
+      .having('COUNT(DISTINCT viewer.streamId) >= 2') // At least 2 common streams
+      .orderBy('commonStreams', 'DESC')
+      .limit(50)
+      .getRawMany();
+
+    if (similarUsers.length === 0) {
+      return [];
+    }
+
+    const similarUserIds = similarUsers.map(u => u.viewer_userId);
+
+    // Find streams watched by similar users but not by current user
+    const recommendedStreamIds = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .select('viewer.streamId')
+      .addSelect('COUNT(DISTINCT viewer.userId)', 'watchCount')
+      .where('viewer.userId IN (:...userIds)', { userIds: similarUserIds })
+      .andWhere('viewer.streamId NOT IN (:...watchedIds)', { watchedIds: watchedStreamIds })
+      .groupBy('viewer.streamId')
+      .orderBy('watchCount', 'DESC')
+      .limit(limit * 2) // Get more to filter later
+      .getRawMany();
+
+    // Get the actual stream entities
+    const streamIds = recommendedStreamIds.map(r => r.viewer_streamId);
+
+    if (streamIds.length === 0) {
+      return [];
+    }
+
+    const streams = await this.liveStreamRepository
+      .createQueryBuilder('stream')
+      .leftJoinAndSelect('stream.seller', 'seller')
+      .leftJoinAndSelect('stream.affiliate', 'affiliate')
+      .leftJoinAndSelect('stream.products', 'products')
+      .where('stream.id IN (:...ids)', { ids: streamIds })
+      .andWhere('stream.status = :status', { status: StreamStatus.LIVE })
+      .getMany();
+
+    // Calculate collaborative score based on how many similar users watched it
+    const recommendations = streams.map(stream => {
+      const watchCount = recommendedStreamIds.find(r => r.viewer_streamId === stream.id)?.watchCount || 0;
+      const score = Math.min(100, watchCount * 10); // Max 100
+
+      return {
+        stream,
+        score,
+        reason: `${watchCount} users with similar taste watched this`,
+      };
+    });
+
+    return recommendations.slice(0, limit);
+  }
+
+  /**
+   * Content-Based Filtering: Recommend based on user preferences
+   */
+  async getContentBasedRecommendations(
+    userId: string,
+    limit: number = 10,
+  ): Promise<{ stream: LiveStream; score: number; reason: string }[]> {
+    // Get user's viewing history to understand preferences
+    const viewHistory = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .leftJoin('viewer.stream', 'stream')
+      .select('stream.category', 'category')
+      .addSelect('stream.sellerId', 'sellerId')
+      .addSelect('stream.affiliateId', 'affiliateId')
+      .addSelect('COUNT(*)', 'count')
+      .where('viewer.userId = :userId', { userId })
+      .andWhere('stream.category IS NOT NULL')
+      .groupBy('stream.category, stream.sellerId, stream.affiliateId')
+      .orderBy('count', 'DESC')
+      .getRawMany();
+
+    if (viewHistory.length === 0) {
+      return [];
+    }
+
+    // Extract preferred categories and sellers
+    const preferredCategories = [...new Set(viewHistory.map(h => h.category).filter(Boolean))].slice(0, 3);
+    const preferredSellers = [...new Set(viewHistory.map(h => h.sellerId).filter(Boolean))].slice(0, 5);
+    const preferredAffiliates = [...new Set(viewHistory.map(h => h.affiliateId).filter(Boolean))].slice(0, 5);
+
+    // Get streams that match user preferences
+    const queryBuilder = this.liveStreamRepository
+      .createQueryBuilder('stream')
+      .leftJoinAndSelect('stream.seller', 'seller')
+      .leftJoinAndSelect('stream.affiliate', 'affiliate')
+      .leftJoinAndSelect('stream.products', 'products')
+      .where('stream.status = :status', { status: StreamStatus.LIVE });
+
+    // Build OR conditions for matching preferences
+    const conditions: string[] = [];
+
+    if (preferredCategories.length > 0) {
+      conditions.push('stream.category IN (:...categories)');
+    }
+    if (preferredSellers.length > 0) {
+      conditions.push('stream.sellerId IN (:...sellers)');
+    }
+    if (preferredAffiliates.length > 0) {
+      conditions.push('stream.affiliateId IN (:...affiliates)');
+    }
+
+    if (conditions.length > 0) {
+      queryBuilder.andWhere(`(${conditions.join(' OR ')})`, {
+        categories: preferredCategories,
+        sellers: preferredSellers,
+        affiliates: preferredAffiliates,
+      });
+    }
+
+    // Exclude streams user has already watched
+    const watchedStreamIds = await this.streamViewerRepository
+      .createQueryBuilder('viewer')
+      .select('viewer.streamId')
+      .where('viewer.userId = :userId', { userId })
+      .getRawMany();
+
+    const watchedIds = watchedStreamIds.map(w => w.viewer_streamId);
+    if (watchedIds.length > 0) {
+      queryBuilder.andWhere('stream.id NOT IN (:...watchedIds)', { watchedIds: watchedIds });
+    }
+
+    const streams = await queryBuilder
+      .orderBy('stream.viewerCount', 'DESC')
+      .limit(limit)
+      .getMany();
+
+    // Calculate content-based score
+    const recommendations = streams.map(stream => {
+      let score = 50; // Base score
+      let reasons: string[] = [];
+
+      // Boost for matching category
+      if (stream.category && preferredCategories.includes(stream.category)) {
+        score += 30;
+        reasons.push(`You like ${stream.category}`);
+      }
+
+      // Boost for matching seller
+      if (stream.sellerId && preferredSellers.includes(stream.sellerId)) {
+        score += 20;
+        reasons.push('From a seller you watched before');
+      }
+
+      // Boost for matching affiliate
+      if (stream.affiliateId && preferredAffiliates.includes(stream.affiliateId)) {
+        score += 20;
+        reasons.push('From an affiliate you follow');
+      }
+
+      return {
+        stream,
+        score: Math.min(100, score),
+        reason: reasons.join(' • ') || 'Recommended for you',
+      };
+    });
+
+    return recommendations;
+  }
+
+  /**
+   * Hybrid "For You" Feed: Combines collaborative and content-based filtering
+   */
+  async getForYouFeed(
+    userId: string | null,
+    limit: number = 20,
+  ): Promise<{
+    streams: { stream: LiveStream; score: number; reason: string }[];
+    total: number;
+  }> {
+    // If no userId, return trending streams
+    if (!userId) {
+      const trending = await this.getTrendingStreams(limit);
+      return {
+        streams: trending.map(stream => ({
+          stream,
+          score: 75,
+          reason: 'Popular now',
+        })),
+        total: trending.length,
+      };
+    }
+
+    // Get recommendations from both methods
+    const [collaborative, contentBased] = await Promise.all([
+      this.getCollaborativeRecommendations(userId, limit),
+      this.getContentBasedRecommendations(userId, limit),
+    ]);
+
+    // Merge and deduplicate
+    const streamMap = new Map<string, { stream: LiveStream; score: number; reason: string }>();
+
+    // Add collaborative recommendations (higher priority)
+    collaborative.forEach(rec => {
+      streamMap.set(rec.stream.id, {
+        ...rec,
+        score: rec.score * 0.6, // 60% weight for collaborative
+      });
+    });
+
+    // Add content-based recommendations
+    contentBased.forEach(rec => {
+      const existing = streamMap.get(rec.stream.id);
+      if (existing) {
+        // If stream appears in both, boost score
+        existing.score = existing.score + rec.score * 0.4; // 40% weight for content-based
+        existing.reason = `${existing.reason} • ${rec.reason}`;
+      } else {
+        streamMap.set(rec.stream.id, {
+          ...rec,
+          score: rec.score * 0.4,
+        });
+      }
+    });
+
+    // If not enough recommendations, add trending streams
+    if (streamMap.size < limit) {
+      const trending = await this.getTrendingStreams(limit - streamMap.size);
+      trending.forEach(stream => {
+        if (!streamMap.has(stream.id)) {
+          streamMap.set(stream.id, {
+            stream,
+            score: 50,
+            reason: 'Trending now',
+          });
+        }
+      });
+    }
+
+    // Convert to array and sort by score
+    const recommendations = Array.from(streamMap.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
+    return {
+      streams: recommendations,
+      total: recommendations.length,
+    };
   }
 }

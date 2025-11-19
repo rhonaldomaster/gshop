@@ -298,4 +298,76 @@ export class LiveController {
   async collectStreamMetrics(@Param('streamId') streamId: string) {
     return this.metricsService.collectStreamMetrics(streamId);
   }
+
+  // ==================== DISCOVERY & SEARCH ENDPOINTS ====================
+
+  @Get('discover')
+  @ApiOperation({ summary: 'Discover active streams with filters and pagination' })
+  @ApiResponse({ status: 200, description: 'Active streams retrieved successfully' })
+  async discoverStreams(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('category') category?: string,
+    @Query('tags') tags?: string,
+    @Query('sortBy') sortBy?: 'viewers' | 'likes' | 'trending' | 'recent',
+  ) {
+    const tagsArray = tags ? tags.split(',').map(t => t.trim()) : undefined;
+
+    return this.liveService.getActiveStreamsWithFilters({
+      page: page ? parseInt(page.toString()) : 1,
+      limit: limit ? parseInt(limit.toString()) : 20,
+      category,
+      tags: tagsArray,
+      sortBy: sortBy || 'trending',
+    });
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Search live streams by title or description' })
+  @ApiResponse({ status: 200, description: 'Search results retrieved successfully' })
+  async searchStreams(
+    @Query('q') query: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('category') category?: string,
+  ) {
+    return this.liveService.searchStreams({
+      query,
+      page: page ? parseInt(page.toString()) : 1,
+      limit: limit ? parseInt(limit.toString()) : 20,
+      category,
+    });
+  }
+
+  @Get('trending')
+  @ApiOperation({ summary: 'Get trending live streams' })
+  @ApiResponse({ status: 200, description: 'Trending streams retrieved successfully' })
+  async getTrendingStreams(@Query('limit') limit?: number) {
+    return this.liveService.getTrendingStreams(
+      limit ? parseInt(limit.toString()) : 10,
+    );
+  }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get all available stream categories' })
+  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  async getCategories() {
+    return this.liveService.getCategories();
+  }
+
+  @Get('for-you')
+  @ApiOperation({ summary: 'Get personalized "For You" feed with recommendations' })
+  @ApiResponse({ status: 200, description: 'Personalized feed retrieved successfully' })
+  async getForYouFeed(
+    @Request() req,
+    @Query('limit') limit?: number,
+  ) {
+    // Extract userId from JWT if available (optional auth)
+    const userId = req.user?.userId || req.user?.id || null;
+
+    return this.liveService.getForYouFeed(
+      userId,
+      limit ? parseInt(limit.toString()) : 20,
+    );
+  }
 }
