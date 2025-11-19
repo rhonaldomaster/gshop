@@ -11,6 +11,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { LiveService } from './live.service';
 import { SendMessageDto } from './dto';
+import { ReactionType } from './live.entity';
 
 @WebSocketGateway({
   namespace: '/live',
@@ -162,9 +163,35 @@ export class LiveGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   ) {
     try {
       const { streamId, ...messageData } = data;
+      const userData = client.data;
+
+      // Check if user is banned or timed out
+      if (userData?.userId) {
+        const isBanned = await this.liveService.isUserBanned(streamId, userData.userId);
+        if (isBanned) {
+          client.emit('error', { message: 'You are banned from this stream' });
+          return;
+        }
+
+        const isTimedOut = await this.liveService.isUserTimedOut(streamId, userData.userId);
+        if (isTimedOut) {
+          client.emit('error', { message: 'You are temporarily timed out' });
+          return;
+        }
+
+        // Check rate limit (5 messages per 10 seconds)
+        const canSend = await this.liveService.checkRateLimit(userData.userId, 5, 10);
+        if (!canSend) {
+          client.emit('error', { message: 'Slow down! You are sending messages too fast' });
+          return;
+        }
+      }
 
       // Save message to database
       const message = await this.liveService.sendMessage(streamId, messageData);
+
+      // Get user badge
+      const badge = await this.liveService.getUserBadge(streamId, userData?.userId);
 
       // Broadcast to all viewers in the stream
       this.server.to(streamId).emit('newMessage', {
@@ -173,10 +200,176 @@ export class LiveGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
         message: message.message,
         sentAt: message.sentAt,
         user: message.user,
+        badge, // Include badge in message
       });
 
     } catch (error) {
       client.emit('error', { message: 'Failed to send message', error: error.message });
+    }
+  }
+
+  @SubscribeMessage('sendReaction')
+  async handleSendReaction(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string; type: ReactionType },
+  ) {
+    try {
+      const { streamId, type } = data;
+      const userData = client.data;
+
+      // Save reaction to database
+      const reaction = await this.liveService.sendReaction(
+        streamId,
+        userData?.userId || null,
+        userData?.sessionId || null,
+        type,
+      );
+
+      // Broadcast reaction to all viewers
+      this.server.to(streamId).emit('newReaction', {
+        type,
+        username: userData?.username || 'Guest',
+        timestamp: reaction.createdAt,
+      });
+
+      // Send acknowledgment to sender
+      client.emit('reactionSent', { type, timestamp: reaction.createdAt });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to send reaction', error: error.message });
+    }
+  }
+
+  @SubscribeMessage('deleteMessage')
+  async handleDeleteMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string; messageId: string },
+  ) {
+    try {
+      const { streamId, messageId } = data;
+      const userData = client.data;
+
+      if (!userData?.userId) {
+        client.emit('error', { message: 'Authentication required' });
+        return;
+      }
+
+      // Get user badge to check if they can moderate
+      const badge = await this.liveService.getUserBadge(streamId, userData.userId);
+
+      if (badge !== 'seller' && badge !== 'affiliate') {
+        client.emit('error', { message: 'Only hosts can delete messages' });
+        return;
+      }
+
+      // Delete the message
+      await this.liveService.deleteMessage(messageId, userData.userId);
+
+      // Broadcast deletion to all viewers
+      this.server.to(streamId).emit('messageDeleted', {
+        messageId,
+        deletedBy: userData.userId,
+      });
+
+      client.emit('messageDeleteSuccess', { messageId });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to delete message', error: error.message });
+    }
+  }
+
+  @SubscribeMessage('banUser')
+  async handleBanUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string; userId: string; reason: string },
+  ) {
+    try {
+      const { streamId, userId, reason } = data;
+      const userData = client.data;
+
+      if (!userData?.userId) {
+        client.emit('error', { message: 'Authentication required' });
+        return;
+      }
+
+      // Get user badge to check if they can moderate
+      const badge = await this.liveService.getUserBadge(streamId, userData.userId);
+
+      if (badge !== 'seller' && badge !== 'affiliate') {
+        client.emit('error', { message: 'Only hosts can ban users' });
+        return;
+      }
+
+      // Ban the user
+      await this.liveService.banUser(streamId, userId, userData.userId, reason);
+
+      // Broadcast ban to all viewers
+      this.server.to(streamId).emit('userBanned', {
+        userId,
+        bannedBy: userData.userId,
+        reason,
+      });
+
+      // Notify the banned user and disconnect them
+      const bannedUserSockets = await this.server.in(streamId).fetchSockets();
+      for (const socket of bannedUserSockets) {
+        if (socket.data?.userId === userId) {
+          socket.emit('bannedFromStream', { reason });
+          socket.leave(streamId);
+        }
+      }
+
+      client.emit('banSuccess', { userId });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to ban user', error: error.message });
+    }
+  }
+
+  @SubscribeMessage('timeoutUser')
+  async handleTimeoutUser(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string; userId: string; timeoutMinutes: number },
+  ) {
+    try {
+      const { streamId, userId, timeoutMinutes } = data;
+      const userData = client.data;
+
+      if (!userData?.userId) {
+        client.emit('error', { message: 'Authentication required' });
+        return;
+      }
+
+      // Get user badge to check if they can moderate
+      const badge = await this.liveService.getUserBadge(streamId, userData.userId);
+
+      if (badge !== 'seller' && badge !== 'affiliate') {
+        client.emit('error', { message: 'Only hosts can timeout users' });
+        return;
+      }
+
+      // Timeout the user
+      await this.liveService.timeoutUser(streamId, userId, timeoutMinutes, userData.userId);
+
+      // Broadcast timeout to all viewers
+      this.server.to(streamId).emit('userTimedOut', {
+        userId,
+        timeoutMinutes,
+        moderatorId: userData.userId,
+      });
+
+      // Notify the timed out user
+      const timedOutUserSockets = await this.server.in(streamId).fetchSockets();
+      for (const socket of timedOutUserSockets) {
+        if (socket.data?.userId === userId) {
+          socket.emit('timedOut', { timeoutMinutes });
+        }
+      }
+
+      client.emit('timeoutSuccess', { userId, timeoutMinutes });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to timeout user', error: error.message });
     }
   }
 

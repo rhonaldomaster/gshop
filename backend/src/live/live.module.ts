@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { LiveController } from './live.controller';
 import { LiveService } from './live.service';
 import { LiveGateway } from './live.gateway';
+import { LiveMetricsService } from './live-metrics.service';
 import {
   LiveStream,
   LiveStreamProduct,
@@ -40,6 +41,7 @@ export const IVS_SERVICE = 'IVS_SERVICE';
   providers: [
     LiveService,
     LiveGateway,
+    LiveMetricsService,
     {
       provide: IVS_SERVICE,
       useFactory: (configService: ConfigService) => {
@@ -56,6 +58,6 @@ export const IVS_SERVICE = 'IVS_SERVICE';
       inject: [ConfigService],
     },
   ],
-  exports: [LiveService, LiveGateway, IVS_SERVICE],
+  exports: [LiveService, LiveGateway, LiveMetricsService, IVS_SERVICE],
 })
 export class LiveModule {}

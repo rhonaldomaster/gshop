@@ -36,9 +36,9 @@ export class AwsIvsService implements IIvsService {
   private async initializeClient() {
     try {
       // Dynamic import to avoid errors when @aws-sdk/client-ivs is not installed
-      const { IVS } = await import('@aws-sdk/client-ivs');
+      const { IvsClient } = await import('@aws-sdk/client-ivs');
 
-      this.ivsClient = new IVS({
+      this.ivsClient = new IvsClient({
         region: this.region,
         credentials: {
           accessKeyId: this.configService.get('AWS_IVS_ACCESS_KEY_ID'),

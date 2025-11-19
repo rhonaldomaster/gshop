@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, IsNull } from 'typeorm';
-import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType } from './live.entity';
+import { Repository, Not, IsNull, MoreThan } from 'typeorm';
+import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType, LiveStreamReaction, ReactionType } from './live.entity';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
@@ -22,6 +22,8 @@ export class LiveService {
     private streamMessageRepository: Repository<LiveStreamMessage>,
     @InjectRepository(LiveStreamViewer)
     private streamViewerRepository: Repository<LiveStreamViewer>,
+    @InjectRepository(LiveStreamReaction)
+    private streamReactionRepository: Repository<LiveStreamReaction>,
     @InjectRepository(Affiliate)
     private affiliateRepository: Repository<Affiliate>,
     @InjectRepository(Order)
@@ -666,5 +668,200 @@ export class LiveService {
       relations: ['product'],
       order: { position: 'ASC' },
     });
+  }
+
+  // ==================== REACTIONS ====================
+
+  /**
+   * Send a reaction to the live stream
+   */
+  async sendReaction(streamId: string, userId: string | null, sessionId: string | null, type: ReactionType): Promise<LiveStreamReaction> {
+    const reaction = this.streamReactionRepository.create({
+      streamId,
+      userId,
+      sessionId,
+      type,
+    });
+
+    const saved = await this.streamReactionRepository.save(reaction);
+
+    // Update stream likes count if reaction is LIKE or HEART
+    if (type === ReactionType.LIKE || type === ReactionType.HEART) {
+      await this.liveStreamRepository.increment({ id: streamId }, 'likesCount', 1);
+    }
+
+    console.log(`[Live Service] Reaction ${type} sent to stream ${streamId}`);
+
+    return saved;
+  }
+
+  /**
+   * Get recent reactions for a stream
+   */
+  async getStreamReactions(streamId: string, limit: number = 50): Promise<LiveStreamReaction[]> {
+    return this.streamReactionRepository.find({
+      where: { streamId },
+      relations: ['user'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
+  }
+
+  // ==================== BADGES ====================
+
+  /**
+   * Get user badge based on their role in the stream
+   */
+  async getUserBadge(streamId: string, userId: string | null): Promise<string | null> {
+    if (!userId) return null;
+
+    const stream = await this.liveStreamRepository.findOne({
+      where: { id: streamId },
+      relations: ['seller', 'affiliate'],
+    });
+
+    if (!stream) return null;
+
+    // Check if user is the seller/host
+    if (stream.sellerId === userId) return 'seller';
+    if (stream.affiliateId === userId) return 'affiliate';
+
+    // Check if user is a moderator (can be extended to check moderator table)
+    // For now, we'll use a simple check - extend this with a moderators table later
+
+    // Check if user has made purchases in this stream (VIP badge)
+    const purchases = await this.orderRepository.count({
+      where: { liveSessionId: streamId, userId },
+    });
+
+    if (purchases > 0) return 'vip';
+
+    return null;
+  }
+
+  // ==================== MODERATION ====================
+
+  /**
+   * Delete a chat message
+   */
+  async deleteMessage(messageId: string, moderatorId: string): Promise<void> {
+    const message = await this.streamMessageRepository.findOne({
+      where: { id: messageId },
+    });
+
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
+
+    message.isDeleted = true;
+    message.deletedBy = moderatorId;
+    message.deletedAt = new Date();
+
+    await this.streamMessageRepository.save(message);
+
+    console.log(`[Live Service] Message ${messageId} deleted by ${moderatorId}`);
+  }
+
+  /**
+   * Ban a user from the stream
+   */
+  async banUser(streamId: string, userId: string, bannedBy: string, reason: string): Promise<void> {
+    // Find all viewer records for this user in this stream
+    const viewers = await this.streamViewerRepository.find({
+      where: { streamId, userId },
+    });
+
+    for (const viewer of viewers) {
+      viewer.isBanned = true;
+      viewer.bannedBy = bannedBy;
+      viewer.banReason = reason;
+      await this.streamViewerRepository.save(viewer);
+    }
+
+    console.log(`[Live Service] User ${userId} banned from stream ${streamId} by ${bannedBy}`);
+  }
+
+  /**
+   * Timeout a user temporarily
+   */
+  async timeoutUser(streamId: string, userId: string, timeoutMinutes: number, moderatorId: string): Promise<void> {
+    const viewer = await this.streamViewerRepository.findOne({
+      where: { streamId, userId, leftAt: IsNull() },
+    });
+
+    if (!viewer) {
+      throw new NotFoundException('Viewer not found in stream');
+    }
+
+    const timeoutUntil = new Date();
+    timeoutUntil.setMinutes(timeoutUntil.getMinutes() + timeoutMinutes);
+
+    viewer.timeoutUntil = timeoutUntil;
+    viewer.bannedBy = moderatorId;
+
+    await this.streamViewerRepository.save(viewer);
+
+    console.log(`[Live Service] User ${userId} timed out for ${timeoutMinutes} minutes in stream ${streamId}`);
+  }
+
+  /**
+   * Check if a user is banned from a stream
+   */
+  async isUserBanned(streamId: string, userId: string): Promise<boolean> {
+    const viewer = await this.streamViewerRepository.findOne({
+      where: { streamId, userId, isBanned: true },
+    });
+
+    return !!viewer;
+  }
+
+  /**
+   * Check if a user is currently timed out
+   */
+  async isUserTimedOut(streamId: string, userId: string): Promise<boolean> {
+    const viewer = await this.streamViewerRepository.findOne({
+      where: {
+        streamId,
+        userId,
+        timeoutUntil: MoreThan(new Date()),
+      },
+    });
+
+    return !!viewer;
+  }
+
+  // ==================== RATE LIMITING ====================
+
+  private messageRateLimiter = new Map<string, { count: number; resetAt: Date }>();
+
+  /**
+   * Check if user can send a message (rate limiting)
+   */
+  async checkRateLimit(userId: string, maxMessages: number = 5, windowSeconds: number = 10): Promise<boolean> {
+    const now = new Date();
+    const key = userId;
+
+    const limiter = this.messageRateLimiter.get(key);
+
+    if (!limiter || limiter.resetAt < now) {
+      // Reset or initialize rate limiter
+      const resetAt = new Date(now.getTime() + windowSeconds * 1000);
+      this.messageRateLimiter.set(key, { count: 1, resetAt });
+      return true;
+    }
+
+    if (limiter.count >= maxMessages) {
+      return false; // Rate limit exceeded
+    }
+
+    limiter.count++;
+    return true;
+  }
+
+  /**
+   * Clear rate limiter for a user (useful for VIPs or moderators)
+   */
+  clearRateLimit(userId: string): void {
+    this.messageRateLimiter.delete(userId);
   }
 }

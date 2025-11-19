@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LiveService } from './live.service';
+import { LiveMetricsService } from './live-metrics.service';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
 import { HostType } from './live.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -20,7 +21,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('live')
 export class LiveController {
-  constructor(private readonly liveService: LiveService) {}
+  constructor(
+    private readonly liveService: LiveService,
+    private readonly metricsService: LiveMetricsService,
+  ) {}
 
   // Seller endpoints
   @Post('streams')
@@ -265,5 +269,33 @@ export class LiveController {
   @ApiResponse({ status: 200, description: 'Highlighted products retrieved successfully' })
   async getHighlightedProducts(@Param('streamId') streamId: string) {
     return this.liveService.getHighlightedProducts(streamId);
+  }
+
+  // ==================== METRICS ENDPOINTS ====================
+
+  @Get('streams/:streamId/metrics/history')
+  @ApiOperation({ summary: 'Get metrics history for a stream' })
+  @ApiResponse({ status: 200, description: 'Metrics history retrieved successfully' })
+  async getMetricsHistory(
+    @Param('streamId') streamId: string,
+    @Query('limit') limit?: number,
+  ) {
+    return this.metricsService.getStreamMetricsHistory(streamId, limit || 60);
+  }
+
+  @Get('streams/:streamId/metrics/summary')
+  @ApiOperation({ summary: 'Get aggregated metrics summary for a stream' })
+  @ApiResponse({ status: 200, description: 'Metrics summary retrieved successfully' })
+  async getMetricsSummary(@Param('streamId') streamId: string) {
+    return this.metricsService.getStreamMetricsSummary(streamId);
+  }
+
+  @Post('streams/:streamId/metrics/collect')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Manually trigger metrics collection for a stream' })
+  @ApiResponse({ status: 200, description: 'Metrics collected successfully' })
+  async collectStreamMetrics(@Param('streamId') streamId: string) {
+    return this.metricsService.collectStreamMetrics(streamId);
   }
 }
