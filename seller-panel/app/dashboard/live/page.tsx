@@ -291,27 +291,103 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
   const { data: session } = useSession()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+  const [tags, setTags] = useState('')
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([])
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('')
+  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products', {
+        headers: {
+          'Authorization': `Bearer ${session?.accessToken}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setProducts(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    }
+  }
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setThumbnailFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const toggleProduct = (productId: string) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      // First create the stream
+      const streamData: any = {
+        title,
+        description,
+        hostType: 'seller'
+      }
+
+      if (category) streamData.category = category
+      if (tags) streamData.tags = tags.split(',').map(t => t.trim())
+
       const response = await fetch('/api/live/streams', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.accessToken}`
         },
-        body: JSON.stringify({
-          title,
-          description,
-          hostType: 'seller'
-        })
+        body: JSON.stringify(streamData)
       })
 
       if (response.ok) {
+        const stream = await response.json()
+
+        // Add selected products to the stream
+        if (selectedProducts.length > 0) {
+          await Promise.all(
+            selectedProducts.map(productId =>
+              fetch(`/api/live/streams/${stream.id}/products`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session?.accessToken}`
+                },
+                body: JSON.stringify({
+                  productId,
+                  isActive: true
+                })
+              })
+            )
+          )
+        }
+
+        // TODO: Upload thumbnail if provided (requires upload endpoint)
+        // This would typically upload to S3/CDN and update stream.thumbnailUrl
+
         onSuccess()
       }
     } catch (error) {
@@ -322,11 +398,12 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('createLiveStream')}</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('streamTitle')}
@@ -341,6 +418,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
             />
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {t('streamDescription')}
@@ -354,6 +432,112 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
             />
           </div>
 
+          {/* Category & Tags Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select category</option>
+                <option value="fashion">Fashion</option>
+                <option value="electronics">Electronics</option>
+                <option value="beauty">Beauty</option>
+                <option value="home">Home & Living</option>
+                <option value="food">Food & Beverage</option>
+                <option value="sports">Sports</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tags
+              </label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="trending, sale, new (comma separated)"
+              />
+            </div>
+          </div>
+
+          {/* Thumbnail Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Thumbnail Image
+            </label>
+            <div className="flex items-center space-x-4">
+              {thumbnailPreview && (
+                <img
+                  src={thumbnailPreview}
+                  alt="Preview"
+                  className="w-20 h-20 object-cover rounded-lg"
+                />
+              )}
+              <label className="flex-1 flex items-center justify-center px-4 py-2 border-2 border-dashed border-gray-300 rounded-md hover:border-blue-500 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleThumbnailChange}
+                  className="hidden"
+                />
+                <span className="text-sm text-gray-600">
+                  {thumbnailFile ? thumbnailFile.name : 'Click to upload thumbnail'}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Products Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Select Products to Feature
+            </label>
+            <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
+              {products.length === 0 ? (
+                <p className="p-4 text-sm text-gray-500 text-center">No products available</p>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {products.map((product) => (
+                    <label
+                      key={product.id}
+                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={() => toggleProduct(product.id)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <img
+                        src={product.images?.[0] || '/placeholder.jpg'}
+                        alt={product.name}
+                        className="w-10 h-10 object-cover rounded ml-3"
+                      />
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium text-gray-900">{product.name}</p>
+                        <p className="text-xs text-gray-500">${product.price}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            {selectedProducts.length > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''} selected
+              </p>
+            )}
+          </div>
+
+          {/* Buttons */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"

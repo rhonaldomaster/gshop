@@ -17,6 +17,7 @@ import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
 import { AwsIvsMockService } from './aws-ivs-mock.service';
 import { AwsIvsService } from './aws-ivs.service';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * IVS_SERVICE Token
@@ -35,7 +36,8 @@ export const IVS_SERVICE = 'IVS_SERVICE';
       LiveStreamMetrics,
       Affiliate,
       Order
-    ])
+    ]),
+    NotificationsModule,
   ],
   controllers: [LiveController],
   providers: [

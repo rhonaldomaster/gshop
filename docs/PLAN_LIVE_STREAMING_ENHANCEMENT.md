@@ -3,7 +3,7 @@
 **Proyecto:** GSHOP - TikTok Shop Clone MVP
 **Módulo:** Enhanced Live Shopping Platform
 **Fecha:** Noviembre 2025
-**Estado:** ✅ Fase 2 Completada - Listo para Fase 3 (Seller Panel & Analytics)
+**Estado:** 🚧 Fase 3 Casi Completa (83%) - Seller Panel, Analytics y Push Notifications completados, pendiente Scheduled Streams
 **Última Actualización:** 2025-01-19
 
 ---
@@ -17,6 +17,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 ### ✅ FASE 1 - Semana 1: Setup de Infraestructura Cloud (COMPLETADO)
 
 #### 1. AWS Setup ✅
+
 - ✅ Servicio mock de AWS IVS implementado (`aws-ivs-mock.service.ts`)
 - ✅ Creación de canales IVS con stream keys
 - ✅ URLs de ingest RTMP y playback HLS generadas
@@ -25,6 +26,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 - 📝 **Nota:** Usando credenciales mock hasta obtener keys reales de AWS
 
 #### 2. Database Schema Migration ✅
+
 - ✅ Extendida entidad `LiveStream` con nuevos campos:
   - `thumbnailUrl`, `ivsChannelArn`, `category`, `tags`
   - `likesCount`, `sharesCount`
@@ -40,6 +42,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 - ✅ Índices optimizados creados
 
 #### 3. Redis Setup ✅
+
 - ✅ Servicio mock de cache implementado (`cache-mock.service.ts`)
 - ✅ Operaciones soportadas: get, set, del, expire, incr, decr, sadd, smembers
 - ✅ TTL automático y cleanup de entradas expiradas
@@ -47,6 +50,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 - 📝 **Nota:** Usando in-memory mock, puede cambiarse a Redis real cuando esté disponible
 
 #### 4. Environment Configuration ✅
+
 - ✅ Variables de AWS IVS agregadas a `.env` y `.env.example`
 - ✅ Configuración de RTMP/HLS URLs
 - ✅ WebSocket configuration
@@ -56,6 +60,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 ### ✅ FASE 1 - Semana 2-3: Backend API Core (COMPLETADO - 100%)
 
 #### 5. Enhanced Live Stream Service ✅
+
 - ✅ Integración con AWS IVS Mock Service
 - ✅ `createLiveStream`: Crea canal IVS + entidad de DB
 - ✅ `startLiveStream`: Simula stream started webhook
@@ -63,6 +68,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 - ✅ Generación automática de thumbnails y URLs de playback
 
 #### 6. Product Overlay System ✅
+
 - ✅ API para highlight/hide productos durante live
 - ✅ Método `highlightProduct`: Muestra producto en overlay
 - ✅ Método `hideProduct`: Oculta producto del overlay
@@ -76,6 +82,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
   - `GET /live/streams/:id/products/highlighted`
 
 #### 7. Advanced Chat System ✅
+
 - ✅ Mejoras en `LiveGateway` para reacciones y moderación
 - ✅ Rate limiting para mensajes (5 msg/10s con sliding window)
 - ✅ Sistema de badges (seller, affiliate, VIP) basado en roles y compras
@@ -92,6 +99,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
   - `checkRateLimit()`, `clearRateLimit()`
 
 #### 8. Real-time Metrics Service ✅
+
 - ✅ Servicio `LiveMetricsService` implementado (`live-metrics.service.ts`)
 - ✅ Cron job cada 60 segundos para streams activos (`@Cron(CronExpression.EVERY_MINUTE)`)
 - ✅ Métricas capturadas:
@@ -100,7 +108,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
   - `reactionsCount` - Reacciones últimos 60s
   - `purchasesCount` - Órdenes durante el stream
   - `revenue` - Suma total de ventas
-  - `conversionRate` - (purchases / peak viewers) * 100
+  - `conversionRate` - (purchases / peak viewers) \* 100
 - ✅ Almacenamiento en `live_stream_metrics`
 - ✅ WebSocket broadcast de métricas en tiempo real a viewers
 - ✅ REST API endpoints:
@@ -115,23 +123,24 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 
 ### 📊 Resumen de Progreso
 
-| Componente | Estado | Progreso |
-|-----------|--------|----------|
-| **Semana 1: Infraestructura** | ✅ Completado | 100% |
-| - AWS IVS Mock | ✅ | 100% |
-| - DB Migrations | ✅ | 100% |
-| - Redis Mock | ✅ | 100% |
-| - Environment Config | ✅ | 100% |
-| **Semana 2-3: Backend Core** | ✅ Completado | 100% |
-| - Live Stream Service | ✅ | 100% |
-| - Product Overlay System | ✅ | 100% |
-| - Advanced Chat System | ✅ | 100% |
-| - Metrics Service | ✅ | 100% |
-| **FASE 1 TOTAL** | ✅ | **100%** |
+| Componente                    | Estado        | Progreso |
+| ----------------------------- | ------------- | -------- |
+| **Semana 1: Infraestructura** | ✅ Completado | 100%     |
+| - AWS IVS Mock                | ✅            | 100%     |
+| - DB Migrations               | ✅            | 100%     |
+| - Redis Mock                  | ✅            | 100%     |
+| - Environment Config          | ✅            | 100%     |
+| **Semana 2-3: Backend Core**  | ✅ Completado | 100%     |
+| - Live Stream Service         | ✅            | 100%     |
+| - Product Overlay System      | ✅            | 100%     |
+| - Advanced Chat System        | ✅            | 100%     |
+| - Metrics Service             | ✅            | 100%     |
+| **FASE 1 TOTAL**              | ✅            | **100%** |
 
 ### 📁 Archivos Implementados en Fase 1
 
 #### Backend Core (`backend/src/live/`)
+
 - ✅ `live.entity.ts` - Entidades extendidas (LiveStreamReaction, LiveStreamMetrics)
 - ✅ `live.service.ts` - Métodos de reacciones, badges, moderación, rate limiting
 - ✅ `live.gateway.ts` - WebSocket events (sendReaction, deleteMessage, banUser, timeoutUser)
@@ -142,6 +151,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 - ✅ `package.json` - Instalado `@aws-sdk/client-ivs`
 
 #### Funcionalidades Añadidas
+
 1. **Reacciones en Tiempo Real**
    - 6 tipos: like, heart, fire, clap, laugh, wow
    - Persistencia en DB + broadcast WebSocket
@@ -174,6 +184,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 ### 📊 Resumen Técnico - Fase 1
 
 **Estadísticas de Implementación:**
+
 - ✅ **8 componentes** completados
 - ✅ **2 entidades nuevas** (LiveStreamReaction, LiveStreamMetrics)
 - ✅ **4 entidades extendidas** (LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer)
@@ -189,6 +200,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 **Archivos Nuevos:** 1 archivo (live-metrics.service.ts)
 
 **Testing Status:**
+
 - ✅ Build exitoso sin errores TypeScript
 - ⏳ Pendiente: Unit tests (Fase 2+)
 - ⏳ Pendiente: E2E tests (Fase 2+)
@@ -227,11 +239,13 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 ### 📁 Archivos Implementados en Fase 2
 
 #### Backend Discovery & Recommendations (`backend/src/live/`)
+
 - ✅ `live.service.ts:868-1061` - Discovery methods (discover, search, trending, categories)
 - ✅ `live.service.ts:1063-1337` - **NUEVO** Recommendation engine (collaborative, content-based, hybrid)
 - ✅ `live.controller.ts:302-372` - Discovery & recommendation endpoints
 
 #### Funcionalidades Añadidas - Week 4 (Discovery)
+
 1. **Active Streams Discovery**
    - Paginación completa con page/limit
    - Filtros por category, tags
@@ -251,6 +265,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
    - Endpoint: `GET /api/v1/live/trending`
 
 #### Funcionalidades Añadidas - Week 5 (Recommendations)
+
 1. **Collaborative Filtering**
    - Análisis de comportamiento de usuarios similares
    - "Users who watched X also watched Y"
@@ -272,6 +287,7 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 ### 📊 Resumen Técnico - Fase 2
 
 **Estadísticas de Implementación:**
+
 - ✅ **6 features** completadas (discover, search, trending, categories, collaborative, content-based, for-you)
 - ✅ **7 métodos nuevos** en LiveService
 - ✅ **5 REST endpoints** (discover, search, trending, categories, for-you)
@@ -284,16 +300,321 @@ Este documento presenta el plan de trabajo para transformar el sistema actual de
 **Archivos Nuevos:** 0 (usó entidades existentes)
 
 **Testing Status:**
+
 - ✅ Build exitoso sin errores TypeScript
 - ✅ Usa entidad `live_stream_viewers` existente como viewing history
 - ⏳ Pendiente: Unit tests (Fase 3+)
 - ⏳ Pendiente: E2E tests (Fase 3+)
+
+---
+
+### ✅ FASE 3 - Semana 6-7: Seller Panel & Analytics (COMPLETADO - Enero 2025)
+
+#### 📦 Funcionalidades Implementadas
+
+**Semana 6: Seller Dashboard**
+
+✅ **Tarea 15: Enhanced Live Stream Creation UI**
+- ✅ Selector de productos con checkboxes durante creación
+- ✅ Upload de thumbnail con preview en tiempo real
+- ✅ Selector de categoría (7 categorías predefinidas)
+- ✅ Input de tags (comma-separated)
+- ✅ Modal expandido con mejor UX (max-w-2xl, scroll)
+- ✅ Agregado automático de productos al stream tras creación
+- ✅ Internacionalización lista para i18n
+
+✅ **Tarea 16: Stream Management Interface**
+- ✅ RTMP credentials display con copy buttons
+- ✅ Modal completo de instrucciones de OBS Studio
+  - 5 pasos detallados con color coding
+  - Links a descarga oficial de OBS
+  - Recomendaciones de bitrate y resolución
+  - Warnings y mejores prácticas
+  - Copy-to-clipboard para URL y Stream Key
+- ✅ Controles de productos durante live (highlight/hide)
+  - Botón "Show" para mostrar producto en overlay
+  - Botón "Hide" para ocultar del overlay
+  - Badge "Featured" para productos highlighted
+  - Star icon visual indicator
+  - Solo aparecen cuando stream está en vivo
+
+✅ **Tarea 17: Real-time Analytics Panel**
+- ✅ 4 Summary cards con métricas clave:
+  - Avg Viewers (con ícono TrendingUp)
+  - Total Messages (chat activity)
+  - Total Purchases
+  - Conversion Rate (%)
+- ✅ Gráfico de Area Chart - Viewer Count Over Time
+  - Gradient azul con fill
+  - Timestamps en eje X
+  - Tooltips informativos
+- ✅ Gráfico de Line Chart - Chat Activity (Messages/Min)
+  - Línea verde con dots
+  - Actualización en tiempo real
+- ✅ Gráfico de Bar Chart - Revenue Tracking
+  - Barras amarillas por timestamp
+  - Formato de currency en tooltips
+- ✅ Tabla de Product Performance
+  - Imagen del producto
+  - Orders count
+  - Revenue generado
+  - Conversion rate por producto
+- ✅ Auto-refresh cada 30 segundos cuando stream está en vivo
+- ✅ Collapsible panel
+- ✅ Empty state con mensaje informativo
+
+**Semana 7: Moderation & Notifications**
+
+✅ **Tarea 18: Chat Moderation Tools**
+- ✅ Panel collapsible "Chat Moderation"
+- ✅ Vista de últimos 20 mensajes con timestamps
+- ✅ 3 acciones de moderación por mensaje:
+  - **Delete**: Botón rojo para eliminar mensaje específico
+  - **Timeout**: Botón amarillo para mute temporal (5 min configurable)
+  - **Ban**: Botón rojo para ban permanente con razón
+- ✅ Confirmaciones con modals nativos
+- ✅ Refresh automático tras acciones
+- ✅ Info box con explicación de acciones
+- ✅ Solo visible cuando stream está en vivo
+- ✅ Empty state cuando no hay mensajes
+
+✅ **Tarea 19: Push Notifications**
+- ✅ Servicio completo de notificaciones con FCM
+- ✅ Notificación automática cuando seller inicia live stream
+- ✅ Notificaciones de compras a vendedor (con buyer name y monto)
+- ✅ Sistema de device tokens (registro/remoción)
+- ✅ Soporte para iOS, Android y Web
+- ✅ Método para scheduled stream reminders (15 min antes)
+- ✅ Graceful degradation si FCM no está configurado
+- ✅ Integración con LiveService y OrdersService
+
+⏳ **Tarea 20: Scheduled Streams** (Pendiente)
+- ⏳ UI para programar lives futuros
+- ⏳ Botón "Remind Me" para usuarios
+- ⏳ Email/push notifications 15 min antes
+- ⏳ Countdown timer en app
+
+### 📊 Resumen de Progreso - Fase 3
+
+| Componente                       | Estado        | Progreso |
+| -------------------------------- | ------------- | -------- |
+| **Semana 6: Seller Dashboard**   | ✅ Completado | 100%     |
+| - Enhanced Stream Creation UI    | ✅            | 100%     |
+| - Stream Management Interface    | ✅            | 100%     |
+| - Real-time Analytics Panel      | ✅            | 100%     |
+| **Semana 7: Moderation & Notif** | 🚧 Parcial    | 67%      |
+| - Chat Moderation Tools          | ✅            | 100%     |
+| - Push Notifications (Backend)   | ✅            | 100%     |
+| - Scheduled Streams              | ⏳            | 0%       |
+| **FASE 3 TOTAL**                 | 🚧            | **83%**  |
+
+### 📁 Archivos Implementados en Fase 3
+
+#### Backend - Push Notifications (`backend/src/notifications/`)
+
+- ✅ `notifications.service.ts` - **NUEVO** - Servicio completo de FCM
+  - `sendToDevice()` - Enviar a un token
+  - `sendToMultipleDevices()` - Enviar a múltiples tokens (batch)
+  - `notifyLiveStreamStarted()` - Notificar followers cuando stream inicia
+  - `notifyPurchaseMade()` - Notificar seller de compra
+  - `notifyScheduledStreamReminder()` - Reminder 15 min antes
+  - `registerDeviceToken()` - Guardar token de dispositivo
+  - `removeDeviceToken()` - Desactivar token
+  - Inicialización dinámica de Firebase (no rompe si no está configurado)
+- ✅ `device-token.entity.ts` - **NUEVO** - Entidad para device tokens
+  - Campos: userId, token, platform, isActive
+  - Índices en userId y token (unique)
+- ✅ `notifications.controller.ts` - **NUEVO** - REST API endpoints
+  - `POST /api/v1/notifications/register-token`
+  - `DELETE /api/v1/notifications/remove-token`
+  - `GET /api/v1/notifications/status`
+- ✅ `notifications.module.ts` - **NUEVO** - Módulo exportable
+- ✅ `live.service.ts` - Integración con notificaciones
+  - Llama a `notifyLiveStreamStarted()` en línea ~184
+- ✅ `live.module.ts` - Importa NotificationsModule
+- ✅ `orders.service.ts` - Integración con notificaciones
+  - Llama a `notifyPurchaseMade()` después del commit (línea ~226)
+  - Agrupa notificaciones por seller si hay múltiples productos
+- ✅ `orders.module.ts` - Importa NotificationsModule
+
+#### Seller Panel (`seller-panel/app/dashboard/live/`)
+
+- ✅ `page.tsx` - Lista de streams con enhanced create modal
+  - CreateStreamModal component (líneas ~289-561)
+  - Product selector con checkboxes
+  - Thumbnail upload con preview
+  - Category dropdown (7 categorías)
+  - Tags input (comma-separated)
+- ✅ `[id]/page.tsx` - Stream detail page con analytics y moderación
+  - OBSInstructionsModal component (líneas ~472-652)
+  - LiveStreamProduct interface actualizada con `isHighlighted` y `position`
+  - toggleProductHighlight method
+  - fetchMetrics method con auto-refresh
+  - Chat Moderation section (líneas ~567-724)
+  - Real-time Analytics section (líneas ~726-761)
+    - Summary cards
+    - 3 Recharts graphs
+    - Product performance table
+
+#### Funcionalidades Añadidas
+
+1. **Enhanced Stream Creation**
+   - Selector visual de productos con imágenes
+   - Upload de thumbnail con FileReader API
+   - 7 categorías predefinidas
+   - Tags separados por comas
+   - Agregado batch de productos tras crear stream
+
+2. **OBS Studio Integration**
+   - Modal paso a paso con 5 secciones
+   - Color-coded border indicators
+   - Copy buttons para RTMP URL y Stream Key
+   - Link directo a descarga de OBS
+   - Recomendaciones de bitrate: 2500-4500 kbps
+   - Resoluciones sugeridas: 720p/1080p
+
+3. **Product Highlight Controls**
+   - Toggle highlight/hide durante live stream
+   - Visual indicators: star badge + "Featured" label
+   - Llamadas a endpoints `/products/:id/highlight` y `/products/:id/hide`
+   - Cambio de color en botones (blue → yellow)
+   - Solo visible cuando status === 'live'
+
+4. **Real-time Analytics Dashboard**
+   - **Area Chart** - Viewer count con gradient fill
+   - **Line Chart** - Messages per minute (verde)
+   - **Bar Chart** - Revenue tracking (amarillo)
+   - Fetch dual: metrics history + summary
+   - Auto-refresh interval de 30s
+   - Tooltips con formateo de fechas y valores
+
+5. **Chat Moderation Interface**
+   - Display de 20 mensajes más recientes (reversed)
+   - **Delete message**: Confirmación + DELETE request
+   - **Timeout user**: Prompt + POST a `/timeout` (300s)
+   - **Ban user**: Prompt con razón + POST a `/ban`
+   - Refresh tras cada acción moderada
+   - Collapsible con toggle button
+
+6. **Push Notifications System**
+   - **Firebase Cloud Messaging** integration
+   - **Device Token Management**:
+     - Registro de tokens (iOS/Android/Web)
+     - Storage en database con status activo/inactivo
+     - Cleanup automático al logout
+   - **Live Stream Notifications**:
+     - Trigger automático al iniciar stream
+     - Envío a todos los followers del seller
+     - Incluye thumbnail del stream
+     - Data payload: streamId, sellerId, type
+   - **Purchase Notifications**:
+     - Trigger automático al completar orden
+     - Notifica al seller con nombre del comprador
+     - Agrupa por seller si hay múltiples productos
+     - Muestra monto total y producto comprado
+   - **Scheduled Stream Reminders**:
+     - Método para enviar 15 min antes
+     - Incluye thumbnail y título del stream
+     - Ready para cron job integration
+   - **Graceful Degradation**:
+     - Sistema funciona sin FCM configurado
+     - Logs informativos de estado
+     - No rompe funcionalidad principal
+   - **Batch Operations**:
+     - `sendMulticast()` para múltiples tokens
+     - Success/failure count tracking
+     - Error handling por token individual
+
+### 📊 Resumen Técnico - Fase 3
+
+**Estadísticas de Implementación:**
+
+- ✅ **7 features** completadas de 8 planeadas (87.5%)
+- ✅ **2 componentes modales** nuevos (CreateStreamModal enhanced, OBSInstructionsModal)
+- ✅ **1 sección de analytics** con 4 cards + 3 graphs + 1 table
+- ✅ **1 sección de moderation** con 3 acciones
+- ✅ **1 módulo completo de notificaciones** (service + entity + controller + module)
+- ✅ **3 métodos nuevos en seller panel** (toggleProductHighlight, fetchMetrics, moderation handlers)
+- ✅ **9 métodos en NotificationsService** (send, register, notify, etc.)
+- ✅ **4 Recharts components** (AreaChart, LineChart, BarChart, ResponsiveContainer)
+- ✅ **5 REST endpoints** (3 notifications + 2 metrics)
+- ✅ **1 entidad nueva** (DeviceToken)
+- ✅ **2 integraciones** (LiveService, OrdersService)
+- ✅ **Auto-refresh** cada 30s durante live streams
+
+**Líneas de Código Agregadas:** ~1,000 líneas
+**Archivos Backend Modificados:** 4 archivos (live.service.ts, live.module.ts, orders.service.ts, orders.module.ts)
+**Archivos Backend Nuevos:** 4 archivos (notifications.service.ts, device-token.entity.ts, notifications.controller.ts, notifications.module.ts)
+**Archivos Seller Panel Modificados:** 2 archivos (page.tsx, [id]/page.tsx)
+**Archivos Seller Panel Nuevos:** 0 (componentes inline)
+
+**Testing Status:**
+
+- ⏳ Pendiente: Build test en seller-panel
+- ⏳ Pendiente: Integration tests con backend metrics API
+- ⏳ Pendiente: E2E tests de moderation flow
+
+### ⚙️ Configuración Requerida - Push Notifications
+
+**Para activar Firebase Cloud Messaging:**
+
+1. **Obtener Service Account de Firebase:**
+   ```bash
+   # 1. Ir a Firebase Console (console.firebase.google.com)
+   # 2. Seleccionar proyecto
+   # 3. Project Settings → Service Accounts
+   # 4. Generate new private key (descarga JSON)
+   # 5. Guardar en backend/firebase-service-account.json
+   ```
+
+2. **Configurar variable de entorno:**
+   ```bash
+   # backend/.env
+   FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
+   ```
+
+3. **Ejecutar migración de database:**
+   ```bash
+   cd backend
+   npm run migration:generate -- -n AddDeviceTokensTable
+   npm run migration:run
+   ```
+
+4. **Instalar firebase-admin (opcional si no está):**
+   ```bash
+   cd backend
+   npm install firebase-admin
+   ```
+
+**Nota:** El sistema funciona sin FCM configurado (graceful degradation). Las notificaciones simplemente no se enviarán pero el resto de la funcionalidad continúa normal.
+
+### 🎯 Próximos Pasos - Fase 3
+
+**Completar Semana 7:**
+
+1. **Scheduled Streams (Tarea 20)**
+   - Backend: Agregar campo `scheduledAt` a LiveStream entity
+   - Seller Panel: UI para programar fecha/hora futura
+   - Backend: Cron job para notificar 15 min antes
+   - Mobile: Botón "Remind Me" + countdown timer
+   - Backend: Scheduled streams en discovery feed
+
+**Siguiente: FASE 4 - Mobile App & Live Checkout**
+
+Semana 8-11:
+- Mobile streaming (camera access, RTMP publisher)
+- Live player optimizado para mobile
+- Quick checkout flow
+- Discovery feed & personalization
+
+---
 
 ### 🔗 Referencias de Código Clave - Fase 1
 
 Para revisión y debugging, estas son las ubicaciones principales del código implementado:
 
 **WebSocket Events:**
+
 - `backend/src/live/live.gateway.ts:211-241` - Reacciones
 - `backend/src/live/live.gateway.ts:243-279` - Delete message
 - `backend/src/live/live.gateway.ts:281-327` - Ban user
@@ -301,11 +622,13 @@ Para revisión y debugging, estas son las ubicaciones principales del código im
 - `backend/src/live/live.gateway.ts:159-209` - Send message (con rate limit y ban check)
 
 **Service Methods:**
+
 - `backend/src/live/live.service.ts:678-708` - Reacciones
 - `backend/src/live/live.service.ts:715-740` - Badges
 - `backend/src/live/live.service.ts:747-866` - Moderación y rate limiting
 
 **Metrics Service:**
+
 - `backend/src/live/live-metrics.service.ts:28-59` - Cron job collector
 - `backend/src/live/live-metrics.service.ts:64-126` - Metrics collection logic
 - `backend/src/live/live-metrics.service.ts:128-140` - Metrics history
@@ -313,26 +636,31 @@ Para revisión y debugging, estas son las ubicaciones principales del código im
 - `backend/src/live/live-metrics.service.ts:181-194` - Auto cleanup
 
 **REST API:**
+
 - `backend/src/live/live.controller.ts:276-300` - Metrics endpoints
 
 **Entities:**
+
 - `backend/src/live/live.entity.ts:240-276` - LiveStreamReaction
 - `backend/src/live/live.entity.ts:278-313` - LiveStreamMetrics
 
 ### 🔗 Referencias de Código Clave - Fase 2
 
 **Discovery Methods:**
+
 - `backend/src/live/live.service.ts:873-964` - Active streams con filtros y cache
 - `backend/src/live/live.service.ts:966-1007` - Search con full-text
 - `backend/src/live/live.service.ts:1009-1028` - Trending algorithm
 - `backend/src/live/live.service.ts:1033-1042` - Categories
 
 **Recommendation Engine:**
+
 - `backend/src/live/live.service.ts:1065-1147` - Collaborative filtering
 - `backend/src/live/live.service.ts:1149-1256` - Content-based filtering
 - `backend/src/live/live.service.ts:1258-1337` - Hybrid "For You" feed
 
 **REST Endpoints:**
+
 - `backend/src/live/live.controller.ts:304-323` - Discover endpoint
 - `backend/src/live/live.controller.ts:325-340` - Search endpoint
 - `backend/src/live/live.controller.ts:342-349` - Trending endpoint
@@ -344,6 +672,7 @@ Para revisión y debugging, estas son las ubicaciones principales del código im
 ### Estado Actual (Phase 2 - Implementado)
 
 ✅ **Ya implementado:**
+
 - Live streaming básico con RTMP/HLS
 - WebSocket para chat en tiempo real
 - Entidades de base de datos: `live_streams`, `live_stream_products`, `live_stream_messages`, `live_stream_viewers`
@@ -355,6 +684,7 @@ Para revisión y debugging, estas son las ubicaciones principales del código im
 ### Objetivos del Enhancement
 
 🎯 **Mejoras principales:**
+
 1. **Streaming escalable** con baja latencia (< 3 segundos)
 2. **Overlay de productos** interactivo en el video
 3. **Chat avanzado** con reacciones, likes, moderación
@@ -1240,7 +1570,7 @@ socket.on('live:milestone:purchase', {
   streamId: 'stream_123',
   milestone: 100,
   message: '🎊 100 products sold during this live!',
-  totalRevenue: 45000.00
+  totalRevenue: 45000.0
 });
 ```
 
@@ -1262,7 +1592,7 @@ socket.on('live:stream:ended', {
   totalViews: 1250,
   peakViewers: 342,
   totalPurchases: 87,
-  revenue: 52000.00,
+  revenue: 52000.0,
   recordingUrl: 'https://...' // VOD if recorded
 });
 
@@ -1293,12 +1623,12 @@ socket.on('live:analytics:update', {
   messagesPerMinute: 24,
   reactionsPerMinute: 67,
   purchasesCount: 12,
-  revenue: 14500.00,
+  revenue: 14500.0,
   topProduct: {
     id: 'prod_789',
     name: 'iPhone 15',
     soldCount: 5,
-    revenue: 6000.00
+    revenue: 6000.0
   }
 });
 
@@ -1320,28 +1650,28 @@ socket.on('live:product:alert', {
 
 #### Servicios Clave
 
-| Servicio               | Propósito                         | Costo Estimado (MVP)  |
-| ---------------------- | --------------------------------- | --------------------- |
-| **AWS IVS**            | Streaming RTMP → HLS              | $0.015/viewer-hour    |
-|                        | - Managed transcoding             | ~$200-500/month       |
-|                        | - Global CDN                      | (100-500 viewers)     |
-|                        | - < 3s latency                    |                       |
-| **EC2 (t3.medium)**    | NestJS Backend API                | $30/month             |
-|                        | 2 vCPU, 4 GB RAM                  |                       |
-| **RDS PostgreSQL**     | Primary database                  | $50/month             |
-|                        | db.t3.small                       | (t3.micro)            |
-| **ElastiCache Redis**  | Sessions, chat cache, leaderboard | $15/month             |
-|                        | cache.t3.micro                    |                       |
-| **CloudFront**         | CDN for videos, images            | $10-50/month          |
-|                        |                                   | (50-500 GB transfer)  |
-| **S3**                 | Video recordings, thumbnails      | $5-10/month           |
-|                        |                                   | (100-500 GB storage)  |
-| **Lambda**             | Webhooks, async processing        | $5/month              |
-|                        |                                   | (1M requests)         |
-| **CloudWatch**         | Monitoring, logs, alerts          | $10/month             |
-| **SES (Simple Email)** | Notifications                     | $1/month              |
-|                        |                                   | (10K emails)          |
-| **Total**              |                                   | **~$350-700/month**   |
+| Servicio               | Propósito                         | Costo Estimado (MVP) |
+| ---------------------- | --------------------------------- | -------------------- |
+| **AWS IVS**            | Streaming RTMP → HLS              | $0.015/viewer-hour   |
+|                        | - Managed transcoding             | ~$200-500/month      |
+|                        | - Global CDN                      | (100-500 viewers)    |
+|                        | - < 3s latency                    |                      |
+| **EC2 (t3.medium)**    | NestJS Backend API                | $30/month            |
+|                        | 2 vCPU, 4 GB RAM                  |                      |
+| **RDS PostgreSQL**     | Primary database                  | $50/month            |
+|                        | db.t3.small                       | (t3.micro)           |
+| **ElastiCache Redis**  | Sessions, chat cache, leaderboard | $15/month            |
+|                        | cache.t3.micro                    |                      |
+| **CloudFront**         | CDN for videos, images            | $10-50/month         |
+|                        |                                   | (50-500 GB transfer) |
+| **S3**                 | Video recordings, thumbnails      | $5-10/month          |
+|                        |                                   | (100-500 GB storage) |
+| **Lambda**             | Webhooks, async processing        | $5/month             |
+|                        |                                   | (1M requests)        |
+| **CloudWatch**         | Monitoring, logs, alerts          | $10/month            |
+| **SES (Simple Email)** | Notifications                     | $1/month             |
+|                        |                                   | (10K emails)         |
+| **Total**              |                                   | **~$350-700/month**  |
 
 #### Arquitectura AWS
 
@@ -1490,11 +1820,11 @@ sudo systemctl restart nginx
 
 #### Cost Comparison
 
-| Option             | Setup Time | Monthly Cost | Latency    | Scalability |
-| ------------------ | ---------- | ------------ | ---------- | ----------- |
-| **AWS IVS**        | 1 hour     | $200-500     | < 3s       | Auto        |
-| **Self-hosted**    | 1-2 days   | $50-100      | 5-10s      | Manual      |
-| **Agora WebRTC**   | 2-4 hours  | $300-800     | < 500ms    | Auto        |
+| Option           | Setup Time | Monthly Cost | Latency | Scalability |
+| ---------------- | ---------- | ------------ | ------- | ----------- |
+| **AWS IVS**      | 1 hour     | $200-500     | < 3s    | Auto        |
+| **Self-hosted**  | 1-2 days   | $50-100      | 5-10s   | Manual      |
+| **Agora WebRTC** | 2-4 hours  | $300-800     | < 500ms | Auto        |
 
 **Recomendación:** Empezar con **AWS IVS** para MVP, luego evaluar costos vs. self-hosted cuando tengas tráfico predecible.
 
@@ -1530,31 +1860,31 @@ function generateAgoraToken(channelName: string, uid: number) {
 
 ```typescript
 // Mobile app: Join channel
-import AgoraRTC from "agora-rtc-sdk-ng";
+import AgoraRTC from 'agora-rtc-sdk-ng';
 
-const client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
+const client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' });
 
 // Seller starts streaming
 await client.join(
   AGORA_APP_ID,
-  "stream_123", // channel name
+  'stream_123', // channel name
   token, // from backend
   sellerId // UID
 );
-await client.setClientRole("host");
+await client.setClientRole('host');
 
 const localVideoTrack = await AgoraRTC.createCameraVideoTrack();
 await client.publish([localVideoTrack]);
 
 // Viewer watches
-await client.join(AGORA_APP_ID, "stream_123", token, viewerId);
-await client.setClientRole("audience");
+await client.join(AGORA_APP_ID, 'stream_123', token, viewerId);
+await client.setClientRole('audience');
 
-client.on("user-published", async (user, mediaType) => {
+client.on('user-published', async (user, mediaType) => {
   await client.subscribe(user, mediaType);
-  if (mediaType === "video") {
+  if (mediaType === 'video') {
     const remoteVideoTrack = user.videoTrack;
-    remoteVideoTrack.play("video-container");
+    remoteVideoTrack.play('video-container');
   }
 });
 ```
@@ -1580,7 +1910,7 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
     ports:
-      - "3001:3000"
+      - '3001:3000'
 
   api-2:
     image: gshop-backend:latest
@@ -1589,14 +1919,14 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
     ports:
-      - "3002:3000"
+      - '3002:3000'
 
   nginx-lb:
     image: nginx:alpine
     volumes:
       - ./nginx-lb.conf:/etc/nginx/nginx.conf
     ports:
-      - "80:80"
+      - '80:80'
     depends_on:
       - api-1
       - api-2
@@ -1664,9 +1994,7 @@ import { Cache } from 'cache-manager';
 
 @Injectable()
 export class LiveService {
-  constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
-  ) {}
+  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
 
   async getActiveStreams() {
     const cacheKey = 'live:active_streams';
@@ -1678,7 +2006,7 @@ export class LiveService {
       // Query database
       streams = await this.liveStreamRepository.find({
         where: { status: 'live' },
-        order: { viewerCount: 'DESC' },
+        order: { viewerCount: 'DESC' }
       });
 
       // Cache for 30 seconds
@@ -1696,7 +2024,7 @@ export class LiveService {
     // Update DB every 10 increments (batch write)
     if (count % 10 === 0) {
       await this.liveStreamRepository.update(streamId, {
-        viewerCount: count,
+        viewerCount: count
       });
     }
 
@@ -1786,7 +2114,8 @@ export class LiveGateway {
     const key = `${userId}:messages`;
     const count = this.messageLimiter.get(key) || 0;
 
-    if (count > 10) { // 10 messages per 10 seconds
+    if (count > 10) {
+      // 10 messages per 10 seconds
       throw new WsException('Rate limit exceeded');
     }
 
@@ -1812,19 +2141,19 @@ export class MetricsService {
   trackStreamStarted(streamId: string, hostType: string) {
     Sentry.captureMessage('Stream Started', {
       level: 'info',
-      tags: { streamId, hostType },
+      tags: { streamId, hostType }
     });
 
     // Send to Datadog/CloudWatch
     this.publishMetric('live.stream.started', 1, {
       stream_id: streamId,
-      host_type: hostType,
+      host_type: hostType
     });
   }
 
   trackViewerJoined(streamId: string, viewerCount: number) {
     this.publishMetric('live.viewers', viewerCount, {
-      stream_id: streamId,
+      stream_id: streamId
     });
 
     // Alert if > 1000 viewers (scale up)
@@ -1832,14 +2161,14 @@ export class MetricsService {
       this.sendAlert('High viewer count', {
         streamId,
         viewerCount,
-        action: 'scale_up',
+        action: 'scale_up'
       });
     }
   }
 
   trackPurchase(streamId: string, amount: number) {
     this.publishMetric('live.purchase', amount, {
-      stream_id: streamId,
+      stream_id: streamId
     });
   }
 
@@ -1851,7 +2180,7 @@ export class MetricsService {
   private sendAlert(message: string, context: any) {
     Sentry.captureMessage(message, {
       level: 'warning',
-      extra: context,
+      extra: context
     });
   }
 }
@@ -1894,6 +2223,7 @@ export class MetricsService {
    - **Estimación:** 0.5 días
 
 **Entregables:**
+
 - ✅ AWS IVS funcionando con RTMP ingest y HLS playback
 - ✅ PostgreSQL con schema completo migrado
 - ✅ Redis configurado y funcionando
@@ -1932,6 +2262,7 @@ export class MetricsService {
    - **Estimación:** 2 días
 
 **Entregables:**
+
 - ✅ API REST completa para gestión de lives
 - ✅ WebSocket events funcionando (chat, products, reactions)
 - ✅ Sistema de moderación operativo
@@ -1945,6 +2276,7 @@ export class MetricsService {
 **Última Actualización:** 2025-01-19
 
 **Resumen de Implementación:**
+
 - ✅ 6 features principales completadas
 - ✅ 7 nuevos métodos de servicio
 - ✅ 5 nuevos REST endpoints
@@ -1977,10 +2309,10 @@ export class MetricsService {
     - ✅ Método `searchStreams()` en LiveService
     - ✅ Método `getCategories()` para obtener categorías disponibles
     - **Archivos:**
-     - `backend/src/live/live.service.ts:966-1007` - Search method
-     - `backend/src/live/live.service.ts:1033-1042` - Categories method
-     - `backend/src/live/live.controller.ts:325-340` - Search endpoint
-     - `backend/src/live/live.controller.ts:351-356` - Categories endpoint
+    - `backend/src/live/live.service.ts:966-1007` - Search method
+    - `backend/src/live/live.service.ts:1033-1042` - Categories method
+    - `backend/src/live/live.controller.ts:325-340` - Search endpoint
+    - `backend/src/live/live.controller.ts:351-356` - Categories endpoint
     - **Estimación:** 2 días → **Completado**
 
 11. **Trending Algorithm** ✅ COMPLETADO
@@ -1994,12 +2326,13 @@ export class MetricsService {
     - ✅ Query builder con `addSelect()` para trending score dinámico
     - ⏳ **Pendiente:** Cron job para refresh cada 5 min (opcional)
     - **Archivos:**
-     - `backend/src/live/live.service.ts:1009-1028` - Trending method
-     - `backend/src/live/live.service.ts:915-923` - Trending sort in discover
-     - `backend/src/live/live.controller.ts:342-349` - Trending endpoint
+    - `backend/src/live/live.service.ts:1009-1028` - Trending method
+    - `backend/src/live/live.service.ts:915-923` - Trending sort in discover
+    - `backend/src/live/live.controller.ts:342-349` - Trending endpoint
     - **Estimación:** 2 días → **Completado**
 
 **Entregables:**
+
 - ✅ Discovery feed funcionando con filtros y paginación
 - ✅ Búsqueda de streams activa con full-text search
 - ✅ Algoritmo de trending implementado y funcionando
@@ -2060,6 +2393,7 @@ export class MetricsService {
     - **Estimación:** 2 días → **Completado**
 
 **Entregables:**
+
 - ✅ Motor de recomendaciones funcionando con 3 algoritmos
 - ✅ Feed personalizado "For You" con scoring y razones
 - ✅ Tracking automático vía `live_stream_viewers` (usa entidad existente)
@@ -2100,6 +2434,7 @@ export class MetricsService {
     - **Estimación:** 3 días
 
 **Entregables:**
+
 - ✅ Seller panel con gestión completa de lives
 - ✅ Dashboard de analytics en tiempo real
 - ✅ UI 100% traducible
@@ -2134,6 +2469,7 @@ export class MetricsService {
     - **Estimación:** 2 días
 
 **Entregables:**
+
 - ✅ Herramientas de moderación funcionales
 - ✅ Sistema de notificaciones activo
 - ✅ Scheduled streams implementado
@@ -2147,52 +2483,58 @@ export class MetricsService {
 **Tareas:**
 
 **21. Camera Access & RTMP Publisher Integration**
-   - Instalar `react-native-nodemediaclient` o `react-native-live-stream`
-   - Request camera y microphone permissions
-   - Implementar RTMP publisher con device camera
-   - Video encoding: H.264, Audio: AAC
-   - Configuración de bitrate (720p: 2.5Mbps, 1080p: 4.5Mbps)
-   - **Estimación:** 3 días
+
+- Instalar `react-native-nodemediaclient` o `react-native-live-stream`
+- Request camera y microphone permissions
+- Implementar RTMP publisher con device camera
+- Video encoding: H.264, Audio: AAC
+- Configuración de bitrate (720p: 2.5Mbps, 1080p: 4.5Mbps)
+- **Estimación:** 3 días
 
 **22. "Go Live" Flow para Sellers**
-   - UI para crear stream desde mobile
-   - Formulario: título, descripción, productos
-   - Preview de cámara antes de ir live
-   - Botón "Start Streaming" que inicia RTMP push
-   - **Internacionalización:** Labels y placeholders traducidos
-   - **Estimación:** 3 días
+
+- UI para crear stream desde mobile
+- Formulario: título, descripción, productos
+- Preview de cámara antes de ir live
+- Botón "Start Streaming" que inicia RTMP push
+- **Internacionalización:** Labels y placeholders traducidos
+- **Estimación:** 3 días
 
 **23. Live Stream Controls (Mobile Streamer)**
-   - Bottom control panel durante streaming:
-     - Botón "End Stream"
-     - Toggle camera (front/back)
-     - Mute/unmute microphone
-     - Flash toggle (si disponible)
-   - Viewer count display en vivo
-   - Chat overlay (read-only para streamer, o collapsible)
-   - **Estimación:** 2 días
+
+- Bottom control panel durante streaming:
+  - Botón "End Stream"
+  - Toggle camera (front/back)
+  - Mute/unmute microphone
+  - Flash toggle (si disponible)
+- Viewer count display en vivo
+- Chat overlay (read-only para streamer, o collapsible)
+- **Estimación:** 2 días
 
 **24. Product Management During Mobile Live**
-   - Lista de productos agregados al stream
-   - Botón "Show" para highlight producto en viewers
-   - Botón "Hide" para ocultar overlay
-   - Pin producto (stays at top)
-   - Stock y sold count en tiempo real
-   - **Internacionalización:** Product actions traducidas
-   - **Estimación:** 3 días
+
+- Lista de productos agregados al stream
+- Botón "Show" para highlight producto en viewers
+- Botón "Hide" para ocultar overlay
+- Pin producto (stays at top)
+- Stock y sold count en tiempo real
+- **Internacionalización:** Product actions traducidas
+- **Estimación:** 3 días
 
 **25. Mobile Streaming Analytics (Streamer View)**
-   - Mini dashboard durante live:
-     - Current viewers (real-time)
-     - Peak viewers
-     - Messages/min
-     - Products clicked
-     - Purchases count
-     - Revenue so far
-   - Gráfico simple de viewer trend
-   - **Estimación:** 2 días
+
+- Mini dashboard durante live:
+  - Current viewers (real-time)
+  - Peak viewers
+  - Messages/min
+  - Products clicked
+  - Purchases count
+  - Revenue so far
+- Gráfico simple de viewer trend
+- **Estimación:** 2 días
 
 **Entregables:**
+
 - ✅ Sellers pueden iniciar live desde mobile app
 - ✅ RTMP streaming funcional desde cámara nativa
 - ✅ Controles de stream completos (camera flip, mute, end)
@@ -2229,6 +2571,7 @@ export class MetricsService {
     - **Estimación:** 2 días
 
 **Entregables:**
+
 - ✅ Video player funcionando con HLS
 - ✅ Product overlay interactivo
 - ✅ Chat en tiempo real en mobile
@@ -2279,6 +2622,7 @@ export class MetricsService {
     - **Estimación:** 2 días
 
 **Entregables:**
+
 - ✅ Live checkout funcional con atribución
 - ✅ Discovery feed completo
 - ✅ Feed personalizado "For You"
@@ -2322,6 +2666,7 @@ export class MetricsService {
     - **Estimación:** 1 día
 
 **Entregables:**
+
 - ✅ Sistema soporta 500+ viewers concurrentes
 - ✅ Sub-100ms response time para APIs críticas
 - ✅ Auto-scaling configurado y probado
@@ -2362,6 +2707,7 @@ export class MetricsService {
     - **Estimación:** 1 día
 
 **Entregables:**
+
 - ✅ Test coverage > 80%
 - ✅ E2E tests passing
 - ✅ Security vulnerabilities mitigadas
@@ -2408,6 +2754,7 @@ export class MetricsService {
     - **Estimación:** Ongoing (1-2 semanas)
 
 **Entregables:**
+
 - ✅ Plataforma en producción
 - ✅ Monitoring y alertas activas
 - ✅ Documentación completa
@@ -2417,15 +2764,15 @@ export class MetricsService {
 
 ## 📅 Cronograma Resumido
 
-| Fase                                    | Duración    | Fechas Estimadas  | Hitos                            |
-| --------------------------------------- | ----------- | ----------------- | -------------------------------- |
-| **Fase 1: Infraestructura**             | 3 semanas   | Semana 1-3        | AWS setup, DB migrations, Redis  |
-| **Fase 2: Descubrimiento**              | 2 semanas   | Semana 4-5        | Discovery feed, recommendations  |
-| **Fase 3: Seller Panel**                | 2 semanas   | Semana 6-7        | Stream management, analytics     |
-| **Fase 4: Mobile App** 🆕               | 4 semanas   | Semana 8-11       | Mobile streaming, player, checkout, discovery |
-| **Fase 5: Optimización**                | 2 semanas   | Semana 12-13      | Performance, testing, security   |
-| **Fase 6: Launch**                      | 1 semana    | Semana 14         | Production deployment, monitoring |
-| **TOTAL**                               | **14 semanas** | **~3.5 meses**  | MVP completo con mobile streaming |
+| Fase                        | Duración       | Fechas Estimadas | Hitos                                         |
+| --------------------------- | -------------- | ---------------- | --------------------------------------------- |
+| **Fase 1: Infraestructura** | 3 semanas      | Semana 1-3       | AWS setup, DB migrations, Redis               |
+| **Fase 2: Descubrimiento**  | 2 semanas      | Semana 4-5       | Discovery feed, recommendations               |
+| **Fase 3: Seller Panel**    | 2 semanas      | Semana 6-7       | Stream management, analytics                  |
+| **Fase 4: Mobile App** 🆕   | 4 semanas      | Semana 8-11      | Mobile streaming, player, checkout, discovery |
+| **Fase 5: Optimización**    | 2 semanas      | Semana 12-13     | Performance, testing, security                |
+| **Fase 6: Launch**          | 1 semana       | Semana 14        | Production deployment, monitoring             |
+| **TOTAL**                   | **14 semanas** | **~3.5 meses**   | MVP completo con mobile streaming             |
 
 ---
 
@@ -2483,14 +2830,11 @@ import * as path from 'path';
       fallbackLanguage: 'en',
       loaderOptions: {
         path: path.join(__dirname, '/i18n/'),
-        watch: true,
+        watch: true
       },
-      resolvers: [
-        { use: QueryResolver, options: ['lang'] },
-        AcceptLanguageResolver,
-      ],
-    }),
-  ],
+      resolvers: [{ use: QueryResolver, options: ['lang'] }, AcceptLanguageResolver]
+    })
+  ]
 })
 export class I18nConfigModule {}
 ```
@@ -2554,8 +2898,8 @@ npm install next-i18next react-i18next
 module.exports = {
   i18n: {
     defaultLocale: 'en',
-    locales: ['en', 'es', 'pt'],
-  },
+    locales: ['en', 'es', 'pt']
+  }
 };
 ```
 
@@ -2637,7 +2981,7 @@ import pt from './locales/pt.json';
 const i18n = new I18n({
   en,
   es,
-  pt,
+  pt
 });
 
 i18n.locale = Localization.locale;
@@ -2859,8 +3203,8 @@ export let options = {
     { duration: '1m', target: 50 }, // Ramp up to 50 users
     { duration: '3m', target: 100 }, // Stay at 100 users
     { duration: '1m', target: 200 }, // Spike to 200 users
-    { duration: '2m', target: 0 }, // Ramp down
-  ],
+    { duration: '2m', target: 0 } // Ramp down
+  ]
 };
 
 export default function () {
@@ -2868,7 +3212,7 @@ export default function () {
   let res = http.get('https://api.gshop.com/api/v1/live/streams/active');
   check(res, {
     'status is 200': (r) => r.status === 200,
-    'response time < 200ms': (r) => r.timings.duration < 200,
+    'response time < 200ms': (r) => r.timings.duration < 200
   });
 
   const streams = JSON.parse(res.body).streams;
@@ -2880,16 +3224,18 @@ export default function () {
   const ws = new WebSocket(`wss://api.gshop.com?token=${__ENV.JWT_TOKEN}`);
 
   ws.on('open', () => {
-    ws.send(JSON.stringify({
-      event: 'live:join',
-      data: { streamId }
-    }));
+    ws.send(
+      JSON.stringify({
+        event: 'live:join',
+        data: { streamId }
+      })
+    );
   });
 
   ws.on('message', (msg) => {
     const data = JSON.parse(msg);
     check(data, {
-      'received join confirmation': (d) => d.event === 'live:joined',
+      'received join confirmation': (d) => d.event === 'live:joined'
     });
   });
 
@@ -2897,10 +3243,12 @@ export default function () {
   sleep(30);
 
   // Test 3: Send chat message
-  ws.send(JSON.stringify({
-    event: 'live:message',
-    data: { streamId, message: 'Great product!' }
-  }));
+  ws.send(
+    JSON.stringify({
+      event: 'live:message',
+      data: { streamId, message: 'Great product!' }
+    })
+  );
 
   sleep(5);
   ws.close();
@@ -2955,29 +3303,29 @@ k6 run --vus 100 --duration 5m tests/load-test.js
 
 ### RTMP vs WebRTC
 
-| Protocolo     | Latencia | Costo        | Complejidad | Recomendación |
-| ------------- | -------- | ------------ | ----------- | ------------- |
-| **RTMP+HLS**  | 3-10s    | Bajo         | Baja        | ✅ **MVP**    |
-| **WebRTC**    | < 500ms  | Alto         | Alta        | ⏳ Post-MVP   |
+| Protocolo    | Latencia | Costo | Complejidad | Recomendación |
+| ------------ | -------- | ----- | ----------- | ------------- |
+| **RTMP+HLS** | 3-10s    | Bajo  | Baja        | ✅ **MVP**    |
+| **WebRTC**   | < 500ms  | Alto  | Alta        | ⏳ Post-MVP   |
 
 **Decisión:** Empezar con RTMP → HLS (AWS IVS) para MVP. La latencia de 3-5 segundos es aceptable para e-commerce. WebRTC es overkill y costoso para MVP.
 
 ### Self-hosted vs Managed Streaming
 
-| Opción           | Setup     | Costo/mes  | Escalabilidad | Recomendación |
-| ---------------- | --------- | ---------- | ------------- | ------------- |
-| **AWS IVS**      | 1 hour    | $200-500   | Auto          | ✅ **MVP**    |
-| **Self-hosted**  | 2 days    | $50-100    | Manual        | 💰 Si budget limitado |
-| **Agora.io**     | 4 hours   | $300-800   | Auto          | 🚀 Si ultra-low latency crítico |
+| Opción          | Setup   | Costo/mes | Escalabilidad | Recomendación                   |
+| --------------- | ------- | --------- | ------------- | ------------------------------- |
+| **AWS IVS**     | 1 hour  | $200-500  | Auto          | ✅ **MVP**                      |
+| **Self-hosted** | 2 days  | $50-100   | Manual        | 💰 Si budget limitado           |
+| **Agora.io**    | 4 hours | $300-800  | Auto          | 🚀 Si ultra-low latency crítico |
 
 **Decisión:** AWS IVS para MVP por rapidez y confiabilidad. Considerar self-hosted si costos escalan mucho (> $1000/mes).
 
 ### Database: SQL vs NoSQL para Chat
 
-| Database       | Pros                         | Cons                      | Recomendación |
-| -------------- | ---------------------------- | ------------------------- | ------------- |
-| **PostgreSQL** | ACID, relations, SQL queries | Slower writes             | ✅ **Usar**   |
-| **MongoDB**    | Fast writes, flexible schema | No ACID, harder queries   | ❌ No necesario |
+| Database       | Pros                         | Cons                        | Recomendación     |
+| -------------- | ---------------------------- | --------------------------- | ----------------- |
+| **PostgreSQL** | ACID, relations, SQL queries | Slower writes               | ✅ **Usar**       |
+| **MongoDB**    | Fast writes, flexible schema | No ACID, harder queries     | ❌ No necesario   |
 | **Redis**      | Ultra-fast, pub/sub          | No persistence (by default) | ✅ **Cache only** |
 
 **Decisión:** PostgreSQL + Redis. Postgres para persistencia, Redis para cache y pub/sub en tiempo real.
@@ -2997,16 +3345,16 @@ Este plan de trabajo proporciona una ruta clara para transformar GSHOP en una pl
 
 ### Riesgos & Mitigaciones
 
-| Riesgo                          | Probabilidad | Impacto | Mitigación                          |
-| ------------------------------- | ------------ | ------- | ----------------------------------- |
-| Latencia alta (> 10s)           | Baja         | Alto    | Usar AWS IVS (garantiza < 3s)       |
-| 🆕 RTMP mobile inestable        | Media        | Medio   | Reconexión automática + buffering adaptativo |
-| 🆕 Camera/mic permissions iOS/Android | Baja    | Alto    | Testing exhaustivo + UI clara de permisos |
-| 🆕 Battery drain en streaming   | Media        | Medio   | Optimización de bitrate + alertas de batería |
-| Costos escalan rápido           | Media        | Alto    | Monitor costos semanalmente, alertas a $500 |
-| Baja adopción de sellers        | Media        | Alto    | Incentivos (comisión 0% primer mes) |
-| WebSocket no escala             | Baja         | Medio   | Redis adapter + load balancing      |
-| Bugs críticos en producción     | Media        | Alto    | Testing exhaustivo + rollback plan  |
+| Riesgo                                | Probabilidad | Impacto | Mitigación                                   |
+| ------------------------------------- | ------------ | ------- | -------------------------------------------- |
+| Latencia alta (> 10s)                 | Baja         | Alto    | Usar AWS IVS (garantiza < 3s)                |
+| 🆕 RTMP mobile inestable              | Media        | Medio   | Reconexión automática + buffering adaptativo |
+| 🆕 Camera/mic permissions iOS/Android | Baja         | Alto    | Testing exhaustivo + UI clara de permisos    |
+| 🆕 Battery drain en streaming         | Media        | Medio   | Optimización de bitrate + alertas de batería |
+| Costos escalan rápido                 | Media        | Alto    | Monitor costos semanalmente, alertas a $500  |
+| Baja adopción de sellers              | Media        | Alto    | Incentivos (comisión 0% primer mes)          |
+| WebSocket no escala                   | Baja         | Medio   | Redis adapter + load balancing               |
+| Bugs críticos en producción           | Media        | Alto    | Testing exhaustivo + rollback plan           |
 
 ---
 
@@ -3163,7 +3511,7 @@ export function LiveStreamPublisher({ rtmpUrl, streamKey }: Props) {
 #### Configuración Recomendada de Bitrate
 
 | Resolución | Bitrate Video | Bitrate Audio | FPS | Uso Recomendado |
-|------------|---------------|---------------|-----|-----------------|
+| ---------- | ------------- | ------------- | --- | --------------- |
 | **360p**   | 600 kbps      | 64 kbps       | 30  | Red 3G/4G débil |
 | **480p**   | 1000 kbps     | 96 kbps       | 30  | 4G estándar     |
 | **720p**   | 2500 kbps     | 128 kbps      | 30  | 4G/5G, WiFi ✅  |
@@ -3191,7 +3539,3 @@ publisherRef.current?.on('NetStream.Publish.BadName', () => {
   Alert.alert('Error', 'Invalid stream credentials. Please try again.');
 });
 ```
-
----
-
-**¡Éxito con la implementación de GSHOP Live Shopping con Mobile Streaming! 🚀📺🛒📱**

@@ -13,6 +13,7 @@ import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { Seller } from '../sellers/entities/seller.entity';
 import { SellerLocation } from '../sellers/entities/seller-location.entity';
 import { ConfigModule as PlatformConfigModule } from '../config/config.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ConfigModule as PlatformConfigModule } from '../config/config.module';
       SellerLocation,
     ]),
     PlatformConfigModule, // Import ConfigModule to use ConfigService
+    NotificationsModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService, ShippingService],

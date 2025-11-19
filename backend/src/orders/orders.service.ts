@@ -12,6 +12,7 @@ import { LiveStream } from '../live/live.entity';
 import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { ConfigService as PlatformConfigService } from '../config/config.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class OrdersService {
@@ -29,6 +30,7 @@ export class OrdersService {
     private dataSource: DataSource,
     private platformConfigService: PlatformConfigService,
     private eventEmitter: EventEmitter2,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: string): Promise<Order> {
@@ -185,6 +187,54 @@ export class OrdersService {
       }
 
       await queryRunner.commitTransaction();
+
+      // Send purchase notifications to sellers (after commit)
+      try {
+        // Get buyer info
+        const buyer = await this.dataSource.manager.findOne('User', {
+          where: { id: userId },
+          select: ['firstName', 'lastName'],
+        });
+        const buyerName = buyer ? `${buyer.firstName || ''} ${buyer.lastName || ''}`.trim() : 'Guest';
+
+        // Get unique sellers from products
+        const productsWithSellers = await this.productRepository
+          .createQueryBuilder('product')
+          .select(['product.id', 'product.name', 'product.sellerId'])
+          .whereInIds(items.map(item => item.productId))
+          .getMany();
+
+        const sellerNotifications = new Map<string, { productName: string; amount: number }>();
+
+        for (const item of items) {
+          const productWithSeller = productsWithSellers.find(p => p.id === item.productId);
+          if (productWithSeller && productWithSeller.sellerId) {
+            const existing = sellerNotifications.get(productWithSeller.sellerId);
+            if (existing) {
+              existing.amount += item.totalPrice;
+            } else {
+              sellerNotifications.set(productWithSeller.sellerId, {
+                productName: productWithSeller.name,
+                amount: item.totalPrice,
+              });
+            }
+          }
+        }
+
+        // Send notification to each seller
+        for (const [sellerId, data] of sellerNotifications) {
+          await this.notificationsService.notifyPurchaseMade(
+            sellerId,
+            buyerName,
+            data.productName + (sellerNotifications.size > 1 ? ' and more' : ''),
+            data.amount,
+            savedOrder.id,
+          );
+        }
+      } catch (error) {
+        console.error(`[Orders Service] Failed to send purchase notifications: ${error.message}`);
+        // Don't throw - notifications are not critical
+      }
 
       return this.findOne(savedOrder.id);
     } catch (error) {

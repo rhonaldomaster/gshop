@@ -9,6 +9,7 @@ import { IIvsService } from './interfaces/ivs-service.interface';
 import { IVS_SERVICE } from './live.module';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheMockService } from '../common/cache/cache-mock.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class LiveService {
@@ -32,6 +33,7 @@ export class LiveService {
     @Inject(IVS_SERVICE)
     private ivsService: IIvsService,
     private cacheService: CacheMockService,
+    private notificationsService: NotificationsService,
   ) {}
 
   // Method to set gateway reference (called from gateway's onModuleInit)
@@ -174,6 +176,22 @@ export class LiveService {
     const savedStream = await this.liveStreamRepository.save(liveStream);
 
     console.log(`[Live Service] Stream ${savedStream.id} started`);
+
+    // Send push notifications to followers
+    const sellerId = savedStream.sellerId || savedStream.affiliateId;
+    if (sellerId) {
+      try {
+        await this.notificationsService.notifyLiveStreamStarted(
+          sellerId,
+          savedStream.title,
+          savedStream.id,
+          savedStream.thumbnailUrl,
+        );
+      } catch (error) {
+        console.error(`[Live Service] Failed to send notifications: ${error.message}`);
+        // Don't throw - notifications are not critical
+      }
+    }
 
     return savedStream;
   }
