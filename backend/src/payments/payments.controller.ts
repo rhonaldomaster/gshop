@@ -12,6 +12,7 @@ import {
   Request,
   Headers,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
@@ -28,6 +29,8 @@ import { UserRole } from '../database/entities/user.entity';
 @ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
+  private readonly logger = new Logger(PaymentsController.name);
+
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly mercadoPagoService: MercadoPagoService,
@@ -47,15 +50,18 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   async handleMercadoPagoWebhook(
     @Body() body: any,
-    @Headers('x-signature') signature?: string,
+    @Headers('x-signature') xSignature?: string,
+    @Headers('x-request-id') xRequestId?: string,
   ) {
-    // Validate webhook signature (optional but recommended)
-    if (signature) {
+    // Validate webhook signature
+    if (xSignature && xRequestId && body.data?.id) {
       const isValid = this.mercadoPagoService.validateWebhookSignature(
-        signature,
-        JSON.stringify(body),
+        xSignature,
+        xRequestId,
+        body.data.id,
       );
       if (!isValid) {
+        this.logger.error('Webhook signature validation failed');
         return { error: 'Invalid signature' };
       }
     }

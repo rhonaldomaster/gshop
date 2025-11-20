@@ -1,21 +1,88 @@
-
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { MercadoPagoConfig, Preference, Payment, PaymentRefund } from 'mercadopago';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class MercadoPagoService {
-  private readonly clientId: string;
-  private readonly clientSecret: string;
+  private readonly logger = new Logger(MercadoPagoService.name);
+  private readonly client: MercadoPagoConfig;
+  private readonly preferenceClient: Preference;
+  private readonly paymentClient: Payment;
+  private readonly refundClient: PaymentRefund;
   private readonly accessToken: string;
-  private readonly environment: string;
   private readonly webhookSecret: string;
 
   constructor(private configService: ConfigService) {
-    this.clientId = this.configService.get('MERCAPAGO_CLIENT_ID');
-    this.clientSecret = this.configService.get('MERCAPAGO_CLIENT_SECRET');
     this.accessToken = this.configService.get('MERCAPAGO_ACCESS_TOKEN');
-    this.environment = this.configService.get('MERCAPAGO_ENVIRONMENT', 'sandbox');
     this.webhookSecret = this.configService.get('MERCAPAGO_WEBHOOK_SECRET');
+
+    if (!this.accessToken) {
+      this.logger.warn('MercadoPago access token not configured');
+    }
+
+    if (!this.webhookSecret) {
+      this.logger.warn('MercadoPago webhook secret not configured - webhook validation will be skipped');
+    }
+
+    // Initialize MercadoPago SDK client
+    this.client = new MercadoPagoConfig({
+      accessToken: this.accessToken,
+      options: {
+        timeout: 5000,
+        idempotencyKey: 'unique-key', // Will be overridden per request
+      }
+    });
+
+    // Initialize API clients
+    this.preferenceClient = new Preference(this.client);
+    this.paymentClient = new Payment(this.client);
+    this.refundClient = new PaymentRefund(this.client);
+  }
+
+  async createPreference(preferenceData: {
+    items: Array<{
+      id?: string;
+      title: string;
+      quantity: number;
+      currency_id: string;
+      unit_price: number;
+    }>;
+    back_urls?: {
+      success: string;
+      failure: string;
+      pending: string;
+    };
+    auto_return?: 'approved' | 'all';
+    external_reference?: string;
+    notification_url?: string;
+  }): Promise<any> {
+    this.logger.log('Creating MercadoPago preference');
+    this.logger.debug('Preference data:', JSON.stringify(preferenceData, null, 2));
+
+    if (!this.accessToken) {
+      throw new BadRequestException('MercadoPago access token is missing');
+    }
+
+    try {
+      const preference = await this.preferenceClient.create({
+        body: preferenceData as any,
+      });
+
+      this.logger.log(`MercadoPago preference created: ${preference.id}`);
+      return preference;
+    } catch (error) {
+      this.logger.error('MercadoPago preference creation error:', error);
+
+      // Better error handling
+      if (error.cause) {
+        this.logger.error('Error cause:', JSON.stringify(error.cause, null, 2));
+      }
+
+      throw new BadRequestException(
+        `Failed to create MercadoPago preference: ${error.message || 'Unknown error'}`
+      );
+    }
   }
 
   async createPayment(paymentData: {
@@ -30,94 +97,34 @@ export class MercadoPagoService {
       quantity: number;
       unit_price: number;
     }>;
-    shippingAddress: any;
+    shippingAddress?: any;
     method: string;
+    paymentMethodId?: string; // Dynamic payment method from frontend (visa, mastercard, amex, etc.)
     installments?: number;
     cardToken?: string;
   }): Promise<any> {
-    // PLACEHOLDER IMPLEMENTATION
-    // In a real implementation, you would use the MercadoPago SDK
-    // Example: https://github.com/mercadopago/dx-nodejs
-
-    console.log('Creating MercadoPago payment:', {
+    this.logger.log('Creating MercadoPago payment');
+    this.logger.debug('Payment data:', {
       transactionId: paymentData.transactionId,
       orderId: paymentData.orderId,
       amount: paymentData.amount,
+      method: paymentData.method,
+      paymentMethodId: paymentData.paymentMethodId,
     });
 
-    // Validate required configuration
-    if (!this.accessToken || !this.clientId) {
-      throw new BadRequestException('MercadoPago configuration is missing');
+    if (!this.accessToken) {
+      throw new BadRequestException('MercadoPago access token is missing');
     }
 
-    // Simulate MercadoPago API call
-    const mockPaymentResponse = {
-      id: Math.floor(Math.random() * 1000000000),
-      status: 'pending', // approved, pending, in_process, rejected, cancelled, refunded, charged_back
-      status_detail: 'pending_waiting_payment',
-      operation_type: 'regular_payment',
-      date_created: new Date().toISOString(),
-      date_last_updated: new Date().toISOString(),
-      money_release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      transaction_amount: paymentData.amount,
-      currency_id: 'ARS',
-      description: paymentData.description,
-      installments: paymentData.installments || 1,
-      payer: {
-        id: Math.floor(Math.random() * 1000000),
-        email: paymentData.payerEmail,
-        identification: {
-          type: 'DNI',
-          number: '12345678',
-        },
-        phone: {
-          area_code: '11',
-          number: '1234567890',
-        },
-        first_name: 'John',
-        last_name: 'Doe',
-      },
-      payment_method_id: this.getPaymentMethodId(paymentData.method),
-      payment_type_id: this.getPaymentTypeId(paymentData.method),
-      order: {
-        id: paymentData.orderId,
-        type: 'mercadopago',
-      },
-      external_reference: paymentData.transactionId,
-      additional_info: {
-        items: paymentData.items,
-        shipments: {
-          receiver_address: {
-            zip_code: paymentData.shippingAddress.postalCode,
-            state_name: paymentData.shippingAddress.state,
-            city_name: paymentData.shippingAddress.city,
-            street_name: paymentData.shippingAddress.address1,
-            street_number: '123',
-          },
-        },
-      },
-      // Simulate different statuses for testing
-      ...(Math.random() > 0.8 && {
-        status: 'approved',
-        status_detail: 'accredited',
-        date_approved: new Date().toISOString(),
-      }),
-    };
-
-    // In a real implementation, you would make an HTTP request like:
-    /*
     try {
-      const response = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`,
-          'X-Idempotency-Key': paymentData.transactionId,
-        },
-        body: JSON.stringify({
+      // Use payment_method_id from frontend if provided, otherwise fallback to method mapping
+      const paymentMethodId = paymentData.paymentMethodId || this.getPaymentMethodId(paymentData.method);
+
+      const payment = await this.paymentClient.create({
+        body: {
           transaction_amount: paymentData.amount,
           description: paymentData.description,
-          payment_method_id: this.getPaymentMethodId(paymentData.method),
+          payment_method_id: paymentMethodId,
           payer: {
             email: paymentData.payerEmail,
           },
@@ -125,189 +132,185 @@ export class MercadoPagoService {
           installments: paymentData.installments || 1,
           token: paymentData.cardToken,
           additional_info: {
-            items: paymentData.items,
-            shipments: {
+            items: paymentData.items.map(item => ({
+              id: item.id,
+              title: item.title,
+              quantity: item.quantity,
+              unit_price: item.unit_price,
+            })),
+            shipments: paymentData.shippingAddress ? {
               receiver_address: {
                 zip_code: paymentData.shippingAddress.postalCode,
                 state_name: paymentData.shippingAddress.state,
                 city_name: paymentData.shippingAddress.city,
                 street_name: paymentData.shippingAddress.address1,
               },
-            },
+            } : undefined,
           },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`MercadoPago API error: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('MercadoPago payment creation error:', error);
-      throw new BadRequestException('Failed to create payment');
-    }
-    */
-
-    return mockPaymentResponse;
-  }
-
-  async createPreference(preferenceData: {
-    items: Array<{
-      title: string;
-      quantity: number;
-      currency_id: string;
-      unit_price: number;
-    }>;
-    back_urls: {
-      success: string;
-      failure: string;
-      pending: string;
-    };
-    auto_return?: string;
-    external_reference?: string;
-    notification_url?: string;
-  }): Promise<any> {
-    console.log('Creating MercadoPago preference:', preferenceData);
-
-    if (!this.accessToken) {
-      throw new BadRequestException('MercadoPago access token is missing');
-    }
-
-    try {
-      const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`,
         },
-        body: JSON.stringify(preferenceData),
-      });
+        requestOptions: {
+          idempotencyKey: paymentData.transactionId,
+        }
+      } as any);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('MercadoPago API error:', errorData);
-        throw new Error(`MercadoPago API error: ${response.statusText}`);
+      this.logger.log(`MercadoPago payment created: ${payment.id}`);
+      return payment;
+    } catch (error) {
+      this.logger.error('MercadoPago payment creation error:', error);
+
+      if (error.cause) {
+        this.logger.error('Error cause:', JSON.stringify(error.cause, null, 2));
       }
 
-      const preference = await response.json();
-      console.log('MercadoPago preference created:', preference.id);
-
-      return preference;
-    } catch (error) {
-      console.error('MercadoPago preference creation error:', error);
-      throw new BadRequestException('Failed to create MercadoPago preference');
+      throw new BadRequestException(
+        `Failed to create payment: ${error.message || 'Unknown error'}`
+      );
     }
   }
 
   async getPayment(paymentId: string): Promise<any> {
-    console.log('Getting MercadoPago payment:', paymentId);
+    this.logger.log(`Getting MercadoPago payment: ${paymentId}`);
 
     if (!this.accessToken) {
       throw new BadRequestException('MercadoPago access token is missing');
     }
 
     try {
-      const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-        },
-      });
+      const payment = await this.paymentClient.get({ id: paymentId });
+      this.logger.log(`Payment retrieved: ${paymentId}, status: ${payment.status}`);
+      return payment;
+    } catch (error) {
+      this.logger.error('MercadoPago get payment error:', error);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('MercadoPago API error:', errorData);
-        throw new Error(`MercadoPago API error: ${response.statusText}`);
+      if (error.cause) {
+        this.logger.error('Error cause:', JSON.stringify(error.cause, null, 2));
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('MercadoPago get payment error:', error);
-      throw new BadRequestException('Failed to get payment');
+      throw new BadRequestException(
+        `Failed to get payment: ${error.message || 'Unknown error'}`
+      );
     }
   }
 
-  async refundPayment(paymentId: string, amount: number): Promise<any> {
-    // PLACEHOLDER IMPLEMENTATION
-    console.log('Refunding MercadoPago payment:', paymentId, 'Amount:', amount);
+  async refundPayment(paymentId: string, amount?: number): Promise<any> {
+    this.logger.log(`Refunding MercadoPago payment: ${paymentId}, amount: ${amount || 'full'}`);
 
-    // In a real implementation:
-    /*
+    if (!this.accessToken) {
+      throw new BadRequestException('MercadoPago access token is missing');
+    }
+
     try {
-      const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}/refunds`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.accessToken}`,
-        },
-        body: JSON.stringify({
-          amount: amount,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`MercadoPago API error: ${response.statusText}`);
+      const refundBody: any = {};
+      if (amount) {
+        refundBody.amount = amount;
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('MercadoPago refund error:', error);
-      throw new BadRequestException('Failed to process refund');
-    }
-    */
+      const refund = await this.refundClient.create({
+        payment_id: paymentId,
+        body: refundBody,
+      } as any);
 
-    // Mock response
-    return {
-      id: Math.floor(Math.random() * 1000000),
-      payment_id: paymentId,
-      amount: amount,
-      source: {
-        id: 'refund_source_id',
-        name: 'Refund',
-        type: 'refund',
-      },
-      date_created: new Date().toISOString(),
-    };
+      this.logger.log(`Refund created: ${refund.id} for payment ${paymentId}`);
+      return refund;
+    } catch (error) {
+      this.logger.error('MercadoPago refund error:', error);
+
+      if (error.cause) {
+        this.logger.error('Error cause:', JSON.stringify(error.cause, null, 2));
+      }
+
+      throw new BadRequestException(
+        `Failed to process refund: ${error.message || 'Unknown error'}`
+      );
+    }
   }
 
-  validateWebhookSignature(signature: string, body: string): boolean {
-    // PLACEHOLDER IMPLEMENTATION
-    // In a real implementation, you would validate the webhook signature
-    /*
-    const crypto = require('crypto');
-    const expectedSignature = crypto
-      .createHmac('sha256', this.webhookSecret)
-      .update(body)
-      .digest('hex');
-    
-    return signature === expectedSignature;
-    */
+  validateWebhookSignature(
+    xSignature: string,
+    xRequestId: string,
+    dataId: string,
+  ): boolean {
+    this.logger.debug('Validating MercadoPago webhook signature');
 
-    console.log('Validating webhook signature (placeholder):', signature);
-    return true; // Always return true for placeholder
+    // If webhook secret is not configured, skip validation (development mode)
+    if (!this.webhookSecret) {
+      this.logger.warn('Webhook secret not configured - skipping signature validation');
+      return true;
+    }
+
+    try {
+      // Parse x-signature header: "ts=123456789,v1=hash_signature"
+      const signatureParts = this.parseXSignature(xSignature);
+      if (!signatureParts) {
+        this.logger.error('Invalid x-signature header format');
+        return false;
+      }
+
+      const { ts, v1 } = signatureParts;
+
+      // Build signature template: "id:{data.id};request-id:{x-request-id};ts:{ts};"
+      const signatureTemplate = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+      // Calculate HMAC-SHA256 signature
+      const calculatedSignature = crypto
+        .createHmac('sha256', this.webhookSecret)
+        .update(signatureTemplate)
+        .digest('hex');
+
+      // Compare signatures (constant-time comparison to prevent timing attacks)
+      const isValid = crypto.timingSafeEqual(
+        Buffer.from(calculatedSignature),
+        Buffer.from(v1),
+      );
+
+      if (!isValid) {
+        this.logger.error('Webhook signature validation failed', {
+          expected: calculatedSignature,
+          received: v1,
+          template: signatureTemplate,
+        });
+      } else {
+        this.logger.log('Webhook signature validated successfully');
+      }
+
+      return isValid;
+    } catch (error) {
+      this.logger.error('Error validating webhook signature:', error);
+      return false;
+    }
+  }
+
+  private parseXSignature(xSignature: string): { ts: string; v1: string } | null {
+    try {
+      // Format: "ts=123456789,v1=hash_signature"
+      const parts = xSignature.split(',');
+      const result: any = {};
+
+      for (const part of parts) {
+        const [key, value] = part.split('=');
+        result[key] = value;
+      }
+
+      if (!result.ts || !result.v1) {
+        return null;
+      }
+
+      return { ts: result.ts, v1: result.v1 };
+    } catch (error) {
+      this.logger.error('Error parsing x-signature header:', error);
+      return null;
+    }
   }
 
   private getPaymentMethodId(method: string): string {
     const methodMap: Record<string, string> = {
-      credit_card: 'visa', // This would be dynamic based on card
+      credit_card: 'visa', // Should be dynamic based on card
       debit_card: 'maestro',
-      bank_transfer: 'pse',
+      bank_transfer: 'pse', // For Colombia
       wallet: 'account_money',
-      pix: 'pix',
+      pix: 'pix', // For Brazil
     };
 
     return methodMap[method] || 'visa';
-  }
-
-  private getPaymentTypeId(method: string): string {
-    const typeMap: Record<string, string> = {
-      credit_card: 'credit_card',
-      debit_card: 'debit_card',
-      bank_transfer: 'bank_transfer',
-      wallet: 'account_money',
-      pix: 'bank_transfer',
-    };
-
-    return typeMap[method] || 'credit_card';
   }
 }

@@ -12,7 +12,6 @@ import { ethers } from 'ethers';
 export class PaymentsV2Service {
   private stripe: Stripe;
   private polygonProvider: ethers.JsonRpcProvider;
-  private usdcContractAddress = '0x2791bca1f2de4661ed88a30c99a7a9449aa84174'; // USDC on Polygon
 
   constructor(
     @InjectRepository(PaymentV2)
@@ -197,14 +196,65 @@ export class PaymentsV2Service {
 
   async initiateMercadoPagoPayment(payment: PaymentV2): Promise<string> {
     try {
-      // Create MercadoPago preference
-      const preference = await this.mercadopagoService.createPreference({
-        items: [{
-          title: `Order ${payment.orderId}`,
+      // Load order with items to show detailed product list in MercadoPago checkout
+      const order = await this.orderRepository.findOne({
+        where: { id: payment.orderId },
+        relations: ['items', 'items.product'],
+      });
+
+      if (!order) {
+        throw new NotFoundException(`Order ${payment.orderId} not found`);
+      }
+
+      // Build items array with real products
+      const items = order.items.map((item, index) => ({
+        id: item.product?.id || `item-${index}`,
+        title: item.product?.name || item.productSnapshot?.name || `Product ${index + 1}`,
+        quantity: item.quantity,
+        currency_id: 'COP',
+        unit_price: Number(item.unitPrice), // Price per unit (already includes VAT)
+        description: item.product?.description?.substring(0, 100) || undefined, // Optional, max 100 chars
+      }));
+
+      // Add shipping as an item if applicable
+      if (order.shippingAmount && Number(order.shippingAmount) > 0) {
+        items.push({
+          id: 'shipping',
+          title: 'Envío',
           quantity: 1,
           currency_id: 'COP',
-          unit_price: Number(payment.amount),
-        }],
+          unit_price: Number(order.shippingAmount),
+          description: order.shippingType === 'local' ? 'Envío local' : 'Envío nacional',
+        });
+      }
+
+      // Add discount as a negative item if applicable
+      if (order.discountAmount && Number(order.discountAmount) > 0) {
+        items.push({
+          id: 'discount',
+          title: 'Descuento',
+          quantity: 1,
+          currency_id: 'COP',
+          unit_price: -Number(order.discountAmount), // Negative price
+          description: 'Descuento aplicado',
+        });
+      }
+
+      // Verify total matches (for debugging)
+      const calculatedTotal = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+      const expectedTotal = Number(payment.amount);
+      if (Math.abs(calculatedTotal - expectedTotal) > 0.01) {
+        console.warn(`⚠️ Items total (${calculatedTotal}) doesn't match payment amount (${expectedTotal})`);
+      }
+
+      console.log(`✅ Creating MercadoPago preference with ${items.length} items (total: ${calculatedTotal} COP)`);
+
+      // Use API_URL_PUBLIC for webhooks if available (e.g., ngrok), otherwise use API_URL
+      const webhookBaseUrl = process.env.API_URL_PUBLIC || process.env.API_URL;
+      const shouldIncludeWebhook = webhookBaseUrl && !webhookBaseUrl.includes('localhost') && !webhookBaseUrl.includes('127.0.0.1');
+
+      const preferenceData: any = {
+        items,
         back_urls: {
           success: `${process.env.APP_URL}/payment/success?paymentId=${payment.id}`,
           failure: `${process.env.APP_URL}/payment/failure?paymentId=${payment.id}`,
@@ -212,8 +262,17 @@ export class PaymentsV2Service {
         },
         auto_return: 'approved',
         external_reference: payment.id,
-        notification_url: `${process.env.API_URL}/api/v1/payments-v2/webhooks/mercadopago`,
-      });
+      };
+
+      // Only add notification_url if we have a public URL (not localhost)
+      if (shouldIncludeWebhook) {
+        preferenceData.notification_url = `${webhookBaseUrl}/api/v1/payments-v2/webhooks/mercadopago`;
+        console.log('Using webhook URL:', preferenceData.notification_url);
+      } else {
+        console.log('Skipping notification_url (localhost detected). Use ngrok to enable webhooks.');
+      }
+
+      const preference = await this.mercadopagoService.createPreference(preferenceData);
 
       // Save MercadoPago preference data
       payment.mercadopagoPreferenceId = preference.id;

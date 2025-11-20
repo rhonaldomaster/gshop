@@ -147,10 +147,27 @@ export class PaymentsV2Controller {
   }
 
   @Post('webhooks/mercadopago')
-  async handleMercadoPagoWebhook(@Body() body: any, @Headers() headers: any) {
+  async handleMercadoPagoWebhook(
+    @Body() body: any,
+    @Headers('x-signature') xSignature?: string,
+    @Headers('x-request-id') xRequestId?: string,
+  ) {
     console.log('MercadoPago Webhook received:', body);
 
     try {
+      // Validate webhook signature before processing
+      if (xSignature && xRequestId && body.data?.id) {
+        const isValid = this.mercadopagoService.validateWebhookSignature(
+          xSignature,
+          xRequestId,
+          body.data.id,
+        );
+        if (!isValid) {
+          console.error('Webhook signature validation failed');
+          return { received: true, status: 'invalid_signature' };
+        }
+      }
+
       // MercadoPago sends different types of notifications
       // We're interested in 'payment' type
       if (body.type === 'payment' || body.topic === 'payment') {
