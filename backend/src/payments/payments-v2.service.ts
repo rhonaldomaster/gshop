@@ -58,7 +58,15 @@ export class PaymentsV2Service {
       await this.initiateMercadoPagoPayment(savedPayment);
     }
 
-    return this.paymentRepository.findOne({ where: { id: savedPayment.id } });
+    const finalPayment = await this.paymentRepository.findOne({ where: { id: savedPayment.id } });
+
+    console.log('🔍 Final payment being returned:', {
+      id: finalPayment.id,
+      paymentMetadata: finalPayment.paymentMetadata,
+      hasInitPoint: !!finalPayment.paymentMetadata?.mercadopago_init_point,
+    });
+
+    return finalPayment;
   }
 
   async processStripePayment(paymentId: string, paymentMethodId: string): Promise<PaymentV2> {
@@ -212,7 +220,7 @@ export class PaymentsV2Service {
         title: item.product?.name || item.productSnapshot?.name || `Product ${index + 1}`,
         quantity: item.quantity,
         currency_id: 'COP',
-        unit_price: Number(item.unitPrice), // Price per unit (already includes VAT)
+        unit_price: Math.round(Number(item.unitPrice)), // Price per unit (already includes VAT) - must be integer for COP
         description: item.product?.description?.substring(0, 100) || undefined, // Optional, max 100 chars
       }));
 
@@ -223,7 +231,7 @@ export class PaymentsV2Service {
           title: 'Envío',
           quantity: 1,
           currency_id: 'COP',
-          unit_price: Number(order.shippingAmount),
+          unit_price: Math.round(Number(order.shippingAmount)), // Must be integer for COP
           description: order.shippingType === 'local' ? 'Envío local' : 'Envío nacional',
         });
       }
@@ -235,15 +243,15 @@ export class PaymentsV2Service {
           title: 'Descuento',
           quantity: 1,
           currency_id: 'COP',
-          unit_price: -Number(order.discountAmount), // Negative price
+          unit_price: -Math.round(Number(order.discountAmount)), // Negative price - must be integer for COP
           description: 'Descuento aplicado',
         });
       }
 
       // Verify total matches (for debugging)
       const calculatedTotal = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-      const expectedTotal = Number(payment.amount);
-      if (Math.abs(calculatedTotal - expectedTotal) > 0.01) {
+      const expectedTotal = Math.round(Number(payment.amount)); // Must be integer for COP
+      if (Math.abs(calculatedTotal - expectedTotal) > 1) { // Allow 1 COP difference due to rounding
         console.warn(`⚠️ Items total (${calculatedTotal}) doesn't match payment amount (${expectedTotal})`);
       }
 

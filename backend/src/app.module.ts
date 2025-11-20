@@ -40,7 +40,7 @@ import { AppService } from './app.service';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '../.env',
+      // Reads from backend/.env (default behavior when run from backend/ directory)
     }),
     ScheduleModule.forRoot(),
     I18nModule.forRoot({

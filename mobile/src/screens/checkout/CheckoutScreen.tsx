@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
@@ -23,6 +24,9 @@ import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
 import PaymentMethodSelection from '../../components/checkout/PaymentMethodSelection';
+import { CartStackParamList } from '../../navigation/CartNavigator';
+
+type CheckoutScreenNavigationProp = StackNavigationProp<CartStackParamList, 'Checkout'>;
 
 // Step indicator component
 interface StepIndicatorProps {
@@ -498,9 +502,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
 export default function CheckoutScreen() {
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<CheckoutScreenNavigationProp>();
   const { user } = useAuth();
-  const { items, clearCart } = useCart();
+  const { items } = useCart();
 
   // State
   const [currentStep, setCurrentStep] = useState(0);
@@ -571,16 +575,18 @@ export default function CheckoutScreen() {
     loadDefaultAddress();
   }, [user]);
 
-  // Check if cart is empty
+  // Check if cart is empty (but not during payment process)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
   useEffect(() => {
-    if (items.length === 0) {
+    if (items.length === 0 && !isProcessingPayment) {
       Alert.alert(
         t('checkout.alerts.emptyCart'),
         t('checkout.alerts.emptyCartMessage'),
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     }
-  }, [items.length, navigation, t]);
+  }, [items.length, navigation, t, isProcessingPayment]);
 
   // Handle shipping address next - calculate shipping cost
   const handleShippingAddressNext = async () => {
@@ -701,21 +707,37 @@ export default function CheckoutScreen() {
         throw new Error('Failed to create payment');
       }
 
-      // Step 5: Clear cart and navigate to payment or order detail
-      // Payment expires in 30 minutes (set by backend)
-      await clearCart(false);
+      // Debug: Log payment response
+      console.log('🔍 Payment response:', JSON.stringify(payment, null, 2));
+      console.log('🔍 paymentMetadata:', payment.paymentMetadata);
+      console.log('🔍 paymentUrl:', payment.paymentUrl);
 
       // Check if payment has a URL (MercadoPago preference)
       const paymentUrl = payment.paymentMetadata?.mercadopago_init_point || payment.paymentUrl;
 
-      if (paymentUrl) {
+      console.log('🔍 Extracted paymentUrl:', paymentUrl);
+      console.log('🔍 Will navigate to WebView:', !!paymentUrl);
+      console.log('🔍 paymentUrl type:', typeof paymentUrl);
+      console.log('🔍 orderId:', order.id);
+      console.log('🔍 paymentId:', payment.id);
+
+      if (paymentUrl && typeof paymentUrl === 'string') {
+        console.log('🚀 Navigating to PaymentWebView with URL:', paymentUrl);
+
+        // Mark as processing payment to prevent cart empty alert
+        setIsProcessingPayment(true);
+
         // Navigate to WebView for payment
-        (navigation as any).navigate('PaymentWebView', {
-          paymentUrl,
-          orderId: order.id,
-          paymentId: payment.id,
+        // Cart will be cleared when payment is successful
+        navigation.navigate('PaymentWebView', {
+          paymentUrl: paymentUrl!, // Non-null assertion - we verified it's a string above
+          orderId: order.id!,
+          paymentId: payment.id!,
         });
+
+        console.log('✅ Navigation command executed');
       } else {
+        console.error('❌ paymentUrl is not valid:', paymentUrl);
         // Fallback: show alert and navigate to order detail
         Alert.alert(
           t('checkout.alerts.orderPlaced'),

@@ -1,28 +1,100 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import GSText from '../../components/ui/GSText';
+import { StyleSheet } from 'react-native';
+import { useCart } from '../../hooks/useCart';
+import { CartStackParamList } from '../../navigation/CartNavigator';
 
-export default function PaymentWebViewScreen() {
-  const route = useRoute();
-  const navigation = useNavigation();
-  const { paymentUrl, orderId, paymentId } = route.params as any;
+type PaymentWebViewScreenRouteProp = RouteProp<CartStackParamList, 'PaymentWebView'>;
+type PaymentWebViewScreenNavigationProp = StackNavigationProp<CartStackParamList, 'PaymentWebView'>;
 
-  const [loading, setLoading] = useState(true);
+function PaymentWebViewScreen() {
+  const route = useRoute<PaymentWebViewScreenRouteProp>();
+  const navigation = useNavigation<PaymentWebViewScreenNavigationProp>();
+  const { clearCart } = useCart();
+  const { paymentUrl, orderId, paymentId } = route.params;
+
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      console.log('💳 PaymentWebView mounted (ONCE)');
+      console.log('📍 paymentUrl:', paymentUrl);
+      console.log('📍 orderId:', orderId);
+      console.log('📍 paymentId:', paymentId);
+      mountedRef.current = true;
+    }
+
+    return () => {
+      console.log('💳 PaymentWebView unmounting');
+    };
+  }, []);
 
   const handleNavigationStateChange = (navState: any) => {
-    const { url } = navState;
+    const { url, canGoBack, loading: isLoading, title } = navState;
+
+    console.log('🌐 WebView navigation state changed:');
+    console.log('  - URL:', url);
+    console.log('  - Title:', title);
+    console.log('  - canGoBack:', canGoBack);
+    console.log('  - loading:', isLoading);
+
+    // Log if URL contains important keywords
+    if (url.includes('payment') || url.includes('pago') || url.includes('checkout')) {
+      console.log('🔔 Payment-related URL detected:', url);
+    }
 
     // Detect callback URLs
     if (url.includes('/payment/success')) {
-      navigation.replace('OrderDetail', { orderId });
+      console.log('✅ Payment SUCCESS detected!');
+
+      // Clear cart on successful payment
+      clearCart(false).then(() => {
+        console.log('🛒 Cart cleared after successful payment');
+      });
+
+      // TODO: Navigate to OrderDetail (not in CartNavigator yet)
+      // For now, show success message and go back
+      alert('¡Pago exitoso!\n\nTu orden ha sido creada.\nOrderId: ' + orderId);
+
+      // Navigate back to main screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'CartMain' }],
+      });
     } else if (url.includes('/payment/failure')) {
-      navigation.replace('PaymentFailed', { orderId, paymentId });
+      console.log('❌ Payment FAILURE detected');
+      alert('Pago fallido\n\nPor favor intenta de nuevo');
+      navigation.goBack();
     } else if (url.includes('/payment/pending')) {
-      navigation.replace('PaymentPending', { orderId, paymentId });
+      console.log('⏳ Payment PENDING detected');
+      alert('Pago pendiente\n\nTe notificaremos cuando se confirme');
+      navigation.goBack();
     }
+  };
+
+  const handleError = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('❌ WebView error:', nativeEvent);
+    alert('Error al cargar el pago: ' + nativeEvent.description);
+  };
+
+  const handleHttpError = (syntheticEvent: any) => {
+    const { nativeEvent } = syntheticEvent;
+    console.error('❌ WebView HTTP error:', nativeEvent.statusCode, nativeEvent.description);
+    alert(`Error HTTP: ${nativeEvent.statusCode}`);
+  };
+
+  const handleMessage = (event: any) => {
+    console.log('📨 Message from WebView:', event.nativeEvent.data);
+  };
+
+  const handleConsoleMessage = (event: any) => {
+    const message = event.nativeEvent.message;
+    console.log('🖥️ WebView Console:', message);
   };
 
   return (
@@ -30,22 +102,29 @@ export default function PaymentWebViewScreen() {
       <WebView
         source={{ uri: paymentUrl }}
         onNavigationStateChange={handleNavigationStateChange}
-        onLoadStart={() => setLoading(true)}
-        onLoadEnd={() => setLoading(false)}
+        onLoadStart={() => console.log('🔄 WebView started loading')}
+        onLoadEnd={() => console.log('✅ WebView finished loading')}
+        onError={handleError}
+        onHttpError={handleHttpError}
         style={styles.webview}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        sharedCookiesEnabled={true}
+        thirdPartyCookiesEnabled={true}
+        cacheEnabled={true}
+        incognito={false}
+        allowsInlineMediaPlayback={true}
+        mediaPlaybackRequiresUserAction={false}
+        setSupportMultipleWindows={false}
       />
 
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <GSText variant="body" style={styles.loadingText}>
-            Cargando pasarela de pago...
-          </GSText>
-        </View>
-      )}
+      {/* Loading overlay removed - MercadoPago page loads fine without it */}
     </SafeAreaView>
   );
 }
+
+// Prevent unnecessary re-renders
+export default React.memo(PaymentWebViewScreen);
 
 const styles = StyleSheet.create({
   container: {
@@ -54,18 +133,5 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
   },
 });
