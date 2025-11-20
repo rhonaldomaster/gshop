@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  TextInput,
   Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,8 +23,6 @@ import {
   PaymentRequest,
   PaymentResponse,
   StripePaymentRequest,
-  CryptoPaymentRequest,
-  TokenPaymentRequest,
   WalletBalance,
   PaymentStatus,
 } from '../../services/payments.service';
@@ -70,7 +67,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
         styles.paymentMethodCard,
         {
           backgroundColor: theme.colors.surface,
-          borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+          borderColor: isSelected ? theme.colors.primary : theme.colors.gray300,
           borderWidth: isSelected ? 2 : 1,
         },
       ]}
@@ -85,7 +82,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
           />
         </View>
         <View style={styles.paymentMethodInfo}>
-          <GSText variant="body" weight="medium">
+          <GSText variant="body" weight="semiBold">
             {getMethodDisplay()}
           </GSText>
           <GSText variant="caption" color="textSecondary">
@@ -103,7 +100,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, isSelecte
           style={[
             styles.radioButton,
             {
-              borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+              borderColor: isSelected ? theme.colors.primary : theme.colors.gray300,
               backgroundColor: isSelected ? theme.colors.primary : 'transparent',
             },
           ]}
@@ -232,7 +229,7 @@ const NewCardForm: React.FC<NewCardFormProps> = ({ onSubmit, isLoading }) => {
           style={[
             styles.checkbox,
             {
-              borderColor: theme.colors.border,
+              borderColor: theme.colors.gray300,
               backgroundColor: saveCard ? theme.colors.primary : 'transparent',
             },
           ]}
@@ -263,7 +260,7 @@ export default function PaymentScreen() {
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
 
-  const { orderId, amount, currency, orderDetails } = route.params;
+  const { orderId, amount, currency } = route.params;
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
@@ -272,9 +269,8 @@ export default function PaymentScreen() {
   const [processing, setProcessing] = useState(false);
   const [showNewCardForm, setShowNewCardForm] = useState(false);
   const [showTokensModal, setShowTokensModal] = useState(false);
-  const [useTokens, setUseTokens] = useState(false);
   const [tokenAmount, setTokenAmount] = useState(0);
-  const [cryptoWalletAddress, setCryptoWalletAddress] = useState('');
+  const [cryptoWalletAddress] = useState('');
 
   // Load payment methods and wallet balance
   const loadPaymentData = useCallback(async () => {
@@ -376,7 +372,10 @@ export default function PaymentScreen() {
           [
             {
               text: t('payments.viewOrder'),
-              onPress: () => navigation.navigate('OrderDetail' as any, { orderId }),
+              onPress: () => {
+                // @ts-ignore - Navigate to OrderDetail screen
+                navigation.navigate('OrderDetail', { orderId });
+              },
             },
           ]
         );
@@ -492,7 +491,7 @@ export default function PaymentScreen() {
             <View style={styles.walletHeader}>
               <Ionicons name="diamond-outline" size={24} color={theme.colors.primary} />
               <View style={styles.walletInfo}>
-                <GSText variant="body" weight="medium">
+                <GSText variant="body" weight="semiBold">
                   {t('wallet.tokens')}
                 </GSText>
                 <GSText variant="caption" color="textSecondary">
@@ -509,7 +508,7 @@ export default function PaymentScreen() {
                 style={[styles.useTokensButton, { borderColor: theme.colors.primary }]}
                 onPress={() => setShowTokensModal(true)}
               >
-                <GSText variant="body" color="primary" weight="medium">
+                <GSText variant="body" color="primary" weight="semiBold">
                   {t('payments.useTokens')}
                 </GSText>
               </TouchableOpacity>
@@ -538,7 +537,7 @@ export default function PaymentScreen() {
               styles.addMethodCard,
               {
                 backgroundColor: theme.colors.surface,
-                borderColor: showNewCardForm ? theme.colors.primary : theme.colors.border,
+                borderColor: showNewCardForm ? theme.colors.primary : theme.colors.gray300,
               },
             ]}
             onPress={() => setShowNewCardForm(!showNewCardForm)}
