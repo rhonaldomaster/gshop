@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { IIvsService, IVSChannel, IVSChannelWithKey, IVSStreamKey } from './interfaces/ivs-service.interface';
 
@@ -9,7 +8,6 @@ import { IIvsService, IVSChannel, IVSChannelWithKey, IVSStreamKey } from './inte
  * Automatically switches to real AWS service when AWS_IVS_ENABLED=true
  */
 
-@Injectable()
 export class AwsIvsMockService implements IIvsService {
   private channels: Map<string, IVSChannel> = new Map();
   private streamKeys: Map<string, IVSStreamKey> = new Map();

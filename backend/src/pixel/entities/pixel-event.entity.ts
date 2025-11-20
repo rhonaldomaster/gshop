@@ -42,10 +42,10 @@ export class PixelEvent {
   @Column({ nullable: true })
   url: string
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   customData: any
 
-  @Column({ type: 'json', nullable: true })
+  @Column({ type: 'jsonb', nullable: true })
   eventData: any
 
   @Column({ nullable: true })

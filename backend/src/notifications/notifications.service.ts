@@ -162,8 +162,10 @@ export class NotificationsService {
         return;
       }
 
+      const sellerName = seller.businessName || `${seller.firstName} ${seller.lastName}` || 'Seller';
+
       const payload: NotificationPayload = {
-        title: `${seller.name || 'Seller'} is now live! 🔴`,
+        title: `${sellerName} is now live! 🔴`,
         body: streamTitle,
         data: {
           type: 'live_stream_started',
@@ -236,8 +238,10 @@ export class NotificationsService {
         where: { id: sellerId },
       });
 
+      const sellerName = seller?.businessName || (seller ? `${seller.firstName} ${seller.lastName}` : 'Seller');
+
       const payload: NotificationPayload = {
-        title: `📅 Reminder: ${seller?.name || 'Seller'} goes live in 15 minutes!`,
+        title: `📅 Reminder: ${sellerName} goes live in 15 minutes!`,
         body: streamTitle,
         data: {
           type: 'scheduled_stream_reminder',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
@@ -49,11 +49,21 @@ const VAT_TYPES = [
   { value: 'general', label: 'General (19%)', rate: 0.19 },
 ];
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+}
+
 export default function CreateProductPage() {
   const t = useTranslations('products');
   const tCommon = useTranslations('common');
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     slug: '',
@@ -74,6 +84,25 @@ export default function CreateProductPage() {
     isVisible: true,
     categoryId: '',
   });
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await apiClient.get('/categories/flat');
+        // Filter only active categories
+        const activeCategories = response.filter((cat: Category) => cat.isActive);
+        setCategories(activeCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        alert('Error al cargar las categorías. Por favor recarga la página.');
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleInputChange = (field: keyof ProductFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -107,6 +136,13 @@ export default function CreateProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate categoryId
+    if (!formData.categoryId || formData.categoryId.trim() === '') {
+      alert('Por favor selecciona una categoría para el producto.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -133,7 +169,7 @@ export default function CreateProductPage() {
       router.push('/dashboard/products');
     } catch (error) {
       console.error('Error creating product:', error);
-      alert('Error creating product. Please try again.');
+      alert('Error al crear el producto. Por favor intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -477,15 +513,37 @@ export default function CreateProductPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Label htmlFor="categoryId">{t('category')}</Label>
-                    <Input
-                      id="categoryId"
-                      value={formData.categoryId}
-                      onChange={(e) => handleInputChange('categoryId', e.target.value)}
-                      placeholder="UUID de categoría"
-                    />
+                    <Label htmlFor="categoryId">{t('category')} *</Label>
+                    {loadingCategories ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : categories.length === 0 ? (
+                      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                        <p className="text-sm text-destructive">
+                          No hay categorías disponibles. Por favor crea una categoría primero.
+                        </p>
+                      </div>
+                    ) : (
+                      <Select
+                        value={formData.categoryId}
+                        onValueChange={(value) => handleInputChange('categoryId', value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      Ingresar ID de categoría (opcional)
+                      Selecciona la categoría del producto (requerido)
                     </p>
                   </div>
                 </CardContent>

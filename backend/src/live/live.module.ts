@@ -20,12 +20,8 @@ import { Order } from '../database/entities/order.entity';
 import { AwsIvsMockService } from './aws-ivs-mock.service';
 import { AwsIvsService } from './aws-ivs.service';
 import { NotificationsModule } from '../notifications/notifications.module';
-
-/**
- * IVS_SERVICE Token
- * Used for dependency injection of IVS service (mock or real)
- */
-export const IVS_SERVICE = 'IVS_SERVICE';
+import { CacheMockService } from '../common/cache/cache-mock.service';
+import { IVS_SERVICE } from './live.constants';
 
 @Module({
   imports: [
@@ -44,25 +40,15 @@ export const IVS_SERVICE = 'IVS_SERVICE';
   ],
   controllers: [LiveController],
   providers: [
+    CacheMockService,
+    {
+      provide: IVS_SERVICE,
+      useValue: new AwsIvsMockService(),
+    },
     LiveService,
     LiveGateway,
     LiveMetricsService,
     LiveSchedulerService,
-    {
-      provide: IVS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const isEnabled = configService.get('AWS_IVS_ENABLED') === 'true';
-
-        if (isEnabled) {
-          console.log('[Live Module] 🚀 Using REAL AWS IVS Service');
-          return new AwsIvsService(configService);
-        } else {
-          console.log('[Live Module] 🧪 Using MOCK AWS IVS Service (development mode)');
-          return new AwsIvsMockService();
-        }
-      },
-      inject: [ConfigService],
-    },
   ],
   exports: [LiveService, LiveGateway, LiveMetricsService, IVS_SERVICE],
 })

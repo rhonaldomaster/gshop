@@ -49,6 +49,14 @@ const VAT_TYPES = [
   { value: 'general', label: 'General (19%)', rate: 0.19 },
 ];
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+}
+
 export default function EditProductPage() {
   const params = useParams();
   const t = useTranslations('products');
@@ -56,6 +64,8 @@ export default function EditProductPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     slug: '',
@@ -78,6 +88,21 @@ export default function EditProductPage() {
   });
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await apiClient.get('/categories/flat');
+        const activeCategories = response.filter((cat: Category) => cat.isActive);
+        setCategories(activeCategories);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+
     if (params.id) {
       fetchProduct();
     }
@@ -149,6 +174,13 @@ export default function EditProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate categoryId
+    if (!formData.categoryId || formData.categoryId.trim() === '') {
+      alert('Por favor selecciona una categoría para el producto.');
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -168,14 +200,14 @@ export default function EditProductPage() {
         tags: formData.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== ''),
         status: formData.status,
         isVisible: formData.isVisible,
-        categoryId: formData.categoryId || undefined,
+        categoryId: formData.categoryId,
       };
 
       await apiClient.patch(`/products/${params.id}`, payload);
       router.push(`/dashboard/products/${params.id}`);
     } catch (error) {
       console.error('Error updating product:', error);
-      alert('Error updating product. Please try again.');
+      alert('Error al actualizar el producto. Por favor intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }
@@ -528,15 +560,37 @@ export default function EditProductPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <Label htmlFor="categoryId">{t('category')}</Label>
-                    <Input
-                      id="categoryId"
-                      value={formData.categoryId}
-                      onChange={(e) => handleInputChange('categoryId', e.target.value)}
-                      placeholder="UUID de categoría"
-                    />
+                    <Label htmlFor="categoryId">{t('category')} *</Label>
+                    {loadingCategories ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : categories.length === 0 ? (
+                      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                        <p className="text-sm text-destructive">
+                          No hay categorías disponibles. Por favor crea una categoría primero.
+                        </p>
+                      </div>
+                    ) : (
+                      <Select
+                        value={formData.categoryId}
+                        onValueChange={(value) => handleInputChange('categoryId', value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <p className="text-xs text-muted-foreground">
-                      Ingresar ID de categoría (opcional)
+                      Selecciona la categoría del producto (requerido)
                     </p>
                   </div>
                 </CardContent>

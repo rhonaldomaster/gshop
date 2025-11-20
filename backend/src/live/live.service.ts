@@ -6,7 +6,7 @@ import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMe
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
 import { IIvsService } from './interfaces/ivs-service.interface';
-import { IVS_SERVICE } from './live.module';
+import { IVS_SERVICE } from './live.constants';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheMockService } from '../common/cache/cache-mock.service';
 import { NotificationsService } from '../notifications/notifications.service';

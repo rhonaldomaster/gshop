@@ -50,10 +50,9 @@ export class LiveSchedulerService {
 
         try {
           await this.notificationsService.notifyScheduledStreamReminder(
-            sellerId,
-            stream.title,
             stream.id,
-            stream.scheduledAt,
+            stream.title,
+            sellerId,
             stream.thumbnailUrl,
           );
 
@@ -106,10 +105,9 @@ export class LiveSchedulerService {
     }
 
     await this.notificationsService.notifyScheduledStreamReminder(
-      sellerId,
-      stream.title,
       stream.id,
-      stream.scheduledAt,
+      stream.title,
+      sellerId,
       stream.thumbnailUrl,
     );
 

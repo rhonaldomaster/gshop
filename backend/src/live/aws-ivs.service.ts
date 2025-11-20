@@ -1,4 +1,3 @@
-import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IIvsService, IVSChannel, IVSChannelWithKey, IVSStreamKey } from './interfaces/ivs-service.interface';
 
@@ -14,7 +13,6 @@ import { IIvsService, IVSChannel, IVSChannelWithKey, IVSStreamKey } from './inte
  * - AWS_IVS_SECRET_ACCESS_KEY=your-secret-key
  */
 
-@Injectable()
 export class AwsIvsService implements IIvsService {
   private ivsClient: any; // Will be AWS.IVS from @aws-sdk/client-ivs
   private region: string;

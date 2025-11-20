@@ -230,11 +230,11 @@ export class ProductsService {
       this.productRepository.count({ where: { status: ProductStatus.DRAFT } }),
     ]);
 
-    // Calculate low stock products (inventory < 10)
+    // Calculate low stock products (quantity < 10)
     const lowStockProducts = await this.productRepository
       .createQueryBuilder('product')
-      .where('product.inventory < :threshold', { threshold: 10 })
-      .andWhere('product.inventory > 0')
+      .where('product.quantity < :threshold', { threshold: 10 })
+      .andWhere('product.quantity > 0')
       .andWhere('product.status = :status', { status: ProductStatus.ACTIVE })
       .getCount();
 

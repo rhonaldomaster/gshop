@@ -5,6 +5,7 @@ import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus } from '../database/entities/order.entity';
 import { OrderItem } from '../database/entities/order-item.entity';
 import { Product } from '../database/entities/product.entity';
+import { User } from '../database/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { OrderQueryDto } from './dto/order-query.dto';
@@ -191,7 +192,7 @@ export class OrdersService {
       // Send purchase notifications to sellers (after commit)
       try {
         // Get buyer info
-        const buyer = await this.dataSource.manager.findOne('User', {
+        const buyer = await this.dataSource.manager.findOne(User, {
           where: { id: userId },
           select: ['firstName', 'lastName'],
         });
