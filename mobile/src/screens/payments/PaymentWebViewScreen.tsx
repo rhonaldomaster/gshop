@@ -106,6 +106,8 @@ function PaymentWebViewScreen() {
         onLoadEnd={() => console.log('✅ WebView finished loading')}
         onError={handleError}
         onHttpError={handleHttpError}
+        onMessage={handleMessage}
+        onContentProcessDidTerminate={() => console.log('⚠️ WebView process terminated')}
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}
@@ -116,6 +118,11 @@ function PaymentWebViewScreen() {
         allowsInlineMediaPlayback={true}
         mediaPlaybackRequiresUserAction={false}
         setSupportMultipleWindows={false}
+        mixedContentMode="always"
+        allowFileAccess={true}
+        allowUniversalAccessFromFileURLs={true}
+        originWhitelist={['*']}
+        userAgent="Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
       />
 
       {/* Loading overlay removed - MercadoPago page loads fine without it */}

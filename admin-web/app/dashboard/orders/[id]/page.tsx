@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ import {
   ArrowLeft,
   Package,
   User,
-  MapPin,
   CreditCard,
   Truck,
   Calendar,
@@ -22,7 +22,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { apiClient, formatCurrency, formatDate } from '@/lib/api-client';
-import Link from 'next/link';
 
 interface OrderItem {
   id: string;
@@ -32,7 +31,8 @@ interface OrderItem {
     images?: string[];
   };
   quantity: number;
-  price: number;
+  unitPrice: number;
+  totalPrice: number;
   vatType?: string;
   basePrice?: number;
   vatAmountPerUnit?: number;
@@ -110,6 +110,7 @@ const getVatLabel = (vatType?: string): string => {
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const t = useTranslations('orders');
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -149,8 +150,8 @@ export default function OrderDetailPage() {
     return (
       <DashboardLayout>
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium mb-2">Order not found</h3>
-          <Button onClick={() => router.back()}>Go Back</Button>
+          <h3 className="text-lg font-medium mb-2">{t('orderNotFound')}</h3>
+          <Button onClick={() => router.back()}>{t('goBack')}</Button>
         </div>
       </DashboardLayout>
     );
@@ -164,20 +165,20 @@ export default function OrderDetailPage() {
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" onClick={() => router.back()}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              {t('back')}
             </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
-                Order {order.orderNumber}
+                {t('order')} {order.orderNumber}
               </h1>
               <p className="text-muted-foreground">
-                Placed on {formatDate(order.createdAt)}
+                {t('placedOn')} {formatDate(order.createdAt)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={getOrderStatusColor(order.status)}>
-              {order.status.charAt(0).toUpperCase() + order.status.slice(1).replace('_', ' ')}
+              {t(order.status)}
             </Badge>
           </div>
         </div>
@@ -190,7 +191,7 @@ export default function OrderDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Order Items
+                  {t('orderItems')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -211,18 +212,18 @@ export default function OrderDetailPage() {
                       <div className="flex-1">
                         <h4 className="font-medium">{item.product.name}</h4>
                         <div className="text-sm text-muted-foreground">
-                          Quantity: {item.quantity} × {formatCurrency(item.price)}
+                          {t('quantity')}: {item.quantity} × {formatCurrency(item.unitPrice)}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {getVatLabel(item.vatType)}
                           {item.basePrice && (
-                            <> • Base: {formatCurrency(item.basePrice)} • VAT: {formatCurrency(item.vatAmountPerUnit || 0)}</>
+                            <> • {t('base')}: {formatCurrency(item.basePrice)} • {t('vat')}: {formatCurrency(item.vatAmountPerUnit || 0)}</>
                           )}
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="font-medium">
-                          {formatCurrency(item.price * item.quantity)}
+                          {formatCurrency(item.totalPrice)}
                         </div>
                       </div>
                     </div>
@@ -234,24 +235,24 @@ export default function OrderDetailPage() {
                 {/* Order Summary */}
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
+                    <span>{t('subtotal')}</span>
                     <span>{formatCurrency((order.totalAmount || 0) - (order.shippingCost || 0))}</span>
                   </div>
                   {order.shippingCost && (
                     <div className="flex justify-between text-sm">
-                      <span>Shipping ({order.shippingType})</span>
+                      <span>{t('shipping')} ({order.shippingType})</span>
                       <span>{formatCurrency(order.shippingCost)}</span>
                     </div>
                   )}
                   {order.commissionAmount && (
                     <div className="flex justify-between text-sm text-orange-600">
-                      <span>Commission ({order.commissionRate}%)</span>
+                      <span>{t('commission')} ({order.commissionRate}%)</span>
                       <span>-{formatCurrency(order.commissionAmount)}</span>
                     </div>
                   )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
+                    <span>{t('total')}</span>
                     <span>{formatCurrency(order.totalAmount)}</span>
                   </div>
                 </div>
@@ -262,7 +263,7 @@ export default function OrderDetailPage() {
             {order.vatBreakdown && (
               <Card className="gshop-card">
                 <CardHeader>
-                  <CardTitle>VAT Breakdown (Colombian Tax)</CardTitle>
+                  <CardTitle>{t('colombianVat')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -271,7 +272,7 @@ export default function OrderDetailPage() {
                         <div>
                           <div className="font-medium capitalize">{category}</div>
                           <div className="text-sm text-muted-foreground">
-                            Base: {formatCurrency(breakdown.base)} + VAT: {formatCurrency(breakdown.vat)}
+                            {t('base')}: {formatCurrency(breakdown.base)} + {t('vat')}: {formatCurrency(breakdown.vat)}
                           </div>
                         </div>
                         <div className="font-medium">{formatCurrency(breakdown.total)}</div>
@@ -288,12 +289,12 @@ export default function OrderDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Truck className="h-5 w-5" />
-                    Shipping Information
+                    {t('shippingInfo')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h4 className="font-medium mb-2">Delivery Address</h4>
+                    <h4 className="font-medium mb-2">{t('deliveryAddress')}</h4>
                     <p className="text-sm text-muted-foreground">
                       {order.shippingAddress.street}<br />
                       {order.shippingAddress.city}, {order.shippingAddress.state}<br />
@@ -306,14 +307,14 @@ export default function OrderDetailPage() {
                     <>
                       <Separator />
                       <div>
-                        <h4 className="font-medium mb-2">Tracking Information</h4>
+                        <h4 className="font-medium mb-2">{t('trackingInfo')}</h4>
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Carrier:</span>
-                            <span className="font-medium">{order.shippingCarrier || 'N/A'}</span>
+                            <span className="text-muted-foreground">{t('carrier')}:</span>
+                            <span className="font-medium">{order.shippingCarrier || t('na')}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Tracking #:</span>
+                            <span className="text-muted-foreground">{t('trackingNumber')} #:</span>
                             <code className="bg-muted px-2 py-1 rounded text-xs">
                               {order.shippingTrackingNumber}
                             </code>
@@ -322,7 +323,7 @@ export default function OrderDetailPage() {
                             <Button variant="outline" size="sm" className="w-full mt-2" asChild>
                               <a href={order.shippingTrackingUrl} target="_blank" rel="noopener noreferrer">
                                 <LinkIcon className="h-4 w-4 mr-2" />
-                                Track Shipment
+                                {t('trackShipment')}
                               </a>
                             </Button>
                           )}
@@ -335,7 +336,7 @@ export default function OrderDetailPage() {
                     <>
                       <Separator />
                       <div>
-                        <h4 className="font-medium mb-2">Shipping Notes</h4>
+                        <h4 className="font-medium mb-2">{t('shippingNotes')}</h4>
                         <p className="text-sm text-muted-foreground">{order.shippingNotes}</p>
                       </div>
                     </>
@@ -352,13 +353,13 @@ export default function OrderDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Customer
+                  {t('customer')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div>
                   <div className="font-medium">
-                    {order.user?.firstName || ''} {order.user?.lastName || 'Guest'}
+                    {order.user?.firstName || ''} {order.user?.lastName || t('guest')}
                   </div>
                   <div className="text-sm text-muted-foreground">{order.user?.email}</div>
                   {order.user?.phone && (
@@ -373,12 +374,12 @@ export default function OrderDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
-                  Payment
+                  {t('payment')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Status:</span>
+                  <span className="text-sm text-muted-foreground">{t('status')}:</span>
                   <Badge
                     variant="outline"
                     className={
@@ -387,18 +388,17 @@ export default function OrderDetailPage() {
                         : 'bg-yellow-100 text-yellow-800'
                     }
                   >
-                    {(order.paymentStatus || 'pending').charAt(0).toUpperCase() +
-                     (order.paymentStatus || 'pending').slice(1)}
+                    {t(order.paymentStatus || 'pending')}
                   </Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Method:</span>
+                  <span className="text-sm text-muted-foreground">{t('method')}:</span>
                   <span className="text-sm font-medium capitalize">
-                    {order.paymentMethod || 'N/A'}
+                    {order.paymentMethod || t('na')}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Total:</span>
+                  <span className="text-sm text-muted-foreground">{t('total')}:</span>
                   <span className="font-bold">{formatCurrency(order.totalAmount)}</span>
                 </div>
               </CardContent>
@@ -410,13 +410,13 @@ export default function OrderDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5" />
-                    Attribution
+                    {t('attribution')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {order.liveSessionId && (
                     <div className="text-sm">
-                      <span className="text-muted-foreground">Live Stream:</span>
+                      <span className="text-muted-foreground">{t('liveStream')}:</span>
                       <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
                         {order.liveSessionId}
                       </code>
@@ -424,7 +424,7 @@ export default function OrderDetailPage() {
                   )}
                   {order.affiliateId && (
                     <div className="text-sm">
-                      <span className="text-muted-foreground">Affiliate:</span>
+                      <span className="text-muted-foreground">{t('affiliate')}:</span>
                       <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
                         {order.affiliateId}
                       </code>
@@ -432,7 +432,7 @@ export default function OrderDetailPage() {
                   )}
                   {order.commissionAmount && (
                     <div className="flex justify-between pt-2 border-t">
-                      <span className="text-sm text-muted-foreground">Commission:</span>
+                      <span className="text-sm text-muted-foreground">{t('commission')}:</span>
                       <span className="font-medium text-orange-600">
                         {formatCurrency(order.commissionAmount)} ({order.commissionRate}%)
                       </span>
@@ -447,20 +447,20 @@ export default function OrderDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Timeline
+                  {t('timeline')}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>Created: {formatDate(order.createdAt)}</span>
+                    <span>{t('created')}: {formatDate(order.createdAt)}</span>
                   </div>
                 </div>
                 <div className="text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>Updated: {formatDate(order.updatedAt)}</span>
+                    <span>{t('updated')}: {formatDate(order.updatedAt)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -469,20 +469,20 @@ export default function OrderDetailPage() {
             {/* Quick Actions */}
             <Card className="gshop-card">
               <CardHeader>
-                <CardTitle>Actions</CardTitle>
+                <CardTitle>{t('actions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button variant="outline" className="w-full justify-start">
                   <Download className="h-4 w-4 mr-2" />
-                  Download Invoice
+                  {t('downloadInvoice')}
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Update Status
+                  {t('updateStatus')}
                 </Button>
                 <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
                   <XCircle className="h-4 w-4 mr-2" />
-                  Cancel Order
+                  {t('cancelOrder')}
                 </Button>
               </CardContent>
             </Card>

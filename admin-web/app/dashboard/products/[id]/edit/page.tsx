@@ -40,6 +40,7 @@ interface ProductFormData {
   status: string;
   isVisible: boolean;
   categoryId: string;
+  sellerId: string;
 }
 
 const VAT_TYPES = [
@@ -57,6 +58,13 @@ interface Category {
   isActive: boolean;
 }
 
+interface Seller {
+  id: string;
+  businessName: string;
+  email: string;
+  kycStatus: string;
+}
+
 export default function EditProductPage() {
   const params = useParams();
   const t = useTranslations('products');
@@ -66,6 +74,8 @@ export default function EditProductPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [sellers, setSellers] = useState<Seller[]>([]);
+  const [loadingSellers, setLoadingSellers] = useState(true);
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     slug: '',
@@ -85,13 +95,14 @@ export default function EditProductPage() {
     status: 'draft',
     isVisible: true,
     categoryId: '',
+    sellerId: '',
   });
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true);
-        const response = await apiClient.get('/categories/flat');
+        const response = await apiClient.get<Category[]>('/categories/flat');
         const activeCategories = response.filter((cat: Category) => cat.isActive);
         setCategories(activeCategories);
       } catch (error) {
@@ -101,7 +112,22 @@ export default function EditProductPage() {
       }
     };
 
+    const fetchSellers = async () => {
+      try {
+        setLoadingSellers(true);
+        const response = await apiClient.get<Seller[]>('/sellers/admin/all');
+        // Filter only approved sellers
+        const approvedSellers = response.filter((seller: Seller) => seller.kycStatus === 'approved');
+        setSellers(approvedSellers);
+      } catch (error) {
+        console.error('Error fetching sellers:', error);
+      } finally {
+        setLoadingSellers(false);
+      }
+    };
+
     fetchCategories();
+    fetchSellers();
 
     if (params.id) {
       fetchProduct();
@@ -132,10 +158,11 @@ export default function EditProductPage() {
         status: product.status || 'draft',
         isVisible: product.isVisible ?? true,
         categoryId: product.categoryId || '',
+        sellerId: product.sellerId || '',
       });
     } catch (error) {
       console.error('Error fetching product:', error);
-      alert('Error loading product. Redirecting...');
+      alert(t('errorLoadingProduct'));
       router.push('/dashboard/products');
     } finally {
       setIsLoading(false);
@@ -175,9 +202,14 @@ export default function EditProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate categoryId
+    // Validate categoryId and sellerId
     if (!formData.categoryId || formData.categoryId.trim() === '') {
-      alert('Por favor selecciona una categoría para el producto.');
+      alert(t('selectCategoryRequired'));
+      return;
+    }
+
+    if (!formData.sellerId || formData.sellerId.trim() === '') {
+      alert(t('selectSellerRequired'));
       return;
     }
 
@@ -201,13 +233,14 @@ export default function EditProductPage() {
         status: formData.status,
         isVisible: formData.isVisible,
         categoryId: formData.categoryId,
+        sellerId: formData.sellerId,
       };
 
       await apiClient.patch(`/products/${params.id}`, payload);
       router.push(`/dashboard/products/${params.id}`);
     } catch (error) {
       console.error('Error updating product:', error);
-      alert('Error al actualizar el producto. Por favor intenta de nuevo.');
+      alert(t('errorUpdatingProduct'));
     } finally {
       setIsSaving(false);
     }
@@ -591,6 +624,49 @@ export default function EditProductPage() {
                     )}
                     <p className="text-xs text-muted-foreground">
                       Selecciona la categoría del producto (requerido)
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Seller */}
+              <Card className="gshop-card">
+                <CardHeader>
+                  <CardTitle>{t('seller')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <Label htmlFor="sellerId">{t('sellerLabel')}</Label>
+                    {loadingSellers ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : sellers.length === 0 ? (
+                      <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3">
+                        <p className="text-sm text-destructive">
+                          {t('noApprovedSellers')}
+                        </p>
+                      </div>
+                    ) : (
+                      <Select
+                        value={formData.sellerId}
+                        onValueChange={(value) => handleInputChange('sellerId', value)}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('selectSeller')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sellers.map((seller) => (
+                            <SelectItem key={seller.id} value={seller.id}>
+                              {seller.businessName} ({seller.email})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {t('selectSellerHelp')}
                     </p>
                   </div>
                 </CardContent>

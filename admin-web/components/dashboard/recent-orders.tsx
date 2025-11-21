@@ -3,12 +3,14 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ExternalLink, Eye, ShoppingCart } from 'lucide-react';
-import { apiClient, formatCurrency, formatDate, getStatusColor } from '@/lib/api-client';
+import { formatCurrency, formatDate, getStatusColor } from '@/lib/api-client';
+import { useApi } from '@/hooks/use-api';
 
 interface Order {
   id: string;
@@ -26,13 +28,20 @@ interface Order {
 export function RecentOrders() {
   const t = useTranslations('dashboard');
   const tOrders = useTranslations('orders');
+  const api = useApi();
+  const { status } = useSession();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for session to be ready
+    if (status !== 'authenticated') {
+      return;
+    }
+
     const fetchOrders = async () => {
       try {
-        const response = await apiClient.get<{ data: Order[] }>('/orders?limit=5&sortBy=createdAt&sortOrder=DESC');
+        const response = await api.get<{ data: Order[] }>('/orders?limit=5&sortBy=createdAt&sortOrder=DESC');
         setOrders(response?.data || []);
       } catch (error) {
         console.error('Error fetching orders:', error);
@@ -44,7 +53,7 @@ export function RecentOrders() {
     };
 
     fetchOrders();
-  }, []);
+  }, [api, status]);
 
   if (isLoading) {
     return (

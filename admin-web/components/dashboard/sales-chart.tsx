@@ -3,9 +3,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
-import { apiClient } from '@/lib/api-client';
+import { useApi } from '@/hooks/use-api';
 
 interface SalesTrendData {
   date: string;
@@ -16,13 +17,20 @@ interface SalesTrendData {
 
 export function SalesChart() {
   const t = useTranslations('dashboard');
+  const api = useApi();
+  const { status } = useSession();
   const [data, setData] = useState<SalesTrendData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for session to be ready
+    if (status !== 'authenticated') {
+      return;
+    }
+
     const fetchSalesTrends = async () => {
       try {
-        const response = await apiClient.get('/analytics/sales-trends?period=monthly');
+        const response = await api.get('/analytics/sales-trends?period=monthly');
         setData((response as any)?.data || []);
       } catch (error) {
         console.error('Error fetching sales trends:', error);
@@ -33,7 +41,7 @@ export function SalesChart() {
     };
 
     fetchSalesTrends();
-  }, []);
+  }, [api, status]);
 
   if (isLoading) {
     return (

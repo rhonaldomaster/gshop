@@ -140,4 +140,13 @@ export class CreateProductDto {
   @ApiProperty({ example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479' })
   @IsUUID()
   categoryId: string;
+
+  @ApiProperty({
+    example: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    description: 'Seller ID (Admin only - if not provided, uses authenticated user ID)',
+    required: false
+  })
+  @IsOptional()
+  @IsUUID()
+  sellerId?: string;
 }

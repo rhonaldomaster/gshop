@@ -412,8 +412,11 @@ export class SellersService {
     const sellers = await this.sellersRepository.find({
       order: { createdAt: 'DESC' },
     })
-    // Remove passwords from all sellers
-    return sellers.map(({ passwordHash, ...seller }) => seller) as any[]
+    // Remove passwords and add kycStatus mapping for frontend compatibility
+    return sellers.map(({ passwordHash, ...seller }) => ({
+      ...seller,
+      kycStatus: seller.verificationStatus, // Map verificationStatus to kycStatus for frontend
+    })) as any[]
   }
 
   // NUEVOS MÉTODOS: Shipping Configuration

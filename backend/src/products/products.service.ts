@@ -5,7 +5,6 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Product, ProductStatus } from '../database/entities/product.entity';
 import { OrderItem } from '../database/entities/order-item.entity';
 import { PixelEvent } from '../pixel/entities/pixel-event.entity';
-import { Review } from '../marketplace/marketplace.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
@@ -21,8 +20,6 @@ export class ProductsService {
     private orderItemRepository: Repository<OrderItem>,
     @InjectRepository(PixelEvent)
     private pixelEventRepository: Repository<PixelEvent>,
-    @InjectRepository(Review)
-    private reviewRepository: Repository<Review>,
   ) {}
 
   async create(createProductDto: CreateProductDto, sellerId: string): Promise<Product> {
@@ -288,17 +285,12 @@ export class ProductsService {
         const viewsCount = await this.pixelEventRepository
           .createQueryBuilder('event')
           .where('event.eventType = :eventType', { eventType: 'product_view' })
-          .andWhere("event.eventData->>'productId' = :productId", { productId: product.id })
+          .andWhere('event.productId = :productId', { productId: product.id })
           .getCount();
 
-        // Calculate average rating from reviews
-        const ratingResult = await this.reviewRepository
-          .createQueryBuilder('review')
-          .select('AVG(review.rating)', 'avgRating')
-          .where('review.productId = :productId', { productId: product.id })
-          .getRawOne();
-
-        const rating = parseFloat(ratingResult?.avgRating) || 0;
+        // For now, regular products don't have reviews (only marketplace products do)
+        // So we'll use 0 as default rating
+        const rating = 0;
 
         // Calculate total revenue for this product
         const revenueResult = await this.orderItemRepository

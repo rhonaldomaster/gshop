@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   TrendingUp,
@@ -12,7 +13,7 @@ import {
   Users,
   Package
 } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
+import { useApi } from '@/hooks/use-api';
 
 interface StatsData {
   totalRevenue: number;
@@ -27,6 +28,8 @@ interface StatsData {
 
 export function StatsCards() {
   const t = useTranslations('dashboard');
+  const api = useApi();
+  const { data: session, status } = useSession();
   const [stats, setStats] = useState<StatsData>({
     totalRevenue: 0,
     totalOrders: 0,
@@ -40,13 +43,18 @@ export function StatsCards() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for session to be ready
+    if (status !== 'authenticated') {
+      return;
+    }
+
     const fetchStats = async () => {
       try {
         const [paymentsStats, ordersStats, usersStats, productsStats] = await Promise.all([
-          apiClient.get('/payments/stats'),
-          apiClient.get('/orders/stats'),
-          apiClient.get('/users/stats'),
-          apiClient.get('/products/stats'),
+          api.get('/payments/stats'),
+          api.get('/orders/stats'),
+          api.get('/users/stats'),
+          api.get('/products/stats'),
         ]);
 
         setStats({
@@ -78,7 +86,7 @@ export function StatsCards() {
     };
 
     fetchStats();
-  }, []);
+  }, [api, status]);
 
   const cards = [
     {

@@ -3,10 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Star, TrendingUp, Package } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
+import { useApi } from '@/hooks/use-api';
 
 interface Product {
   id: string;
@@ -19,13 +20,20 @@ interface Product {
 
 export function TopProducts() {
   const t = useTranslations('dashboard');
+  const api = useApi();
+  const { status } = useSession();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for session to be ready
+    if (status !== 'authenticated') {
+      return;
+    }
+
     const fetchProducts = async () => {
       try {
-        const response = await apiClient.get('/products/top?limit=5&metric=orders');
+        const response = await api.get('/products/top?limit=5&metric=orders');
         setProducts((response as any) || []);
       } catch (error) {
         console.error('Error fetching top products:', error);
@@ -37,7 +45,7 @@ export function TopProducts() {
     };
 
     fetchProducts();
-  }, []);
+  }, [api, status]);
 
   if (isLoading) {
     return (

@@ -40,7 +40,11 @@ export class ProductsController {
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
   create(@Body() createProductDto: CreateProductDto, @Request() req) {
-    return this.productsService.create(createProductDto, req.user.id);
+    // If admin provides sellerId, use it; otherwise use authenticated user's ID
+    const sellerId = req.user.role === UserRole.ADMIN && createProductDto.sellerId
+      ? createProductDto.sellerId
+      : req.user.id;
+    return this.productsService.create(createProductDto, sellerId);
   }
 
   @Get()
