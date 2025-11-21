@@ -24,7 +24,8 @@
     "noResults": "No hay resultados",
     "emptyState": "No hay datos para mostrar",
     "backToHome": "Volver al inicio",
-    "grantPermission": "Otorgar permiso"
+    "grantPermission": "Otorgar permiso",
+    "refresh": "Actualizar"
   },
   "auth": {
     "welcome": "Bienvenido",
@@ -847,7 +848,14 @@
     "shareStreamResults": "¡Acabo de terminar una transmisión en vivo en GSHOP! Ingresos: {{revenue}}, Espectadores: {{viewers}}, Ventas: {{purchases}}",
     "viewRecording": "Ver grabación",
     "backToHome": "Volver al inicio",
-    "description": "Descripción"
+    "description": "Descripción",
+    "forYou": "Para Ti",
+    "loadingRecommendations": "Cargando recomendaciones...",
+    "noRecommendations": "Sin recomendaciones",
+    "noRecommendationsDesc": "No tenemos recomendaciones personalizadas para ti en este momento. Vuelve más tarde o explora transmisiones en vivo.",
+    "skip": "Saltar",
+    "watch": "Ver",
+    "live": "EN VIVO"
   },
   "affiliate": {
     "title": "Afiliados",

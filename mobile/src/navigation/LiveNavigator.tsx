@@ -5,6 +5,7 @@ import LiveStreamScreen from '../screens/live/LiveStreamScreen';
 import CreateLiveStreamScreen from '../screens/live/CreateLiveStreamScreen';
 import LiveStreamingScreen from '../screens/live/LiveStreamingScreen';
 import LiveStreamResultsScreen from '../screens/live/LiveStreamResultsScreen';
+import LiveForYouFeedScreen from '../screens/live/LiveForYouFeedScreen';
 
 export type LiveStackParamList = {
   LiveMain: undefined;
@@ -12,6 +13,7 @@ export type LiveStackParamList = {
   CreateLiveStream: undefined;
   LiveStreaming: { streamId: string; rtmpUrl: string; streamKey: string };
   LiveStreamResults: { streamId: string; stats: any; duration: number };
+  LiveForYouFeed: undefined;
 };
 
 const Stack = createStackNavigator<LiveStackParamList>();
@@ -40,6 +42,10 @@ export default function LiveNavigator() {
         name="LiveStreamResults"
         component={LiveStreamResultsScreen}
         options={{ gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="LiveForYouFeed"
+        component={LiveForYouFeedScreen}
       />
     </Stack.Navigator>
   );

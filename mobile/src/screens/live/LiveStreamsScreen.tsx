@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Alert,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -323,6 +325,24 @@ export default function LiveStreamsScreen({ navigation }: any) {
         style={styles.filtersContainer}
         contentContainerStyle={styles.filtersContent}
       >
+        {/* For You Button */}
+        <TouchableOpacity
+          style={styles.forYouButton}
+          onPress={() => navigation.navigate('LiveForYouFeed')}
+        >
+          <LinearGradient
+            colors={['#ec4899', '#8b5cf6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.forYouGradient}
+          >
+            <MaterialIcons name="auto-awesome" size={16} color="#fff" />
+            <Text style={styles.forYouText}>{t('live.forYou')}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <View style={styles.filterDivider} />
+
         <TouchableOpacity
           style={[styles.filterChip, selectedFilter === 'all' && styles.filterChipActive]}
           onPress={() => setSelectedFilter('all')}
@@ -671,6 +691,27 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: '#8b5cf6',
     fontWeight: '600',
+  },
+  forYouButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#ec4899',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  forYouGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  forYouText: {
+    fontSize: 14,
+    color: '#fff',
+    fontWeight: '700',
   },
   filterDivider: {
     width: 1,
