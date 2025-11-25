@@ -329,7 +329,7 @@ export default function OrdersScreen() {
             {t('orders.noOrdersMessage')}
           </GSText>
           <GSButton
-            title={t('cart.empty.action')}
+            title={t('orders.startShopping')}
             onPress={handleStartShopping}
             style={styles.startShoppingButton}
           />

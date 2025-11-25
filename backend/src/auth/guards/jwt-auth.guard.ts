@@ -10,14 +10,26 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
+
+    // For public endpoints, try to validate token if present but don't fail if missing
     if (isPublic) {
+      try {
+        // Attempt to validate JWT token and attach user to request
+        await super.canActivate(context);
+      } catch (error) {
+        // Silently ignore authentication errors for public endpoints
+        // This allows the endpoint to work with or without authentication
+      }
+      // Always allow access to public endpoints
       return true;
     }
-    return super.canActivate(context);
+
+    // For protected endpoints, require valid authentication
+    return super.canActivate(context) as Promise<boolean>;
   }
 }

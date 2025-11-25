@@ -19,6 +19,7 @@ import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
 import { ordersService, CreateOrderRequest } from '../../services/orders.service';
+import { api } from '../../services/api';
 
 interface CustomerInfo {
   firstName: string;
@@ -84,6 +85,12 @@ export default function GuestCheckoutScreen() {
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [loading, setLoading] = useState(false);
+  const [shippingInfo, setShippingInfo] = useState<{
+    shippingType: 'local' | 'national';
+    shippingCost: number;
+    isFree: boolean;
+    message: string;
+  } | null>(null);
 
   // Enhanced validation functions
   const validateEmail = useCallback((email: string): boolean => {
@@ -212,6 +219,37 @@ export default function GuestCheckoutScreen() {
         return;
       }
 
+      // Get seller ID from first cart item
+      const sellerId = items[0]?.product?.sellerId;
+      if (!sellerId) {
+        Alert.alert(t('common.error'), t('checkout.errors.sellerNotFound'));
+        return;
+      }
+
+      // Calculate order total (VAT already included in prices)
+      const orderTotal = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
+
+      // Calculate shipping cost
+      const shippingResponse = await api.post<{
+        shippingType: 'local' | 'national';
+        shippingCost: number;
+        isFree: boolean;
+        message: string;
+      }>('/orders/calculate-shipping', {
+        sellerId,
+        buyerCity: shippingAddress.city.trim(),
+        buyerState: shippingAddress.state,
+        orderTotal,
+      });
+
+      if (!shippingResponse.success || !shippingResponse.data) {
+        Alert.alert(t('common.error'), t('checkout.errors.shippingCalculationFailed'));
+        return;
+      }
+
+      // Save shipping info for later use
+      setShippingInfo(shippingResponse.data);
+
       // Sanitize and prepare data
       const sanitizedCustomerInfo = {
         firstName: customerInfo.firstName.trim(),
@@ -244,6 +282,7 @@ export default function GuestCheckoutScreen() {
           quantity: item.quantity,
         })),
         shippingAddress: sanitizedShippingAddress,
+        shippingAmount: shippingResponse.data.shippingCost,
         isGuestOrder: true,
         notes: shippingAddress.address2.trim() || '', // Use address2 as notes
       };
@@ -268,7 +307,7 @@ export default function GuestCheckoutScreen() {
     } finally {
       setLoading(false);
     }
-  }, [customerInfo, shippingAddress, validateForm, navigation, t]);
+  }, [customerInfo, shippingAddress, validateForm, navigation, t, items]);
 
   // Clean input handlers
   const handlePhoneChange = useCallback((text: string) => {

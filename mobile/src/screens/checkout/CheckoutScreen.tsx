@@ -667,6 +667,7 @@ export default function CheckoutScreen() {
           quantity: item.quantity,
         })),
         shippingAddress,
+        shippingAmount: shippingInfo.shippingCost,
         isGuestOrder: !user,
         notes: '',
       };

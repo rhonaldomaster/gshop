@@ -252,6 +252,7 @@ export class OrdersService {
       .leftJoinAndSelect('order.user', 'user')
       .leftJoinAndSelect('order.items', 'items')
       .leftJoinAndSelect('items.product', 'product')
+      .leftJoinAndSelect('order.payment', 'payment')
       .select([
         'order',
         'user.id',
@@ -262,6 +263,8 @@ export class OrdersService {
         'product.id',
         'product.name',
         'product.images',
+        'payment.status',
+        'payment.method',
       ]);
 
     // Apply filters
@@ -299,8 +302,38 @@ export class OrdersService {
 
     const [orders, total] = await queryBuilder.getManyAndCount();
 
+    // Enrich orders with payment status from payments_v2 table
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+        // Check for payment in payments_v2 table (new payment system)
+        const paymentV2 = await this.dataSource.query(
+          `SELECT status, "paymentMethod", "mercadopagoPaymentId"
+           FROM payments_v2
+           WHERE "orderId" = $1
+           LIMIT 1`,
+          [order.id]
+        );
+
+        // Add payment info to order if found in payments_v2
+        if (paymentV2 && paymentV2.length > 0) {
+          (order as any).paymentStatus = paymentV2[0].status;
+          (order as any).paymentMethod = paymentV2[0].paymentMethod;
+        } else if (order.payment) {
+          // Fallback to old payment system
+          (order as any).paymentStatus = order.payment.status;
+          (order as any).paymentMethod = order.payment.method;
+        } else {
+          // No payment found
+          (order as any).paymentStatus = 'pending';
+          (order as any).paymentMethod = null;
+        }
+
+        return order;
+      })
+    );
+
     return {
-      data: orders,
+      data: enrichedOrders,
       total,
       page,
       limit,

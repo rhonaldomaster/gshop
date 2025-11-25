@@ -122,6 +122,7 @@ export interface CreateOrderRequest {
     quantity: number;
   }[];
   shippingAddress: ShippingAddress;
+  shippingAmount?: number;
   paymentMethodId?: string;
   isGuestOrder?: boolean;
   liveSessionId?: string;
@@ -323,7 +324,9 @@ class OrdersService {
           country: 'CO',
           phone: orderData.shippingAddress.phone,
         },
+        shippingAmount: orderData.shippingAmount,
         paymentMethodId: orderData.paymentMethodId,
+        isGuestOrder: orderData.isGuestOrder,
         liveSessionId: orderData.liveSessionId,
         affiliateId: orderData.affiliateId,
         notes: notes,

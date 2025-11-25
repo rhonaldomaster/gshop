@@ -42,7 +42,16 @@ export class OrdersController {
   @ApiResponse({ status: 201, description: 'Order created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid order data or insufficient stock' })
   create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
+    // Prioritize authenticated user ID over guest order flag
+    // If JWT token is present and valid, use that userId (even if isGuestOrder is true in request)
     const userId = req.user?.id || null;
+
+    // Override isGuestOrder flag if user is authenticated
+    if (userId && createOrderDto.isGuestOrder) {
+      console.log(`[Orders Controller] User ${userId} authenticated - converting guest order to user order`);
+      createOrderDto.isGuestOrder = false;
+    }
+
     return this.ordersService.create(createOrderDto, userId);
   }
 

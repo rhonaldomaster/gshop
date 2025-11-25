@@ -55,4 +55,18 @@ export class AuthController {
   async refreshToken(@Request() req) {
     return this.authService.refreshToken(req.user.id);
   }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  async logout() {
+    // Since we're using stateless JWT, logout is handled client-side
+    // This endpoint exists to confirm successful logout on server side
+    return {
+      message: 'Logout successful',
+      success: true,
+    };
+  }
 }
