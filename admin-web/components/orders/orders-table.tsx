@@ -292,10 +292,13 @@ export function OrdersTable() {
                     <TableCell>
                       <div>
                         <div className="font-medium">
-                          {order.user?.firstName || ''} {order.user?.lastName || t('guest')}
+                          {order.user && order.user.id
+                            ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim()
+                            : t('guest')
+                          }
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {order.user?.email}
+                          {order.user?.email || '-'}
                         </div>
                       </div>
                     </TableCell>

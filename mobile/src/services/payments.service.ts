@@ -1,4 +1,4 @@
-import { apiClient, ApiResponse } from './api';
+import { apiClient } from './api';
 import { API_CONFIG, buildEndpointUrl } from '../config/api.config';
 
 // Payment types
@@ -113,7 +113,7 @@ export interface TopupRequest {
 
 class PaymentsService {
   // Get user payment methods
-  async getPaymentMethods(): Promise<PaymentMethod[]> {
+  getPaymentMethods = async (): Promise<PaymentMethod[]> => {
     try {
       const response = await apiClient.get<any[]>(
         API_CONFIG.ENDPOINTS.PAYMENTS.METHODS
@@ -121,7 +121,11 @@ class PaymentsService {
 
       if (response.success && response.data) {
         // Transform backend response to match frontend interface
-        return response.data.map(method => this.transformPaymentMethod(method));
+        if (!Array.isArray(response.data)) {
+          console.warn('PaymentsService: Response data is not an array', response.data);
+          return [];
+        }
+        return response.data.map((method) => this.transformPaymentMethod(method));
       } else {
         throw new Error(response.message || 'Failed to get payment methods');
       }
@@ -129,10 +133,10 @@ class PaymentsService {
       console.error('PaymentsService: Get payment methods failed', error);
       throw new Error(error.message || 'Failed to load payment methods');
     }
-  }
+  };
 
   // Transform backend payment method to frontend format
-  private transformPaymentMethod(backendMethod: any): PaymentMethod {
+  private transformPaymentMethod = (backendMethod: any): PaymentMethod => {
     return {
       id: backendMethod.id,
       type: this.mapPaymentTypeToFrontend(backendMethod.type),
@@ -148,10 +152,10 @@ class PaymentsService {
       isDefault: backendMethod.isDefault,
       createdAt: backendMethod.createdAt,
     };
-  }
+  };
 
   // Map backend payment types to frontend enum
-  private mapPaymentTypeToFrontend(type: string): PaymentMethod['type'] {
+  private mapPaymentTypeToFrontend = (type: string): PaymentMethod['type'] => {
     const typeMap: Record<string, PaymentMethod['type']> = {
       stripe_card: 'card',
       mercadopago: 'mercadopago',
@@ -160,7 +164,7 @@ class PaymentsService {
     };
 
     return typeMap[type] || 'card';
-  }
+  };
 
   // Create new payment
   async createPayment(paymentData: PaymentRequest): Promise<PaymentResponse> {
@@ -333,7 +337,7 @@ class PaymentsService {
   }
 
   // Map frontend payment types to backend enum values
-  private mapPaymentTypeToBackend(type: PaymentMethod['type']): string {
+  private mapPaymentTypeToBackend = (type: PaymentMethod['type']): string => {
     const typeMap: Record<PaymentMethod['type'], string> = {
       card: 'stripe_card',
       mercadopago: 'mercadopago',
@@ -342,7 +346,7 @@ class PaymentsService {
     };
 
     return typeMap[type] || 'stripe_card';
-  }
+  };
 
   // Remove payment method
   async removePaymentMethod(methodId: string): Promise<boolean> {
@@ -537,17 +541,3 @@ class PaymentsService {
 
 // Create singleton instance
 export const paymentsService = new PaymentsService();
-
-// Export types
-export type {
-  PaymentMethod,
-  PaymentRequest,
-  PaymentResponse,
-  PaymentReceipt,
-  StripePaymentRequest,
-  CryptoPaymentRequest,
-  TokenPaymentRequest,
-  WalletBalance,
-  TokenTransaction,
-  TopupRequest,
-};

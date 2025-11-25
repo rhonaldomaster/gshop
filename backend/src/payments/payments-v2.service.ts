@@ -236,6 +236,18 @@ export class PaymentsV2Service {
         });
       }
 
+      // Add platform fee as an item if applicable
+      if (order.platformFeeAmount && Number(order.platformFeeAmount) > 0) {
+        items.push({
+          id: 'platform_fee',
+          title: 'Cargo de plataforma',
+          quantity: 1,
+          currency_id: 'COP',
+          unit_price: Math.round(Number(order.platformFeeAmount)), // Must be integer for COP
+          description: `Cargo de servicio (${order.platformFeeRate || 3}%)`,
+        });
+      }
+
       // Add discount as a negative item if applicable
       if (order.discountAmount && Number(order.discountAmount) > 0) {
         items.push({
@@ -257,27 +269,32 @@ export class PaymentsV2Service {
 
       console.log(`✅ Creating MercadoPago preference with ${items.length} items (total: ${calculatedTotal} COP)`);
 
-      // Use API_URL_PUBLIC for webhooks if available (e.g., ngrok), otherwise use API_URL
-      const webhookBaseUrl = process.env.API_URL_PUBLIC || process.env.API_URL;
-      const shouldIncludeWebhook = webhookBaseUrl && !webhookBaseUrl.includes('localhost') && !webhookBaseUrl.includes('127.0.0.1');
+      // Use API_URL_PUBLIC for webhooks and callbacks if available (e.g., ngrok)
+      const publicUrl = process.env.API_URL_PUBLIC;
+      const isLocalhost = !publicUrl || publicUrl.includes('localhost') || publicUrl.includes('127.0.0.1');
 
       const preferenceData: any = {
         items,
-        back_urls: {
-          success: `${process.env.APP_URL}/payment/success?paymentId=${payment.id}`,
-          failure: `${process.env.APP_URL}/payment/failure?paymentId=${payment.id}`,
-          pending: `${process.env.APP_URL}/payment/pending?paymentId=${payment.id}`,
-        },
-        auto_return: 'approved',
         external_reference: payment.id,
       };
 
-      // Only add notification_url if we have a public URL (not localhost)
-      if (shouldIncludeWebhook) {
-        preferenceData.notification_url = `${webhookBaseUrl}/api/v1/payments-v2/webhooks/mercadopago`;
-        console.log('Using webhook URL:', preferenceData.notification_url);
+      // Only add back_urls and auto_return if we have a public URL
+      // MercadoPago doesn't allow localhost URLs with auto_return
+      if (!isLocalhost) {
+        preferenceData.back_urls = {
+          success: `${publicUrl}/api/v1/payments-v2/callback/success?paymentId=${payment.id}`,
+          failure: `${publicUrl}/api/v1/payments-v2/callback/failure?paymentId=${payment.id}`,
+          pending: `${publicUrl}/api/v1/payments-v2/callback/pending?paymentId=${payment.id}`,
+        };
+        preferenceData.auto_return = 'approved';
+        preferenceData.notification_url = `${publicUrl}/api/v1/payments-v2/webhooks/mercadopago`;
+
+        console.log('✅ Using public URL for callbacks:', publicUrl);
+        console.log('✅ Auto-return enabled');
       } else {
-        console.log('Skipping notification_url (localhost detected). Use ngrok to enable webhooks.');
+        console.log('⚠️ Localhost detected - back_urls and auto_return disabled');
+        console.log('💡 To enable auto-return, set API_URL_PUBLIC to a public URL (e.g., ngrok)');
+        console.log('📝 User will need to manually click "Back to site" after payment');
       }
 
       const preference = await this.mercadopagoService.createPreference(preferenceData);

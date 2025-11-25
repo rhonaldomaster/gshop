@@ -56,11 +56,15 @@ interface Order {
   paymentStatus?: string;
   paymentMethod?: string;
   shippingAddress?: {
-    street?: string;
+    firstName?: string;
+    lastName?: string;
+    address1?: string;
+    address2?: string;
     city?: string;
     state?: string;
     postalCode?: string;
     country?: string;
+    phone?: string;
   };
   shippingType?: string;
   shippingCost?: number;
@@ -78,6 +82,11 @@ interface Order {
   affiliateId?: string;
   commissionRate?: number;
   commissionAmount?: number;
+  sellerCommissionRate?: number;
+  sellerCommissionAmount?: number;
+  commissionStatus?: string;
+  platformFeeRate?: number;
+  platformFeeAmount?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -244,9 +253,26 @@ export default function OrderDetailPage() {
                       <span>{formatCurrency(order.shippingCost)}</span>
                     </div>
                   )}
-                  {order.commissionAmount && (
+                  {order.platformFeeAmount && order.platformFeeAmount > 0 && (
+                    <div className="flex justify-between text-sm text-blue-600">
+                      <span>Fee Plataforma ({order.platformFeeRate}%)</span>
+                      <span>+{formatCurrency(order.platformFeeAmount)}</span>
+                    </div>
+                  )}
+                  {order.sellerCommissionRate && order.sellerCommissionRate > 0 && (
                     <div className="flex justify-between text-sm text-orange-600">
-                      <span>{t('commission')} ({order.commissionRate}%)</span>
+                      <span>Comisión Vendedor ({order.sellerCommissionRate}%)</span>
+                      <span>
+                        {order.sellerCommissionAmount && order.sellerCommissionAmount > 0
+                          ? `-${formatCurrency(order.sellerCommissionAmount)}`
+                          : `${order.commissionStatus || 'pending'}`
+                        }
+                      </span>
+                    </div>
+                  )}
+                  {order.commissionAmount && order.commissionAmount > 0 && (
+                    <div className="flex justify-between text-sm text-purple-600">
+                      <span>Comisión Afiliado ({order.commissionRate}%)</span>
                       <span>-{formatCurrency(order.commissionAmount)}</span>
                     </div>
                   )}
@@ -296,10 +322,13 @@ export default function OrderDetailPage() {
                   <div>
                     <h4 className="font-medium mb-2">{t('deliveryAddress')}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {order.shippingAddress.street}<br />
+                      {order.shippingAddress.firstName} {order.shippingAddress.lastName}<br />
+                      {order.shippingAddress.address1}<br />
+                      {order.shippingAddress.address2 && <>{order.shippingAddress.address2}<br /></>}
                       {order.shippingAddress.city}, {order.shippingAddress.state}<br />
                       {order.shippingAddress.postalCode}<br />
                       {order.shippingAddress.country}
+                      {order.shippingAddress.phone && <><br />Tel: {order.shippingAddress.phone}</>}
                     </p>
                   </div>
 
@@ -404,36 +433,81 @@ export default function OrderDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Live Stream / Affiliate Info */}
-            {(order.liveSessionId || order.affiliateId) && (
+            {/* Commission & Attribution Info */}
+            {(order.platformFeeAmount || order.sellerCommissionRate || order.liveSessionId || order.affiliateId) && (
               <Card className="gshop-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5" />
-                    {t('attribution')}
+                    Comisiones y Fees
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {order.platformFeeAmount && order.platformFeeAmount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Fee Plataforma:</span>
+                      <div className="text-right">
+                        <div className="font-medium text-blue-600">
+                          {order.platformFeeRate}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {formatCurrency(order.platformFeeAmount)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {order.sellerCommissionRate && order.sellerCommissionRate > 0 && (
+                    <>
+                      {order.platformFeeAmount && <Separator />}
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Comisión Vendedor:</span>
+                        <div className="text-right">
+                          <div className="font-medium text-orange-600">
+                            {order.sellerCommissionRate}%
+                          </div>
+                          {order.sellerCommissionAmount && order.sellerCommissionAmount > 0 ? (
+                            <div className="text-xs text-muted-foreground">
+                              {formatCurrency(order.sellerCommissionAmount)}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">
+                              Status: {order.commissionStatus || 'pending'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {order.liveSessionId && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">{t('liveStream')}:</span>
-                      <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
-                        {order.liveSessionId}
-                      </code>
-                    </div>
+                    <>
+                      <Separator />
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">{t('liveStream')}:</span>
+                        <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
+                          {order.liveSessionId}
+                        </code>
+                      </div>
+                    </>
                   )}
+
                   {order.affiliateId && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">{t('affiliate')}:</span>
-                      <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
-                        {order.affiliateId}
-                      </code>
-                    </div>
+                    <>
+                      {!order.liveSessionId && <Separator />}
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">{t('affiliate')}:</span>
+                        <code className="ml-2 bg-muted px-2 py-1 rounded text-xs">
+                          {order.affiliateId}
+                        </code>
+                      </div>
+                    </>
                   )}
-                  {order.commissionAmount && (
+
+                  {order.commissionAmount && order.commissionAmount > 0 && (
                     <div className="flex justify-between pt-2 border-t">
-                      <span className="text-sm text-muted-foreground">{t('commission')}:</span>
-                      <span className="font-medium text-orange-600">
+                      <span className="text-sm text-muted-foreground">Comisión Afiliado:</span>
+                      <span className="font-medium text-purple-600">
                         {formatCurrency(order.commissionAmount)} ({order.commissionRate}%)
                       </span>
                     </div>

@@ -68,13 +68,6 @@ export default function ProfileScreen() {
       showChevron: true,
     },
     {
-      icon: 'card-outline',
-      title: t('profile.paymentMethods'),
-      subtitle: t('profile.managePaymentOptions'),
-      onPress: () => handleNavigation('PaymentMethods'),
-      showChevron: true,
-    },
-    {
       icon: 'location-outline',
       title: t('profile.addresses'),
       subtitle: t('profile.manageShippingAddresses'),

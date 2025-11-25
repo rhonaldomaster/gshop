@@ -15,14 +15,18 @@ export class MercadoPagoService {
 
   constructor(private configService: ConfigService) {
     this.accessToken = this.configService.get('MERCAPAGO_ACCESS_TOKEN');
-    this.webhookSecret = this.configService.get('MERCAPAGO_WEBHOOK_SECRET');
+    this.webhookSecret = this.configService.get('MERCAPAGO_WEBHOOK_SECRET') || '';
 
     if (!this.accessToken) {
-      this.logger.warn('MercadoPago access token not configured');
+      this.logger.warn('⚠️ MercadoPago access token not configured');
     }
 
-    if (!this.webhookSecret) {
-      this.logger.warn('MercadoPago webhook secret not configured - webhook validation will be skipped');
+    if (!this.webhookSecret || this.webhookSecret === 'dummy') {
+      this.logger.warn('⚠️ MercadoPago webhook secret not configured - webhook signature validation will be SKIPPED');
+      this.logger.warn('This is OK for development, but REQUIRED for production');
+      this.logger.warn('Get your secret from: MercadoPago Dashboard > Developers > Webhooks');
+    } else {
+      this.logger.log('✅ MercadoPago webhook secret configured - signature validation ENABLED');
     }
 
     // Initialize MercadoPago SDK client
@@ -232,17 +236,17 @@ export class MercadoPagoService {
   ): boolean {
     this.logger.debug('Validating MercadoPago webhook signature');
 
-    // If webhook secret is not configured, skip validation (development mode)
-    if (!this.webhookSecret) {
-      this.logger.warn('Webhook secret not configured - skipping signature validation');
-      return true;
+    // If webhook secret is not configured or is placeholder, skip validation (development mode)
+    if (!this.webhookSecret || this.webhookSecret === 'dummy' || this.webhookSecret.trim() === '') {
+      this.logger.warn('⚠️ Webhook secret not configured - SKIPPING signature validation (development mode)');
+      return true; // Allow webhook in development
     }
 
     try {
       // Parse x-signature header: "ts=123456789,v1=hash_signature"
       const signatureParts = this.parseXSignature(xSignature);
       if (!signatureParts) {
-        this.logger.error('Invalid x-signature header format');
+        this.logger.error('❌ Invalid x-signature header format');
         return false;
       }
 
@@ -264,19 +268,22 @@ export class MercadoPagoService {
       );
 
       if (!isValid) {
-        this.logger.error('Webhook signature validation failed', {
+        this.logger.error('❌ Webhook signature validation failed', {
           expected: calculatedSignature,
           received: v1,
           template: signatureTemplate,
         });
+        this.logger.warn('TIP: Make sure MERCAPAGO_WEBHOOK_SECRET matches your MercadoPago webhook secret');
       } else {
-        this.logger.log('Webhook signature validated successfully');
+        this.logger.log('✅ Webhook signature validated successfully');
       }
 
       return isValid;
     } catch (error) {
-      this.logger.error('Error validating webhook signature:', error);
-      return false;
+      this.logger.error('❌ Error validating webhook signature:', error);
+      // In production, this should return false
+      // In development, we allow it to continue
+      return !this.webhookSecret || this.webhookSecret === 'dummy';
     }
   }
 

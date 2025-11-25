@@ -5,6 +5,7 @@ import { API_CONFIG, ApiResponse, ApiError } from '../config/api.config';
 class ApiClient {
   private axiosInstance: AxiosInstance;
   private authToken: string | null = null;
+  private tokenLoadPromise: Promise<void> | null = null;
 
   constructor() {
     this.axiosInstance = axios.create({
@@ -17,13 +18,20 @@ class ApiClient {
     });
 
     this.setupInterceptors();
-    this.loadAuthToken();
+    // Start loading token immediately but don't block constructor
+    this.tokenLoadPromise = this.loadAuthToken();
   }
 
   private setupInterceptors(): void {
     // Request interceptor - Add auth token
     this.axiosInstance.interceptors.request.use(
       async (config) => {
+        // Wait for token to be loaded from storage if it's still loading
+        if (this.tokenLoadPromise) {
+          await this.tokenLoadPromise;
+          this.tokenLoadPromise = null; // Clear after first use
+        }
+
         if (this.authToken) {
           config.headers.Authorization = `Bearer ${this.authToken}`;
         }
@@ -32,6 +40,7 @@ class ApiClient {
           console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`, {
             data: config.data,
             params: config.params,
+            hasAuthToken: !!this.authToken,
           });
         }
 
@@ -140,7 +149,12 @@ class ApiClient {
   // Auth token management
   async setAuthToken(token: string): Promise<void> {
     this.authToken = token;
+    this.tokenLoadPromise = null; // Clear any pending load
     await AsyncStorage.setItem(API_CONFIG.STORAGE_KEYS.AUTH_TOKEN, token);
+
+    if (__DEV__) {
+      console.log('✅ Auth token set successfully');
+    }
   }
 
   async clearAuthToken(): Promise<void> {
@@ -154,9 +168,16 @@ class ApiClient {
       const token = await AsyncStorage.getItem(API_CONFIG.STORAGE_KEYS.AUTH_TOKEN);
       if (token) {
         this.authToken = token;
+        if (__DEV__) {
+          console.log('✅ Auth token loaded from storage');
+        }
+      } else {
+        if (__DEV__) {
+          console.log('ℹ️ No auth token found in storage');
+        }
       }
     } catch (error) {
-      console.error('Failed to load auth token:', error);
+      console.error('❌ Failed to load auth token:', error);
     }
   }
 

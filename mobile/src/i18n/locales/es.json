@@ -326,7 +326,8 @@
       "savedMethod": "Método guardado",
       "default": "Predeterminado",
       "mercadopagoDescription": "Paga con tarjeta de crédito/débito, PSE o efectivo",
-      "loadError": "No se pudieron cargar los métodos de pago"
+      "loadError": "No se pudieron cargar los métodos de pago",
+      "securePayment": "Pago 100% seguro. Serás redirigido a MercadoPago para completar la transacción."
     },
     "steps": {
       "shipping": "Envío",

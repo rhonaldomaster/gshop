@@ -47,8 +47,8 @@ function PaymentWebViewScreen() {
       console.log('🔔 Payment-related URL detected:', url);
     }
 
-    // Detect callback URLs
-    if (url.includes('/payment/success')) {
+    // Detect callback URLs (both old and new formats)
+    if (url.includes('/callback/success') || url.includes('/payment/success')) {
       console.log('✅ Payment SUCCESS detected!');
 
       // Clear cart on successful payment
@@ -65,11 +65,11 @@ function PaymentWebViewScreen() {
         index: 0,
         routes: [{ name: 'CartMain' }],
       });
-    } else if (url.includes('/payment/failure')) {
+    } else if (url.includes('/callback/failure') || url.includes('/payment/failure')) {
       console.log('❌ Payment FAILURE detected');
       alert('Pago fallido\n\nPor favor intenta de nuevo');
       navigation.goBack();
-    } else if (url.includes('/payment/pending')) {
+    } else if (url.includes('/callback/pending') || url.includes('/payment/pending')) {
       console.log('⏳ Payment PENDING detected');
       alert('Pago pendiente\n\nTe notificaremos cuando se confirme');
       navigation.goBack();

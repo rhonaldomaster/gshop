@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { useApi } from '../../hooks/useApi';
 import {
-  paymentsService,
   PaymentMethod,
 } from '../../services/payments.service';
 import GSText from '../ui/GSText';
@@ -37,76 +32,23 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
 }) => {
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
-  const { user } = useAuth();
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [loadingMethods, setLoadingMethods] = useState(true);
-
-  const getMethodsApi = useApi(paymentsService.getPaymentMethods);
-
-  // Load payment methods
-  useEffect(() => {
-    const loadPaymentOptions = async () => {
-      try {
-        setLoadingMethods(true);
-
-        // Load saved payment methods if user is logged in
-        if (user) {
-          try {
-            const methods = await getMethodsApi.execute();
-            if (methods && Array.isArray(methods)) {
-              setPaymentMethods(methods);
-            }
-          } catch (error: any) {
-            // Ignore error if payment methods table doesn't exist or other DB issues
-            console.log('Could not load saved payment methods:', error.message);
-            setPaymentMethods([]);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading payment options:', error);
-      } finally {
-        setLoadingMethods(false);
-      }
-    };
-
-    loadPaymentOptions();
-  }, [user]);
-
-  // Payment method options (Solo MercadoPago para Colombia)
-  const availablePaymentOptions = [
-    {
-      id: 'mercadopago_new',
-      type: 'mercadopago' as const,
-      label: t('checkout.mercadoPago'),
-      description: t('checkout.payment.mercadopagoDescription'),
-      icon: '💵',
-      isNew: true,
-    },
-  ];
-
-  const handleMethodSelect = (methodId: string, isNew: boolean = false) => {
-    if (isNew) {
-      // Create a temporary payment method object for new payments
-      const option = availablePaymentOptions.find(opt => opt.id === methodId);
-      if (option) {
-        const tempMethod: PaymentMethod = {
-          id: methodId,
-          type: option.type,
-          provider: option.label,
-          details: {},
-          isDefault: false,
-          createdAt: new Date().toISOString(),
-        };
-        onSelectMethod(tempMethod);
-      }
-    } else {
-      const method = paymentMethods.find(m => m.id === methodId);
-      if (method) {
-        onSelectMethod(method);
-      }
-    }
+  // MercadoPago payment method
+  const mercadoPagoMethod: PaymentMethod = {
+    id: 'mercadopago',
+    type: 'mercadopago',
+    provider: 'MercadoPago',
+    details: {},
+    isDefault: false,
+    createdAt: new Date().toISOString(),
   };
+
+  // Auto-select MercadoPago on mount
+  useEffect(() => {
+    if (!selectedMethod) {
+      onSelectMethod(mercadoPagoMethod);
+    }
+  }, []);
 
   const handleNext = () => {
     if (!selectedMethod) {
@@ -119,151 +61,60 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     onNext();
   };
 
-  if (loadingMethods) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <GSText variant="body" color="textSecondary" style={styles.loadingText}>
-          {t('common.loading')}
-        </GSText>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
         {t('checkout.payment.title')}
       </GSText>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Saved Payment Methods */}
-        {paymentMethods.length > 0 && (
-          <>
-            <GSText variant="body" weight="semiBold" style={styles.subsectionTitle}>
-              {t('checkout.payment.savedMethods')}
-            </GSText>
-            {paymentMethods.map((method) => (
-              <TouchableOpacity
-                key={method.id}
-                style={[
-                  styles.paymentOption,
-                  {
-                    borderColor: selectedMethod?.id === method.id
-                      ? theme.colors.primary
-                      : theme.colors.gray300,
-                    backgroundColor: selectedMethod?.id === method.id
-                      ? theme.colors.primary + '10'
-                      : theme.colors.surface,
-                  },
-                ]}
-                onPress={() => handleMethodSelect(method.id)}
-              >
-                <View style={styles.paymentOptionContent}>
-                  <View style={styles.paymentOptionHeader}>
-                    <GSText variant="h2" style={styles.paymentIcon}>
-                      {method.type === 'card' ? '💳' :
-                       method.type === 'mercadopago' ? '💵' :
-                       method.type === 'crypto' ? '₿' : '💎'}
-                    </GSText>
-                    <View style={styles.paymentOptionInfo}>
-                      <GSText variant="body" weight="semiBold">
-                        {method.provider}
-                      </GSText>
-                      <GSText variant="caption" color="textSecondary">
-                        {method.details.last4 ? `•••• ${method.details.last4}` : t('checkout.payment.savedMethod')}
-                      </GSText>
-                      {method.isDefault && (
-                        <View style={[styles.defaultBadge, { backgroundColor: theme.colors.success + '20' }]}>
-                          <GSText variant="caption" color="success" weight="semiBold">
-                            {t('checkout.payment.default')}
-                          </GSText>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                </View>
+      {/* MercadoPago Payment Option */}
+      <TouchableOpacity
+        style={[
+          styles.paymentOption,
+          {
+            borderColor: theme.colors.primary,
+            backgroundColor: theme.colors.primary + '10',
+          },
+        ]}
+        activeOpacity={1}
+      >
+        <View style={styles.paymentOptionContent}>
+          <View style={styles.paymentOptionHeader}>
+            <GSText variant="h2" style={styles.paymentIcon}>💵</GSText>
+            <View style={styles.paymentOptionInfo}>
+              <GSText variant="body" weight="semiBold">
+                MercadoPago
+              </GSText>
+              <GSText variant="caption" color="textSecondary">
+                {t('checkout.payment.mercadopagoDescription') || 'Pago seguro con MercadoPago'}
+              </GSText>
+            </View>
+          </View>
+        </View>
 
-                <View
-                  style={[
-                    styles.radioButton,
-                    {
-                      borderColor: selectedMethod?.id === method.id
-                        ? theme.colors.primary
-                        : theme.colors.gray300,
-                    },
-                  ]}
-                >
-                  {selectedMethod?.id === method.id && (
-                    <View
-                      style={[
-                        styles.radioButtonInner,
-                        { backgroundColor: theme.colors.primary },
-                      ]}
-                    />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </>
-        )}
-
-        {/* New Payment Options */}
-        <GSText variant="body" weight="semiBold" style={styles.subsectionTitle}>
-          {paymentMethods.length > 0 ? t('checkout.payment.orPayWith') : t('checkout.payment.paymentOptions')}
-        </GSText>
-        {availablePaymentOptions.map((option) => (
-          <TouchableOpacity
-            key={option.id}
+        <View
+          style={[
+            styles.radioButton,
+            {
+              borderColor: theme.colors.primary,
+            },
+          ]}
+        >
+          <View
             style={[
-              styles.paymentOption,
-              {
-                borderColor: selectedMethod?.id === option.id
-                  ? theme.colors.primary
-                  : theme.colors.gray300,
-                backgroundColor: selectedMethod?.id === option.id
-                  ? theme.colors.primary + '10'
-                  : theme.colors.surface,
-              },
+              styles.radioButtonInner,
+              { backgroundColor: theme.colors.primary },
             ]}
-            onPress={() => handleMethodSelect(option.id, true)}
-          >
-            <View style={styles.paymentOptionContent}>
-              <View style={styles.paymentOptionHeader}>
-                <GSText variant="h2" style={styles.paymentIcon}>{option.icon}</GSText>
-                <View style={styles.paymentOptionInfo}>
-                  <GSText variant="body" weight="semiBold">
-                    {option.label}
-                  </GSText>
-                  <GSText variant="caption" color="textSecondary">
-                    {option.description}
-                  </GSText>
-                </View>
-              </View>
-            </View>
+          />
+        </View>
+      </TouchableOpacity>
 
-            <View
-              style={[
-                styles.radioButton,
-                {
-                  borderColor: selectedMethod?.id === option.id
-                    ? theme.colors.primary
-                    : theme.colors.gray300,
-                },
-              ]}
-            >
-              {selectedMethod?.id === option.id && (
-                <View
-                  style={[
-                    styles.radioButtonInner,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                />
-              )}
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Info Note */}
+      <View style={[styles.infoNote, { backgroundColor: theme.colors.surface }]}>
+        <GSText variant="caption" color="textSecondary" style={styles.infoNoteText}>
+          🔒 {t('checkout.payment.securePayment') || 'Pago 100% seguro. Serás redirigido a MercadoPago para completar la transacción.'}
+        </GSText>
+      </View>
 
       {/* Navigation Buttons */}
       <View style={styles.navigationButtons}>
@@ -280,7 +131,6 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
             title={t('checkout.payment.continueToReview')}
             onPress={handleNext}
             style={styles.navButton}
-            disabled={!selectedMethod}
             loading={isLoading}
           />
         </View>
@@ -294,30 +144,16 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-    minHeight: 200,
-  },
-  loadingText: {
-    marginTop: 12,
-  },
   sectionTitle: {
     marginBottom: 20,
-  },
-  subsectionTitle: {
-    marginTop: 16,
-    marginBottom: 12,
   },
   paymentOption: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderWidth: 1,
+    borderWidth: 2,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   paymentOptionContent: {
     flex: 1,
@@ -333,13 +169,6 @@ const styles = StyleSheet.create({
   paymentOptionInfo: {
     flex: 1,
   },
-  defaultBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginTop: 4,
-    alignSelf: 'flex-start',
-  },
   radioButton: {
     width: 20,
     height: 20,
@@ -353,6 +182,14 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  infoNote: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  infoNoteText: {
+    lineHeight: 20,
   },
   navigationButtons: {
     flexDirection: 'row',
