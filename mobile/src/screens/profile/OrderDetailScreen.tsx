@@ -403,7 +403,7 @@ export default function OrderDetailScreen() {
               weight="semiBold"
               style={{ color: ordersService.getOrderStatusColor(order.status) }}
             >
-              {ordersService.getOrderStatusText(order.status)}
+              {t(ordersService.getOrderStatusTranslationKey(order.status))}
             </GSText>
           </View>
         </View>
@@ -439,6 +439,18 @@ export default function OrderDetailScreen() {
               {parseFloat(String(order.shipping || 0)) === 0 ? t('orders.free') : ordersService.formatPrice(order.shipping || 0)}
             </GSText>
           </View>
+
+          {/* Platform Fee */}
+          {order.platformFeeAmount && parseFloat(String(order.platformFeeAmount)) > 0 && (
+            <View style={styles.summaryRow}>
+              <GSText variant="body" color="textSecondary">
+                {t('orders.platformFee', { rate: order.platformFeeRate || 0 })}
+              </GSText>
+              <GSText variant="body" color="textSecondary">
+                {ordersService.formatPrice(order.platformFeeAmount)}
+              </GSText>
+            </View>
+          )}
 
           <GSText variant="caption" color="textSecondary" style={{ marginTop: 4, marginBottom: 8 }}>
             {t('orders.vatIncluded')}
@@ -556,13 +568,13 @@ export default function OrderDetailScreen() {
               </GSText>
             </View>
             <View style={styles.paymentRow}>
-              <GSText variant="body">{t('orders.paymentStatus')}:</GSText>
+              <GSText variant="body">{t('orders.paymentStatusLabel')}:</GSText>
               <GSText
                 variant="body"
                 weight="semiBold"
                 color={order.paymentStatus === PaymentStatus.PAID ? 'success' : 'warning'}
               >
-                {ordersService.getPaymentStatusText(order.paymentStatus)}
+                {t(ordersService.getPaymentStatusTranslationKey(order.paymentStatus))}
               </GSText>
             </View>
           </View>

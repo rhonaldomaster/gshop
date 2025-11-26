@@ -367,7 +367,11 @@ export class OrdersService {
     // Add payment info to order if found in payments_v2
     if (paymentV2 && paymentV2.length > 0) {
       (order as any).paymentStatus = paymentV2[0].status;
-      (order as any).paymentMethod = paymentV2[0].paymentMethod;
+      // Map enum to object format expected by frontend
+      (order as any).paymentMethod = {
+        type: paymentV2[0].paymentMethod,
+        provider: this.getProviderName(paymentV2[0].paymentMethod),
+      };
     } else if (order.payment) {
       // Fallback to old payment system
       (order as any).paymentStatus = order.payment.status;
@@ -378,7 +382,12 @@ export class OrdersService {
       (order as any).paymentMethod = null;
     }
 
-    return order;
+    // Return plain object to ensure dynamic properties are included
+    return {
+      ...order,
+      paymentStatus: (order as any).paymentStatus,
+      paymentMethod: (order as any).paymentMethod,
+    } as unknown as Order;
   }
 
   async findByOrderNumber(orderNumber: string): Promise<Order> {
@@ -407,7 +416,11 @@ export class OrdersService {
     // Add payment info to order if found in payments_v2
     if (paymentV2 && paymentV2.length > 0) {
       (order as any).paymentStatus = paymentV2[0].status;
-      (order as any).paymentMethod = paymentV2[0].paymentMethod;
+      // Map enum to object format expected by frontend
+      (order as any).paymentMethod = {
+        type: paymentV2[0].paymentMethod,
+        provider: this.getProviderName(paymentV2[0].paymentMethod),
+      };
     } else if (order.payment) {
       // Fallback to old payment system
       (order as any).paymentStatus = order.payment.status;
@@ -418,7 +431,12 @@ export class OrdersService {
       (order as any).paymentMethod = null;
     }
 
-    return order;
+    // Return plain object to ensure dynamic properties are included
+    return {
+      ...order,
+      paymentStatus: (order as any).paymentStatus,
+      paymentMethod: (order as any).paymentMethod,
+    } as unknown as Order;
   }
 
   async update(id: string, updateOrderDto: UpdateOrderDto): Promise<Order> {
@@ -602,6 +620,19 @@ export class OrdersService {
       totalVatAmount,
       vatBreakdown,
     };
+  }
+
+  private getProviderName(paymentMethod: string): string {
+    // Map payment method enum to display name
+    const providerMap = {
+      'stripe_card': 'Stripe',
+      'stripe_bank': 'Stripe',
+      'usdc_polygon': 'USDC (Polygon)',
+      'mercadopago': 'MercadoPago',
+      'gshop_tokens': 'GShop Tokens',
+    };
+
+    return providerMap[paymentMethod] || paymentMethod;
   }
 
   private async generateOrderNumber(): Promise<string> {

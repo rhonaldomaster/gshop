@@ -71,6 +71,8 @@ export interface Order {
   taxAmount?: number | string;
   totalAmount?: number | string;
   discountAmount?: number | string;
+  platformFeeRate?: number | string;
+  platformFeeAmount?: number | string;
   currency?: string;
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
@@ -505,32 +507,47 @@ class OrdersService {
     return colors[status] || '#808080';
   }
 
-  getOrderStatusText(status: OrderStatus): string {
-    const statusTexts: Record<OrderStatus, string> = {
-      [OrderStatus.PENDING]: 'Pendiente',
-      [OrderStatus.CONFIRMED]: 'Confirmado',
-      [OrderStatus.PROCESSING]: 'Procesando',
-      [OrderStatus.IN_TRANSIT]: 'En tránsito',
-      [OrderStatus.SHIPPED]: 'Enviado',
-      [OrderStatus.DELIVERED]: 'Entregado',
-      [OrderStatus.CANCELLED]: 'Cancelado',
-      [OrderStatus.RETURN_REQUESTED]: 'Devolución solicitada',
-      [OrderStatus.REFUNDED]: 'Reembolsado',
+  getOrderStatusTranslationKey(status: OrderStatus | string): string {
+    const statusKeys: Record<string, string> = {
+      [OrderStatus.PENDING]: 'orders.orderStatus.pending',
+      pending: 'orders.orderStatus.pending',
+      [OrderStatus.CONFIRMED]: 'orders.orderStatus.confirmed',
+      confirmed: 'orders.orderStatus.confirmed',
+      [OrderStatus.PROCESSING]: 'orders.orderStatus.processing',
+      processing: 'orders.orderStatus.processing',
+      [OrderStatus.IN_TRANSIT]: 'orders.orderStatus.inTransit',
+      in_transit: 'orders.orderStatus.inTransit',
+      [OrderStatus.SHIPPED]: 'orders.orderStatus.shipped',
+      shipped: 'orders.orderStatus.shipped',
+      [OrderStatus.DELIVERED]: 'orders.orderStatus.delivered',
+      delivered: 'orders.orderStatus.delivered',
+      [OrderStatus.CANCELLED]: 'orders.orderStatus.cancelled',
+      cancelled: 'orders.orderStatus.cancelled',
+      [OrderStatus.RETURN_REQUESTED]: 'orders.orderStatus.returnRequested',
+      return_requested: 'orders.orderStatus.returnRequested',
+      [OrderStatus.REFUNDED]: 'orders.orderStatus.refunded',
+      refunded: 'orders.orderStatus.refunded',
     };
 
-    return statusTexts[status] || status;
+    return statusKeys[status] || 'orders.orderStatus.pending';
   }
 
-  getPaymentStatusText(status: PaymentStatus): string {
-    const statusTexts: Record<PaymentStatus, string> = {
-      [PaymentStatus.PENDING]: 'Pendiente',
-      [PaymentStatus.PAID]: 'Pagado',
-      [PaymentStatus.FAILED]: 'Falló',
-      [PaymentStatus.REFUNDED]: 'Reembolsado',
-      [PaymentStatus.PARTIALLY_REFUNDED]: 'Reembolso parcial',
+  getPaymentStatusTranslationKey(status: PaymentStatus | string): string {
+    const statusKeys: Record<string, string> = {
+      [PaymentStatus.PENDING]: 'orders.paymentStatus.pending',
+      pending: 'orders.paymentStatus.pending',
+      [PaymentStatus.PAID]: 'orders.paymentStatus.paid',
+      paid: 'orders.paymentStatus.paid',
+      completed: 'orders.paymentStatus.paid', // Backend uses 'completed' for paid status
+      [PaymentStatus.FAILED]: 'orders.paymentStatus.failed',
+      failed: 'orders.paymentStatus.failed',
+      [PaymentStatus.REFUNDED]: 'orders.paymentStatus.refunded',
+      refunded: 'orders.paymentStatus.refunded',
+      [PaymentStatus.PARTIALLY_REFUNDED]: 'orders.paymentStatus.partiallyRefunded',
+      partially_refunded: 'orders.paymentStatus.partiallyRefunded',
     };
 
-    return statusTexts[status] || status;
+    return statusKeys[status] || 'orders.paymentStatus.pending';
   }
 
   formatOrderNumber(orderNumber: string): string {

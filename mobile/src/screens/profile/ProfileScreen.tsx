@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Alert, Image, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +8,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../hooks/useCart';
+import { ordersService } from '../../services/orders.service';
+import { wishlistService } from '../../services/wishlist.service';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 
@@ -18,8 +20,31 @@ export default function ProfileScreen() {
   const { user, logout, isAuthenticated } = useAuth();
   const { getCartSummary } = useCart();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
 
   const cartSummary = getCartSummary();
+
+  // Load orders and wishlist counts
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      loadUserStats();
+    }
+  }, [isAuthenticated, user]);
+
+  const loadUserStats = async () => {
+    try {
+      // Load orders count
+      const ordersResponse = await ordersService.getOrders(1, 1);
+      setOrdersCount(ordersResponse.pagination.total || 0);
+
+      // Load wishlist count
+      const wishlistCountResponse = await wishlistService.getWishlistCount();
+      setWishlistCount(wishlistCountResponse);
+    } catch (error) {
+      console.error('Failed to load user stats:', error);
+    }
+  };
 
   // Handle logout with confirmation
   const handleLogout = () => {
@@ -181,7 +206,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.statItem}>
               <GSText variant="h4" weight="bold" color={theme.colors.primary}>
-                0
+                {ordersCount}
               </GSText>
               <GSText variant="caption" color={theme.colors.textSecondary}>
                 {t('orders.title')}
@@ -189,7 +214,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.statItem}>
               <GSText variant="h4" weight="bold" color={theme.colors.primary}>
-                0
+                {wishlistCount}
               </GSText>
               <GSText variant="caption" color={theme.colors.textSecondary}>
                 {t('wishlist.title')}

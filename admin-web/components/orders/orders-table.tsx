@@ -116,6 +116,7 @@ const getPaymentStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
     paid: 'bg-green-100 text-green-800',
+    completed: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
     refunded: 'bg-gray-100 text-gray-800',
   };
@@ -142,6 +143,32 @@ const getOrderStatusIcon = (status: string) => {
   }
 };
 
+const getOrderStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    pending: 'Pendiente de Pago',
+    confirmed: 'Pendiente de Envío',
+    processing: 'Preparando Envío',
+    in_transit: 'En Tránsito',
+    shipped: 'Enviado',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado',
+    return_requested: 'Devolución Solicitada',
+    refunded: 'Reembolsado',
+  };
+  return labels[status] || status;
+};
+
+const getPaymentStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    pending: 'Pendiente',
+    paid: 'Pago Realizado',
+    completed: 'Pago Realizado',
+    failed: 'Fallido',
+    refunded: 'Reembolsado',
+  };
+  return labels[status] || status;
+};
+
 export function OrdersTable() {
   const t = useTranslations('orders');
   const tCommon = useTranslations('common');
@@ -150,11 +177,6 @@ export function OrdersTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-
-  const getStatusLabel = (status: string): string => {
-    const statusKey = status as any;
-    return t(statusKey) || status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
-  };
 
   useEffect(() => {
     fetchOrders();
@@ -236,20 +258,20 @@ export function OrdersTable() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t('filterByStatus')}</SelectItem>
-                <SelectItem value="pending">{t('pending')}</SelectItem>
-                <SelectItem value="confirmed">{t('confirmed')}</SelectItem>
-                <SelectItem value="processing">{t('processing')}</SelectItem>
-                <SelectItem value="in_transit">{t('in_transit')}</SelectItem>
-                <SelectItem value="shipped">{t('shipped')}</SelectItem>
-                <SelectItem value="delivered">{t('delivered')}</SelectItem>
-                <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-                <SelectItem value="return_requested">{t('return_requested')}</SelectItem>
-                <SelectItem value="refunded">{t('refunded')}</SelectItem>
+                <SelectItem value="all">Todos los Estados</SelectItem>
+                <SelectItem value="pending">Pendiente de Pago</SelectItem>
+                <SelectItem value="confirmed">Pendiente de Envío</SelectItem>
+                <SelectItem value="processing">Preparando Envío</SelectItem>
+                <SelectItem value="in_transit">En Tránsito</SelectItem>
+                <SelectItem value="shipped">Enviado</SelectItem>
+                <SelectItem value="delivered">Entregado</SelectItem>
+                <SelectItem value="cancelled">Cancelado</SelectItem>
+                <SelectItem value="return_requested">Devolución Solicitada</SelectItem>
+                <SelectItem value="refunded">Reembolsado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -323,7 +345,7 @@ export function OrdersTable() {
                         className={`flex items-center gap-1 w-fit ${getOrderStatusColor(order.status)}`}
                       >
                         {getOrderStatusIcon(order.status)}
-                        {getStatusLabel(order.status)}
+                        {getOrderStatusLabel(order.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -331,7 +353,7 @@ export function OrdersTable() {
                         variant="outline"
                         className={getPaymentStatusColor(order.paymentStatus || 'pending')}
                       >
-                        {getStatusLabel(order.paymentStatus || 'pending')}
+                        {getPaymentStatusLabel(order.paymentStatus || 'pending')}
                       </Badge>
                     </TableCell>
                     <TableCell>

@@ -140,7 +140,7 @@ export default function CategoryProductsScreen() {
         </View>
 
         <View style={styles.productFooter}>
-          {(item?.stock ?? 0) > 0 ? (
+          {(item?.quantity ?? 0) > 0 ? (
             <View style={styles.stockBadge}>
               <Ionicons name="checkmark-circle" size={14} color="#10B981" />
               <GSText variant="caption" style={{ color: '#10B981', marginLeft: 4 }}>

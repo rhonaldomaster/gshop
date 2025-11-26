@@ -54,7 +54,7 @@ interface Order {
   totalAmount: number;
   status: string;
   paymentStatus?: string;
-  paymentMethod?: string;
+  paymentMethod?: string | { type?: string; provider?: string };
   shippingAddress?: {
     firstName?: string;
     lastName?: string;
@@ -106,6 +106,21 @@ const getOrderStatusColor = (status: string): string => {
   return colors[status] || 'bg-gray-100 text-gray-800';
 };
 
+const getOrderStatusLabel = (status: string): string => {
+  const labels: Record<string, string> = {
+    pending: 'Pendiente de Pago',
+    confirmed: 'Pendiente de Envío',
+    processing: 'Preparando Envío',
+    in_transit: 'En Tránsito',
+    shipped: 'Enviado',
+    delivered: 'Entregado',
+    cancelled: 'Cancelado',
+    return_requested: 'Devolución Solicitada',
+    refunded: 'Reembolsado',
+  };
+  return labels[status] || status;
+};
+
 const getVatLabel = (vatType?: string): string => {
   const labels: Record<string, string> = {
     excluido: 'Excluido (0%)',
@@ -114,6 +129,14 @@ const getVatLabel = (vatType?: string): string => {
     general: 'General (19%)',
   };
   return labels[vatType || 'general'] || 'General (19%)';
+};
+
+const formatPaymentMethod = (paymentMethod?: string | { type?: string; provider?: string }): string => {
+  if (!paymentMethod) return 'N/A';
+  if (typeof paymentMethod === 'string') return paymentMethod;
+  const { type, provider } = paymentMethod;
+  if (type && provider) return `${type} (${provider})`;
+  return type || provider || 'N/A';
 };
 
 export default function OrderDetailPage() {
@@ -187,7 +210,7 @@ export default function OrderDetailPage() {
           </div>
           <div className="flex items-center gap-2">
             <Badge className={getOrderStatusColor(order.status)}>
-              {t(order.status)}
+              {getOrderStatusLabel(order.status)}
             </Badge>
           </div>
         </div>
@@ -423,7 +446,7 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">{t('method')}:</span>
                   <span className="text-sm font-medium capitalize">
-                    {order.paymentMethod || t('na')}
+                    {formatPaymentMethod(order.paymentMethod)}
                   </span>
                 </div>
                 <div className="flex justify-between">

@@ -103,7 +103,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
               weight="semiBold"
               style={{ color: ordersService.getOrderStatusColor(order.status) }}
             >
-              {ordersService.getOrderStatusText(order.status)}
+              {t(ordersService.getOrderStatusTranslationKey(order.status))}
             </GSText>
           </View>
         </View>
@@ -128,22 +128,43 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
         {/* Payment Status */}
         <View style={styles.paymentStatus}>
           <Ionicons
-            name={order.paymentStatus === PaymentStatus.PAID ? 'checkmark-circle' : 'time'}
+            name={
+              order.paymentStatus === PaymentStatus.PAID || (order.paymentStatus as string) === 'completed'
+                ? 'checkmark-circle'
+                : order.paymentStatus === PaymentStatus.FAILED
+                ? 'close-circle'
+                : order.paymentStatus === PaymentStatus.REFUNDED ||
+                  order.paymentStatus === PaymentStatus.PARTIALLY_REFUNDED
+                ? 'arrow-undo-circle'
+                : 'hourglass-outline'
+            }
             size={16}
             color={
-              order.paymentStatus === PaymentStatus.PAID
+              order.paymentStatus === PaymentStatus.PAID || (order.paymentStatus as string) === 'completed'
                 ? theme.colors.success
+                : order.paymentStatus === PaymentStatus.FAILED
+                ? theme.colors.error
+                : order.paymentStatus === PaymentStatus.REFUNDED ||
+                  order.paymentStatus === PaymentStatus.PARTIALLY_REFUNDED
+                ? theme.colors.info
                 : theme.colors.warning
             }
           />
           <GSText
             variant="caption"
             color={
-              order.paymentStatus === PaymentStatus.PAID ? 'success' : 'warning'
+              order.paymentStatus === PaymentStatus.PAID || (order.paymentStatus as string) === 'completed'
+                ? 'success'
+                : order.paymentStatus === PaymentStatus.FAILED
+                ? 'error'
+                : order.paymentStatus === PaymentStatus.REFUNDED ||
+                  order.paymentStatus === PaymentStatus.PARTIALLY_REFUNDED
+                ? 'info'
+                : 'warning'
             }
             style={{ marginLeft: 4 }}
           >
-            {ordersService.getPaymentStatusText(order.paymentStatus)}
+            {t(ordersService.getPaymentStatusTranslationKey(order.paymentStatus))}
           </GSText>
         </View>
       </View>
