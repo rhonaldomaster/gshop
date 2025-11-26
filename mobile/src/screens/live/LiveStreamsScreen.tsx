@@ -8,7 +8,6 @@ import {
   RefreshControl,
   Image,
   ActivityIndicator,
-  Dimensions,
   Alert,
   TextInput,
   ScrollView,
@@ -17,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
+import { buildApiUrl, API_CONFIG } from '../../config/api.config';
 
 interface LiveStream {
   id: string;
@@ -65,14 +65,21 @@ export default function LiveStreamsScreen({ navigation }: any) {
 
   const fetchLiveStreams = async () => {
     try {
-      // In a real app, this would be an API call
-      const response = await fetch(`${process.env.API_BASE_URL}/live/streams/active`);
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.LIVE.ACTIVE), {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
-        setStreams(data);
+        setStreams(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to fetch live streams:', response.status, response.statusText);
+        setStreams([]);
       }
     } catch (error) {
       console.error('Failed to fetch live streams:', error);
+      setStreams([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -409,7 +416,10 @@ export default function LiveStreamsScreen({ navigation }: any) {
         data={filteredStreams}
         renderItem={renderStreamCard}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          filteredStreams.length === 0 && { paddingTop: 0, flexGrow: 0 }
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -419,8 +429,6 @@ export default function LiveStreamsScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -460,8 +468,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    flexGrow: 1,
+    paddingBottom: 8,
   },
   streamCard: {
     backgroundColor: '#ffffff',
@@ -621,11 +628,11 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   emptyState: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
-    paddingVertical: 64,
+    paddingTop: 40,
+    paddingBottom: 64,
   },
   emptyTitle: {
     fontSize: 20,
@@ -645,7 +652,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f9fafb',
     marginHorizontal: 16,
-    marginVertical: 12,
+    marginTop: 12,
+    marginBottom: 12,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
@@ -661,8 +669,8 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   filtersContainer: {
-    maxHeight: 48,
     marginBottom: 8,
+    height: 48,
   },
   filtersContent: {
     paddingHorizontal: 16,
@@ -672,11 +680,13 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: '#f3f4f6',
     gap: 6,
+    height: 40,
   },
   filterChipActive: {
     backgroundColor: '#ede9fe',
@@ -685,6 +695,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 14,
+    lineHeight: 20,
     color: '#6b7280',
     fontWeight: '500',
   },
@@ -704,12 +715,15 @@ const styles = StyleSheet.create({
   forYouGradient: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     gap: 6,
+    height: 40,
   },
   forYouText: {
     fontSize: 14,
+    lineHeight: 20,
     color: '#fff',
     fontWeight: '700',
   },

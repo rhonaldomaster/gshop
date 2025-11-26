@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../../components/live/ProductCard';
 import { ChatMessage } from '../../components/live/ChatMessage';
 import { QuickCheckoutModal } from '../../components/live/QuickCheckoutModal';
+import { API_CONFIG } from '../../config/api.config';
 
 interface LiveStreamData {
   id: string;
@@ -85,10 +86,16 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   const fetchStreamData = async () => {
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/live/streams/${streamId}`);
+      const url = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}/live/streams/${streamId}`;
+      console.log('Fetching stream from:', url);
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setStream(data);
+      } else {
+        console.error('Failed to fetch stream, status:', response.status);
+        Alert.alert(t('common.error'), t('live.failedToLoadStream'));
+        navigation.goBack();
       }
     } catch (error) {
       console.error('Failed to fetch stream data:', error);
@@ -100,7 +107,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const initializeSocket = () => {
-    socketRef.current = io(`${process.env.API_BASE_URL}/live`);
+    const socketUrl = `${API_CONFIG.WEBSOCKET_URL}/live`;
+    console.log('Connecting to WebSocket:', socketUrl);
+    socketRef.current = io(socketUrl);
 
     socketRef.current.on('connect', () => {
       socketRef.current?.emit('joinStream', {
