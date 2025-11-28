@@ -7,10 +7,10 @@ import { MercadoPagoService } from './mercadopago.service';
 import { Payment } from '../database/entities/payment.entity';
 import { Order } from '../database/entities/order.entity';
 import { Commission } from '../database/entities/commission.entity';
-import { PaymentMethodEntity } from './payments-v2.entity';
+import { PaymentMethodEntity, PaymentV2 } from './payments-v2.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment, Order, Commission, PaymentMethodEntity])],
+  imports: [TypeOrmModule.forFeature([Payment, PaymentV2, Order, Commission, PaymentMethodEntity])],
   controllers: [PaymentsController],
   providers: [PaymentsService, MercadoPagoService],
   exports: [PaymentsService, MercadoPagoService],

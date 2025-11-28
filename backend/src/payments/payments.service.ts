@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Payment, PaymentStatus, PaymentMethod } from '../database/entities/payment.entity';
 import { Order, OrderStatus } from '../database/entities/order.entity';
 import { Commission, CommissionType } from '../database/entities/commission.entity';
-import { PaymentMethodEntity } from './payments-v2.entity';
+import { PaymentMethodEntity, PaymentV2, PaymentStatus as PaymentV2Status } from './payments-v2.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { MercadoPagoService } from './mercadopago.service';
 
@@ -14,6 +14,8 @@ export class PaymentsService {
   constructor(
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
+    @InjectRepository(PaymentV2)
+    private paymentV2Repository: Repository<PaymentV2>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
     @InjectRepository(Commission)
@@ -292,31 +294,31 @@ export class PaymentsService {
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-    // Get counts for different payment statuses
+    // Get counts for different payment statuses (using payments_v2 table)
     const [
       completedPayments,
       pendingPayments,
       failedPayments,
     ] = await Promise.all([
-      this.paymentRepository.count({ where: { status: PaymentStatus.COMPLETED } }),
-      this.paymentRepository.count({ where: { status: PaymentStatus.PENDING } }),
-      this.paymentRepository.count({ where: { status: PaymentStatus.FAILED } }),
+      this.paymentV2Repository.count({ where: { status: PaymentV2Status.COMPLETED } }),
+      this.paymentV2Repository.count({ where: { status: PaymentV2Status.PENDING } }),
+      this.paymentV2Repository.count({ where: { status: PaymentV2Status.FAILED } }),
     ]);
 
-    // Calculate total revenue (all time)
-    const revenueResult = await this.paymentRepository
+    // Calculate total revenue (all time) from payments_v2
+    const revenueResult = await this.paymentV2Repository
       .createQueryBuilder('payment')
-      .select('SUM(payment.amount - payment.refundedAmount)', 'total')
-      .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+      .select('SUM(payment.amount)', 'total')
+      .where('payment.status = :status', { status: PaymentV2Status.COMPLETED })
       .getRawOne();
 
     const totalRevenue = parseFloat(revenueResult.total) || 0;
 
     // Calculate last month revenue
-    const lastMonthRevenueResult = await this.paymentRepository
+    const lastMonthRevenueResult = await this.paymentV2Repository
       .createQueryBuilder('payment')
-      .select('SUM(payment.amount - payment.refundedAmount)', 'total')
-      .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+      .select('SUM(payment.amount)', 'total')
+      .where('payment.status = :status', { status: PaymentV2Status.COMPLETED })
       .andWhere('payment.processedAt >= :start', { start: startOfLastMonth })
       .andWhere('payment.processedAt <= :end', { end: endOfLastMonth })
       .getRawOne();
@@ -324,10 +326,10 @@ export class PaymentsService {
     const lastMonthRevenue = parseFloat(lastMonthRevenueResult.total) || 0;
 
     // Calculate current month revenue
-    const currentMonthRevenueResult = await this.paymentRepository
+    const currentMonthRevenueResult = await this.paymentV2Repository
       .createQueryBuilder('payment')
-      .select('SUM(payment.amount - payment.refundedAmount)', 'total')
-      .where('payment.status = :status', { status: PaymentStatus.COMPLETED })
+      .select('SUM(payment.amount)', 'total')
+      .where('payment.status = :status', { status: PaymentV2Status.COMPLETED })
       .andWhere('payment.processedAt >= :start', { start: startOfCurrentMonth })
       .getRawOne();
 
@@ -341,14 +343,14 @@ export class PaymentsService {
       revenueChange = 100; // If there was no revenue last month but there is this month, it's 100% growth
     }
 
-    // Calculate total refunds
-    const refundsResult = await this.paymentRepository
+    // Calculate total refunds from payments_v2 (refunded status)
+    const refundedPayments = await this.paymentV2Repository
       .createQueryBuilder('payment')
-      .select('SUM(payment.refundedAmount)', 'total')
-      .where('payment.refundedAmount > 0')
+      .select('SUM(payment.amount)', 'total')
+      .where('payment.status = :status', { status: PaymentV2Status.REFUNDED })
       .getRawOne();
 
-    const totalRefunds = parseFloat(refundsResult.total) || 0;
+    const totalRefunds = parseFloat(refundedPayments.total) || 0;
 
     return {
       totalRevenue: Math.round(totalRevenue * 100) / 100,

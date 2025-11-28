@@ -1,7 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -91,12 +91,15 @@ export function useApi() {
     [request]
   );
 
-  return {
-    get,
-    post,
-    put,
-    patch,
-    delete: del,
-    request,
-  };
+  return useMemo(
+    () => ({
+      get,
+      post,
+      put,
+      patch,
+      delete: del,
+      request,
+    }),
+    [get, post, put, patch, del, request]
+  );
 }

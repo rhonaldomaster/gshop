@@ -75,10 +75,32 @@ export class CategoriesService {
   }
 
   async findAllFlat(): Promise<Category[]> {
-    return this.categoryRepository.find({
+    const categories = await this.categoryRepository.find({
       where: { isActive: true },
       order: { sortOrder: 'ASC', name: 'ASC' },
+      relations: ['parent'],
     });
+
+    // Get product counts for all categories
+    const productCounts = await this.categoryRepository
+      .createQueryBuilder('category')
+      .leftJoin('category.products', 'product', 'product.status = :status', { status: 'active' })
+      .select('category.id', 'categoryId')
+      .addSelect('COUNT(product.id)', 'productCount')
+      .groupBy('category.id')
+      .getRawMany();
+
+    // Create a map for quick lookup
+    const countMap = new Map<string, number>();
+    productCounts.forEach(row => {
+      countMap.set(row.categoryId, parseInt(row.productCount) || 0);
+    });
+
+    // Add product count to each category
+    return categories.map(category => ({
+      ...category,
+      productCount: countMap.get(category.id) || 0,
+    })) as Category[];
   }
 
   async findOne(id: string): Promise<Category> {

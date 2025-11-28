@@ -9,6 +9,23 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
   ArrowLeft,
   Package,
   User,
@@ -145,6 +162,13 @@ export default function OrderDetailPage() {
   const t = useTranslations('orders');
   const [order, setOrder] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const [isUpdateStatusDialogOpen, setIsUpdateStatusDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -162,6 +186,119 @@ export default function OrderDetailPage() {
       setOrder(null);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!order) return;
+
+    setIsDownloadingInvoice(true);
+    try {
+      // Get invoices for this order
+      const invoices = await apiClient.get<any[]>(`/invoicing/order/${order.id}`);
+
+      if (!invoices || invoices.length === 0) {
+        alert('No hay facturas disponibles para esta orden.');
+        return;
+      }
+
+      // Download the first invoice (or all if needed)
+      const invoice = invoices[0];
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/invoicing/${invoice.id}/pdf`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al descargar la factura');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `factura_${invoice.invoiceNumber || order.orderNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+      alert('Error al descargar la factura. Por favor, intenta de nuevo.');
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
+  };
+
+  const handleOpenUpdateStatusDialog = () => {
+    if (order) {
+      setSelectedStatus(order.status);
+      setIsUpdateStatusDialogOpen(true);
+    }
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!order || !selectedStatus) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      await apiClient.patch(`/orders/${order.id}/status`, {
+        status: selectedStatus,
+      });
+
+      // Refresh order data
+      await fetchOrder(order.id);
+      setIsUpdateStatusDialogOpen(false);
+      alert('Estado de la orden actualizado correctamente.');
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      alert('Error al actualizar el estado de la orden. Por favor, intenta de nuevo.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleOpenCancelDialog = () => {
+    if (order && order.status !== 'cancelled' && order.status !== 'refunded') {
+      setCancelReason('');
+      setIsCancelDialogOpen(true);
+    } else if (order?.status === 'cancelled') {
+      alert('Esta orden ya está cancelada.');
+    } else if (order?.status === 'refunded') {
+      alert('Esta orden ya ha sido reembolsada y no puede cancelarse.');
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    if (!order) return;
+
+    if (!cancelReason.trim()) {
+      alert('Por favor, proporciona una razón para la cancelación.');
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      // Update status to cancelled
+      await apiClient.patch(`/orders/${order.id}/status`, {
+        status: 'cancelled',
+      });
+
+      // Optionally save the cancel reason (if backend supports it)
+      // You could add a note or comment field to the order
+
+      // Refresh order data
+      await fetchOrder(order.id);
+      setIsCancelDialogOpen(false);
+      setCancelReason('');
+      alert('Orden cancelada correctamente.');
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      alert('Error al cancelar la orden. Por favor, intenta de nuevo.');
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -569,15 +706,29 @@ export default function OrderDetailPage() {
                 <CardTitle>{t('actions')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleDownloadInvoice}
+                  disabled={isDownloadingInvoice}
+                >
                   <Download className="h-4 w-4 mr-2" />
-                  {t('downloadInvoice')}
+                  {isDownloadingInvoice ? 'Descargando...' : t('downloadInvoice')}
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleOpenUpdateStatusDialog}
+                >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   {t('updateStatus')}
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-red-600 hover:text-red-700"
+                  onClick={handleOpenCancelDialog}
+                  disabled={order?.status === 'cancelled' || order?.status === 'refunded'}
+                >
                   <XCircle className="h-4 w-4 mr-2" />
                   {t('cancelOrder')}
                 </Button>
@@ -585,6 +736,95 @@ export default function OrderDetailPage() {
             </Card>
           </div>
         </div>
+
+        {/* Update Status Dialog */}
+        <Dialog open={isUpdateStatusDialogOpen} onOpenChange={setIsUpdateStatusDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Actualizar Estado de la Orden</DialogTitle>
+              <DialogDescription>
+                Selecciona el nuevo estado para la orden {order?.orderNumber}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pendiente de Pago</SelectItem>
+                  <SelectItem value="confirmed">Pendiente de Envío</SelectItem>
+                  <SelectItem value="processing">Preparando Envío</SelectItem>
+                  <SelectItem value="in_transit">En Tránsito</SelectItem>
+                  <SelectItem value="shipped">Enviado</SelectItem>
+                  <SelectItem value="delivered">Entregado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                  <SelectItem value="return_requested">Devolución Solicitada</SelectItem>
+                  <SelectItem value="refunded">Reembolsado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsUpdateStatusDialogOpen(false)}
+                disabled={isUpdatingStatus}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleUpdateStatus} disabled={isUpdatingStatus}>
+                {isUpdatingStatus ? 'Actualizando...' : 'Actualizar Estado'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cancel Order Dialog */}
+        <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancelar Orden</DialogTitle>
+              <DialogDescription>
+                ¿Estás seguro de que deseas cancelar la orden {order?.orderNumber}? Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="cancelReason">Razón de la Cancelación *</Label>
+                <Textarea
+                  id="cancelReason"
+                  placeholder="Explica el motivo de la cancelación..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={4}
+                  disabled={isCancelling}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Esta información será registrada en el sistema.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCancelDialogOpen(false);
+                  setCancelReason('');
+                }}
+                disabled={isCancelling}
+              >
+                No, volver
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleCancelOrder}
+                disabled={isCancelling || !cancelReason.trim()}
+              >
+                {isCancelling ? 'Cancelando...' : 'Sí, Cancelar Orden'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -20,6 +20,7 @@ interface StatsData {
   totalOrders: number;
   totalUsers: number;
   totalProducts: number;
+  sellerCount: number;
   revenueChange: number;
   ordersChange: number;
   usersChange: number;
@@ -35,6 +36,7 @@ export function StatsCards() {
     totalOrders: 0,
     totalUsers: 0,
     totalProducts: 0,
+    sellerCount: 0,
     revenueChange: 0,
     ordersChange: 0,
     usersChange: 0,
@@ -62,6 +64,7 @@ export function StatsCards() {
           totalOrders: (ordersStats as any)?.totalOrders || 0,
           totalUsers: (usersStats as any)?.totalUsers || 0,
           totalProducts: (productsStats as any)?.totalProducts || 0,
+          sellerCount: (usersStats as any)?.sellerCount || 0,
           revenueChange: (paymentsStats as any)?.revenueChange || 0,
           ordersChange: (ordersStats as any)?.ordersChange || 0,
           usersChange: (usersStats as any)?.usersChange || 0,
@@ -75,6 +78,7 @@ export function StatsCards() {
           totalOrders: 0,
           totalUsers: 0,
           totalProducts: 0,
+          sellerCount: 0,
           revenueChange: 0,
           ordersChange: 0,
           usersChange: 0,
@@ -107,8 +111,8 @@ export function StatsCards() {
       color: 'text-accent',
     },
     {
-      title: t('totalUsers'),
-      value: stats?.totalUsers?.toLocaleString?.() || '0',
+      title: t('totalSellers'),
+      value: stats?.sellerCount?.toLocaleString?.() || '0',
       change: stats?.usersChange || 0,
       icon: Users,
       color: 'text-blue-600',
