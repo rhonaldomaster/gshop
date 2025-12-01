@@ -12,20 +12,36 @@ import {
   Headers,
   Res,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Response } from 'express';
 import { PaymentsV2Service } from './payments-v2.service';
 import { MercadoPagoService } from './mercadopago.service';
 import { CreatePaymentV2Dto, ProcessCryptoPaymentDto, CreatePaymentMethodDto, CreateInvoiceDto, UpdateInvoiceStatusDto, PaymentStatsQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../database/entities/user.entity';
 import { PaymentStatus } from './payments-v2.entity';
 import { OrderStatus } from '../database/entities/order.entity';
 
+@ApiTags('Payments V2')
 @Controller('payments-v2')
 export class PaymentsV2Controller {
   constructor(
     private readonly paymentsV2Service: PaymentsV2Service,
     private readonly mercadopagoService: MercadoPagoService,
   ) {}
+
+  // Admin: Get all payments with filters and pagination
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get all payments with pagination (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Payments retrieved successfully' })
+  async findAll(@Query() query: any) {
+    return this.paymentsV2Service.findAll(query);
+  }
 
   // Payment Processing
   @Post()
@@ -89,6 +105,9 @@ export class PaymentsV2Controller {
   // Generic :id route MUST come after all specific routes
   @Get(':id')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get payment by ID' })
+  @ApiResponse({ status: 200, description: 'Payment retrieved successfully' })
   async getPayment(@Param('id') paymentId: string) {
     return this.paymentsV2Service.getPayment(paymentId);
   }

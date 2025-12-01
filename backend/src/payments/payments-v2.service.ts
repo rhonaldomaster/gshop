@@ -320,17 +320,37 @@ export class PaymentsV2Service {
     }
   }
 
-  async getPayment(paymentId: string): Promise<PaymentV2> {
+  async getPayment(paymentId: string): Promise<any> {
     const payment = await this.paymentRepository.findOne({
       where: { id: paymentId },
-      relations: ['user'],
+      relations: ['user', 'order'],
     });
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
     }
 
-    return payment;
+    // Transform to match frontend interface
+    return {
+      id: payment.id,
+      transactionId: payment.mercadopagoPaymentId || payment.stripePaymentIntentId || payment.id,
+      order: payment.order ? {
+        id: payment.order.id,
+        orderNumber: payment.order.orderNumber,
+      } : null,
+      user: payment.user ? {
+        id: payment.user.id,
+        firstName: payment.user.firstName,
+        lastName: payment.user.lastName,
+        email: payment.user.email,
+      } : null,
+      amount: Number(payment.amount),
+      status: payment.status,
+      method: payment.paymentMethod,
+      currency: payment.currency,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    };
   }
 
   async getPaymentByExternalRef(externalRef: string): Promise<PaymentV2 | null> {
@@ -526,5 +546,84 @@ export class PaymentsV2Service {
     }
 
     return { cancelledPayments, cancelledOrders };
+  }
+
+  // Admin: Find all payments with filters and pagination
+  async findAll(query: any = {}) {
+    const queryBuilder = this.paymentRepository
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.user', 'user')
+      .leftJoinAndSelect('payment.order', 'order')
+      .orderBy('payment.createdAt', 'DESC');
+
+    // Apply filters
+    if (query.status) {
+      queryBuilder.andWhere('payment.status = :status', { status: query.status });
+    }
+
+    if (query.method) {
+      queryBuilder.andWhere('payment.paymentMethod = :method', { method: query.method });
+    }
+
+    if (query.search) {
+      queryBuilder.andWhere(
+        '(order.orderNumber ILIKE :search OR user.email ILIKE :search OR user.firstName ILIKE :search OR user.lastName ILIKE :search)',
+        { search: `%${query.search}%` }
+      );
+    }
+
+    if (query.startDate) {
+      queryBuilder.andWhere('payment.createdAt >= :startDate', {
+        startDate: new Date(query.startDate),
+      });
+    }
+
+    if (query.endDate) {
+      queryBuilder.andWhere('payment.createdAt <= :endDate', {
+        endDate: new Date(query.endDate),
+      });
+    }
+
+    // Apply pagination
+    const page = parseInt(query.page) || 1;
+    const limit = parseInt(query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    queryBuilder.skip(skip).take(limit);
+
+    const [payments, total] = await queryBuilder.getManyAndCount();
+
+    // Transform to match expected format
+    const transformedPayments = payments.map(payment => ({
+      id: payment.id,
+      transactionId: payment.mercadopagoPaymentId || payment.stripePaymentIntentId || payment.id,
+      order: payment.order ? {
+        id: payment.order.id,
+        orderNumber: payment.order.orderNumber,
+      } : {
+        id: payment.orderId,
+        orderNumber: 'N/A',
+      },
+      user: payment.user ? {
+        id: payment.user.id,
+        firstName: payment.user.firstName,
+        lastName: payment.user.lastName,
+        email: payment.user.email,
+      } : null,
+      amount: Number(payment.amount),
+      status: payment.status,
+      method: payment.paymentMethod,
+      currency: payment.currency,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    }));
+
+    return {
+      data: transformedPayments,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 }

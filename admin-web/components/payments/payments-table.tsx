@@ -75,10 +75,11 @@ interface Payment {
 const getPaymentStatusColor = (status: string): string => {
   const colors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-800',
-    paid: 'bg-green-100 text-green-800',
     processing: 'bg-blue-100 text-blue-800',
+    completed: 'bg-green-100 text-green-800',
     failed: 'bg-red-100 text-red-800',
     refunded: 'bg-gray-100 text-gray-800',
+    cancelled: 'bg-gray-100 text-gray-800',
   };
   return colors[status] || 'bg-gray-100 text-gray-800';
 };
@@ -89,12 +90,14 @@ const getPaymentStatusIcon = (status: string) => {
       return <AlertCircle className="h-4 w-4" />;
     case 'processing':
       return <RefreshCw className="h-4 w-4" />;
-    case 'paid':
+    case 'completed':
       return <CheckCircle className="h-4 w-4" />;
     case 'failed':
       return <XCircle className="h-4 w-4" />;
     case 'refunded':
       return <DollarSign className="h-4 w-4" />;
+    case 'cancelled':
+      return <XCircle className="h-4 w-4" />;
     default:
       return <CreditCard className="h-4 w-4" />;
   }
@@ -131,7 +134,7 @@ export function PaymentsTable() {
         params.append('status', statusFilter);
       }
 
-      const response = await apiClient.get<{ data: Payment[] }>(`/payments?${params}`);
+      const response = await apiClient.get<{ data: Payment[] }>(`/payments-v2?${params}`);
       setPayments(response?.data || []);
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -206,9 +209,10 @@ export function PaymentsTable() {
                 <SelectItem value="all">{t('allStatus')}</SelectItem>
                 <SelectItem value="pending">{t('pending')}</SelectItem>
                 <SelectItem value="processing">{t('processing')}</SelectItem>
-                <SelectItem value="paid">{t('paid')}</SelectItem>
+                <SelectItem value="completed">{t('completed')}</SelectItem>
                 <SelectItem value="failed">{t('failed')}</SelectItem>
                 <SelectItem value="refunded">{t('refunded')}</SelectItem>
+                <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -285,7 +289,7 @@ export function PaymentsTable() {
                         className={`flex items-center gap-1 w-fit ${getPaymentStatusColor(payment.status)}`}
                       >
                         {getPaymentStatusIcon(payment.status)}
-                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                        {t(payment.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -301,9 +305,11 @@ export function PaymentsTable() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            {t('viewDetails')}
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/payments/${payment.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              {t('viewDetails')}
+                            </Link>
                           </DropdownMenuItem>
                           {payment.order && (
                             <DropdownMenuItem asChild>
@@ -321,7 +327,7 @@ export function PaymentsTable() {
                                   e.preventDefault();
                                   setSelectedPayment(payment);
                                 }}
-                                disabled={payment.status !== 'paid'}
+                                disabled={payment.status !== 'completed'}
                               >
                                 <DollarSign className="mr-2 h-4 w-4" />
                                 {t('processRefund')}

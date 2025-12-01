@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../users/user.entity';
+import { Order } from '../database/entities/order.entity';
 
 export enum PaymentMethod {
   STRIPE_CARD = 'stripe_card',
@@ -33,6 +34,10 @@ export class PaymentV2 {
 
   @Column('uuid')
   orderId: string;
+
+  @ManyToOne(() => Order)
+  @JoinColumn({ name: 'orderId' })
+  order: Order;
 
   @Column('uuid')
   userId: string;
