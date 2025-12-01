@@ -11,6 +11,7 @@ import { CampaignsList } from '@/components/ads/campaigns-list'
 import { CreateCampaignDialog } from '@/components/ads/create-campaign-dialog'
 import { CampaignMetrics } from '@/components/ads/campaign-metrics'
 import { AudienceManager } from '@/components/ads/audience-manager'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 
 export default function AdsManagerPage() {
   const t = useTranslations('ads')
@@ -39,9 +40,10 @@ export default function AdsManagerPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
           <p className="text-muted-foreground">
@@ -210,6 +212,7 @@ export default function AdsManagerPage() {
           fetchDashboardStats()
         }}
       />
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }

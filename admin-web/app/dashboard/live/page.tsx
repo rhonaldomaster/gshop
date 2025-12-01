@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -11,8 +12,10 @@ import { CreateStreamDialog } from '@/components/live/create-stream-dialog'
 import { LiveStreamMetrics } from '@/components/live/live-stream-metrics'
 import { useLiveWebSocket } from '@/hooks/useLiveWebSocket'
 import { useToast } from '@/hooks/use-toast'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 
 export default function LiveShoppingPage() {
+  const t = useTranslations('live')
   const [activeTab, setActiveTab] = useState('streams')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [dashboardStats, setDashboardStats] = useState<any>(null)
@@ -77,31 +80,32 @@ export default function LiveShoppingPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">Live Shopping</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{t('pageTitle')}</h1>
             {isConnected ? (
               <Badge variant="outline" className="gap-1">
                 <Wifi className="h-3 w-3 text-green-500" />
-                <span className="text-green-500">Live Updates</span>
+                <span className="text-green-500">{t('liveUpdates')}</span>
               </Badge>
             ) : (
               <Badge variant="outline" className="gap-1">
                 <WifiOff className="h-3 w-3 text-gray-400" />
-                <span className="text-gray-400">Offline</span>
+                <span className="text-gray-400">{t('offline')}</span>
               </Badge>
             )}
           </div>
           <p className="text-muted-foreground">
-            Manage live streaming sessions and real-time product showcases
+            {t('pageDescription')}
           </p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Create Live Stream
+          {t('createLiveStream')}
         </Button>
       </div>
 
@@ -110,46 +114,46 @@ export default function LiveShoppingPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Streams</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('totalStreams')}</CardTitle>
               <Radio className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{dashboardStats.totalStreams}</div>
               <p className="text-xs text-muted-foreground">
-                {dashboardStats.liveStreams} currently live
+                {dashboardStats.liveStreams} {t('currentlyLive')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Viewers</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('totalViewers')}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{dashboardStats.totalViewers.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                Avg {formatViewTime(dashboardStats.avgViewTime)} watch time
+                {t('avgWatchTime')} {formatViewTime(dashboardStats.avgViewTime)} {t('watchTime')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Live Sales</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('liveSales')}</CardTitle>
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${dashboardStats.totalSales.toFixed(2)}</div>
               <p className="text-xs text-muted-foreground">
-                {(dashboardStats.conversionRate * 100).toFixed(1)}% conversion rate
+                {(dashboardStats.conversionRate * 100).toFixed(1)}% {t('conversionRate')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Engagement</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('engagement')}</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -157,7 +161,7 @@ export default function LiveShoppingPage() {
                 {dashboardStats.engagementRate?.toFixed(2) || 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                {dashboardStats.totalMessages?.toLocaleString() || 0} messages sent
+                {dashboardStats.totalMessages?.toLocaleString() || 0} {t('messagesSent')}
               </p>
             </CardContent>
           </Card>
@@ -167,17 +171,17 @@ export default function LiveShoppingPage() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="streams">Live Streams</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="streams">{t('liveStreams')}</TabsTrigger>
+          <TabsTrigger value="analytics">{t('analytics')}</TabsTrigger>
+          <TabsTrigger value="settings">{t('settings')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="streams" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Live Streams</CardTitle>
+              <CardTitle>{t('liveStreams')}</CardTitle>
               <CardDescription>
-                Manage your live streaming sessions and product showcases
+                {t('liveStreamsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -189,9 +193,9 @@ export default function LiveShoppingPage() {
         <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Live Stream Analytics</CardTitle>
+              <CardTitle>{t('liveStreamAnalytics')}</CardTitle>
               <CardDescription>
-                Performance metrics and insights for your live shopping sessions
+                {t('analyticsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -203,9 +207,9 @@ export default function LiveShoppingPage() {
         <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Live Shopping Settings</CardTitle>
+              <CardTitle>{t('liveShoppingSettings')}</CardTitle>
               <CardDescription>
-                Configure streaming settings and integration options
+                {t('settingsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -213,44 +217,44 @@ export default function LiveShoppingPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Streaming Configuration</CardTitle>
+                      <CardTitle className="text-base">{t('streamingConfiguration')}</CardTitle>
                       <CardDescription>
-                        RTMP and streaming server settings
+                        {t('rtmpSettings')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium">RTMP Server</label>
+                        <label className="text-sm font-medium">{t('rtmpServer')}</label>
                         <p className="text-sm text-muted-foreground">rtmp://localhost:1935/live</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">HLS Playback</label>
+                        <label className="text-sm font-medium">{t('hlsPlayback')}</label>
                         <p className="text-sm text-muted-foreground">http://localhost:8080/hls</p>
                       </div>
                       <Button variant="outline" size="sm">
-                        Configure Streaming
+                        {t('configureStreaming')}
                       </Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Chat Settings</CardTitle>
+                      <CardTitle className="text-base">{t('chatSettings')}</CardTitle>
                       <CardDescription>
-                        Moderation and chat configuration
+                        {t('moderationConfig')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm">Auto-moderation</span>
-                        <Badge variant="outline">Enabled</Badge>
+                        <span className="text-sm">{t('autoModeration')}</span>
+                        <Badge variant="outline">{t('enabled')}</Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm">Spam filtering</span>
-                        <Badge variant="outline">Enabled</Badge>
+                        <span className="text-sm">{t('spamFiltering')}</span>
+                        <Badge variant="outline">{t('enabled')}</Badge>
                       </div>
                       <Button variant="outline" size="sm">
-                        Manage Chat Rules
+                        {t('manageChatRules')}
                       </Button>
                     </CardContent>
                   </Card>
@@ -258,28 +262,28 @@ export default function LiveShoppingPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Integration Guide</CardTitle>
+                    <CardTitle className="text-base">{t('integrationGuide')}</CardTitle>
                     <CardDescription>
-                      How to set up live streaming with popular streaming software
+                      {t('integrationDescription')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium">OBS Studio Setup</h4>
+                        <h4 className="font-medium">{t('obsSetup')}</h4>
                         <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-1 mt-2">
-                          <li>Open OBS Studio and go to Settings → Stream</li>
-                          <li>Set Service to "Custom..."</li>
-                          <li>Enter Server: rtmp://localhost:1935/live</li>
-                          <li>Enter your unique Stream Key (provided when creating a stream)</li>
-                          <li>Click "Start Streaming" to go live</li>
+                          <li>{t('obsStep1')}</li>
+                          <li>{t('obsStep2')}</li>
+                          <li>{t('obsStep3')}</li>
+                          <li>{t('obsStep4')}</li>
+                          <li>{t('obsStep5')}</li>
                         </ol>
                       </div>
 
                       <div>
-                        <h4 className="font-medium">Mobile Streaming</h4>
+                        <h4 className="font-medium">{t('mobileStreaming')}</h4>
                         <p className="text-sm text-muted-foreground mt-2">
-                          Use apps like Streamlabs Mobile or Larix Broadcaster with the same RTMP URL and stream key.
+                          {t('mobileDescription')}
                         </p>
                       </div>
                     </div>
@@ -300,6 +304,7 @@ export default function LiveShoppingPage() {
           fetchDashboardStats()
         }}
       />
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }

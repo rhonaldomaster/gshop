@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,6 +19,7 @@ interface CreateStreamDialogProps {
 }
 
 export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStreamDialogProps) {
+  const t = useTranslations('live.createDialog')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -96,17 +98,17 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Radio className="h-5 w-5 text-green-600" />
-              Stream Created Successfully!
+              {t('successTitle')}
             </DialogTitle>
             <DialogDescription>
-              Your live stream has been created. Use the streaming details below to start broadcasting.
+              {t('successDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
             <div className="grid gap-4">
               <div className="space-y-2">
-                <Label>Stream Title</Label>
+                <Label>{t('streamTitleLabel')}</Label>
                 <div className="p-3 bg-muted rounded-md">
                   <p className="font-medium">{createdStream.title}</p>
                   {createdStream.description && (
@@ -116,7 +118,7 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
               </div>
 
               <div className="space-y-2">
-                <Label>RTMP Server URL</Label>
+                <Label>{t('rtmpServerUrl')}</Label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm">
                     {createdStream.rtmpUrl}
@@ -136,7 +138,7 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
               </div>
 
               <div className="space-y-2">
-                <Label>Stream Key</Label>
+                <Label>{t('streamKey')}</Label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm">
                     {createdStream.streamKey}
@@ -156,7 +158,7 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
               </div>
 
               <div className="space-y-2">
-                <Label>HLS Playback URL</Label>
+                <Label>{t('hlsPlaybackUrl')}</Label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm">
                     {createdStream.hlsUrl}
@@ -177,20 +179,20 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
             </div>
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-medium text-blue-900 mb-2">Getting Started</h4>
+              <h4 className="font-medium text-blue-900 mb-2">{t('gettingStarted')}</h4>
               <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-                <li>Open your streaming software (OBS, Streamlabs, etc.)</li>
-                <li>Set the RTMP server URL and stream key in your streaming settings</li>
-                <li>Add your products to the stream from the Live Streams page</li>
-                <li>Click "Start Streaming" in your software to go live</li>
-                <li>Monitor your stream performance in real-time</li>
+                <li>{t('step1')}</li>
+                <li>{t('step2')}</li>
+                <li>{t('step3')}</li>
+                <li>{t('step4')}</li>
+                <li>{t('step5')}</li>
               </ol>
             </div>
           </div>
 
           <DialogFooter>
             <Button onClick={handleClose}>
-              Close
+              {t('close')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -202,37 +204,37 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Create Live Stream</DialogTitle>
+          <DialogTitle>{t('title')}</DialogTitle>
           <DialogDescription>
-            Set up a new live shopping stream to showcase your products in real-time
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Stream Title *</Label>
+            <Label htmlFor="title">{t('streamTitle')}</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Enter stream title"
+              placeholder={t('streamTitlePlaceholder')}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description">{t('descriptionLabel')}</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Describe what you'll be showcasing in this stream"
+              placeholder={t('descriptionPlaceholder')}
               rows={3}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Schedule Stream (Optional)</Label>
+            <Label>{t('scheduleStream')}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -243,7 +245,7 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
                   {formData.scheduledAt ? (
                     format(formData.scheduledAt, 'PPP p')
                   ) : (
-                    'Stream immediately or pick a date'
+                    t('streamImmediately')
                   )}
                 </Button>
               </PopoverTrigger>
@@ -257,7 +259,7 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
               </PopoverContent>
             </Popover>
             <p className="text-xs text-muted-foreground">
-              Leave blank to create a stream that can be started immediately
+              {t('scheduleHelp')}
             </p>
           </div>
 
@@ -267,10 +269,10 @@ export function CreateStreamDialog({ open, onOpenChange, onSuccess }: CreateStre
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Stream'}
+              {loading ? t('creating') : t('createStream')}
             </Button>
           </DialogFooter>
         </form>

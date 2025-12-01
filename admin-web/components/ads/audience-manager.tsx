@@ -27,7 +27,7 @@ interface Audience {
 }
 
 export function AudienceManager() {
-  const t = useTranslations('ads.audiences')
+  const t = useTranslations('ads.audiencesSection')
   const { toast } = useToast()
   const [audiences, setAudiences] = useState<Audience[]>([])
   const [loading, setLoading] = useState(true)
