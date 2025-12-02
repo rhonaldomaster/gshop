@@ -641,4 +641,20 @@ export class OrdersService {
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
     return `${prefix}${timestamp}${random}`;
   }
+
+  async getOrdersBySeller(sellerId: string, limit?: number) {
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.items', 'items')
+      .leftJoinAndSelect('items.product', 'product')
+      .leftJoinAndSelect('order.user', 'user')
+      .where('product.sellerId = :sellerId', { sellerId })
+      .orderBy('order.createdAt', 'DESC');
+
+    if (limit) {
+      queryBuilder.limit(limit);
+    }
+
+    return await queryBuilder.getMany();
+  }
 }

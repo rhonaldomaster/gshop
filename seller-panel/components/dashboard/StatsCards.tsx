@@ -26,19 +26,19 @@ export default function StatsCards({ stats }: StatsCardsProps) {
     },
     {
       title: t('totalEarnings'),
-      value: `$${(stats?.totalEarnings || 0).toFixed(2)}`,
+      value: `$${Number(stats?.totalEarnings || 0).toFixed(2)}`,
       icon: TrendingUp,
       color: 'bg-green-500',
     },
     {
       title: t('availableBalance'),
-      value: `$${(stats?.availableBalance || 0).toFixed(2)}`,
+      value: `$${Number(stats?.availableBalance || 0).toFixed(2)}`,
       icon: DollarSign,
       color: 'bg-emerald-500',
     },
     {
       title: t('pendingBalance'),
-      value: `$${(stats?.pendingBalance || 0).toFixed(2)}`,
+      value: `$${Number(stats?.pendingBalance || 0).toFixed(2)}`,
       icon: Clock,
       color: 'bg-orange-500',
     },

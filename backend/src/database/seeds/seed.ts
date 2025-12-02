@@ -7,6 +7,7 @@ import { User, UserRole, UserStatus } from '../entities/user.entity';
 import { Category } from '../entities/category.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
 import { Commission, CommissionType } from '../entities/commission.entity';
+import { Seller, SellerType, DocumentType, VerificationStatus } from '../../sellers/entities/seller.entity';
 
 async function seed() {
   const configService = new ConfigService();
@@ -22,6 +23,7 @@ async function seed() {
     await dataSource.query('TRUNCATE TABLE "products" CASCADE');
     await dataSource.query('TRUNCATE TABLE "categories" CASCADE');
     await dataSource.query('TRUNCATE TABLE "categories_closure" CASCADE');
+    await dataSource.query('TRUNCATE TABLE "sellers" CASCADE');
     await dataSource.query('TRUNCATE TABLE "users" CASCADE');
     console.log('✅ Data cleared');
 
@@ -89,6 +91,37 @@ async function seed() {
     await userRepository.save(buyerUser);
 
     console.log('✅ Users seeded successfully');
+
+    // Seed Seller in sellers table
+    const sellerRepository = dataSource.getRepository(Seller);
+    const seller = sellerRepository.create({
+      email: 'seller@gshop.com',
+      passwordHash: hashedSellerPassword,
+      businessName: 'GSHOP Electronics',
+      ownerName: 'Maria Rodriguez',
+      documentType: DocumentType.CC,
+      documentNumber: '1234567890',
+      phone: '+573001234567',
+      address: 'Calle 123 #45-67',
+      city: 'Bogotá',
+      country: 'CO',
+      businessCategory: 'Electronics',
+      sellerType: SellerType.NATURAL,
+      verificationStatus: VerificationStatus.APPROVED,
+      status: 'approved',
+      commissionRate: 7.0,
+      totalEarnings: 0,
+      availableBalance: 0,
+      pendingBalance: 0,
+      isActive: true,
+      shippingLocalPrice: 15000,
+      shippingNationalPrice: 25000,
+      shippingFreeEnabled: true,
+      shippingFreeMinAmount: 100000,
+    });
+    await sellerRepository.save(seller);
+
+    console.log('✅ Seller seeded successfully');
 
     // Seed Categories
     const categoryRepository = dataSource.getTreeRepository(Category);

@@ -18,6 +18,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Handle both seller tokens and user tokens
+    if (payload.type === 'seller') {
+      // Seller token format: { sellerId, email, type: 'seller' }
+      return {
+        id: payload.sellerId,
+        sellerId: payload.sellerId,
+        email: payload.email,
+        role: 'seller',
+        type: 'seller'
+      };
+    }
+
+    // Regular user token format: { sub, email, role }
     const user = await this.authService.findUserById(payload.sub);
     return { id: payload.sub, email: payload.email, role: payload.role, user };
   }

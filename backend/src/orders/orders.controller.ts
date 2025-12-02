@@ -82,6 +82,15 @@ export class OrdersController {
     return this.ordersService.getOrdersByUser(req.user.id, query);
   }
 
+  @Get('seller')
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get seller orders (Seller/Admin only)' })
+  @ApiResponse({ status: 200, description: 'Seller orders retrieved successfully' })
+  getSellerOrders(@Query('limit') limit: number, @Request() req) {
+    const sellerId = req.user.sellerId || req.user.id;
+    return this.ordersService.getOrdersBySeller(sellerId, limit);
+  }
+
   @Get('number/:orderNumber')
   @ApiOperation({ summary: 'Get order by order number' })
   @ApiResponse({ status: 200, description: 'Order retrieved successfully' })
