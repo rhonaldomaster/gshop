@@ -138,6 +138,19 @@ export class ProductsController {
     return this.productsService.getProductsByCategory(categoryId, query);
   }
 
+  @Get('seller')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get authenticated seller products' })
+  @ApiResponse({ status: 200, description: 'Seller products retrieved successfully' })
+  getMyProducts(
+    @Request() req,
+    @Query() query: ProductQueryDto,
+  ) {
+    return this.productsService.getProductsBySeller(req.user.id, query);
+  }
+
   @Get('seller/:sellerId')
   @ApiOperation({ summary: 'Get products by seller' })
   @ApiResponse({ status: 200, description: 'Seller products retrieved successfully' })

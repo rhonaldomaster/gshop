@@ -101,6 +101,10 @@ export class AuthService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  async findUserByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { email: email.toLowerCase() } });
+  }
+
   async refreshToken(userId: string) {
     const user = await this.findUserById(userId);
     if (!user) {

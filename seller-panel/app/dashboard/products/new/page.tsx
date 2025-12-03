@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -33,11 +33,21 @@ function calculateVatAmount(priceWithVat: number, vatType: VatType): number {
   return priceWithVat - basePrice
 }
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+  displayName?: string
+  children?: Category[]
+}
+
 export default function NewProductPage() {
   const t = useTranslations('products')
   const { data: session } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(true)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,6 +59,38 @@ export default function NewProductPage() {
     images: [] as string[],
   })
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/categories`)
+        if (response.ok) {
+          const data = await response.json()
+          // Flatten the category tree for easier selection
+          const flatCategories = flattenCategories(data)
+          setCategories(flatCategories)
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error)
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  const flattenCategories = (categories: Category[], prefix = ''): Category[] => {
+    let result: Category[] = []
+    for (const category of categories) {
+      const displayName = prefix ? `${prefix} > ${category.name}` : category.name
+      result.push({ ...category, displayName })
+      if (category.children && category.children.length > 0) {
+        result = result.concat(flattenCategories(category.children, displayName))
+      }
+    }
+    return result
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -59,6 +101,12 @@ export default function NewProductPage() {
     setLoading(true)
 
     try {
+      if (!formData.category) {
+        alert('Por favor selecciona una categoría')
+        setLoading(false)
+        return
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
         method: 'POST',
         headers: {
@@ -70,14 +118,19 @@ export default function NewProductPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           vatType: formData.vatType,
-          category: formData.category,
+          categoryId: formData.category, // category now stores the ID directly
           sku: formData.sku,
           quantity: parseInt(formData.stock),
+          trackQuantity: true,
+          status: 'active',
+          isVisible: true,
           images: formData.images.length > 0 ? formData.images : [],
         }),
       })
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Server error:', errorData)
         throw new Error('Failed to create product')
       }
 
@@ -219,16 +272,24 @@ export default function NewProductPage() {
             <label htmlFor="category" className="block text-sm font-medium text-gray-700">
               {t('category')} *
             </label>
-            <input
-              type="text"
+            <select
               id="category"
               name="category"
               value={formData.category}
               onChange={handleChange}
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder={t('categoryPlaceholder')}
-            />
+              disabled={loadingCategories}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {loadingCategories ? t('loadingCategories') || 'Cargando categorías...' : t('selectCategory') || 'Selecciona una categoría'}
+              </option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.displayName || category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* SKU */}
@@ -272,7 +333,7 @@ export default function NewProductPage() {
               href="/dashboard/products"
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              {t('view')}
+              {t('cancel')}
             </Link>
             <button
               type="submit"

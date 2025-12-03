@@ -112,7 +112,19 @@
       "documentPlaceholderNoDots": "Sin puntos ni guiones",
       "continueDocuments": "Continuar a Subir Documentos",
       "registering": "Registrando...",
-      "alreadyAccount": "¿Ya tienes una cuenta?"
+      "alreadyAccount": "¿Ya tienes una cuenta?",
+      "validationErrors": {
+        "sellerTypeRequired": "El tipo de vendedor es requerido",
+        "sellerTypeInvalid": "El tipo de vendedor debe ser natural o juridica",
+        "bankNameRequired": "El nombre del banco es requerido",
+        "bankAccountTypeRequired": "El tipo de cuenta es requerido",
+        "bankAccountTypeInvalid": "El tipo de cuenta debe ser ahorros o corriente",
+        "bankAccountNumberInvalid": "Número de cuenta inválido (debe tener entre 10 y 20 dígitos)",
+        "bankAccountNumberRequired": "El número de cuenta es requerido",
+        "bankAccountHolderRequired": "El titular de la cuenta es requerido",
+        "documentNumberInvalid": "Número de documento inválido (debe tener entre 6 y 15 dígitos)",
+        "phoneInvalid": "Teléfono debe tener 10 dígitos"
+      }
     },
     "documents": {
       "title": "Subir Documentos Requeridos",
@@ -200,6 +212,8 @@
     "stockPlaceholder": "ej. 100",
     "category": "Categoría",
     "categoryPlaceholder": "ej. Electrónica",
+    "selectCategory": "Selecciona una categoría",
+    "loadingCategories": "Cargando categorías...",
     "tags": "Etiquetas",
     "images": "Imágenes",
     "addImages": "Agregar imágenes",
@@ -237,6 +251,7 @@
     "finalPrice": "Precio final:",
     "actions": "Acciones",
     "view": "Ver",
+    "cancel": "Cancelar",
     "creating": "Creando...",
     "updating": "Actualizando...",
     "loading": "Cargando producto...",

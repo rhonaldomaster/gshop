@@ -5,24 +5,42 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 
+const BANCOS_COLOMBIA = [
+  'Bancolombia',
+  'Banco de Bogotá',
+  'Davivienda',
+  'BBVA Colombia',
+  'Banco Popular',
+  'Banco de Occidente',
+  'Banco Caja Social',
+  'Banco AV Villas',
+  'Nequi',
+  'Daviplata',
+]
+
 interface RegistrationData {
+  sellerType: 'natural' | 'juridica'
   email: string
   password: string
   confirmPassword: string
   businessName: string
   ownerName: string
-  documentType: 'CC' | 'NIT' | 'RUT' | 'Passport'
+  documentType: 'CC' | 'CE' | 'NIT' | 'PASSPORT'
   documentNumber: string
   phone: string
   address: string
   city: string
-  country: string
   businessCategory: string
+  bankName: string
+  bankAccountType: 'ahorros' | 'corriente'
+  bankAccountNumber: string
+  bankAccountHolder: string
 }
 
 export default function RegisterPage() {
   const t = useTranslations('auth.register')
   const [formData, setFormData] = useState<RegistrationData>({
+    sellerType: 'natural',
     email: '',
     password: '',
     confirmPassword: '',
@@ -33,8 +51,11 @@ export default function RegisterPage() {
     phone: '',
     address: '',
     city: '',
-    country: '',
     businessCategory: '',
+    bankName: '',
+    bankAccountType: 'ahorros',
+    bankAccountNumber: '',
+    bankAccountHolder: '',
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -69,12 +90,13 @@ export default function RegisterPage() {
     setError('')
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/seller/register`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sellers/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sellerType: formData.sellerType,
           email: formData.email,
           password: formData.password,
           businessName: formData.businessName,
@@ -84,19 +106,33 @@ export default function RegisterPage() {
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
-          country: formData.country,
+          country: 'Colombia', // Valor por defecto para Colombia
           businessCategory: formData.businessCategory,
+          bankName: formData.bankName,
+          bankAccountType: formData.bankAccountType,
+          bankAccountNumber: formData.bankAccountNumber,
+          bankAccountHolder: formData.bankAccountHolder,
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || 'Registration failed')
+        // Traducir errores del backend
+        const errorMessage = Array.isArray(errorData.message)
+          ? errorData.message.join(', ')
+          : errorData.message || t('error')
+        throw new Error(errorMessage)
       }
 
-      router.push('/auth/login?message=Registration successful. Please login.')
+      const data = await response.json()
+      // Redirigir a subir documentos si es juridica
+      if (formData.sellerType === 'juridica') {
+        router.push(`/register/documents?sellerId=${data.id}`)
+      } else {
+        router.push('/auth/login?message=' + encodeURIComponent(t('success')))
+      }
     } catch (error: any) {
-      setError(error.message || 'Something went wrong')
+      setError(error.message || t('error'))
     } finally {
       setIsLoading(false)
     }
@@ -180,6 +216,30 @@ export default function RegisterPage() {
         {step === 2 && (
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
+              {/* Tipo de Vendedor */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('sellerType')}
+                </label>
+                <select
+                  name="sellerType"
+                  required
+                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  value={formData.sellerType}
+                  onChange={(e) => {
+                    const newSellerType = e.target.value as 'natural' | 'juridica'
+                    setFormData({
+                      ...formData,
+                      sellerType: newSellerType,
+                      documentType: newSellerType === 'juridica' ? 'NIT' : 'CC'
+                    })
+                  }}
+                >
+                  <option value="natural">{t('sellerTypes.natural')}</option>
+                  <option value="juridica">{t('sellerTypes.legal')}</option>
+                </select>
+              </div>
+
               <div>
                 <input
                   name="businessName"
@@ -199,32 +259,47 @@ export default function RegisterPage() {
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder={t('ownerName')}
                   value={formData.ownerName}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      ownerName: e.target.value,
+                      bankAccountHolder: e.target.value, // Auto-llenar titular
+                    })
+                  }}
                 />
               </div>
+
+              {/* Documento */}
               <div className="flex space-x-2">
                 <select
                   name="documentType"
                   required
-                  className="appearance-none relative block w-1/3 px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  disabled={formData.sellerType === 'juridica'}
+                  className="appearance-none relative block w-1/3 px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                   value={formData.documentType}
                   onChange={handleChange}
                 >
-                  <option value="CC">CC</option>
-                  <option value="NIT">NIT</option>
-                  <option value="RUT">RUT</option>
-                  <option value="Passport">{t('documentTypes.passport')}</option>
+                  {formData.sellerType === 'natural' ? (
+                    <>
+                      <option value="CC">{t('documentTypes.cc')}</option>
+                      <option value="CE">{t('documentTypes.ce')}</option>
+                      <option value="PASSPORT">{t('documentTypes.passport')}</option>
+                    </>
+                  ) : (
+                    <option value="NIT">NIT</option>
+                  )}
                 </select>
                 <input
                   name="documentNumber"
                   type="text"
                   required
                   className="appearance-none relative block w-2/3 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder={t('documentPlaceholder')}
+                  placeholder={t('documentPlaceholderNoDots')}
                   value={formData.documentNumber}
                   onChange={handleChange}
                 />
               </div>
+
               <div>
                 <input
                   name="phone"
@@ -247,23 +322,14 @@ export default function RegisterPage() {
                   onChange={handleChange}
                 />
               </div>
-              <div className="flex space-x-2">
+              <div>
                 <input
                   name="city"
                   type="text"
                   required
-                  className="appearance-none relative block w-1/2 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   placeholder={t('cityPlaceholder')}
                   value={formData.city}
-                  onChange={handleChange}
-                />
-                <input
-                  name="country"
-                  type="text"
-                  required
-                  className="appearance-none relative block w-1/2 px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder={t('countryPlaceholder')}
-                  value={formData.country}
                   onChange={handleChange}
                 />
               </div>
@@ -287,10 +353,88 @@ export default function RegisterPage() {
                   <option value="other">{t('categories.other')}</option>
                 </select>
               </div>
+
+              {/* DATOS BANCARIOS */}
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  {t('bankingInfo')}
+                </h3>
+
+                {/* Banco */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    {t('bankName')}
+                  </label>
+                  <select
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleChange}
+                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    required
+                  >
+                    <option value="">{t('selectBank')}</option>
+                    {BANCOS_COLOMBIA.map((banco) => (
+                      <option key={banco} value={banco}>
+                        {banco}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tipo de Cuenta */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    {t('accountType')}
+                  </label>
+                  <select
+                    name="bankAccountType"
+                    value={formData.bankAccountType}
+                    onChange={handleChange}
+                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    required
+                  >
+                    <option value="ahorros">{t('accountTypes.savings')}</option>
+                    <option value="corriente">{t('accountTypes.current')}</option>
+                  </select>
+                </div>
+
+                {/* Número de Cuenta */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    {t('accountNumber')}
+                  </label>
+                  <input
+                    name="bankAccountNumber"
+                    type="text"
+                    value={formData.bankAccountNumber}
+                    onChange={handleChange}
+                    placeholder={t('accountNumberPlaceholder')}
+                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    required
+                  />
+                </div>
+
+                {/* Titular (auto-llenado) */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    {t('accountHolder')}
+                  </label>
+                  <input
+                    name="bankAccountHolder"
+                    type="text"
+                    value={formData.bankAccountHolder}
+                    onChange={handleChange}
+                    className="appearance-none relative block w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-gray-50"
+                    readOnly
+                  />
+                </div>
+              </div>
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm text-center">{error}</div>
+              <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-md">
+                {error}
+              </div>
             )}
 
             <div className="flex space-x-2">
@@ -306,7 +450,7 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 className="group relative w-2/3 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                {isLoading ? t('creatingAccount') : t('createAccount')}
+                {isLoading ? t('registering') : t('continueDocuments')}
               </button>
             </div>
           </form>

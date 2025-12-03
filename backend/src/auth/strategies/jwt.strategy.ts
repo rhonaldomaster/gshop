@@ -21,8 +21,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Handle both seller tokens and user tokens
     if (payload.type === 'seller') {
       // Seller token format: { sellerId, email, type: 'seller' }
+      // Need to find the corresponding user ID for the seller
+      const user = await this.authService.findUserByEmail(payload.email);
+      if (!user) {
+        throw new Error('Seller user not found');
+      }
       return {
-        id: payload.sellerId,
+        id: user.id, // Use the user ID from users table, not sellers table
         sellerId: payload.sellerId,
         email: payload.email,
         role: 'seller',

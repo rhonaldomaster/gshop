@@ -44,7 +44,7 @@ function DocumentsForm() {
         formData.append('comercioExpirationDate', comercioExpirationDate)
       }
 
-      const response = await fetch(`http://localhost:3000/sellers/${sellerId}/documents`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sellers/${sellerId}/documents`, {
         method: 'POST',
         body: formData,
       })

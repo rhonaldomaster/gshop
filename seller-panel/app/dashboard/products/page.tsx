@@ -13,7 +13,7 @@ export default function ProductsPage() {
   const { data: session } = useSession()
   const [searchTerm, setSearchTerm] = useState('')
 
-  const { data: products, isLoading, refetch } = useQuery({
+  const { data: productsData, isLoading, refetch } = useQuery({
     queryKey: ['seller-products'],
     queryFn: async () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/seller`, {
@@ -48,10 +48,11 @@ export default function ProductsPage() {
     }
   }
 
-  const filteredProducts = products?.filter((product: any) =>
+  const products = productsData?.data || []
+  const filteredProducts = products.filter((product: any) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.description.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || []
+  )
 
   return (
     <DashboardLayout>
@@ -133,29 +134,32 @@ export default function ProductsPage() {
                                 {product.name}
                               </div>
                               <div className="text-sm text-gray-500">
-                                {product.category}
+                                {typeof product.category === 'string' ? product.category : product.category?.name || 'Sin categoría'}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          ${product.price?.toFixed(2)}
+                          ${typeof product.price === 'number' ? product.price.toFixed(2) : parseFloat(product.price || 0).toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {product.stock}
+                          {product.quantity || 0}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            product.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            product.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {product.isActive ? t('active') : t('inactive')}
+                            {product.status === 'active' ? t('active') : t('inactive')}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div className="flex items-center space-x-2">
-                            <button className="text-blue-600 hover:text-blue-900">
+                            <Link
+                              href={`/dashboard/products/${product.id}`}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
                               <Eye className="h-4 w-4" />
-                            </button>
+                            </Link>
                             <Link
                               href={`/dashboard/products/${product.id}/edit`}
                               className="text-indigo-600 hover:text-indigo-900"

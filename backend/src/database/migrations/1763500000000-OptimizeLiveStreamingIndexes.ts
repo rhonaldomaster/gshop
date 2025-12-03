@@ -90,10 +90,16 @@ export class OptimizeLiveStreamingIndexes1763500000000 implements MigrationInter
 
     // LiveStreamReactions indexes
     await queryRunner.query(`
+      DROP INDEX IF EXISTS "IDX_live_stream_reactions_stream_time"
+    `);
+    await queryRunner.query(`
       CREATE INDEX "IDX_live_stream_reactions_stream_time"
       ON "live_stream_reactions" ("streamId", "createdAt" DESC)
     `);
 
+    await queryRunner.query(`
+      DROP INDEX IF EXISTS "IDX_live_stream_reactions_type"
+    `);
     await queryRunner.query(`
       CREATE INDEX "IDX_live_stream_reactions_type"
       ON "live_stream_reactions" ("streamId", "type", "createdAt" DESC)
