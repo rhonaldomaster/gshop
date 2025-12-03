@@ -78,6 +78,54 @@ npm run migration:generate -- -n MigrationName  # Generate new migration
 npm run migration:run       # Run pending migrations
 ```
 
+### ⚠️ Important: Database Schema Changes
+
+**ALWAYS create a migration when modifying database entities or schema:**
+
+When you make changes that affect the database structure, you MUST generate and run a migration:
+
+**Changes that require migrations:**
+- ✅ Adding or removing columns to entities
+- ✅ Changing column types, nullability, or defaults
+- ✅ Adding or removing tables (new entities)
+- ✅ Modifying constraints, indexes, or relationships
+- ✅ Changing enum values or types
+
+**Steps to create a migration:**
+```bash
+cd backend
+
+# 1. Make your changes to entity files (*.entity.ts)
+
+# 2. Generate migration with descriptive name
+npm run migration:generate -- -n AddUserPhoneNumber
+
+# 3. Review the generated migration file in src/database/migrations/
+
+# 4. Run the migration
+npm run migration:run
+
+# 5. Test that everything works correctly
+```
+
+**Example workflow:**
+```typescript
+// 1. Modified entity: src/database/entities/user.entity.ts
+@Column({ nullable: true })
+phoneNumber: string;  // ← New field added
+
+// 2. Generate migration
+// $ npm run migration:generate -- -n AddPhoneNumberToUsers
+
+// 3. Migration file created automatically in:
+// src/database/migrations/1234567890123-AddPhoneNumberToUsers.ts
+
+// 4. Run migration
+// $ npm run migration:run
+```
+
+**Note:** Changes to code logic, services, or controllers that don't affect the database schema do NOT require migrations.
+
 ### 🔑 Test Credentials
 
 After running `npm run seed` from the backend directory, use these test accounts:

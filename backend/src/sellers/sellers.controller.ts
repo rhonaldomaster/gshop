@@ -106,13 +106,11 @@ export class SellersController {
   // Colombian KYC Endpoints
 
   @Post(':id/documents')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'rut', maxCount: 1 },
     { name: 'comercio', maxCount: 1 },
   ]))
-  @ApiOperation({ summary: 'Upload seller documents (RUT and Cámara de Comercio)' })
+  @ApiOperation({ summary: 'Upload seller documents (RUT and Cámara de Comercio) - Public endpoint for registration flow' })
   async uploadDocuments(
     @Param('id') sellerId: string,
     @UploadedFiles() files: { rut?: Express.Multer.File[]; comercio?: Express.Multer.File[] },

@@ -8,6 +8,7 @@ import { Seller, SellerType, DocumentType, VerificationStatus } from './entities
 import { SellerLocation } from './entities/seller-location.entity'
 import { Withdrawal, WithdrawalStatus } from './entities/withdrawal.entity'
 import { Order, OrderStatus } from '../database/entities/order.entity'
+import { User } from '../database/entities/user.entity'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
@@ -26,6 +27,8 @@ export class SellersService {
     private withdrawalsRepository: Repository<Withdrawal>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private jwtService: JwtService,
     private emailService: EmailService,
   ) {}
@@ -95,8 +98,14 @@ export class SellersService {
       throw new UnauthorizedException('Account is deactivated')
     }
 
+    // Try to find corresponding user in users table (for legacy sellers with products)
+    const user = await this.userRepository.findOne({
+      where: { email: seller.email }
+    })
+
     const payload = {
       sellerId: seller.id,
+      userId: user?.id, // Include userId if exists (for legacy compatibility with products)
       email: seller.email,
       type: 'seller'
     }
