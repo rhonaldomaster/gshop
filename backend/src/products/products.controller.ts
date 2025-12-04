@@ -10,10 +10,16 @@ import {
   UseGuards,
   Request,
   Query,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CategoriesService } from './categories.service';
+import { ProductsUploadService } from './products-upload.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
@@ -31,7 +37,78 @@ export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
     private readonly categoriesService: CategoriesService,
+    private readonly productsUploadService: ProductsUploadService,
   ) {}
+
+  @Post('upload')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Upload product images (up to 10 images, max 20MB each)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({
+    status: 201,
+    description: 'Images uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        urls: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+    },
+  })
+  @UseInterceptors(FilesInterceptor('images', 10))
+  async uploadImages(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Request() req,
+  ) {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files uploaded');
+    }
+
+    // Validate files
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    const allowedMimes = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/gif',
+      'image/webp',
+    ];
+
+    for (const file of files) {
+      if (!allowedMimes.includes(file.mimetype)) {
+        throw new BadRequestException(
+          `Invalid file type: ${file.mimetype}. Only JPEG, PNG, JPG, GIF, and WEBP are allowed.`,
+        );
+      }
+      if (file.size > maxSize) {
+        throw new BadRequestException(
+          `File too large: ${file.originalname}. Maximum size is 20MB.`,
+        );
+      }
+    }
+
+    const urls = files.map((file) =>
+      this.productsUploadService.getFileUrl(file.filename),
+    );
+
+    return { urls };
+  }
+
+  @Delete('images/:filename')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SELLER, UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Delete a product image' })
+  @ApiResponse({ status: 200, description: 'Image deleted successfully' })
+  deleteImage(@Param('filename') filename: string) {
+    const fileUrl = this.productsUploadService.getFileUrl(filename);
+    this.productsUploadService.deleteFile(fileUrl);
+    return { message: 'Image deleted successfully' };
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

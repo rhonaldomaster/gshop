@@ -74,6 +74,36 @@ class ApiClient {
   async delete<T>(endpoint: string, headers?: Record<string, string>): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE', headers });
   }
+
+  async uploadFiles<T>(endpoint: string, formData: FormData): Promise<T> {
+    const session = await getSession();
+    const authHeaders: Record<string, string> = {};
+
+    if (session?.user?.accessToken) {
+      authHeaders['Authorization'] = `Bearer ${session.user.accessToken}`;
+    }
+
+    const url = `${this.baseUrl}${endpoint}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: authHeaders,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('File upload failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const apiClient = new ApiClient();

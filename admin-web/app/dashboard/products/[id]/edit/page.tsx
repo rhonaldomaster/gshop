@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
+import { ImageUpload } from '@/components/ImageUpload';
 
 interface ProductFormData {
   name: string;
@@ -522,25 +523,18 @@ export default function EditProductPage() {
               <Card className="gshop-card">
                 <CardHeader>
                   <CardTitle>{t('images')}</CardTitle>
-                  <CardDescription>Imágenes del producto (URLs)</CardDescription>
+                  <CardDescription>{t('imageUpload.uploadDescription')}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {[0, 1, 2, 3].map((index) => (
-                    <div key={index} className="space-y-2">
-                      <Label htmlFor={`image-${index}`}>Imagen {index + 1} URL</Label>
-                      <Input
-                        id={`image-${index}`}
-                        type="url"
-                        value={formData.images[index] || ''}
-                        onChange={(e) => {
-                          const newImages = [...formData.images];
-                          newImages[index] = e.target.value;
-                          handleInputChange('images', newImages);
-                        }}
-                        placeholder="https://ejemplo.com/imagen.jpg"
-                      />
-                    </div>
-                  ))}
+                <CardContent>
+                  <ImageUpload
+                    images={formData.images}
+                    onChange={(images) => handleInputChange('images', images)}
+                    maxImages={10}
+                    maxSizeMB={20}
+                  />
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    {t('imageUpload.firstImageWillBeMain')}
+                  </p>
                 </CardContent>
               </Card>
             </div>

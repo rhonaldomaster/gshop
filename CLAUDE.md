@@ -85,6 +85,7 @@ npm run migration:run       # Run pending migrations
 When you make changes that affect the database structure, you MUST generate and run a migration:
 
 **Changes that require migrations:**
+
 - ✅ Adding or removing columns to entities
 - ✅ Changing column types, nullability, or defaults
 - ✅ Adding or removing tables (new entities)
@@ -92,6 +93,7 @@ When you make changes that affect the database structure, you MUST generate and 
 - ✅ Changing enum values or types
 
 **Steps to create a migration:**
+
 ```bash
 cd backend
 
@@ -109,6 +111,7 @@ npm run migration:run
 ```
 
 **Example workflow:**
+
 ```typescript
 // 1. Modified entity: src/database/entities/user.entity.ts
 @Column({ nullable: true })
@@ -131,16 +134,19 @@ phoneNumber: string;  // ← New field added
 After running `npm run seed` from the backend directory, use these test accounts:
 
 **Admin Panel** (`http://localhost:3001`)
+
 - Email: `john@doe.com`
 - Password: `johndoe123`
 - Role: ADMIN
 
 **Seller Panel** (`http://localhost:3002`)
+
 - Email: `seller@gshop.com`
 - Password: `seller123`
 - Role: SELLER
 
 **Mobile App / Buyer**
+
 - Email: `buyer@gshop.com`
 - Password: `buyer123`
 - Role: BUYER
@@ -153,14 +159,6 @@ After running `npm run seed` from the backend directory, use these test accounts
 npm test                    # Run all tests
 npm run test:backend        # Backend tests only
 npm run test:admin          # Admin panel tests only
-```
-
-### Docker Operations
-
-```bash
-npm run docker:up          # Start PostgreSQL container
-npm run docker:down        # Stop containers
-npm run docker:logs        # View container logs
 ```
 
 ## Architecture Notes
@@ -239,124 +237,11 @@ npm run docker:logs        # View container logs
   - Admin panel reporting for tax declarations
   - Real-time price calculator in seller panel
 - **Key Difference**: Unlike other systems, Colombian VAT is ALWAYS included in the displayed price
-- **Documentation**: See `PLAN_IVA_COLOMBIA.md` for complete implementation details
+- **Documentation**: See `docs/PLAN_IVA_COLOMBIA.md` for complete implementation details
 
-## Phase 1 Features (Implemented)
+## Some implemented features
 
-### 🏪 Seller Panel (Next.js)
-
-- **Location**: `seller-panel/`
-- **URL**: http://localhost:3002
-- **Features**:
-  - Seller registration with KYC (business name, owner name, document verification)
-  - JWT authentication with NextAuth
-  - Dashboard with sales metrics and quick actions
-  - Product management (CRUD operations)
-  - Order management and tracking
-  - Commission tracking and withdrawal requests
-  - Real-time analytics integration
-
-### 👥 Affiliate/Creator System
-
-- **Backend Module**: `backend/src/affiliates/`
-- **Features**:
-  - Affiliate registration and management
-  - Automatic affiliate code generation
-  - Link creation and tracking with unique short codes
-  - Click tracking with IP, user agent, and referrer data
-  - Last-click attribution for conversions
-  - Commission calculation and earnings tracking
-  - Performance analytics (clicks, conversions, revenue)
-
-### 📊 GSHOP Pixel (Website Tracking)
-
-- **Script Location**: `public/gshop-pixel.js`
-- **Backend Module**: `backend/src/pixel/`
-- **Features**:
-  - Lightweight JavaScript tracking script for external websites
-  - Event tracking: `page_view`, `product_view`, `add_to_cart`, `purchase`, `custom`
-  - Automatic scroll depth and click tracking
-  - Session management and user identification
-  - Real-time analytics data collection
-  - GDPR-friendly with configurable data collection
-
-### 📈 Analytics Dashboard
-
-- **Backend Module**: `backend/src/analytics/`
-- **Features**:
-  - Real-time visitor tracking and conversion metrics
-  - GMV (Gross Merchandise Value) reporting
-  - Seller performance analytics
-  - Commission tracking and payouts
-  - Traffic source analysis
-  - Product performance metrics
-
-### 💳 Enhanced Payment System
-
-- **Features**:
-  - MercadoPago webhook integration for payment confirmation
-  - Automated commission calculation on successful orders
-  - Seller withdrawal system with balance tracking
-  - Automatic weekly withdrawal processing (configurable)
-
-## Phase 2 Features (Implemented)
-
-### 🎯 Ads Manager (Admin Panel)
-
-- **Location**: `admin-web/app/ads/`
-- **Backend Module**: `backend/src/ads/`
-- **Features**:
-  - Campaign creation and management (DPA, Retargeting, Custom)
-  - Real-time campaign metrics (CTR, CPA, ROAS)
-  - Budget control and scheduling
-  - Campaign activation/deactivation
-  - Performance analytics dashboard
-  - Integration with pixel events for audience building
-
-### 🎨 Dynamic Product Ads (DPA)
-
-- **Backend Module**: `backend/src/ads/dpa.service.ts`
-- **Features**:
-  - Automatic product feed generation from catalog
-  - Personalized product recommendations based on user behavior
-  - Dynamic creative asset generation
-  - Cross-platform product showcase integration
-  - Real-time inventory sync with product availability
-
-### 👥 Audience Management & Retargeting
-
-- **Backend Module**: `backend/src/audiences/`
-- **Features**:
-  - Pixel-based audience creation from website events
-  - Customer list uploads for targeting
-  - Lookalike audience generation
-  - Audience size estimation and real-time updates
-  - Advanced segmentation rules (timeframe, event conditions)
-  - Automatic audience rebuilding based on new data
-
-### 📺 Live Shopping Platform
-
-- **Backend Module**: `backend/src/live/`
-- **Seller Panel**: `seller-panel/app/dashboard/live/`
-- **Mobile App**: `mobile/src/screens/live/`
-- **Features**:
-  - RTMP/HLS live streaming infrastructure with dual host support
-  - **Seller & Affiliate Hosting**: Both sellers and affiliates can host live streams
-  - Real-time chat with WebSocket integration
-  - Live product showcasing with overlay purchase buttons
-  - **Purchase Attribution**: Automatic commission tracking for affiliate-hosted streams
-  - Viewer count tracking and engagement metrics
-  - Stream scheduling and management from seller panel
-  - Mobile-optimized viewing experience with host type badges
-  - Integration with existing product catalog and affiliate system
-  - **Commission Calculation**: Automatic commission calculation for affiliate sales during live streams
-
-### 🔧 Advanced Integrations
-
-- **WebSocket Integration**: Real-time communication for live streams
-- **Streaming Infrastructure**: RTMP ingest and HLS playback
-- **Cross-Platform Analytics**: Unified tracking across web and mobile
-- **API Webhooks**: Event-driven architecture for campaign triggers
+See `docs/phases_implementations.md` for details
 
 ## Colombian VAT (IVA) System (November 2025)
 
@@ -496,7 +381,7 @@ GET /api/v1/analytics/vat-report?startDate=2025-01-01&endDate=2025-01-31
 - `backend/src/database/scripts/migrate-vat-data.ts` - Data migration script
 - `seller-panel/app/dashboard/products/new/page.tsx` - Product form with VAT selector
 - `admin-web/app/dashboard/reports/vat/page.tsx` - VAT reporting dashboard
-- `PLAN_IVA_COLOMBIA.md` - Complete implementation plan and documentation
+- `docs/PLAN_IVA_COLOMBIA.md` - Complete implementation plan and documentation
 
 ### ⚠️ Important Notes
 
@@ -749,10 +634,6 @@ WEBSOCKET_URL=http://localhost:3000
 # Add to .env for Phase 3 features
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
-POLYGON_RPC_URL=https://polygon-rpc.com
-USDC_CONTRACT_ADDRESS=0x2791bca1f2de4661ed88a30c99a7a9449aa84174
-
-# Note: EasyPost removed - shipping now managed by sellers (no API key needed)
 ```
 
 ## Phase 3 Features (Implemented)
@@ -1019,7 +900,6 @@ MERCAPAGO_CLIENT_ID=your-mercadopago-client-id
 MERCAPAGO_CLIENT_SECRET=your-mercadopago-client-secret
 MERCAPAGO_ACCESS_TOKEN=your-mercadopago-access-token
 
-# Note: EasyPost removed - shipping now managed by sellers
 # Sellers configure their own shipping rates and provide tracking URLs
 ```
 
@@ -1129,14 +1009,3 @@ socket.emit('streamPurchase', {
 - `mobile/metro.config.js` - Metro bundler optimization
 - `mobile/babel.config.js` - Babel optimization plugins
 - `mobile/OPTIMIZATION_GUIDE.md` - Complete optimization guide
-
-### 🚀 **Performance Targets Achieved**
-
-- ⚡ Image caching with filesystem persistence
-- 💀 Animated skeleton screens for smooth UX
-- 📴 Offline-first architecture with auto-sync
-- 🛡️ Enterprise-grade error handling
-- 🧪 Comprehensive test coverage
-- 📦 Hermes engine enabled (2x faster startup)
-- 🔄 Smart navigation with deferred loading
-- 📊 Performance monitoring built-in

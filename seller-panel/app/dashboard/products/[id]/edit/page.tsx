@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import DashboardLayout from '@/components/DashboardLayout'
+import ImageUpload from '@/components/ImageUpload'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
@@ -381,6 +382,22 @@ export default function EditProductPage() {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
               placeholder={t('stockPlaceholder')}
             />
+          </div>
+
+          {/* Product Images */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('images')}
+            </label>
+            <ImageUpload
+              images={formData.images}
+              onChange={(images) => setFormData(prev => ({ ...prev, images }))}
+              maxImages={10}
+              maxSizeMB={20}
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              {t('imageUpload.firstImageWillBeMain')}
+            </p>
           </div>
 
           {/* Submit Button */}

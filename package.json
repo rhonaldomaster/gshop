@@ -10,6 +10,8 @@
     "dev:seller": "cd seller-panel && npm run dev",
     "dev:creator": "cd creator-panel && npm run dev",
     "dev:mobile": "cd mobile && npm start",
+    "dev:adminbackend": "concurrently \"npm run dev:backend\" \"npm run dev:admin\"",
+    "dev:adminseller": "concurrently \"npm run dev:backend\" \"npm run dev:seller\"",
     "build": "npm run build:backend && npm run build:admin && npm run build:seller && npm run build:creator",
     "build:backend": "cd backend && npm run build",
     "build:admin": "cd admin-web && npm run build",
@@ -29,7 +31,7 @@
     "test": "npm run test:backend && npm run test:admin",
     "test:backend": "cd backend && npm run test",
     "test:admin": "cd admin-web && npm run test",
-    "expo-clean": "cd mobile && rm -rf .expo node_modules/.cache && npx expo start --clear"
+    "expo-clean": "cd mobile && rm -rf .expo node_modules/.cache && npx expo start --clear --tunnel"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
