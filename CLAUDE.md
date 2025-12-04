@@ -25,6 +25,60 @@ GSHOP is a TikTok Shop clone MVP with a microservices architecture consisting of
 - **📋 Implementation Phases**: See `docs/phases_implementations.md` for feature tracking
 - **💰 Colombian VAT System**: See `docs/PLAN_IVA_COLOMBIA.md` for tax compliance implementation
 
+## 🎨 Coding Guidelines
+
+### Internationalization (i18n)
+
+**ALWAYS use i18n for user-facing text in frontend applications (Admin Panel, Seller Panel, Mobile App).**
+
+**Rules:**
+- ✅ **DO**: Use translation keys from `messages/*.json` files via `useTranslations()` hook
+- ❌ **DON'T**: Hardcode Spanish (or any language) text directly in components
+- ✅ **DO**: Add new translation keys to the appropriate JSON file before using them
+- ❌ **DON'T**: Use fallback patterns like `{t('key') || 'Texto hardcoded'}` - this defeats the purpose of i18n
+
+**Example - Seller Panel:**
+
+```typescript
+// ❌ WRONG - Hardcoded text
+<h1>Producto no encontrado</h1>
+<p>El producto que buscas no existe o ha sido eliminado.</p>
+<button>Volver a productos</button>
+
+// ✅ CORRECT - Using i18n
+const t = useTranslations('products')
+
+<h1>{t('productNotFound')}</h1>
+<p>{t('productNotFoundMessage')}</p>
+<button>{t('backToProductsList')}</button>
+```
+
+**Translation Files Location:**
+- **Admin Panel**: `admin-web/app/messages/es.json` (and `en.json` for English)
+- **Seller Panel**: `seller-panel/messages/es.json`
+- **Mobile App**: `mobile/locales/es.json`
+
+**Adding New Translations:**
+
+1. Add the key to the appropriate section in the JSON file:
+```json
+{
+  "products": {
+    "productNotFound": "Producto no encontrado",
+    "productNotFoundMessage": "El producto que buscas no existe o ha sido eliminado.",
+    "backToProductsList": "Volver a productos"
+  }
+}
+```
+
+2. Use the translation in your component:
+```typescript
+const t = useTranslations('products')
+return <h1>{t('productNotFound')}</h1>
+```
+
+**Note:** Backend API responses and logs do NOT require i18n - only user-facing UI text.
+
 ## 📦 File Upload Strategy
 
 GSHOP uses a **dual-provider storage system** with automatic detection:

@@ -58,9 +58,13 @@ export default function EditProductPage() {
     description: '',
     price: '',
     vatType: 'general' as VatType,
+    comparePrice: '',
+    costPerItem: '',
     category: '',
     sku: '',
+    barcode: '',
     stock: '',
+    weight: '',
     images: [] as string[],
   })
 
@@ -119,9 +123,13 @@ export default function EditProductPage() {
           description: product.description || '',
           price: product.price?.toString() || '',
           vatType: product.vatType || 'general',
+          comparePrice: product.comparePrice?.toString() || '',
+          costPerItem: product.costPerItem?.toString() || '',
           category: product.categoryId || '',
           sku: product.sku || '',
+          barcode: product.barcode || '',
           stock: product.quantity?.toString() || product.stock?.toString() || '',
+          weight: product.weight?.toString() || '',
           images: product.images || [],
         })
       } catch (error) {
@@ -162,9 +170,13 @@ export default function EditProductPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           vatType: formData.vatType,
+          comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
+          costPerItem: formData.costPerItem ? parseFloat(formData.costPerItem) : undefined,
           categoryId: formData.category, // category now stores the ID directly
           sku: formData.sku,
+          barcode: formData.barcode || undefined,
           quantity: parseInt(formData.stock),
+          weight: formData.weight ? parseFloat(formData.weight) : undefined,
           images: formData.images.length > 0 ? formData.images : [],
         }),
       })
@@ -324,6 +336,51 @@ export default function EditProductPage() {
             )}
           </div>
 
+          {/* Compare Price and Cost */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* Compare Price */}
+            <div>
+              <label htmlFor="comparePrice" className="block text-sm font-medium text-gray-700">
+                {t('comparePrice')}
+              </label>
+              <input
+                type="number"
+                id="comparePrice"
+                name="comparePrice"
+                value={formData.comparePrice}
+                onChange={handleChange}
+                min="0"
+                step="100"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+                placeholder={t('comparePricePlaceholder')}
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                {t('comparePriceHelp')}
+              </p>
+            </div>
+
+            {/* Cost Per Item */}
+            <div>
+              <label htmlFor="costPerItem" className="block text-sm font-medium text-gray-700">
+                {t('cost')}
+              </label>
+              <input
+                type="number"
+                id="costPerItem"
+                name="costPerItem"
+                value={formData.costPerItem}
+                onChange={handleChange}
+                min="0"
+                step="100"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+                placeholder={t('costPlaceholder')}
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                {t('costHelp')}
+              </p>
+            </div>
+          </div>
+
           {/* Category */}
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-700">
@@ -349,39 +406,82 @@ export default function EditProductPage() {
             </select>
           </div>
 
-          {/* SKU */}
-          <div>
-            <label htmlFor="sku" className="block text-sm font-medium text-gray-700">
-              {t('sku')} *
-            </label>
-            <input
-              type="text"
-              id="sku"
-              name="sku"
-              value={formData.sku}
-              onChange={handleChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder={t('skuPlaceholder')}
-            />
+          {/* SKU and Barcode */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* SKU */}
+            <div>
+              <label htmlFor="sku" className="block text-sm font-medium text-gray-700">
+                {t('sku')} *
+              </label>
+              <input
+                type="text"
+                id="sku"
+                name="sku"
+                value={formData.sku}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+                placeholder={t('skuPlaceholder')}
+              />
+            </div>
+
+            {/* Barcode */}
+            <div>
+              <label htmlFor="barcode" className="block text-sm font-medium text-gray-700">
+                {t('barcode')}
+              </label>
+              <input
+                type="text"
+                id="barcode"
+                name="barcode"
+                value={formData.barcode}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+                placeholder={t('barcodePlaceholder')}
+              />
+            </div>
           </div>
 
-          {/* Stock */}
-          <div>
-            <label htmlFor="stock" className="block text-sm font-medium text-gray-700">
-              {t('stock')} *
-            </label>
-            <input
-              type="number"
-              id="stock"
-              name="stock"
-              value={formData.stock}
-              onChange={handleChange}
-              required
-              min="0"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
-              placeholder={t('stockPlaceholder')}
-            />
+          {/* Stock and Weight */}
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {/* Stock */}
+            <div>
+              <label htmlFor="stock" className="block text-sm font-medium text-gray-700">
+                {t('stock')} *
+              </label>
+              <input
+                type="number"
+                id="stock"
+                name="stock"
+                value={formData.stock}
+                onChange={handleChange}
+                required
+                min="0"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+                placeholder={t('stockPlaceholder')}
+              />
+            </div>
+
+            {/* Weight */}
+            <div>
+              <label htmlFor="weight" className="block text-sm font-medium text-gray-700">
+                {t('weight')}
+              </label>
+              <input
+                type="number"
+                id="weight"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+                placeholder={t('weightPlaceholder')}
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                {t('weightHelp')}
+              </p>
+            </div>
           </div>
 
           {/* Product Images */}
