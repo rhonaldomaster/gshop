@@ -25,6 +25,94 @@ GSHOP is a TikTok Shop clone MVP with a microservices architecture consisting of
 - **📋 Implementation Phases**: See `docs/phases_implementations.md` for feature tracking
 - **💰 Colombian VAT System**: See `docs/PLAN_IVA_COLOMBIA.md` for tax compliance implementation
 
+## 📦 File Upload Strategy
+
+GSHOP uses a **dual-provider storage system** with automatic detection:
+
+### How It Works
+
+```typescript
+// Multer configuration uses memoryStorage()
+MulterModule.register({
+  storage: memoryStorage(),  // Files stored in memory buffer
+  limits: { fileSize: 20 * 1024 * 1024 }  // 20MB max
+})
+
+// StorageService automatically selects provider
+if (R2_ACCESS_KEY_ID exists in .env) {
+  → Use Cloudflare R2 (Production) ✅
+} else {
+  → Use Local Storage (Development) 📁
+}
+```
+
+### Storage Providers
+
+| Provider | Environment | Files Location | URLs Returned |
+|----------|-------------|----------------|---------------|
+| **Local Storage** | Development | `backend/uploads/products/` | `/uploads/products/image.jpg` (relative) |
+| **Cloudflare R2** | Production | R2 Bucket (CDN) | `https://pub-xxxxx.r2.dev/products/image.jpg` (absolute) |
+
+### Upload Endpoints
+
+```bash
+# Products - Upload product images (up to 10 images, 20MB each)
+POST /api/v1/products/upload
+Headers: Authorization: Bearer <token>
+Body: multipart/form-data (field: images[])
+Response: { urls: string[], provider: "Cloudflare R2" | "Local Storage" }
+
+# Products - Delete image
+DELETE /api/v1/products/images/:filename
+```
+
+### Architecture Files
+
+```
+backend/src/
+├── common/storage/
+│   ├── storage.interface.ts       # Common interface for providers
+│   ├── storage.service.ts         # Auto-selector (R2 or Local)
+│   ├── r2-storage.provider.ts     # Cloudflare R2 implementation
+│   ├── local-storage.provider.ts  # Local filesystem implementation
+│   └── storage.module.ts          # NestJS module
+├── products/
+│   ├── products.module.ts         # MulterModule with memoryStorage()
+│   ├── products-upload.service.ts # Uses StorageService
+│   └── products.controller.ts     # Upload endpoints
+└── sellers/
+    ├── sellers.module.ts          # MulterModule with diskStorage()
+    ├── sellers-upload.service.ts  # Document uploads (RUT, Cámara de Comercio)
+    └── sellers.controller.ts      # KYC document upload endpoint
+```
+
+### Key Features
+
+- **Zero Configuration**: Works without R2 credentials (uses local storage)
+- **Automatic Fallback**: No code changes needed between dev/prod
+- **Memory-First**: Uses `memoryStorage()` for better performance with StorageService
+- **CDN Integration**: R2 provides global CDN automatically
+- **Cost Effective**: $0 egress fees with R2 vs traditional cloud storage
+
+### Multer Configuration Note
+
+**IMPORTANT**: When configuring MulterModule, always use:
+- `memoryStorage()` from `multer` for services that use StorageService (products, etc.)
+- `diskStorage()` from `multer` for direct disk writes (seller documents, etc.)
+
+```typescript
+// ✅ CORRECT - For StorageService integration
+import { memoryStorage } from 'multer';
+MulterModule.register({
+  storage: memoryStorage(),  // Correct function call
+})
+
+// ❌ WRONG - String value doesn't work
+MulterModule.register({
+  storage: 'memory',  // This will cause "_handleFile is not a function" error
+})
+```
+
 ## Development Commands
 
 ### Quick Setup

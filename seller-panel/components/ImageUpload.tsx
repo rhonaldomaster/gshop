@@ -73,7 +73,18 @@ export default function ImageUpload({
         }
 
         const data = await response.json()
-        onChange([...images, ...data.urls])
+        // Convert relative URLs to absolute URLs for local storage
+        const absoluteUrls = data.urls.map((url: string) => {
+          if (url.startsWith('/')) {
+            // Relative URL - prepend backend base URL (without /api/v1)
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
+            const baseUrl = apiUrl.replace('/api/v1', '')
+            return `${baseUrl}${url}`
+          }
+          // Already absolute URL (R2)
+          return url
+        })
+        onChange([...images, ...absoluteUrls])
       } catch (error) {
         console.error('Error uploading images:', error)
         alert(error instanceof Error ? error.message : t('errorUploadFailed'))

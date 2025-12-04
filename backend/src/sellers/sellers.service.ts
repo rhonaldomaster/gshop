@@ -51,7 +51,7 @@ export class SellersService {
       throw new BadRequestException('Las personas jurídicas deben usar NIT')
     }
 
-    // Verificar duplicados
+    // Verificar duplicados en sellers
     const existingSeller = await this.sellersRepository.findOne({
       where: [
         { email: createSellerDto.email },
@@ -63,10 +63,36 @@ export class SellersService {
       throw new ConflictException('Ya existe un vendedor con este email o documento')
     }
 
+    // Verificar duplicados en users
+    const existingUser = await this.userRepository.findOne({
+      where: { email: createSellerDto.email },
+    })
+
+    if (existingUser) {
+      throw new ConflictException('Ya existe un usuario con este email')
+    }
+
     const hashedPassword = await bcrypt.hash(createSellerDto.password, 10)
 
+    // Create user entry first (for foreign key constraints in products, orders, etc.)
+    const user = this.userRepository.create({
+      email: createSellerDto.email,
+      password: hashedPassword,
+      firstName: createSellerDto.ownerName.split(' ')[0] || 'Seller',
+      lastName: createSellerDto.ownerName.split(' ').slice(1).join(' ') || 'Account',
+      role: 'seller',
+      status: 'active',
+      emailVerified: false,
+      businessName: createSellerDto.businessName,
+      phone: createSellerDto.phone,
+    })
+
+    const savedUser = await this.userRepository.save(user)
+
+    // Create seller entry with same ID as user
     const seller = this.sellersRepository.create({
       ...createSellerDto,
+      id: savedUser.id, // Use same ID as user for consistency
       passwordHash: hashedPassword,
       commissionRate: createSellerDto.commissionRate || 7.0,
       verificationStatus: VerificationStatus.PENDING,

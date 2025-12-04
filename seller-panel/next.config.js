@@ -7,7 +7,29 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['localhost', 'your-s3-bucket.s3.amazonaws.com'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ytimg.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+    ],
   },
   env: {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3002',

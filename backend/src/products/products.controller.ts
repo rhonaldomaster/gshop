@@ -131,10 +131,10 @@ export class ProductsController {
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
   create(@Body() createProductDto: CreateProductDto, @Request() req) {
-    // If admin provides sellerId, use it; otherwise use authenticated user's ID
+    // If admin provides sellerId, use it; otherwise use authenticated seller's ID
     const sellerId = req.user.role === UserRole.ADMIN && createProductDto.sellerId
       ? createProductDto.sellerId
-      : req.user.id;
+      : req.user.sellerId || req.user.id; // Use sellerId for sellers, id for legacy users
     return this.productsService.create(createProductDto, sellerId);
   }
 
@@ -239,7 +239,8 @@ export class ProductsController {
     @Request() req,
     @Query() query: ProductQueryDto,
   ) {
-    return this.productsService.getProductsBySeller(req.user.id, query);
+    const sellerId = req.user.sellerId || req.user.id; // Use sellerId for sellers, id for legacy users
+    return this.productsService.getProductsBySeller(sellerId, query);
   }
 
   @Get('seller/:sellerId')
@@ -279,7 +280,8 @@ export class ProductsController {
     @Body() updateProductDto: UpdateProductDto,
     @Request() req,
   ) {
-    return this.productsService.update(id, updateProductDto, req.user.id, req.user.role);
+    const sellerId = req.user.sellerId || req.user.id; // Use sellerId for sellers, id for legacy users
+    return this.productsService.update(id, updateProductDto, sellerId, req.user.role);
   }
 
   @Patch(':id/status')
@@ -299,6 +301,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'Product deleted successfully' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   remove(@Param('id') id: string, @Request() req) {
-    return this.productsService.remove(id, req.user.id, req.user.role);
+    const sellerId = req.user.sellerId || req.user.id; // Use sellerId for sellers, id for legacy users
+    return this.productsService.remove(id, sellerId, req.user.role);
   }
 }

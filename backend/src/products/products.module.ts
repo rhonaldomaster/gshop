@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
 import { CategoriesService } from './categories.service';
@@ -18,7 +19,7 @@ import { StorageModule } from '../common/storage/storage.module';
     TypeOrmModule.forFeature([Product, Category, OrderItem, PixelEvent]),
     StorageModule,
     MulterModule.register({
-      storage: 'memory', // Store in memory, will be handled by StorageService
+      storage: memoryStorage(), // Store in memory, will be handled by StorageService
       limits: {
         fileSize: 20 * 1024 * 1024, // 20MB
       },
