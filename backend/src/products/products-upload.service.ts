@@ -1,87 +1,61 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as multer from 'multer';
-import * as path from 'path';
-import * as fs from 'fs';
+import { Injectable } from '@nestjs/common';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class ProductsUploadService {
-  private readonly uploadDir: string;
+  constructor(private storageService: StorageService) {}
 
-  constructor(private configService: ConfigService) {
-    this.uploadDir = path.join(process.cwd(), 'uploads', 'products');
-    this.ensureUploadDirExists();
+  /**
+   * Upload a file buffer to storage (R2 or local)
+   * @param file - File buffer
+   * @param filename - Original filename
+   * @param contentType - MIME type
+   * @returns URL to access the file
+   */
+  async uploadFile(
+    file: Buffer,
+    filename: string,
+    contentType: string,
+  ): Promise<string> {
+    return this.storageService.uploadFile(file, filename, contentType);
   }
 
-  private ensureUploadDirExists() {
-    if (!fs.existsSync(this.uploadDir)) {
-      fs.mkdirSync(this.uploadDir, { recursive: true });
-    }
-  }
-
-  getMulterConfig() {
-    return {
-      storage: multer.diskStorage({
-        destination: (req, file, cb) => {
-          cb(null, this.uploadDir);
-        },
-        filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = path.extname(file.originalname);
-          const sanitizedName = file.originalname
-            .replace(ext, '')
-            .replace(/[^a-zA-Z0-9]/g, '-')
-            .toLowerCase();
-          cb(null, `product-${sanitizedName}-${uniqueSuffix}${ext}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        // Only allow images
-        const allowedMimes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-          'image/webp',
-        ];
-        if (allowedMimes.includes(file.mimetype)) {
-          cb(null, true);
-        } else {
-          cb(
-            new BadRequestException(
-              'Only image files are allowed (JPEG, PNG, JPG, GIF, WEBP)',
-            ),
-            false,
-          );
-        }
-      },
-      limits: {
-        fileSize: 20 * 1024 * 1024, // 20MB maximum
-      },
-    };
-  }
-
+  /**
+   * Get file URL (handles both R2 absolute URLs and local relative paths)
+   * @param filename - Filename or key
+   * @returns URL to access the file
+   */
   getFileUrl(filename: string): string {
-    const baseUrl = this.configService.get<string>(
-      'API_URL',
-      'http://localhost:3000',
-    );
-    return `${baseUrl}/uploads/products/${filename}`;
+    return this.storageService.getFileUrl(filename);
   }
 
-  deleteFile(fileUrl: string): void {
-    try {
-      const filename = path.basename(fileUrl);
-      const filePath = path.join(this.uploadDir, filename);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    } catch (error) {
-      console.error('Error deleting file:', error);
-    }
+  /**
+   * Delete a file from storage
+   * @param fileUrl - URL or key of the file
+   */
+  async deleteFile(fileUrl: string): Promise<void> {
+    return this.storageService.deleteFile(fileUrl);
   }
 
-  deleteMultipleFiles(fileUrls: string[]): void {
-    fileUrls.forEach((url) => this.deleteFile(url));
+  /**
+   * Delete multiple files from storage
+   * @param fileUrls - Array of URLs or keys
+   */
+  async deleteMultipleFiles(fileUrls: string[]): Promise<void> {
+    await Promise.all(fileUrls.map((url) => this.deleteFile(url)));
+  }
+
+  /**
+   * Get the name of the active storage provider
+   */
+  getProviderName(): string {
+    return this.storageService.getProviderName();
+  }
+
+  /**
+   * Check if using R2 storage
+   */
+  isUsingR2(): boolean {
+    return this.storageService.isUsingR2();
   }
 }

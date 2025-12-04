@@ -56,6 +56,10 @@ export class ProductsController {
           type: 'array',
           items: { type: 'string' },
         },
+        provider: {
+          type: 'string',
+          description: 'Storage provider used (Cloudflare R2 or Local Storage)',
+        },
       },
     },
   })
@@ -91,11 +95,21 @@ export class ProductsController {
       }
     }
 
-    const urls = files.map((file) =>
-      this.productsUploadService.getFileUrl(file.filename),
+    // Upload files using the storage service
+    const uploadPromises = files.map((file) =>
+      this.productsUploadService.uploadFile(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+      ),
     );
 
-    return { urls };
+    const urls = await Promise.all(uploadPromises);
+
+    return {
+      urls,
+      provider: this.productsUploadService.getProviderName(),
+    };
   }
 
   @Delete('images/:filename')

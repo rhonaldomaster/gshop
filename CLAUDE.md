@@ -17,6 +17,13 @@ GSHOP is a TikTok Shop clone MVP with a microservices architecture consisting of
 - **GSHOP Pixel**: JavaScript tracking script for external websites
 - **Analytics**: Real-time analytics and reporting dashboard
 - **Logistics System**: Seller-managed shipping with configurable rates and manual tracking
+- **Storage System**: Flexible file storage with Cloudflare R2 (production) and local fallback (development)
+
+## Important Documentation
+
+- **📦 File Storage (R2)**: See `docs/R2_STORAGE_SETUP.md` for Cloudflare R2 configuration and local storage fallback
+- **📋 Implementation Phases**: See `docs/phases_implementations.md` for feature tracking
+- **💰 Colombian VAT System**: See `docs/PLAN_IVA_COLOMBIA.md` for tax compliance implementation
 
 ## Development Commands
 

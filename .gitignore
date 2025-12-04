@@ -231,6 +231,9 @@ local.properties
 *.sqlite
 *.sqlite3
 
+# Uploads (local development only, production uses R2)
+uploads/
+
 # Build artifacts
 build/
 dist/

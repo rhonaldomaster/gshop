@@ -32,6 +32,7 @@ import { ConfigModule as PlatformConfigModule } from './config/config.module';
 import { InvoicingModule } from './invoicing/invoicing.module';
 import { CommissionsModule } from './admin/commissions/commissions.module';
 import { CommonModule } from './common/common.module';
+import { StorageModule } from './common/storage/storage.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -57,6 +58,7 @@ import { AppService } from './app.service';
     }),
     EventEmitterModule.forRoot(),
     DatabaseModule,
+    StorageModule,
     CommonModule,
     PlatformConfigModule,
     InvoicingModule,
