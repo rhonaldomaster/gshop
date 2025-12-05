@@ -35,24 +35,26 @@ interface Order {
   orderNumber: string
   status: string
   totalAmount: number
+  shippingAmount?: number
   shippingCarrier?: string
-  courierService?: string
-  trackingNumber?: string
-  shippingCost?: number
+  shippingTrackingNumber?: string
+  shippingTrackingUrl?: string
+  shippingNotes?: string
   customerDocument?: {
     type: string
     number: string
   }
   returnReason?: string
   createdAt: string
-  user: {
+  user?: {
     firstName: string
     lastName: string
     email: string
   }
   items: Array<{
     quantity: number
-    price: number
+    unitPrice: number
+    totalPrice: number
     product: {
       name: string
       image?: string
@@ -89,87 +91,39 @@ export default function OrdersPage() {
   })
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    if (session?.accessToken) {
+      fetchOrders()
+    }
+  }, [session])
 
   const fetchOrders = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockOrders: Order[] = [
+      if (!session?.accessToken) {
+        console.log('No access token available')
+        setLoading(false)
+        return
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/orders/seller`,
         {
-          id: '1',
-          orderNumber: 'GS-001',
-          status: 'confirmed',
-          totalAmount: 150000,
-          createdAt: new Date().toISOString(),
-          user: {
-            firstName: 'Juan',
-            lastName: 'Pérez',
-            email: 'juan@example.com'
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.accessToken}`,
           },
-          items: [
-            {
-              quantity: 2,
-              price: 75000,
-              product: {
-                name: 'Smartphone Samsung'
-              }
-            }
-          ]
-        },
-        {
-          id: '2',
-          orderNumber: 'GS-002',
-          status: 'in_transit',
-          totalAmount: 85000,
-          shippingCarrier: 'Servientrega',
-          courierService: 'Standard',
-          trackingNumber: 'SERV123456789',
-          shippingCost: 8500,
-          createdAt: new Date().toISOString(),
-          user: {
-            firstName: 'María',
-            lastName: 'González',
-            email: 'maria@example.com'
-          },
-          items: [
-            {
-              quantity: 1,
-              price: 85000,
-              product: {
-                name: 'Auriculares Bluetooth'
-              }
-            }
-          ]
-        },
-        {
-          id: '3',
-          orderNumber: 'GS-003',
-          status: 'return_requested',
-          totalAmount: 120000,
-          returnReason: 'Producto defectuoso: La pantalla llegó rayada',
-          shippingCarrier: 'Coordinadora',
-          trackingNumber: 'COORD987654321',
-          createdAt: new Date().toISOString(),
-          user: {
-            firstName: 'Carlos',
-            lastName: 'Rodríguez',
-            email: 'carlos@example.com'
-          },
-          items: [
-            {
-              quantity: 1,
-              price: 120000,
-              product: {
-                name: 'Tablet Android 10 pulgadas'
-              }
-            }
-          ]
         }
-      ]
-      setOrders(mockOrders)
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders')
+      }
+
+      const data = await response.json()
+      setOrders(data)
     } catch (error) {
       console.error('Error fetching orders:', error)
+      toast.error(t('errorFetchingOrders'))
     } finally {
       setLoading(false)
     }
@@ -326,9 +280,9 @@ export default function OrdersPage() {
                   <TableCell>
                     <div>
                       <div className="font-medium">
-                        {order.user.firstName} {order.user.lastName}
+                        {order.user ? `${order.user.firstName} ${order.user.lastName}` : 'Guest'}
                       </div>
-                      <div className="text-sm text-gray-500">{order.user.email}</div>
+                      <div className="text-sm text-gray-500">{order.user?.email || 'N/A'}</div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -348,10 +302,9 @@ export default function OrdersPage() {
                     {order.shippingCarrier ? (
                       <div className="text-sm">
                         <div className="font-medium">{order.shippingCarrier}</div>
-                        <div className="text-gray-500">{order.courierService}</div>
-                        {order.shippingCost && (
+                        {order.shippingAmount && (
                           <div className="text-green-600">
-                            ${order.shippingCost.toLocaleString('es-CO')}
+                            ${order.shippingAmount.toLocaleString('es-CO')}
                           </div>
                         )}
                       </div>
@@ -360,10 +313,10 @@ export default function OrdersPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {order.trackingNumber ? (
+                    {order.shippingTrackingNumber ? (
                       <div className="text-sm">
                         <div className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                          {order.trackingNumber}
+                          {order.shippingTrackingNumber}
                         </div>
                       </div>
                     ) : (
@@ -392,9 +345,11 @@ export default function OrdersPage() {
                                 <div>
                                   <h4 className="font-medium">{t('customer')}</h4>
                                   <p className="text-sm text-gray-600">
-                                    {selectedOrder.user.firstName} {selectedOrder.user.lastName}
+                                    {selectedOrder.user
+                                      ? `${selectedOrder.user.firstName} ${selectedOrder.user.lastName}`
+                                      : 'Guest'}
                                   </p>
-                                  <p className="text-sm text-gray-600">{selectedOrder.user.email}</p>
+                                  <p className="text-sm text-gray-600">{selectedOrder.user?.email || 'N/A'}</p>
                                 </div>
                                 <div>
                                   <h4 className="font-medium">{t('status')}</h4>
@@ -419,7 +374,7 @@ export default function OrdersPage() {
                                   {selectedOrder.items.map((item, index) => (
                                     <div key={index} className="flex justify-between text-sm">
                                       <span>{item.product.name} x {item.quantity}</span>
-                                      <span>${(item.price * item.quantity).toLocaleString('es-CO')}</span>
+                                      <span>${item.totalPrice.toLocaleString('es-CO')}</span>
                                     </div>
                                   ))}
                                 </div>
@@ -458,7 +413,7 @@ export default function OrdersPage() {
                         </DialogContent>
                       </Dialog>
 
-                      {(order.status === 'confirmed' || order.status === 'processing') && !order.trackingNumber && (
+                      {(order.status === 'confirmed' || order.status === 'processing') && !order.shippingTrackingNumber && (
                         <Button
                           size="sm"
                           onClick={() => {

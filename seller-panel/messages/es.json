@@ -402,7 +402,8 @@
     "view": "Ver",
     "errorAddTracking": "Error al agregar tracking",
     "successTracking": "Información de rastreo agregada exitosamente",
-    "fillRequiredFields": "Por favor complete los campos requeridos"
+    "fillRequiredFields": "Por favor complete los campos requeridos",
+    "errorFetchingOrders": "Error al cargar los pedidos"
   },
   "live": {
     "title": "Transmisiones en Vivo",

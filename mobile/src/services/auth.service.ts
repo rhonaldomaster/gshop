@@ -135,6 +135,50 @@ class AuthService {
     }
   }
 
+  // Upload avatar image
+  async uploadAvatar(imageUri: string): Promise<string> {
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+
+      // Extract filename from URI
+      const filename = imageUri.split('/').pop() || 'avatar.jpg';
+      const fileType = filename.split('.').pop()?.toLowerCase() || 'jpg';
+
+      // Map file extension to mime type
+      const mimeTypeMap: { [key: string]: string } = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+      };
+
+      const mimeType = mimeTypeMap[fileType] || 'image/jpeg';
+
+      // Append file to FormData with proper format for React Native
+      formData.append('avatar', {
+        uri: imageUri,
+        type: mimeType,
+        name: filename,
+      } as any);
+
+      const response = await apiClient.uploadFile<{ url: string; provider: string }>(
+        '/auth/avatar/upload',
+        formData
+      );
+
+      if (response.success && response.data) {
+        return response.data.url;
+      } else {
+        throw new Error(response.message || 'Failed to upload avatar');
+      }
+    } catch (error: any) {
+      console.error('AuthService: Avatar upload failed', error);
+      throw new Error(error.message || 'Failed to upload avatar image');
+    }
+  }
+
   // Update user profile
   async updateProfile(updateData: UpdateProfileRequest): Promise<User> {
     try {
@@ -292,6 +336,3 @@ class AuthService {
 
 // Create singleton instance
 export const authService = new AuthService();
-
-// Export types
-export type { AuthResponse, LoginRequest, RegisterRequest, UpdateProfileRequest };

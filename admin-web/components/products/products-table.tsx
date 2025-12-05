@@ -56,8 +56,9 @@ interface Product {
     name: string;
   };
   seller?: {
-    firstName: string;
-    lastName: string;
+    businessName: string;
+    ownerName: string;
+    email: string;
   };
   createdAt: string;
 }
@@ -137,7 +138,7 @@ export function ProductsTable() {
           status: 'active',
           images: ['/api/placeholder/60/60'],
           category: { name: 'Smartphones' },
-          seller: { firstName: 'Maria', lastName: 'Rodriguez' },
+          seller: { businessName: 'GSHOP Electronics', ownerName: 'Maria Rodriguez', email: 'seller@gshop.com' },
           createdAt: new Date().toISOString(),
         },
         {
@@ -149,7 +150,7 @@ export function ProductsTable() {
           status: 'active',
           images: ['/api/placeholder/60/60'],
           category: { name: 'Laptops' },
-          seller: { firstName: 'Maria', lastName: 'Rodriguez' },
+          seller: { businessName: 'GSHOP Electronics', ownerName: 'Maria Rodriguez', email: 'seller@gshop.com' },
           createdAt: new Date(Date.now() - 86400000).toISOString(),
         },
       ]);
@@ -319,7 +320,7 @@ export function ProductsTable() {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">
-                        {product?.seller?.firstName} {product?.seller?.lastName}
+                        {product?.seller?.businessName || product?.seller?.ownerName || 'N/A'}
                       </span>
                     </TableCell>
                     <TableCell>

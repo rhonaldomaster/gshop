@@ -10,9 +10,9 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from './user.entity';
 import { Category } from './category.entity';
 import { OrderItem } from './order-item.entity';
+import { Seller } from '../../sellers/entities/seller.entity';
 
 export enum ProductStatus {
   DRAFT = 'draft',
@@ -171,9 +171,9 @@ export class Product {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.products)
+  @ManyToOne(() => Seller, (seller) => seller.products)
   @JoinColumn({ name: 'sellerId' })
-  seller: User;
+  seller: Seller;
 
   @Column()
   sellerId: string;

@@ -4,6 +4,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthSellerController } from './auth-seller.controller';
@@ -12,13 +14,21 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { User } from '../database/entities/user.entity';
 import { UsersModule } from '../users/users.module';
 import { SellersModule } from '../sellers/sellers.module';
+import { StorageModule } from '../common/storage/storage.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     UsersModule,
     SellersModule,
+    StorageModule,
     PassportModule,
+    MulterModule.register({
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB max for avatars
+      },
+    }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

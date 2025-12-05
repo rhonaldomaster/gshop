@@ -19,6 +19,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
+import { authService } from '../../services/auth.service';
 
 export default function EditProfileScreen() {
   const { theme } = useTheme();
@@ -142,6 +143,23 @@ export default function EditProfileScreen() {
     try {
       setLoading(true);
 
+      let avatarUrl = avatarUri;
+
+      // Check if avatar is a local file URI that needs to be uploaded
+      if (avatarUri && avatarUri.startsWith('file://')) {
+        try {
+          // Upload the image first and get the URL back
+          avatarUrl = await authService.uploadAvatar(avatarUri);
+        } catch (uploadError) {
+          console.error('Failed to upload avatar:', uploadError);
+          Alert.alert(
+            t('common.error'),
+            t('profile.failedToUploadImage') || 'Failed to upload avatar image'
+          );
+          return;
+        }
+      }
+
       // Update profile via context (calls authService.updateProfile internally)
       await updateProfile({
         firstName,
@@ -149,7 +167,7 @@ export default function EditProfileScreen() {
         email,
         phone,
         bio,
-        avatar: avatarUri || undefined,
+        avatar: avatarUrl || undefined,
       });
 
       Alert.alert(t('common.success'), t('profile.profileUpdatedSuccessfully'), [

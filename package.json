@@ -36,6 +36,10 @@
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
+  "overrides": {
+    "react": "19.1.0",
+    "@types/react": "~19.1.0"
+  },
   "workspaces": [
     "backend",
     "admin-web",

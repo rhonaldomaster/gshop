@@ -8,7 +8,7 @@ import { Seller, SellerType, DocumentType, VerificationStatus } from './entities
 import { SellerLocation } from './entities/seller-location.entity'
 import { Withdrawal, WithdrawalStatus } from './entities/withdrawal.entity'
 import { Order, OrderStatus } from '../database/entities/order.entity'
-import { User } from '../database/entities/user.entity'
+import { User, UserRole, UserStatus } from '../database/entities/user.entity'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
@@ -80,8 +80,8 @@ export class SellersService {
       password: hashedPassword,
       firstName: createSellerDto.ownerName.split(' ')[0] || 'Seller',
       lastName: createSellerDto.ownerName.split(' ').slice(1).join(' ') || 'Account',
-      role: 'seller',
-      status: 'active',
+      role: UserRole.SELLER,
+      status: UserStatus.ACTIVE,
       emailVerified: false,
       businessName: createSellerDto.businessName,
       phone: createSellerDto.phone,

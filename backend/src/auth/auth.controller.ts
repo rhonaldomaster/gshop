@@ -1,16 +1,32 @@
 
-import { Controller, Post, Body, UseGuards, Get, Request, Put } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Request,
+  Put,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { StorageService } from '../common/storage/storage.service';
 
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private storageService: StorageService,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
@@ -54,6 +70,73 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   async refreshToken(@Request() req) {
     return this.authService.refreshToken(req.user.id);
+  }
+
+  @Post('avatar/upload')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Upload user avatar image (max 5MB)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({
+    status: 201,
+    description: 'Avatar uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        url: {
+          type: 'string',
+          description: 'URL to access the uploaded avatar',
+        },
+        provider: {
+          type: 'string',
+          description: 'Storage provider used (Cloudflare R2 or Local Storage)',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid file or file too large' })
+  @UseInterceptors(FileInterceptor('avatar'))
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    // Validate file
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedMimes = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/gif',
+      'image/webp',
+    ];
+
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `Invalid file type: ${file.mimetype}. Only JPEG, PNG, JPG, GIF, and WEBP are allowed.`,
+      );
+    }
+
+    if (file.size > maxSize) {
+      throw new BadRequestException(
+        `File too large. Maximum size is 5MB.`,
+      );
+    }
+
+    // Upload file using the storage service
+    const url = await this.storageService.uploadFile(
+      file.buffer,
+      `avatars/${req.user.id}-${Date.now()}-${file.originalname}`,
+      file.mimetype,
+    );
+
+    return {
+      url,
+      provider: this.storageService.getProviderName(),
+    };
   }
 
   @Post('logout')

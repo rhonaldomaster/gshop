@@ -63,8 +63,11 @@ export class ProductsService {
 
     const [products, total] = await queryBuilder.getManyAndCount();
 
+    // Transform seller data for mobile compatibility
+    const transformedProducts = products.map(product => this.transformProduct(product));
+
     return {
-      data: products,
+      data: transformedProducts,
       pagination: {
         page,
         limit,
@@ -86,7 +89,7 @@ export class ProductsService {
     // Increment view count
     await this.productRepository.increment({ id }, 'viewsCount', 1);
 
-    return product;
+    return this.transformProduct(product);
   }
 
   async findBySlug(slug: string): Promise<Product> {
@@ -101,7 +104,7 @@ export class ProductsService {
     // Increment view count
     await this.productRepository.increment({ id: product.id }, 'viewsCount', 1);
 
-    return product;
+    return this.transformProduct(product);
   }
 
   async update(
@@ -340,9 +343,9 @@ export class ProductsService {
       .select([
         'product',
         'seller.id',
-        'seller.firstName',
-        'seller.lastName',
-        'seller.avatar',
+        'seller.businessName',
+        'seller.ownerName',
+        'seller.email',
         'category.id',
         'category.name',
         'category.slug',
@@ -417,5 +420,23 @@ export class ProductsService {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
+  }
+
+  /**
+   * Transform product data for mobile app compatibility
+   * Maps seller.businessName to seller.name
+   */
+  private transformProduct(product: Product): any {
+    if (!product) return product;
+
+    // Create a plain object copy
+    const transformed = JSON.parse(JSON.stringify(product));
+
+    // Transform seller data for mobile compatibility
+    if (transformed.seller) {
+      transformed.seller.name = transformed.seller.businessName || transformed.seller.ownerName;
+    }
+
+    return transformed;
   }
 }
