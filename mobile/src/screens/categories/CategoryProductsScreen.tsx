@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
@@ -18,7 +18,7 @@ type CategoryProductsRouteProp = RouteProp<{
   };
 }, 'params'>;
 
-type CategoryProductsNavigationProp = StackNavigationProp<any>;
+type CategoryProductsNavigationProp = NativeStackNavigationProp<any>;
 
 export default function CategoryProductsScreen() {
   const { t } = useTranslation();

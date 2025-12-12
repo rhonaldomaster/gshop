@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
@@ -26,7 +26,7 @@ import GSInput from '../../components/ui/GSInput';
 import PaymentMethodSelection from '../../components/checkout/PaymentMethodSelection';
 import { CartStackParamList } from '../../navigation/CartNavigator';
 
-type CheckoutScreenNavigationProp = StackNavigationProp<CartStackParamList, 'Checkout'>;
+type CheckoutScreenNavigationProp = NativeStackNavigationProp<CartStackParamList, 'Checkout'>;
 
 // Step indicator component
 interface StepIndicatorProps {

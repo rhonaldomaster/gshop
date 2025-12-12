@@ -327,7 +327,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
 
       {/* Filter Tabs */}
       <ScrollView
-        horizontal
+        horizontal={true}
         showsHorizontalScrollIndicator={false}
         style={styles.filtersContainer}
         contentContainerStyle={styles.filtersContent}

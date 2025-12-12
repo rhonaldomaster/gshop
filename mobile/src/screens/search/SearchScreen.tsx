@@ -407,7 +407,7 @@ export default function SearchScreen() {
           onChangeText={handleSearchTextChange}
           containerStyle={styles.searchInput}
           inputStyle={{ color: '#1A1A1A' }}
-          autoFocus
+          autoFocus={true}
         />
         <TouchableOpacity
           style={[styles.filterButton, { borderColor: theme.colors.gray300 }]}

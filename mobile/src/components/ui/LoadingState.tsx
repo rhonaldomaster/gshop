@@ -16,9 +16,9 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   fullScreen = false,
 }) => {
   return (
-    <View style={[styles.container, fullScreen && styles.fullScreen]}>
+    <View style={[styles.container, fullScreen ? styles.fullScreen : null]}>
       <ActivityIndicator size={size} color="#007AFF" />
-      {message && <Text style={styles.message}>{message}</Text>}
+      {message ? <Text style={styles.message}>{message}</Text> : null}
     </View>
   );
 };
@@ -47,7 +47,7 @@ export const InlineLoader: React.FC<{ text?: string }> = ({ text }) => {
   return (
     <View style={styles.inline}>
       <ActivityIndicator size="small" color="#007AFF" />
-      {text && <Text style={styles.inlineText}>{text}</Text>}
+      {text ? <Text style={styles.inlineText}>{text}</Text> : null}
     </View>
   );
 };

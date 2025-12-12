@@ -267,7 +267,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
             value={newReview.comment}
             onChangeText={(text) => setNewReview(prev => ({ ...prev, comment: text }))}
             placeholder={t('reviews.sharePlaceholder')}
-            multiline
+            multiline={true}
             maxLength={500}
             textAlignVertical="top"
           />

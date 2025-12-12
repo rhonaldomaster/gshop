@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CategoriesScreen from '../screens/categories/CategoriesScreen';
 import CategoryProductsScreen from '../screens/categories/CategoryProductsScreen';
 import ProductDetailScreen from '../screens/products/ProductDetailScreen';
@@ -11,14 +11,13 @@ export type CategoriesStackParamList = {
   ProductDetail: { productId: string };
 };
 
-const Stack = createStackNavigator<CategoriesStackParamList>();
+const Stack = createNativeStackNavigator<CategoriesStackParamList>();
 
 export default function CategoriesNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
       <Stack.Screen name="CategoriesMain" component={CategoriesScreen} />

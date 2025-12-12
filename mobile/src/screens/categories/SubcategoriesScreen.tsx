@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
@@ -18,7 +18,7 @@ type SubcategoriesRouteProp = RouteProp<{
   };
 }, 'params'>;
 
-type SubcategoriesNavigationProp = StackNavigationProp<any>;
+type SubcategoriesNavigationProp = NativeStackNavigationProp<any>;
 
 export default function SubcategoriesScreen() {
   const { theme } = useTheme();

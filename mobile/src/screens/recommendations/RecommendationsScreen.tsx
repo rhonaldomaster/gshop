@@ -189,7 +189,7 @@ export const RecommendationsScreen = () => {
 
   const renderCategoryTabs = () => (
     <ScrollView
-      horizontal
+      horizontal={true}
       showsHorizontalScrollIndicator={false}
       style={styles.categoriesContainer}
       contentContainerStyle={styles.categoriesContent}
@@ -263,7 +263,7 @@ export const RecommendationsScreen = () => {
         </View>
 
         <ScrollView
-          horizontal
+          horizontal={true}
           showsHorizontalScrollIndicator={false}
           style={styles.productsScrollView}
           contentContainerStyle={styles.productsContainer}

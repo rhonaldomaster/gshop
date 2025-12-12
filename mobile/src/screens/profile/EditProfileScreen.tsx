@@ -365,7 +365,7 @@ export default function EditProfileScreen() {
                 placeholderTextColor={theme.colors.textSecondary}
                 value={bio}
                 onChangeText={setBio}
-                multiline
+                multiline={true}
                 numberOfLines={4}
                 textAlignVertical="top"
               />

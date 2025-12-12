@@ -241,9 +241,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           ref={videoRef}
           style={styles.video}
           source={{ uri: stream.hlsUrl }}
-          useNativeControls
+          useNativeControls={true}
           resizeMode={ResizeMode.CONTAIN}
-          shouldPlay
+          shouldPlay={true}
           isLooping={false}
         />
 
@@ -315,7 +315,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
             data={stream.products.filter(p => p.isActive)}
             renderItem={renderProduct}
             keyExtractor={(item) => item.id}
-            horizontal
+            horizontal={true}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.productsList}
           />
@@ -347,7 +347,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               value={newMessage}
               onChangeText={setNewMessage}
               placeholder={t('live.typeMessage')}
-              multiline
+              multiline={true}
               maxLength={200}
               onSubmitEditing={sendMessage}
             />

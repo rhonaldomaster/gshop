@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -657,7 +657,7 @@ export const AddressBookScreen: React.FC<Props> = ({ navigation }) => {
                   onChangeText={(text) => setFormData({ ...formData, address: text })}
                   error={formErrors.address}
                   placeholder={t('addresses.addressPlaceholder')}
-                  multiline
+                  multiline={true}
                   numberOfLines={2}
                 />
               </View>

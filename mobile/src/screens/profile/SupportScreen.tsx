@@ -301,7 +301,7 @@ export default function SupportScreen() {
                 placeholderTextColor={theme.colors.textSecondary}
                 value={ticketMessage}
                 onChangeText={setTicketMessage}
-                multiline
+                multiline={true}
                 numberOfLines={6}
                 textAlignVertical="top"
               />

@@ -277,7 +277,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
             value={customMessage}
             onChangeText={setCustomMessage}
             placeholder={t('social.customMessagePlaceholder', { seller: product.seller.businessName })}
-            multiline
+            multiline={true}
             maxLength={280}
             textAlignVertical="top"
           />

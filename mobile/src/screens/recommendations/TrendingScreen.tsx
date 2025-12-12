@@ -200,7 +200,7 @@ export const TrendingScreen = () => {
 
   const renderCategoryTabs = () => (
     <ScrollView
-      horizontal
+      horizontal={true}
       showsHorizontalScrollIndicator={false}
       style={styles.categoriesContainer}
       contentContainerStyle={styles.categoriesContent}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LiveStreamsScreen from '../screens/live/LiveStreamsScreen';
 import LiveStreamScreen from '../screens/live/LiveStreamScreen';
 import CreateLiveStreamScreen from '../screens/live/CreateLiveStreamScreen';
@@ -16,14 +16,13 @@ export type LiveStackParamList = {
   LiveForYouFeed: undefined;
 };
 
-const Stack = createStackNavigator<LiveStackParamList>();
+const Stack = createNativeStackNavigator<LiveStackParamList>();
 
 export default function LiveNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
       <Stack.Screen name="LiveMain" component={LiveStreamsScreen} />
@@ -31,17 +30,14 @@ export default function LiveNavigator() {
       <Stack.Screen
         name="CreateLiveStream"
         component={CreateLiveStreamScreen}
-        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="LiveStreaming"
         component={LiveStreamingScreen}
-        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="LiveStreamResults"
         component={LiveStreamResultsScreen}
-        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="LiveForYouFeed"

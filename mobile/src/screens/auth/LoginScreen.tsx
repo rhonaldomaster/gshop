@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,7 +19,7 @@ import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
 
-type LoginNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const { t } = useTranslation();

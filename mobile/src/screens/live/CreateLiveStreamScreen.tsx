@@ -174,7 +174,7 @@ export default function CreateLiveStreamScreen({ navigation }: any) {
               onChangeText={setDescription}
               placeholder={t('live.descriptionPlaceholder')}
               maxLength={500}
-              multiline
+              multiline={true}
               numberOfLines={4}
               textAlignVertical="top"
               placeholderTextColor="#9ca3af"

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import OrdersScreen from '../screens/profile/OrdersScreen';
 import OrderDetailScreen from '../screens/profile/OrderDetailScreen';
@@ -27,14 +27,13 @@ export type ProfileStackParamList = {
   ProductDetail: { productId: string };
 };
 
-const Stack = createStackNavigator<ProfileStackParamList>();
+const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />

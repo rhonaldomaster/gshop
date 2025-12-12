@@ -2,14 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
 import { useNavigation } from '@react-navigation/native';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import { useCart } from '../../hooks/useCart';
 import { CartStackParamList } from '../../navigation/CartNavigator';
 
 type PaymentWebViewScreenRouteProp = RouteProp<CartStackParamList, 'PaymentWebView'>;
-type PaymentWebViewScreenNavigationProp = StackNavigationProp<CartStackParamList, 'PaymentWebView'>;
+type PaymentWebViewScreenNavigationProp = NativeStackNavigationProp<CartStackParamList, 'PaymentWebView'>;
 
 function PaymentWebViewScreen() {
   const route = useRoute<PaymentWebViewScreenRouteProp>();

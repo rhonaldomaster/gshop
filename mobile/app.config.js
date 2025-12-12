@@ -13,7 +13,7 @@ export default ({ config }) => {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
+    newArchEnabled: false,
     scheme: process.env.APP_SCHEME || 'gshop',
     splash: {
       image: './assets/splash-icon.png',
@@ -34,8 +34,8 @@ export default ({ config }) => {
       },
       package: isDev ? 'com.gshop.app.dev' : 'com.gshop.app',
       versionCode: 1,
-      edgeToEdgeEnabled: true,
-      predictiveBackGestureEnabled: false,
+      // edgeToEdgeEnabled: true, // Disabled - causes issues with New Architecture
+      // predictiveBackGestureEnabled: false,
       intentFilters: [
         {
           action: 'VIEW',
@@ -68,15 +68,16 @@ export default ({ config }) => {
           },
         },
       ],
-      [
-        'expo-notifications',
-        {
-          icon: './assets/notification-icon.png',
-          color: '#6366f1',
-          sounds: ['./assets/notification-sound.wav'],
-          mode: 'production',
-        },
-      ],
+      // Notifications disabled temporarily - causes issues with Android resource naming
+      // [
+      //   'expo-notifications',
+      //   {
+      //     icon: './assets/notification-icon.png',
+      //     color: '#6366f1',
+      //     sounds: ['./assets/notification-sound.wav'],
+      //     mode: 'production',
+      //   },
+      // ],
     ],
     jsEngine: 'hermes',
     experiments: {

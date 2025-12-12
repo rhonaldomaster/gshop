@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CartScreen from '../screens/cart/CartScreen';
 import CheckoutScreen from '../screens/checkout/CheckoutScreen';
 import GuestCheckoutScreen from '../screens/checkout/GuestCheckoutScreen';
@@ -17,14 +17,13 @@ export type CartStackParamList = {
   };
 };
 
-const Stack = createStackNavigator<CartStackParamList>();
+const Stack = createNativeStackNavigator<CartStackParamList>();
 
 export default function CartNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
       <Stack.Screen name="CartMain" component={CartScreen} />

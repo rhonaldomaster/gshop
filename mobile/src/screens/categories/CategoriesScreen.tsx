@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
@@ -12,7 +12,7 @@ import categoriesService, { CategoryDetails } from '../../services/categories.se
 import { Category } from '../../services/products.service';
 import { Ionicons } from '@expo/vector-icons';
 
-type CategoriesNavigationProp = StackNavigationProp<any>;
+type CategoriesNavigationProp = NativeStackNavigationProp<any>;
 
 export default function CategoriesScreen() {
   const { theme } = useTheme();

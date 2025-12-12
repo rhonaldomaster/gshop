@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/home/HomeScreen';
 import ProductDetailScreen from '../screens/products/ProductDetailScreen';
 import SearchScreen from '../screens/search/SearchScreen';
@@ -29,14 +29,13 @@ export type HomeStackParamList = {
   LiveStreamResults: { streamId: string; stats: any; duration: number };
 };
 
-const Stack = createStackNavigator<HomeStackParamList>();
+const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 export default function HomeNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        gestureEnabled: true,
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
@@ -53,17 +52,14 @@ export default function HomeNavigator() {
       <Stack.Screen
         name="CreateLiveStream"
         component={CreateLiveStreamScreen}
-        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="LiveStreaming"
         component={LiveStreamingScreen}
-        options={{ gestureEnabled: false }}
       />
       <Stack.Screen
         name="LiveStreamResults"
         component={LiveStreamResultsScreen}
-        options={{ gestureEnabled: false }}
       />
     </Stack.Navigator>
   );

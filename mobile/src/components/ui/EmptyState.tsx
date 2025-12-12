@@ -30,19 +30,19 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   const displayMessage = message || description;
 
   return (
-    <View style={[styles.container, fullScreen && styles.fullScreen]}>
+    <View style={[styles.container, fullScreen ? styles.fullScreen : null]}>
       {isEmoji ? (
         <Text style={styles.emoji}>{icon}</Text>
       ) : (
         <MaterialIcons name={icon as keyof typeof MaterialIcons.glyphMap} size={64} color="#ccc" />
       )}
       <Text style={styles.title}>{title}</Text>
-      {displayMessage && <Text style={styles.message}>{displayMessage}</Text>}
-      {actionText && onAction && (
+      {displayMessage ? <Text style={styles.message}>{displayMessage}</Text> : null}
+      {actionText && onAction ? (
         <TouchableOpacity style={styles.button} onPress={onAction}>
           <Text style={styles.buttonText}>{actionText}</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 };

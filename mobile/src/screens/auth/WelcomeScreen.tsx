@@ -10,14 +10,14 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 
-type WelcomeNavigationProp = StackNavigationProp<AuthStackParamList, 'Welcome'>;
+type WelcomeNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Welcome'>;
 
 const { width, height } = Dimensions.get('window');
 

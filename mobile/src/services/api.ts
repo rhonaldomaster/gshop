@@ -55,6 +55,11 @@ class ApiClient {
     // Response interceptor - Handle errors and token refresh
     this.axiosInstance.interceptors.response.use(
       (response: AxiosResponse) => {
+        // Transform string booleans to actual booleans for Android New Architecture compatibility
+        if (response.data) {
+          response.data = this.transformBooleans(response.data);
+        }
+
         if (__DEV__) {
           console.log(`✅ API Response: ${response.status} ${response.config.url}`, response.data);
         }
@@ -144,6 +149,45 @@ class ApiClient {
         errors: ['UNKNOWN_ERROR'],
       };
     }
+  }
+
+  /**
+   * Transform string booleans to actual booleans recursively
+   * This fixes Android New Architecture crash: "java.lang.String cannot be cast to java.lang.Boolean"
+   */
+  private transformBooleans(obj: any): any {
+    if (obj === null || obj === undefined) {
+      return obj;
+    }
+
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.transformBooleans(item));
+    }
+
+    // Handle objects
+    if (typeof obj === 'object') {
+      const transformed: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          const value = obj[key];
+
+          // Transform string "true"/"false" to boolean
+          if (value === 'true') {
+            transformed[key] = true;
+          } else if (value === 'false') {
+            transformed[key] = false;
+          } else {
+            // Recursively transform nested objects/arrays
+            transformed[key] = this.transformBooleans(value);
+          }
+        }
+      }
+      return transformed;
+    }
+
+    // Return primitive values as-is
+    return obj;
   }
 
   // Auth token management

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HomeStackParamList } from '../../navigation/HomeNavigator';
 import { Product, Category } from '../../services/products.service';
 
-type HomeScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'HomeMain'>;
+type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
 const { width } = Dimensions.get('window');
 
@@ -244,7 +244,7 @@ export default function HomeScreen() {
                 </View>
               </TouchableOpacity>
             )}
-            horizontal
+            horizontal={true}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.productsContainer}
             ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
