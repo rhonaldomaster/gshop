@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dialog'
 import { Truck, MapPin, Plus, Trash2, Save } from 'lucide-react'
 import { toast } from 'sonner'
+import { ColombiaLocationSelector } from '@/components/ColombiaLocationSelector'
 
 interface ShippingConfig {
   shippingLocalPrice: number
@@ -350,24 +351,15 @@ export default function ShippingPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">{t('city')} *</Label>
-                      <Input
-                        id="city"
-                        value={newLocation.city}
-                        onChange={(e) => setNewLocation({ ...newLocation, city: e.target.value })}
-                        placeholder="Bogotá"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="state">{t('department')} *</Label>
-                      <Input
-                        id="state"
-                        value={newLocation.state}
-                        onChange={(e) => setNewLocation({ ...newLocation, state: e.target.value })}
-                        placeholder="Cundinamarca"
-                      />
-                    </div>
+                    <ColombiaLocationSelector
+                      departmentValue={newLocation.state}
+                      cityValue={newLocation.city}
+                      onDepartmentChange={(value) => setNewLocation({ ...newLocation, state: value })}
+                      onCityChange={(value) => setNewLocation({ ...newLocation, city: value })}
+                      departmentLabel={t('department')}
+                      cityLabel={t('city')}
+                      required
+                    />
                     <div className="space-y-2">
                       <Label htmlFor="address">{t('address')}</Label>
                       <Input
