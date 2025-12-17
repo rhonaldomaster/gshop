@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
+import { ColombiaLocationSelector } from '@/components/ColombiaLocationSelector'
 
 const BANCOS_COLOMBIA = [
   'Bancolombia',
@@ -30,6 +31,7 @@ interface RegistrationData {
   phone: string
   address: string
   city: string
+  state: string
   businessCategory: string
   bankName: string
   bankAccountType: 'ahorros' | 'corriente'
@@ -51,6 +53,7 @@ export default function RegisterPage() {
     phone: '',
     address: '',
     city: '',
+    state: '',
     businessCategory: '',
     bankName: '',
     bankAccountType: 'ahorros',
@@ -106,6 +109,7 @@ export default function RegisterPage() {
           phone: formData.phone,
           address: formData.address,
           city: formData.city,
+          state: formData.state,
           country: 'Colombia', // Valor por defecto para Colombia
           businessCategory: formData.businessCategory,
           bankName: formData.bankName,
@@ -323,14 +327,14 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <input
-                  name="city"
-                  type="text"
+                <ColombiaLocationSelector
+                  departmentValue={formData.state}
+                  cityValue={formData.city}
+                  onDepartmentChange={(value) => setFormData({ ...formData, state: value })}
+                  onCityChange={(value) => setFormData({ ...formData, city: value })}
+                  departmentLabel={t('department')}
+                  cityLabel={t('city')}
                   required
-                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder={t('cityPlaceholder')}
-                  value={formData.city}
-                  onChange={handleChange}
                 />
               </div>
               <div>

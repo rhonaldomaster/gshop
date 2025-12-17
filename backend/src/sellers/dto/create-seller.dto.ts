@@ -50,6 +50,10 @@ export class CreateSellerDto {
   city?: string
 
   @IsOptional()
+  @IsString({ message: 'El departamento debe ser texto' })
+  state?: string
+
+  @IsOptional()
   @IsString({ message: 'El país debe ser texto' })
   country?: string
 

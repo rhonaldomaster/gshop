@@ -60,6 +60,7 @@
       "addressPlaceholder": "Dirección del negocio",
       "city": "Ciudad",
       "cityPlaceholder": "Ciudad",
+      "department": "Departamento",
       "country": "País",
       "countryPlaceholder": "País",
       "businessCategory": "Categoría del negocio",

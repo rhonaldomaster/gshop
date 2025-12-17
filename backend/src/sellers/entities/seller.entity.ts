@@ -77,6 +77,9 @@ export class Seller {
   @Column({ nullable: true })
   city: string
 
+  @Column({ nullable: true })
+  state: string
+
   @Column({ default: 'Colombia' })
   country: string
 
