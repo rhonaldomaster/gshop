@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import DashboardLayout from '@/components/DashboardLayout'
 import {
   Play,
   Square,
@@ -17,9 +18,13 @@ import {
   Copy,
   Settings,
   TrendingUp,
-  Activity
+  Activity,
+  ArrowLeft,
+  Edit,
+  Check,
+  ExternalLink,
+  Video
 } from 'lucide-react'
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 interface LiveStream {
   id: string
@@ -75,31 +80,28 @@ interface Product {
 export default function LiveStreamDetailPage() {
   const t = useTranslations('live')
   const { id } = useParams()
+  const router = useRouter()
   const { data: session } = useSession()
   const [stream, setStream] = useState<LiveStream | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddProduct, setShowAddProduct] = useState(false)
   const [showOBSInstructions, setShowOBSInstructions] = useState(false)
-  const [showAnalytics, setShowAnalytics] = useState(true)
   const [copied, setCopied] = useState(false)
-  const [metricsHistory, setMetricsHistory] = useState<any[]>([])
-  const [metricsSummary, setMetricsSummary] = useState<any>(null)
   const [showChatModeration, setShowChatModeration] = useState(false)
 
   useEffect(() => {
-    if (id) {
+    if (id && session?.accessToken) {
       fetchStream()
       fetchProducts()
-      fetchMetrics()
     }
-  }, [id])
+  }, [id, session])
 
-  // Auto-refresh metrics when stream is live
+  // Auto-refresh stream when live
   useEffect(() => {
     if (stream?.status === 'live') {
       const interval = setInterval(() => {
-        fetchMetrics()
+        fetchStream()
       }, 30000) // Refresh every 30 seconds
 
       return () => clearInterval(interval)
@@ -108,7 +110,7 @@ export default function LiveStreamDetailPage() {
 
   const fetchStream = async () => {
     try {
-      const response = await fetch(`/api/live/streams/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${id}`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
         }
@@ -116,6 +118,8 @@ export default function LiveStreamDetailPage() {
       if (response.ok) {
         const data = await response.json()
         setStream(data)
+      } else if (response.status === 404) {
+        router.push('/dashboard/live')
       }
     } catch (error) {
       console.error('Error fetching stream:', error)
@@ -126,7 +130,7 @@ export default function LiveStreamDetailPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/seller`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
         }
@@ -140,38 +144,9 @@ export default function LiveStreamDetailPage() {
     }
   }
 
-  const fetchMetrics = async () => {
-    try {
-      const [historyRes, summaryRes] = await Promise.all([
-        fetch(`/api/live/streams/${id}/metrics/history?limit=60`, {
-          headers: {
-            'Authorization': `Bearer ${session?.accessToken}`
-          }
-        }),
-        fetch(`/api/live/streams/${id}/metrics/summary`, {
-          headers: {
-            'Authorization': `Bearer ${session?.accessToken}`
-          }
-        })
-      ])
-
-      if (historyRes.ok) {
-        const historyData = await historyRes.json()
-        setMetricsHistory(historyData)
-      }
-
-      if (summaryRes.ok) {
-        const summaryData = await summaryRes.json()
-        setMetricsSummary(summaryData)
-      }
-    } catch (error) {
-      console.error('Error fetching metrics:', error)
-    }
-  }
-
   const startStream = async () => {
     try {
-      const response = await fetch(`/api/live/streams/${id}/start`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${id}/start`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
@@ -187,7 +162,7 @@ export default function LiveStreamDetailPage() {
 
   const endStream = async () => {
     try {
-      const response = await fetch(`/api/live/streams/${id}/end`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${id}/end`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
@@ -203,7 +178,7 @@ export default function LiveStreamDetailPage() {
 
   const addProductToStream = async (productId: string, specialPrice?: number) => {
     try {
-      const response = await fetch(`/api/live/streams/${id}/products`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${id}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +201,7 @@ export default function LiveStreamDetailPage() {
 
   const removeProductFromStream = async (productId: string) => {
     try {
-      const response = await fetch(`/api/live/streams/${id}/products/${productId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${id}/products/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
@@ -243,7 +218,7 @@ export default function LiveStreamDetailPage() {
   const toggleProductHighlight = async (productId: string, isHighlighted: boolean) => {
     try {
       const endpoint = isHighlighted ? 'hide' : 'highlight'
-      const response = await fetch(`/api/live/streams/${id}/products/${productId}/${endpoint}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${id}/products/${productId}/${endpoint}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
@@ -274,22 +249,42 @@ export default function LiveStreamDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   if (!stream) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900">Stream not found</h3>
-      </div>
+      <DashboardLayout>
+        <div className="text-center py-12">
+          <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900">{t('streamNotFound')}</h3>
+          <button
+            onClick={() => router.push('/dashboard/live')}
+            className="mt-4 text-blue-600 hover:text-blue-700"
+          >
+            {t('back')}
+          </button>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Back Button */}
+        <button
+          onClick={() => router.push('/dashboard/live')}
+          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>{t('back')}</span>
+        </button>
       {/* Stream Header */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
@@ -723,203 +718,6 @@ export default function LiveStreamDetailPage() {
         </div>
       )}
 
-      {/* Analytics Section */}
-      {(stream.status === 'live' || stream.status === 'ended') && showAnalytics && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Real-time Analytics</h3>
-              {stream.status === 'live' && (
-                <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
-                  Live
-                </span>
-              )}
-            </div>
-            <button
-              onClick={() => setShowAnalytics(!showAnalytics)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="p-6 space-y-6">
-            {/* Summary Cards */}
-            {metricsSummary && (
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-blue-600">Avg Viewers</p>
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-blue-900">{Math.round(metricsSummary.avgViewers || 0)}</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-green-600">Total Messages</p>
-                    <MessageCircle className="h-4 w-4 text-green-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-green-900">{metricsSummary.totalMessages || 0}</p>
-                </div>
-
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-purple-600">Purchases</p>
-                    <Package className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-purple-900">{metricsSummary.totalPurchases || 0}</p>
-                </div>
-
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-yellow-600">Conversion Rate</p>
-                    <TrendingUp className="h-4 w-4 text-yellow-600" />
-                  </div>
-                  <p className="text-2xl font-bold text-yellow-900">{metricsSummary.conversionRate?.toFixed(1) || 0}%</p>
-                </div>
-              </div>
-            )}
-
-            {/* Viewer Count Chart */}
-            {metricsHistory.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Viewer Count Over Time</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <AreaChart data={metricsHistory}>
-                    <defs>
-                      <linearGradient id="colorViewers" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      labelFormatter={(value) => new Date(value).toLocaleString()}
-                      formatter={(value: any) => [value, 'Viewers']}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="viewerCount"
-                      stroke="#3b82f6"
-                      fillOpacity={1}
-                      fill="url(#colorViewers)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Chat Activity Chart */}
-            {metricsHistory.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Chat Activity (Messages/Min)</h4>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={metricsHistory}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      labelFormatter={(value) => new Date(value).toLocaleString()}
-                      formatter={(value: any) => [value, 'Messages']}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="messagesPerMinute"
-                      stroke="#10b981"
-                      strokeWidth={2}
-                      dot={{ fill: '#10b981' }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Revenue Tracking */}
-            {metricsHistory.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Revenue Tracking</h4>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={metricsHistory}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="timestamp"
-                      tickFormatter={(value) => new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      labelFormatter={(value) => new Date(value).toLocaleString()}
-                      formatter={(value: any) => [`$${value}`, 'Revenue']}
-                    />
-                    <Bar dataKey="revenue" fill="#eab308" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-
-            {/* Product Performance Table */}
-            {stream.products && stream.products.length > 0 && (
-              <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Product Performance</h4>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Orders</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Conversion</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {stream.products.map((product) => {
-                        const conversion = stream.peakViewers > 0 ? ((product.orderCount / stream.peakViewers) * 100).toFixed(1) : '0.0'
-                        return (
-                          <tr key={product.id}>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center space-x-3">
-                                <img
-                                  src={product.product.images?.[0] || '/placeholder.jpg'}
-                                  alt={product.product.name}
-                                  className="w-10 h-10 rounded object-cover"
-                                />
-                                <span className="text-sm font-medium text-gray-900">{product.product.name}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-900">{product.orderCount}</td>
-                            <td className="px-4 py-3 text-right text-sm font-medium text-gray-900">${product.revenue}</td>
-                            <td className="px-4 py-3 text-right text-sm text-gray-900">{conversion}%</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {metricsHistory.length === 0 && (
-              <div className="text-center py-8">
-                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">No analytics data available yet</p>
-                <p className="text-sm text-gray-400 mt-1">Metrics will appear once the stream starts</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* OBS Setup Instructions Modal */}
       {showOBSInstructions && stream && (
         <OBSInstructionsModal
@@ -938,7 +736,8 @@ export default function LiveStreamDetailPage() {
           onAdd={addProductToStream}
         />
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }
 

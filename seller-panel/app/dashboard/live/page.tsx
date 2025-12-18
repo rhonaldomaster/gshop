@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation'
+import DashboardLayout from '@/components/DashboardLayout'
+import Link from 'next/link'
 import {
   Play,
   Square,
   Eye,
   Users,
-  MessageCircle,
   DollarSign,
   Video,
   Plus,
@@ -37,14 +39,18 @@ interface LiveStream {
 export default function LivePage() {
   const t = useTranslations('live')
   const { data: session } = useSession()
+  const router = useRouter()
   const [streams, setStreams] = useState<LiveStream[]>([])
   const [activeStream, setActiveStream] = useState<LiveStream | null>(null)
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchStreams()
-  }, [])
+    if (session?.accessToken) {
+      fetchStreams()
+    }
+  }, [session])
 
   // Helper function to calculate time remaining
   const getCountdown = (scheduledAt: string) => {
@@ -69,7 +75,7 @@ export default function LivePage() {
 
   const fetchStreams = async () => {
     try {
-      const response = await fetch('/api/live/streams', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
         }
@@ -89,7 +95,7 @@ export default function LivePage() {
 
   const startStream = async (streamId: string) => {
     try {
-      const response = await fetch(`/api/live/streams/${streamId}/start`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${streamId}/start`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
@@ -105,7 +111,7 @@ export default function LivePage() {
 
   const endStream = async (streamId: string) => {
     try {
-      const response = await fetch(`/api/live/streams/${streamId}/end`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${streamId}/end`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
@@ -120,30 +126,44 @@ export default function LivePage() {
     }
   }
 
+  const copyShareLink = async (streamId: string) => {
+    const shareUrl = `${window.location.origin}/live/${streamId}`
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopiedId(streamId)
+      setTimeout(() => setCopiedId(null), 2000)
+    } catch (error) {
+      console.error('Error copying link:', error)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="text-gray-600">{t('manageStreams')}</p>
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
+            <p className="text-gray-600">{t('manageStreams')}</p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>{t('createStream')}</span>
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>{t('createStream')}</span>
-        </button>
-      </div>
 
       {/* Active Stream Card */}
       {activeStream && (
@@ -273,12 +293,25 @@ export default function LivePage() {
                     </button>
                   )}
 
-                  <button className="text-gray-400 hover:text-gray-600 p-1">
+                  <Link
+                    href={`/dashboard/live/${stream.id}`}
+                    className="text-gray-400 hover:text-gray-600 p-1"
+                    title={t('settings')}
+                  >
                     <Settings className="h-4 w-4" />
-                  </button>
+                  </Link>
 
-                  <button className="text-gray-400 hover:text-gray-600 p-1">
+                  <button
+                    onClick={() => copyShareLink(stream.id)}
+                    className="text-gray-400 hover:text-gray-600 p-1 relative"
+                    title={copiedId === stream.id ? t('copied') : t('share')}
+                  >
                     <Share2 className="h-4 w-4" />
+                    {copiedId === stream.id && (
+                      <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                        {t('copied')}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -301,17 +334,18 @@ export default function LivePage() {
         </div>
       </div>
 
-      {/* Create Stream Modal */}
-      {showCreateModal && (
-        <CreateStreamModal
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={() => {
-            setShowCreateModal(false)
-            fetchStreams()
-          }}
-        />
-      )}
-    </div>
+        {/* Create Stream Modal */}
+        {showCreateModal && (
+          <CreateStreamModal
+            onClose={() => setShowCreateModal(false)}
+            onSuccess={() => {
+              setShowCreateModal(false)
+              fetchStreams()
+            }}
+          />
+        )}
+      </div>
+    </DashboardLayout>
   )
 }
 
@@ -321,8 +355,6 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
   const { data: session } = useSession()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('')
-  const [tags, setTags] = useState('')
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('')
@@ -332,12 +364,14 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
   const [isScheduled, setIsScheduled] = useState(false)
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    if (session?.accessToken) {
+      fetchProducts()
+    }
+  }, [session])
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products/seller`, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`
         }
@@ -379,15 +413,12 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
       // First create the stream
       const streamData: any = {
         title,
-        description,
-        hostType: 'seller'
+        description
       }
 
-      if (category) streamData.category = category
-      if (tags) streamData.tags = tags.split(',').map(t => t.trim())
       if (isScheduled && scheduledAt) streamData.scheduledAt = new Date(scheduledAt).toISOString()
 
-      const response = await fetch('/api/live/streams', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -403,7 +434,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
         if (selectedProducts.length > 0) {
           await Promise.all(
             selectedProducts.map(productId =>
-              fetch(`/api/live/streams/${stream.id}/products`, {
+              fetch(`${process.env.NEXT_PUBLIC_API_URL}/live/streams/${stream.id}/products`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -475,7 +506,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="schedule-toggle" className="text-sm font-medium text-gray-700 cursor-pointer">
-              Schedule for later
+              {t('scheduleLater')}
             </label>
           </div>
 
@@ -483,7 +514,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
           {isScheduled && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Scheduled Date & Time
+                {t('scheduledDateTime')}
               </label>
               <input
                 type="datetime-local"
@@ -494,51 +525,15 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
                 required={isScheduled}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Your stream will be available to start at this time
+                {t('scheduledTimeDesc')}
               </p>
             </div>
           )}
 
-          {/* Category & Tags Row */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select category</option>
-                <option value="fashion">Fashion</option>
-                <option value="electronics">Electronics</option>
-                <option value="beauty">Beauty</option>
-                <option value="home">Home & Living</option>
-                <option value="food">Food & Beverage</option>
-                <option value="sports">Sports</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tags
-              </label>
-              <input
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="trending, sale, new (comma separated)"
-              />
-            </div>
-          </div>
-
           {/* Thumbnail Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Thumbnail Image
+              {t('thumbnailImage')}
             </label>
             <div className="flex items-center space-x-4">
               {thumbnailPreview && (
@@ -556,7 +551,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
                   className="hidden"
                 />
                 <span className="text-sm text-gray-600">
-                  {thumbnailFile ? thumbnailFile.name : 'Click to upload thumbnail'}
+                  {thumbnailFile ? thumbnailFile.name : t('uploadThumbnail')}
                 </span>
               </label>
             </div>
@@ -565,11 +560,11 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
           {/* Products Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Products to Feature
+              {t('selectProductsFeature')}
             </label>
             <div className="border border-gray-300 rounded-md max-h-48 overflow-y-auto">
               {products.length === 0 ? (
-                <p className="p-4 text-sm text-gray-500 text-center">No products available</p>
+                <p className="p-4 text-sm text-gray-500 text-center">{t('noProductsAvailable')}</p>
               ) : (
                 <div className="divide-y divide-gray-200">
                   {products.map((product) => (
@@ -599,7 +594,7 @@ function CreateStreamModal({ onClose, onSuccess }: { onClose: () => void, onSucc
             </div>
             {selectedProducts.length > 0 && (
               <p className="text-xs text-gray-500 mt-1">
-                {selectedProducts.length} product{selectedProducts.length > 1 ? 's' : ''} selected
+                {selectedProducts.length} {t('productsSelected')}
               </p>
             )}
           </div>
