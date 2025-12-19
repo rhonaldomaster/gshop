@@ -313,7 +313,7 @@ export default function LiveStreamDetailPage() {
                 <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
                 <path d="m4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
               </svg>
-              <span>{copied ? 'Copied!' : 'Share'}</span>
+              <span>{copied ? t('copiedBtn') : t('share')}</span>
             </button>
 
             {stream.status === 'scheduled' && (
@@ -322,7 +322,7 @@ export default function LiveStreamDetailPage() {
                 className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 <Play className="h-4 w-4" />
-                <span>Go Live</span>
+                <span>{t('goLiveBtn')}</span>
               </button>
             )}
 
@@ -348,7 +348,7 @@ export default function LiveStreamDetailPage() {
             <div className="flex items-center space-x-2">
               <Eye className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-sm text-blue-600">Current Viewers</p>
+                <p className="text-sm text-blue-600">{t('currentViewers')}</p>
                 <p className="text-2xl font-bold text-blue-900">{stream.viewerCount}</p>
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function LiveStreamDetailPage() {
             <div className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-sm text-green-600">Peak Viewers</p>
+                <p className="text-sm text-green-600">{t('peakViewersLabel')}</p>
                 <p className="text-2xl font-bold text-green-900">{stream.peakViewers}</p>
               </div>
             </div>
@@ -368,7 +368,7 @@ export default function LiveStreamDetailPage() {
             <div className="flex items-center space-x-2">
               <DollarSign className="h-5 w-5 text-yellow-600" />
               <div>
-                <p className="text-sm text-yellow-600">Total Sales</p>
+                <p className="text-sm text-yellow-600">{t('totalSalesLabel')}</p>
                 <p className="text-2xl font-bold text-yellow-900">${stream.totalSales}</p>
               </div>
             </div>
@@ -378,7 +378,7 @@ export default function LiveStreamDetailPage() {
             <div className="flex items-center space-x-2">
               <Package className="h-5 w-5 text-purple-600" />
               <div>
-                <p className="text-sm text-purple-600">Products</p>
+                <p className="text-sm text-purple-600">{t('productsCount')}</p>
                 <p className="text-2xl font-bold text-purple-900">{stream.products?.length || 0}</p>
               </div>
             </div>
@@ -388,18 +388,18 @@ export default function LiveStreamDetailPage() {
         {/* Stream Configuration */}
         <div className="mt-6 bg-gray-50 p-4 rounded-lg">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900">Stream Configuration</h3>
+            <h3 className="font-semibold text-gray-900">{t('streamConfigTitle')}</h3>
             <button
               onClick={() => setShowOBSInstructions(true)}
               className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
             >
               <Settings className="h-4 w-4" />
-              <span>Setup OBS</span>
+              <span>{t('setupOBS')}</span>
             </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">RTMP URL</label>
+              <label className="text-sm font-medium text-gray-700">{t('rtmpUrlLabel')}</label>
               <div className="flex items-center space-x-2 mt-1">
                 <input
                   type="text"
@@ -416,7 +416,7 @@ export default function LiveStreamDetailPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">Stream Key</label>
+              <label className="text-sm font-medium text-gray-700">{t('streamKeyLabel')}</label>
               <div className="flex items-center space-x-2 mt-1">
                 <input
                   type="password"
@@ -473,29 +473,29 @@ export default function LiveStreamDetailPage() {
                       <h4 className="font-medium text-gray-900">{streamProduct.product.name}</h4>
                       {streamProduct.isHighlighted && (
                         <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                          Featured
+                          {t('featured')}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                      <span>Regular: ${streamProduct.product.price}</span>
+                      <span>{t('regularLabel')} ${streamProduct.product.price}</span>
                       {streamProduct.specialPrice && (
                         <span className="text-red-600 font-medium">
-                          Live Price: ${streamProduct.specialPrice}
+                          {t('livePriceLabel')} ${streamProduct.specialPrice}
                         </span>
                       )}
-                      <span>Stock: {streamProduct.product.quantity}</span>
+                      <span>{t('stockLabelShort')} {streamProduct.product.quantity}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-4">
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">Orders</p>
+                    <p className="text-sm text-gray-500">{t('ordersLabel')}</p>
                     <p className="font-bold text-lg">{streamProduct.orderCount}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-500">Revenue</p>
+                    <p className="text-sm text-gray-500">{t('revenueLabel')}</p>
                     <p className="font-bold text-lg">${streamProduct.revenue}</p>
                   </div>
 
@@ -509,14 +509,14 @@ export default function LiveStreamDetailPage() {
                             ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                             : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
                         }`}
-                        title={streamProduct.isHighlighted ? 'Hide from overlay' : 'Show in overlay'}
+                        title={streamProduct.isHighlighted ? t('hideFromOverlay') : t('showInOverlay')}
                       >
                         {streamProduct.isHighlighted ? (
                           <span className="flex items-center space-x-1">
                             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                             </svg>
-                            <span>Hide</span>
+                            <span>{t('hideBtn')}</span>
                           </span>
                         ) : (
                           <span className="flex items-center space-x-1">
@@ -524,7 +524,7 @@ export default function LiveStreamDetailPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            <span>Show</span>
+                            <span>{t('showBtn')}</span>
                           </span>
                         )}
                       </button>
@@ -534,7 +534,7 @@ export default function LiveStreamDetailPage() {
                   <button
                     onClick={() => removeProductFromStream(streamProduct.productId)}
                     className="p-2 text-red-400 hover:text-red-600"
-                    title="Remove from stream"
+                    title={t('removeFromStream')}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -565,9 +565,9 @@ export default function LiveStreamDetailPage() {
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <MessageCircle className="h-5 w-5 text-purple-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Chat Moderation</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t('chatModeration')}</h3>
               <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 rounded-full">
-                Live
+                {t('liveLabel')}
               </span>
             </div>
             <button
@@ -589,12 +589,12 @@ export default function LiveStreamDetailPage() {
             <div className="p-6">
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <p className="text-sm text-gray-600 mb-2">
-                  <strong>Moderation Actions:</strong>
+                  <strong>{t('moderationActions')}</strong>
                 </p>
                 <ul className="text-xs text-gray-500 space-y-1">
-                  <li>• <strong>Delete:</strong> Remove a specific message</li>
-                  <li>• <strong>Timeout (5min):</strong> Temporarily mute a user</li>
-                  <li>• <strong>Ban:</strong> Permanently remove user from chat</li>
+                  <li>• {t('moderationDelete')}</li>
+                  <li>• {t('moderationTimeout')}</li>
+                  <li>• {t('moderationBan')}</li>
                 </ul>
               </div>
 
@@ -615,7 +615,7 @@ export default function LiveStreamDetailPage() {
                       <div className="flex items-center space-x-2 ml-4">
                         <button
                           onClick={async () => {
-                            if (confirm('Delete this message?')) {
+                            if (confirm(t('deleteMessageConfirm'))) {
                               try {
                                 await fetch(`/api/live/streams/${id}/messages/${msg.id}`, {
                                   method: 'DELETE',
@@ -630,7 +630,7 @@ export default function LiveStreamDetailPage() {
                             }
                           }}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="Delete message"
+                          title={t('deleteMessageTitle')}
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -639,7 +639,7 @@ export default function LiveStreamDetailPage() {
 
                         <button
                           onClick={async () => {
-                            if (confirm(`Timeout ${msg.username} for 5 minutes?`)) {
+                            if (confirm(t('timeoutUserConfirm', { username: msg.username }))) {
                               try {
                                 await fetch(`/api/live/streams/${id}/timeout`, {
                                   method: 'POST',
@@ -652,14 +652,14 @@ export default function LiveStreamDetailPage() {
                                     duration: 300 // 5 minutes in seconds
                                   })
                                 })
-                                alert(`${msg.username} has been timed out for 5 minutes`)
+                                alert(t('userTimedOut', { username: msg.username }))
                               } catch (error) {
                                 console.error('Error timing out user:', error)
                               }
                             }
                           }}
                           className="p-1.5 text-gray-400 hover:text-yellow-600 hover:bg-yellow-50 rounded"
-                          title="Timeout 5min"
+                          title={t('timeoutTitle')}
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -668,7 +668,7 @@ export default function LiveStreamDetailPage() {
 
                         <button
                           onClick={async () => {
-                            const reason = prompt(`Ban ${msg.username}? Enter reason:`)
+                            const reason = prompt(t('banUserPrompt', { username: msg.username }))
                             if (reason) {
                               try {
                                 await fetch(`/api/live/streams/${id}/ban`, {
@@ -682,7 +682,7 @@ export default function LiveStreamDetailPage() {
                                     reason
                                   })
                                 })
-                                alert(`${msg.username} has been banned`)
+                                alert(t('userBanned', { username: msg.username }))
                                 fetchStream()
                               } catch (error) {
                                 console.error('Error banning user:', error)
@@ -690,7 +690,7 @@ export default function LiveStreamDetailPage() {
                             }
                           }}
                           className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="Ban user"
+                          title={t('banUserTitle')}
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
@@ -702,15 +702,15 @@ export default function LiveStreamDetailPage() {
                 ) : (
                   <div className="text-center py-8">
                     <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-500">No chat messages yet</p>
-                    <p className="text-sm text-gray-400 mt-1">Messages will appear here once viewers start chatting</p>
+                    <p className="text-gray-500">{t('noChatMessages')}</p>
+                    <p className="text-sm text-gray-400 mt-1">{t('chatMessagesWillAppear')}</p>
                   </div>
                 )}
               </div>
 
               {stream.messages && stream.messages.length > 20 && (
                 <p className="text-xs text-gray-500 text-center mt-4">
-                  Showing last 20 messages
+                  {t('showingLastMessages')}
                 </p>
               )}
             </div>
@@ -751,6 +751,7 @@ function OBSInstructionsModal({
   streamKey: string
   onClose: () => void
 }) {
+  const t = useTranslations('live')
   const [copied, setCopied] = useState<'url' | 'key' | null>(null)
 
   const copyToClipboard = (text: string, type: 'url' | 'key') => {
@@ -763,7 +764,7 @@ function OBSInstructionsModal({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
       <div className="bg-white rounded-lg p-6 w-full max-w-3xl m-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-2xl font-bold text-gray-900">OBS Studio Setup Guide</h3>
+          <h3 className="text-2xl font-bold text-gray-900">{t('obsGuideTitle')}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
@@ -778,18 +779,16 @@ function OBSInstructionsModal({
           {/* Step 1 */}
           <div className="border-l-4 border-blue-500 pl-4">
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
-              Step 1: Download & Install OBS Studio
+              {t('obsStep1Title')}
             </h4>
-            <p className="text-gray-600 mb-2">
-              If you haven't already, download OBS Studio from the official website:
-            </p>
+            <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: t('obsStep1Desc') }} />
             <a
               href="https://obsproject.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
             >
-              <span>Download OBS Studio</span>
+              <span>{t('downloadOBS')}</span>
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -799,28 +798,26 @@ function OBSInstructionsModal({
           {/* Step 2 */}
           <div className="border-l-4 border-green-500 pl-4">
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
-              Step 2: Open Settings
+              {t('obsStep2Title')}
             </h4>
-            <p className="text-gray-600">
-              Launch OBS Studio and click <strong>Settings</strong> in the bottom right corner, then navigate to the <strong>Stream</strong> tab.
-            </p>
+            <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: t('obsStep2Desc') }} />
           </div>
 
           {/* Step 3 */}
           <div className="border-l-4 border-yellow-500 pl-4">
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
-              Step 3: Configure Stream Settings
+              {t('obsStep3Title')}
             </h4>
             <div className="space-y-3">
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Service:</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{t('serviceLabel')}</p>
                 <div className="bg-gray-50 px-3 py-2 rounded-md border border-gray-300">
-                  <code className="text-sm">Custom...</code>
+                  <code className="text-sm">{t('customService')}</code>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Server (RTMP URL):</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{t('serverLabel')}</p>
                 <div className="flex items-center space-x-2">
                   <div className="flex-1 bg-gray-50 px-3 py-2 rounded-md border border-gray-300">
                     <code className="text-sm break-all">{rtmpUrl}</code>
@@ -830,13 +827,13 @@ function OBSInstructionsModal({
                     className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-1"
                   >
                     <Copy className="h-4 w-4" />
-                    <span>{copied === 'url' ? 'Copied!' : 'Copy'}</span>
+                    <span>{copied === 'url' ? t('copiedBtn') : t('copyBtn')}</span>
                   </button>
                 </div>
               </div>
 
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-1">Stream Key:</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">{t('streamKeyLabel')}</p>
                 <div className="flex items-center space-x-2">
                   <div className="flex-1 bg-gray-50 px-3 py-2 rounded-md border border-gray-300">
                     <code className="text-sm break-all">{streamKey}</code>
@@ -846,7 +843,7 @@ function OBSInstructionsModal({
                     className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-1"
                   >
                     <Copy className="h-4 w-4" />
-                    <span>{copied === 'key' ? 'Copied!' : 'Copy'}</span>
+                    <span>{copied === 'key' ? t('copiedBtn') : t('copyBtn')}</span>
                   </button>
                 </div>
               </div>
@@ -856,37 +853,33 @@ function OBSInstructionsModal({
           {/* Step 4 */}
           <div className="border-l-4 border-purple-500 pl-4">
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
-              Step 4: Configure Video Settings (Recommended)
+              {t('obsStep4Title')}
             </h4>
-            <p className="text-gray-600 mb-2">
-              Go to <strong>Settings → Output → Streaming</strong>:
-            </p>
+            <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: t('obsStep4Output') }} />
             <ul className="list-disc list-inside space-y-1 text-gray-600">
-              <li>Video Bitrate: <strong>2500-4500 kbps</strong> (depending on your internet speed)</li>
-              <li>Encoder: <strong>x264</strong> or <strong>Hardware (NVENC/AMD/Apple)</strong></li>
-              <li>Keyframe Interval: <strong>2</strong></li>
+              <li dangerouslySetInnerHTML={{ __html: t('videoBitrate') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('encoder') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('keyframeInterval') }} />
             </ul>
-            <p className="text-gray-600 mt-2">
-              Go to <strong>Settings → Video</strong>:
-            </p>
+            <p className="text-gray-600 mt-2" dangerouslySetInnerHTML={{ __html: t('obsStep4Video') }} />
             <ul className="list-disc list-inside space-y-1 text-gray-600">
-              <li>Output Resolution: <strong>1280x720</strong> or <strong>1920x1080</strong></li>
-              <li>FPS: <strong>30</strong> or <strong>60</strong></li>
+              <li dangerouslySetInnerHTML={{ __html: t('outputResolution') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('fps') }} />
             </ul>
           </div>
 
           {/* Step 5 */}
           <div className="border-l-4 border-red-500 pl-4">
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
-              Step 5: Add Sources & Go Live
+              {t('obsStep5Title')}
             </h4>
             <ol className="list-decimal list-inside space-y-2 text-gray-600">
-              <li>Click the <strong>+</strong> button in the <strong>Sources</strong> panel</li>
-              <li>Add your camera (<strong>Video Capture Device</strong>)</li>
-              <li>Add your microphone (<strong>Audio Input Capture</strong>)</li>
-              <li>Arrange your scene layout</li>
-              <li>Click <strong>Start Streaming</strong> in OBS</li>
-              <li>Then click <strong>"Go Live"</strong> button on this page</li>
+              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item1') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item2') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item3') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item4') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item5') }} />
+              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item6') }} />
             </ol>
           </div>
 
@@ -897,12 +890,12 @@ function OBSInstructionsModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <div>
-                <h5 className="font-semibold text-yellow-800 mb-1">Important Notes:</h5>
+                <h5 className="font-semibold text-yellow-800 mb-1">{t('importantNotesTitle')}</h5>
                 <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• Keep your Stream Key private - don't share it publicly</li>
-                  <li>• Test your internet connection before going live (minimum 5 Mbps upload recommended)</li>
-                  <li>• Close unnecessary applications to free up bandwidth</li>
-                  <li>• Start streaming in OBS first, then click "Go Live" in GSHOP</li>
+                  <li>• {t('importantNote1')}</li>
+                  <li>• {t('importantNote2')}</li>
+                  <li>• {t('importantNote3')}</li>
+                  <li>• {t('importantNote4')}</li>
                 </ul>
               </div>
             </div>
@@ -914,7 +907,7 @@ function OBSInstructionsModal({
               onClick={onClose}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              Got it!
+              {t('gotIt')}
             </button>
           </div>
         </div>
