@@ -14,6 +14,8 @@ import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
 import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
 import { AddSellerLocationDto } from './dto/add-seller-location.dto'
+import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto'
+import { ChangePasswordDto } from './dto/change-password.dto'
 import { EmailService } from '../email/email.service'
 
 @Injectable()
@@ -778,5 +780,82 @@ export class SellersService {
 
       doc.end()
     })
+  }
+
+  async updateProfile(sellerId: string, updateProfileDto: UpdateSellerProfileDto) {
+    const seller = await this.sellersRepository.findOne({ where: { id: sellerId } })
+
+    if (!seller) {
+      throw new NotFoundException('Vendedor no encontrado')
+    }
+
+    // If email is being changed, check it doesn't exist
+    if (updateProfileDto.email && updateProfileDto.email !== seller.email) {
+      const existingWithEmail = await this.sellersRepository.findOne({
+        where: { email: updateProfileDto.email },
+      })
+
+      if (existingWithEmail) {
+        throw new ConflictException('Ya existe un vendedor con este email')
+      }
+
+      // Also update user table
+      await this.userRepository.update(
+        { id: sellerId },
+        { email: updateProfileDto.email }
+      )
+    }
+
+    // Update seller
+    Object.assign(seller, updateProfileDto)
+    const updatedSeller = await this.sellersRepository.save(seller)
+
+    // Also update relevant fields in user table
+    if (updateProfileDto.businessName || updateProfileDto.phone) {
+      await this.userRepository.update(
+        { id: sellerId },
+        {
+          ...(updateProfileDto.businessName && { businessName: updateProfileDto.businessName }),
+          ...(updateProfileDto.phone && { phone: updateProfileDto.phone }),
+        }
+      )
+    }
+
+    // Return seller without password
+    const { passwordHash, ...sellerWithoutPassword } = updatedSeller
+    return sellerWithoutPassword
+  }
+
+  async changePassword(sellerId: string, changePasswordDto: ChangePasswordDto) {
+    const seller = await this.sellersRepository.findOne({ where: { id: sellerId } })
+
+    if (!seller) {
+      throw new NotFoundException('Vendedor no encontrado')
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      seller.passwordHash
+    )
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('La contraseña actual es incorrecta')
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10)
+
+    // Update password in seller table
+    seller.passwordHash = hashedPassword
+    await this.sellersRepository.save(seller)
+
+    // Also update password in user table
+    await this.userRepository.update(
+      { id: sellerId },
+      { password: hashedPassword }
+    )
+
+    return { message: 'Contraseña actualizada exitosamente' }
   }
 }

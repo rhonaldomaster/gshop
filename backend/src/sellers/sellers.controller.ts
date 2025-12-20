@@ -8,6 +8,8 @@ import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
 import { AddSellerLocationDto } from './dto/add-seller-location.dto'
+import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto'
+import { ChangePasswordDto } from './dto/change-password.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -39,6 +41,22 @@ export class SellersController {
   @ApiOperation({ summary: 'Get seller profile' })
   async getProfile(@Request() req) {
     return this.sellersService.findOne(req.user.sellerId)
+  }
+
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update seller profile' })
+  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateSellerProfileDto) {
+    return this.sellersService.updateProfile(req.user.sellerId, updateProfileDto)
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Change seller password' })
+  async changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
+    return this.sellersService.changePassword(req.user.sellerId, changePasswordDto)
   }
 
   @Get('stats')

@@ -281,3 +281,5 @@ storybook-static
 *.donotdelete
 .abacus.*
 .vercel
+
+.claude
