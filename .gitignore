@@ -251,10 +251,15 @@ dist/
 *.tmp
 *.temp
 
-# Package manager lockfiles (keep one, ignore others)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+# Package manager lockfiles
+# Ignore root monorepo lockfiles
+/package-lock.json
+/yarn.lock
+/pnpm-lock.yaml
+
+# But allow lockfiles in deployable apps
+!admin-web/package-lock.json
+!seller-panel/package-lock.json
 
 # Prisma
 prisma/migrations/
