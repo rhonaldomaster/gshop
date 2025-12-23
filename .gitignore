@@ -270,6 +270,9 @@ dist/
 
 # TypeScript
 *.d.ts
+# But allow custom type definitions
+!admin-web/types/**/*.d.ts
+!seller-panel/types/**/*.d.ts
 
 # Test coverage
 coverage/
