@@ -60,7 +60,7 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={session?.user?.image || undefined} />
+                  <AvatarImage src={session?.user?.avatar || undefined} />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                     {getInitials(fullName)}
                   </AvatarFallback>

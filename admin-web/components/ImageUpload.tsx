@@ -58,7 +58,7 @@ export function ImageUpload({
           formData.append('images', files[i])
         }
 
-        const response = await apiClient.uploadFiles('/products/upload', formData)
+        const response = await apiClient.uploadFiles('/products/upload', formData) as { urls: string[] }
         onChange([...images, ...response.urls])
       } catch (error) {
         console.error('Error uploading images:', error)

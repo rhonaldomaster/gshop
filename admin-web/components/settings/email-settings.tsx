@@ -10,6 +10,15 @@ import { Save, Send } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
+interface SettingsResponse {
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPassword?: string;
+  fromName?: string;
+  fromEmail?: string;
+}
+
 export function EmailSettings() {
   const t = useTranslations('settings');
   const { toast } = useToast();
@@ -32,7 +41,7 @@ export function EmailSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get('/settings');
+      const response = await apiClient.get('/settings') as SettingsResponse;
       setSettings({
         smtpHost: response.smtpHost || '',
         smtpPort: response.smtpPort?.toString() || '',
@@ -79,7 +88,7 @@ export function EmailSettings() {
   const handleTestEmail = async () => {
     setIsTesting(true);
     try {
-      await apiClient.post(`/settings/email/test?to=${settings.fromEmail}`);
+      await apiClient.post(`/settings/email/test?to=${settings.fromEmail}`, {});
       toast({
         title: t('success'),
         description: t('testEmailSent'),

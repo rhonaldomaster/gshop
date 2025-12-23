@@ -17,6 +17,15 @@ import { Save, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
+interface PaymentSettingsResponse {
+  mercadoPagoClientId?: string;
+  mercadoPagoClientSecret?: string;
+  mercadoPagoAccessToken?: string;
+  defaultCommissionRate?: number;
+  minWithdrawalAmount?: number;
+  withdrawalFrequency?: string;
+}
+
 export function PaymentSettings() {
   const t = useTranslations('settings');
   const { toast } = useToast();
@@ -38,7 +47,7 @@ export function PaymentSettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get('/settings');
+      const response = await apiClient.get('/settings') as PaymentSettingsResponse;
       setSettings({
         mercadoPagoClientId: response.mercadoPagoClientId || '',
         mercadoPagoClientSecret: response.mercadoPagoClientSecret || '****',

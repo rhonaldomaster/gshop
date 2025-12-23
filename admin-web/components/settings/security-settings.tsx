@@ -11,6 +11,17 @@ import { Save, Shield } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
+interface SecuritySettingsResponse {
+  twoFactorEnabled?: boolean;
+  sessionTimeout?: number;
+  passwordMinLength?: number;
+  passwordRequireUppercase?: boolean;
+  passwordRequireNumbers?: boolean;
+  passwordRequireSymbols?: boolean;
+  maxLoginAttempts?: number;
+  lockoutDuration?: number;
+}
+
 export function SecuritySettings() {
   const t = useTranslations('settings');
   const { toast } = useToast();
@@ -34,7 +45,7 @@ export function SecuritySettings() {
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await apiClient.get('/settings');
+      const response = await apiClient.get('/settings') as SecuritySettingsResponse;
       setSettings({
         twoFactorEnabled: response.twoFactorEnabled || false,
         sessionTimeout: response.sessionTimeout?.toString() || '',
