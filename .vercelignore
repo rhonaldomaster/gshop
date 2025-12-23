@@ -1,0 +1,7 @@
+# Ignore everything except admin-web for Vercel deployment
+*
+!admin-web
+!admin-web/**
+
+# Don't deploy node_modules
+admin-web/node_modules
