@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -22,16 +22,13 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
 
-// Disable static rendering for this page due to useSearchParams
-export const dynamic = 'force-dynamic';
-
 interface Category {
   id: string;
   name: string;
   slug: string;
 }
 
-export default function CreateCategoryPage() {
+function CreateCategoryForm() {
   const t = useTranslations('categories');
   const tCommon = useTranslations('common');
   const router = useRouter();
@@ -294,5 +291,13 @@ export default function CreateCategoryPage() {
         </form>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function CreateCategoryPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Cargando...</div>}>
+      <CreateCategoryForm />
+    </Suspense>
   );
 }
