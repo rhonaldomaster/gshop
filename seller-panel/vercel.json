@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "[ -f ../package.json ] && mv ../package.json ../package.json.tmp || true; npm install --legacy-peer-deps; [ -f ../package.json.tmp ] && mv ../package.json.tmp ../package.json || true",
+  "installCommand": "npm ci",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
