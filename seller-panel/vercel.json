@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "installCommand": "if [ -f ../package.json ]; then mv ../package.json ../package.json.tmp; fi && npm ci && if [ -f ../package.json.tmp ]; then mv ../package.json.tmp ../package.json; fi",
+  "installCommand": "chmod +x install-vercel.sh && ./install-vercel.sh",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
