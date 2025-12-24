@@ -213,6 +213,29 @@ export class SellersService {
   }
 
   /**
+   * Get seller own withdrawal history
+   */
+  async getSellerWithdrawals(sellerId: string, status?: string, limit: number = 20) {
+    const queryBuilder = this.withdrawalsRepository
+      .createQueryBuilder('withdrawal')
+      .where('withdrawal.sellerId = :sellerId', { sellerId })
+      .orderBy('withdrawal.createdAt', 'DESC')
+      .limit(limit)
+
+    if (status && status !== 'all') {
+      queryBuilder.andWhere('withdrawal.status = :status', { status })
+    }
+
+    const withdrawals = await queryBuilder.getMany()
+    const total = await queryBuilder.getCount()
+
+    return {
+      withdrawals,
+      total,
+    }
+  }
+
+  /**
    * Get all withdrawal requests (Admin only)
    */
   async getAllWithdrawals(status?: string, search?: string) {

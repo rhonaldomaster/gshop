@@ -75,6 +75,21 @@ export class SellersController {
     return this.sellersService.requestWithdrawal(req.user.sellerId, body.amount)
   }
 
+  @Get('my-withdrawals')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller own withdrawal history' })
+  @ApiQuery({ name: 'status', required: false, description: 'Filter by status' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Limit results (default: 20)' })
+  async getMyWithdrawals(
+    @Request() req,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : 20
+    return this.sellersService.getSellerWithdrawals(req.user.sellerId, status, limitNum)
+  }
+
   @Get('withdrawals')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
