@@ -650,6 +650,7 @@
   },
   "settings": {
     "title": "Configuración",
+    "loading": "Cargando...",
     "general": "General",
     "profile": "Perfil",
     "business": "Negocio",

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useMutation, useQuery, useQueryClient } from '@tantml:parameter>
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import DashboardLayout from '@/components/DashboardLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { ColombiaLocationSelector } from '@/components/ColombiaLocationSelector'
 import { Building2, CreditCard, Shield, User } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -45,6 +46,7 @@ interface SellerProfile {
 export default function SettingsPage() {
   const t = useTranslations('settings')
   const tNav = useTranslations('navigation')
+  const tAuth = useTranslations('auth.register')
   const { data: session, status } = useSession()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -378,12 +380,25 @@ export default function SettingsPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="businessCategory">Categoría del negocio</Label>
-                      <Input
-                        id="businessCategory"
+                      <Select
                         value={formData.businessCategory}
-                        onChange={(e) => handleInputChange('businessCategory', e.target.value)}
-                        placeholder="Electrónica, Moda, etc."
-                      />
+                        onValueChange={(value) => handleInputChange('businessCategory', value)}
+                      >
+                        <SelectTrigger id="businessCategory">
+                          <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fashion">{tAuth('categories.fashion')}</SelectItem>
+                          <SelectItem value="electronics">{tAuth('categories.electronics')}</SelectItem>
+                          <SelectItem value="home">{tAuth('categories.home')}</SelectItem>
+                          <SelectItem value="beauty">{tAuth('categories.beauty')}</SelectItem>
+                          <SelectItem value="sports">{tAuth('categories.sports')}</SelectItem>
+                          <SelectItem value="books">{tAuth('categories.books')}</SelectItem>
+                          <SelectItem value="toys">{tAuth('categories.toys')}</SelectItem>
+                          <SelectItem value="food">{tAuth('categories.food')}</SelectItem>
+                          <SelectItem value="other">{tAuth('categories.other')}</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
@@ -396,23 +411,15 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Ciudad</Label>
-                      <Input
-                        id="city"
-                        value={formData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                        placeholder="Bogotá"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="state">Departamento</Label>
-                      <Input
-                        id="state"
-                        value={formData.state}
-                        onChange={(e) => handleInputChange('state', e.target.value)}
-                        placeholder="Cundinamarca"
+                    <div className="md:col-span-2">
+                      <ColombiaLocationSelector
+                        departmentValue={formData.state}
+                        cityValue={formData.city}
+                        onDepartmentChange={(value) => handleInputChange('state', value)}
+                        onCityChange={(value) => handleInputChange('city', value)}
+                        departmentLabel={tAuth('department')}
+                        cityLabel={tAuth('city')}
+                        required={false}
                       />
                     </div>
 
