@@ -1,7 +1,11 @@
-# Ignore everything except admin-web for Vercel deployment
+# Ignore everything except admin-web and seller-panel for Vercel deployment
+
 *
 !admin-web
 !admin-web/**
+!seller-panel
+!seller-panel/**
 
 # Don't deploy node_modules
 admin-web/node_modules
+seller-panel/node_modules
