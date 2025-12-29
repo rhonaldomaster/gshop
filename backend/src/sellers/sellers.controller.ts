@@ -10,6 +10,7 @@ import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
 import { AddSellerLocationDto } from './dto/add-seller-location.dto'
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto'
 import { ChangePasswordDto } from './dto/change-password.dto'
+import { ApproveAffiliateProductDto, UpdateCommissionDto, UpdateStatusDto } from './dto/update-affiliate-product.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { Roles } from '../auth/decorators/roles.decorator'
@@ -345,5 +346,104 @@ export class SellersController {
       `attachment; filename=comisiones_${year}_${month}.pdf`,
     )
     return res.send(pdf)
+  }
+
+  // AFFILIATE MANAGEMENT ENDPOINTS
+
+  @Get(':id/affiliates')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller affiliates' })
+  async getSellerAffiliates(@Param('id') sellerId: string, @Request() req) {
+    // Validar que req.user.sellerId === sellerId
+    if (req.user.sellerId !== sellerId && req.user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('No autorizado para ver estos afiliados')
+    }
+
+    return this.sellersService.getSellerAffiliates(sellerId)
+  }
+
+  @Get(':id/affiliate-products')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get seller products with affiliates' })
+  async getSellerProductsWithAffiliates(@Param('id') sellerId: string, @Request() req) {
+    // Validar que req.user.sellerId === sellerId
+    if (req.user.sellerId !== sellerId && req.user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('No autorizado para ver estos productos')
+    }
+
+    return this.sellersService.getSellerProductsWithAffiliates(sellerId)
+  }
+
+  @Put(':sellerId/affiliate-products/:id/approve')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve/reject affiliate for product' })
+  async approveAffiliateProduct(
+    @Param('sellerId') sellerId: string,
+    @Param('id') affiliateProductId: string,
+    @Body() dto: ApproveAffiliateProductDto,
+    @Request() req,
+  ) {
+    // Validar que req.user.sellerId === sellerId
+    if (req.user.sellerId !== sellerId && req.user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('No autorizado para aprobar afiliados')
+    }
+
+    return this.sellersService.approveAffiliateProduct(sellerId, affiliateProductId, dto)
+  }
+
+  @Put(':sellerId/affiliate-products/:id/commission')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update affiliate custom commission rate' })
+  async updateCommission(
+    @Param('sellerId') sellerId: string,
+    @Param('id') affiliateProductId: string,
+    @Body() dto: UpdateCommissionDto,
+    @Request() req,
+  ) {
+    // Validar que req.user.sellerId === sellerId
+    if (req.user.sellerId !== sellerId && req.user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('No autorizado para modificar comisiones')
+    }
+
+    return this.sellersService.updateAffiliateProductCommission(sellerId, affiliateProductId, dto.rate)
+  }
+
+  @Put(':sellerId/affiliate-products/:id/status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Pause/activate affiliate' })
+  async updateStatus(
+    @Param('sellerId') sellerId: string,
+    @Param('id') affiliateProductId: string,
+    @Body() dto: UpdateStatusDto,
+    @Request() req,
+  ) {
+    // Validar que req.user.sellerId === sellerId
+    if (req.user.sellerId !== sellerId && req.user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('No autorizado para cambiar estado de afiliados')
+    }
+
+    return this.sellersService.updateAffiliateProductStatus(sellerId, affiliateProductId, dto.status)
+  }
+
+  @Get(':sellerId/affiliates/:affiliateId/details')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get affiliate details for seller' })
+  async getAffiliateDetails(
+    @Param('sellerId') sellerId: string,
+    @Param('affiliateId') affiliateId: string,
+    @Request() req,
+  ) {
+    // Validar que req.user.sellerId === sellerId
+    if (req.user.sellerId !== sellerId && req.user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('No autorizado para ver detalles de afiliados')
+    }
+
+    return this.sellersService.getAffiliateDetails(sellerId, affiliateId)
   }
 }

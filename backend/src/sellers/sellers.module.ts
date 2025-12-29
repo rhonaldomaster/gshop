@@ -11,6 +11,9 @@ import { SellerLocation } from './entities/seller-location.entity'
 import { Withdrawal } from './entities/withdrawal.entity'
 import { Order } from '../database/entities/order.entity'
 import { User } from '../database/entities/user.entity'
+import { Affiliate } from '../affiliates/entities/affiliate.entity'
+import { AffiliateProduct } from '../affiliates/entities/affiliate-product.entity'
+import { Product } from '../products/product.entity'
 import { EmailModule } from '../email/email.module'
 import * as multer from 'multer'
 import * as path from 'path'
@@ -18,7 +21,7 @@ import * as fs from 'fs'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Seller, SellerLocation, Withdrawal, Order, User]),
+    TypeOrmModule.forFeature([Seller, SellerLocation, Withdrawal, Order, User, Affiliate, AffiliateProduct, Product]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
       signOptions: { expiresIn: '7d' },

@@ -735,5 +735,88 @@
     "invalidAmount": "Monto inválido",
     "insufficientBalance": "Saldo insuficiente",
     "minimumAmount": "El monto mínimo es $10.000 COP"
+  },
+  "affiliates": {
+    "title": "Gestión de Afiliados",
+    "subtitle": "Administra los afiliados que promocionan tus productos",
+    "byAffiliate": "Por Afiliado",
+    "byProduct": "Por Producto",
+    "stats": {
+      "totalAffiliates": "Total Afiliados",
+      "activeAffiliates": "Afiliados Activos",
+      "pendingApprovals": "Aprobaciones Pendientes",
+      "totalCommissions": "Comisiones Totales"
+    },
+    "table": {
+      "affiliate": "Afiliado",
+      "email": "Email",
+      "followers": "Seguidores",
+      "products": "Productos",
+      "sales": "Ventas",
+      "commissions": "Comisiones",
+      "pending": "Pendientes",
+      "actions": "Acciones",
+      "product": "Producto",
+      "price": "Precio",
+      "affiliatesCount": "Afiliados",
+      "clicks": "Clicks",
+      "revenue": "Revenue",
+      "status": "Estado"
+    },
+    "actions": {
+      "viewDetails": "Ver Detalles",
+      "approvePending": "Aprobar Pendientes",
+      "viewAffiliates": "Ver Afiliados",
+      "adjustCommission": "Ajustar Comisión",
+      "pause": "Pausar",
+      "activate": "Activar",
+      "approve": "Aprobar",
+      "reject": "Rechazar"
+    },
+    "dialogs": {
+      "approveTitle": "Aprobar/Rechazar Afiliado",
+      "approveDesc": "Revisa la solicitud del afiliado para promocionar este producto",
+      "approveAction": "Aprobar",
+      "rejectAction": "Rechazar",
+      "notes": "Notas",
+      "notesPlaceholder": "Razón del rechazo (requerido)",
+      "notesOptional": "Notas adicionales (opcional)",
+      "commissionTitle": "Ajustar Comisión Personalizada",
+      "commissionDesc": "Configura una comisión específica para este afiliado en este producto",
+      "currentRate": "Comisión actual",
+      "newRate": "Nueva comisión (%)",
+      "ratePlaceholder": "Ejemplo: 10",
+      "rateHelp": "Rango permitido: 1% - 50%",
+      "detailsTitle": "Detalles del Afiliado",
+      "detailsContact": "Contactar",
+      "detailsFollowers": "seguidores",
+      "detailsVideos": "videos",
+      "detailsSales": "ventas",
+      "detailsProducts": "Productos Promocionados",
+      "detailsNoProducts": "Este afiliado aún no promociona productos tuyos"
+    },
+    "status": {
+      "active": "Activo",
+      "paused": "Pausado",
+      "pending": "Pendiente",
+      "rejected": "Rechazado"
+    },
+    "badges": {
+      "verified": "Verificado",
+      "pendingApproval": "pendiente(s)"
+    },
+    "empty": {
+      "noAffiliates": "No tienes afiliados aún",
+      "noAffiliatesDesc": "Los afiliados aparecerán aquí cuando soliciten promocionar tus productos",
+      "noProducts": "Ningún producto tiene afiliados",
+      "noProductsDesc": "Tus productos aparecerán aquí cuando afiliados los promocionen"
+    },
+    "messages": {
+      "approvalSuccess": "Aprobación procesada exitosamente",
+      "commissionUpdated": "Comisión actualizada exitosamente",
+      "statusUpdated": "Estado actualizado exitosamente",
+      "invalidRate": "La comisión debe estar entre 1% y 50%",
+      "notesRequired": "Debes incluir una razón para rechazar"
+    }
   }
 }

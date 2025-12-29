@@ -9,6 +9,9 @@ import { SellerLocation } from './entities/seller-location.entity'
 import { Withdrawal, WithdrawalStatus } from './entities/withdrawal.entity'
 import { Order, OrderStatus } from '../database/entities/order.entity'
 import { User, UserRole, UserStatus } from '../database/entities/user.entity'
+import { Affiliate } from '../affiliates/entities/affiliate.entity'
+import { AffiliateProduct, AffiliateProductStatus } from '../affiliates/entities/affiliate-product.entity'
+import { Product } from '../products/product.entity'
 import { CreateSellerDto } from './dto/create-seller.dto'
 import { SellerLoginDto } from './dto/seller-login.dto'
 import { UploadDocumentsDto } from './dto/upload-documents.dto'
@@ -16,6 +19,7 @@ import { UpdateShippingConfigDto } from './dto/update-shipping-config.dto'
 import { AddSellerLocationDto } from './dto/add-seller-location.dto'
 import { UpdateSellerProfileDto } from './dto/update-seller-profile.dto'
 import { ChangePasswordDto } from './dto/change-password.dto'
+import { ApproveAffiliateProductDto, UpdateCommissionDto, UpdateStatusDto } from './dto/update-affiliate-product.dto'
 import { EmailService } from '../email/email.service'
 
 @Injectable()
@@ -31,6 +35,12 @@ export class SellersService {
     private orderRepository: Repository<Order>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Affiliate)
+    private affiliatesRepository: Repository<Affiliate>,
+    @InjectRepository(AffiliateProduct)
+    private affiliateProductsRepository: Repository<AffiliateProduct>,
+    @InjectRepository(Product)
+    private productsRepository: Repository<Product>,
     private jwtService: JwtService,
     private emailService: EmailService,
   ) {}
@@ -880,5 +890,277 @@ export class SellersService {
     )
 
     return { message: 'Contraseña actualizada exitosamente' }
+  }
+
+  // AFFILIATE MANAGEMENT METHODS
+
+  async getSellerAffiliates(sellerId: string) {
+    // Get all affiliate products for this seller with affiliate details
+    const affiliateProducts = await this.affiliateProductsRepository
+      .createQueryBuilder('ap')
+      .leftJoinAndSelect('ap.affiliate', 'affiliate')
+      .leftJoinAndSelect('ap.product', 'product')
+      .where('ap.sellerId = :sellerId', { sellerId })
+      .getMany()
+
+    // Group by affiliate and calculate totals
+    const affiliatesMap = new Map()
+
+    for (const ap of affiliateProducts) {
+      const affiliateId = ap.affiliateId
+
+      if (!affiliatesMap.has(affiliateId)) {
+        affiliatesMap.set(affiliateId, {
+          affiliateId,
+          affiliate: {
+            username: ap.affiliate.username,
+            name: ap.affiliate.name,
+            email: ap.affiliate.email,
+            avatarUrl: ap.affiliate.avatarUrl,
+            followersCount: ap.affiliate.followersCount,
+            isVerified: ap.affiliate.isVerified || false,
+          },
+          productsCount: 0,
+          totalClicks: 0,
+          totalSales: 0,
+          totalRevenue: 0,
+          totalCommissions: 0,
+          pendingApprovals: 0,
+          lastSaleAt: null,
+        })
+      }
+
+      const affiliateData = affiliatesMap.get(affiliateId)
+      affiliateData.productsCount++
+      affiliateData.totalClicks += ap.totalClicks || 0
+      affiliateData.totalSales += ap.totalSales || 0
+      affiliateData.totalRevenue += parseFloat(ap.totalRevenue?.toString() || '0')
+      affiliateData.totalCommissions += parseFloat(ap.totalCommissions?.toString() || '0')
+
+      if (ap.requiresApproval && !ap.approvedAt) {
+        affiliateData.pendingApprovals++
+      }
+    }
+
+    const affiliates = Array.from(affiliatesMap.values())
+
+    // Calculate stats
+    const stats = {
+      totalAffiliates: affiliates.length,
+      activeAffiliates: affiliates.filter(a => a.productsCount > 0).length,
+      pendingApprovals: affiliates.reduce((sum, a) => sum + a.pendingApprovals, 0),
+      totalSales: affiliates.reduce((sum, a) => sum + a.totalSales, 0),
+      totalCommissions: affiliates.reduce((sum, a) => sum + a.totalCommissions, 0),
+    }
+
+    return { affiliates, stats }
+  }
+
+  async getSellerProductsWithAffiliates(sellerId: string) {
+    // Get seller's products
+    const products = await this.productsRepository
+      .createQueryBuilder('product')
+      .where('product.sellerId = :sellerId', { sellerId })
+      .getMany()
+
+    // For each product, get affiliate data
+    const productsWithAffiliates = await Promise.all(
+      products.map(async (product) => {
+        const affiliateProducts = await this.affiliateProductsRepository
+          .createQueryBuilder('ap')
+          .leftJoinAndSelect('ap.affiliate', 'affiliate')
+          .where('ap.productId = :productId', { productId: product.id })
+          .getMany()
+
+        const totalClicks = affiliateProducts.reduce((sum, ap) => sum + (ap.totalClicks || 0), 0)
+        const totalSales = affiliateProducts.reduce((sum, ap) => sum + (ap.totalSales || 0), 0)
+        const totalRevenue = affiliateProducts.reduce((sum, ap) => sum + parseFloat(ap.totalRevenue?.toString() || '0'), 0)
+        const pendingApprovals = affiliateProducts.filter(
+          ap => ap.requiresApproval && !ap.approvedAt
+        ).length
+
+        return {
+          productId: product.id,
+          product: {
+            name: product.name,
+            price: product.price,
+            imageUrl: product.images?.[0] || null,
+          },
+          affiliatesCount: affiliateProducts.length,
+          totalClicks,
+          totalSales,
+          totalRevenue,
+          pendingApprovals,
+          affiliateProducts: affiliateProducts.map(ap => ({
+            id: ap.id,
+            status: ap.status,
+            customCommissionRate: ap.customCommissionRate,
+            totalSales: ap.totalSales,
+            affiliate: {
+              id: ap.affiliateId,
+              username: ap.affiliate.username,
+              name: ap.affiliate.name,
+            },
+          })),
+        }
+      })
+    )
+
+    return { products: productsWithAffiliates }
+  }
+
+  async approveAffiliateProduct(
+    sellerId: string,
+    affiliateProductId: string,
+    dto: ApproveAffiliateProductDto,
+  ) {
+    const affiliateProduct = await this.affiliateProductsRepository.findOne({
+      where: { id: affiliateProductId },
+      relations: ['product'],
+    })
+
+    if (!affiliateProduct) {
+      throw new NotFoundException('Relación afiliado-producto no encontrada')
+    }
+
+    // Verify seller owns the product
+    if (affiliateProduct.sellerId !== sellerId) {
+      throw new BadRequestException('No tienes permiso para aprobar este afiliado')
+    }
+
+    // Update status
+    if (dto.approved) {
+      affiliateProduct.status = AffiliateProductStatus.ACTIVE
+      affiliateProduct.approvedAt = new Date()
+      affiliateProduct.approvedBy = sellerId
+      affiliateProduct.rejectionReason = null
+    } else {
+      if (!dto.notes) {
+        throw new BadRequestException('Debes proporcionar una razón para rechazar')
+      }
+      affiliateProduct.status = AffiliateProductStatus.REJECTED
+      affiliateProduct.rejectionReason = dto.notes
+    }
+
+    return this.affiliateProductsRepository.save(affiliateProduct)
+  }
+
+  async updateAffiliateProductCommission(
+    sellerId: string,
+    affiliateProductId: string,
+    rate: number,
+  ) {
+    // Validate rate
+    if (rate < 1 || rate > 50) {
+      throw new BadRequestException('La comisión debe estar entre 1% y 50%')
+    }
+
+    const affiliateProduct = await this.affiliateProductsRepository.findOne({
+      where: { id: affiliateProductId },
+    })
+
+    if (!affiliateProduct) {
+      throw new NotFoundException('Relación afiliado-producto no encontrada')
+    }
+
+    // Verify seller owns the product
+    if (affiliateProduct.sellerId !== sellerId) {
+      throw new BadRequestException('No tienes permiso para modificar este afiliado')
+    }
+
+    affiliateProduct.customCommissionRate = rate
+    return this.affiliateProductsRepository.save(affiliateProduct)
+  }
+
+  async updateAffiliateProductStatus(
+    sellerId: string,
+    affiliateProductId: string,
+    status: 'active' | 'paused',
+  ) {
+    const affiliateProduct = await this.affiliateProductsRepository.findOne({
+      where: { id: affiliateProductId },
+    })
+
+    if (!affiliateProduct) {
+      throw new NotFoundException('Relación afiliado-producto no encontrada')
+    }
+
+    // Verify seller owns the product
+    if (affiliateProduct.sellerId !== sellerId) {
+      throw new BadRequestException('No tienes permiso para modificar este afiliado')
+    }
+
+    // Only allow active <-> paused transitions
+    if (status === 'active') {
+      affiliateProduct.status = AffiliateProductStatus.ACTIVE
+    } else if (status === 'paused') {
+      affiliateProduct.status = AffiliateProductStatus.PAUSED
+    }
+
+    return this.affiliateProductsRepository.save(affiliateProduct)
+  }
+
+  async getAffiliateDetails(sellerId: string, affiliateId: string) {
+    // Get affiliate info
+    const affiliate = await this.affiliatesRepository.findOne({
+      where: { id: affiliateId },
+    })
+
+    if (!affiliate) {
+      throw new NotFoundException('Afiliado no encontrado')
+    }
+
+    // Get all products this affiliate promotes for the seller
+    const affiliateProducts = await this.affiliateProductsRepository
+      .createQueryBuilder('ap')
+      .leftJoinAndSelect('ap.product', 'product')
+      .where('ap.affiliateId = :affiliateId', { affiliateId })
+      .andWhere('ap.sellerId = :sellerId', { sellerId })
+      .getMany()
+
+    const products = affiliateProducts.map(ap => ({
+      affiliateProductId: ap.id,
+      productId: ap.productId,
+      productName: ap.product.name,
+      productPrice: ap.product.price,
+      productImageUrl: ap.product.images?.[0] || null,
+      status: ap.status,
+      customCommissionRate: ap.customCommissionRate,
+      specialPrice: ap.specialPrice,
+      totalClicks: ap.totalClicks,
+      totalSales: ap.totalSales,
+      totalRevenue: ap.totalRevenue,
+      totalCommissions: ap.totalCommissions,
+      createdAt: ap.createdAt,
+    }))
+
+    return {
+      affiliate: {
+        id: affiliate.id,
+        username: affiliate.username,
+        name: affiliate.name,
+        email: affiliate.email,
+        phone: affiliate.phone,
+        avatarUrl: affiliate.avatarUrl,
+        bio: affiliate.bio,
+        website: affiliate.website,
+        socialMedia: affiliate.socialMedia,
+        followersCount: affiliate.followersCount,
+        followingCount: affiliate.followingCount,
+        totalViews: affiliate.totalViews,
+        totalSales: affiliate.totalSales,
+        videosCount: affiliate.videosCount,
+        isVerified: affiliate.isVerified || false,
+        commissionRate: affiliate.commissionRate,
+      },
+      products,
+      stats: {
+        totalProductsPromoted: products.length,
+        totalClicks: products.reduce((sum, p) => sum + (p.totalClicks || 0), 0),
+        totalSales: products.reduce((sum, p) => sum + (p.totalSales || 0), 0),
+        totalRevenue: products.reduce((sum, p) => sum + parseFloat(p.totalRevenue?.toString() || '0'), 0),
+        totalCommissions: products.reduce((sum, p) => sum + parseFloat(p.totalCommissions?.toString() || '0'), 0),
+      },
+    }
   }
 }
