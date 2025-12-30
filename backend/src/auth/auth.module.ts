@@ -12,13 +12,14 @@ import { AuthSellerController } from './auth-seller.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { User } from '../database/entities/user.entity';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { UsersModule } from '../users/users.module';
 import { SellersModule } from '../sellers/sellers.module';
 import { StorageModule } from '../common/storage/storage.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Affiliate]),
     UsersModule,
     SellersModule,
     StorageModule,

@@ -3,6 +3,7 @@ import { AffiliateVideo } from './affiliate-video.entity'
 import { AffiliateFollower } from './affiliate-follower.entity'
 import { AffiliateProduct } from './affiliate-product.entity'
 import { LiveStream } from '../../live/live.entity'
+import { DocumentType } from '../../sellers/entities/seller.entity'
 
 export enum AffiliateStatus {
   PENDING = 'pending',
@@ -30,6 +31,16 @@ export class Affiliate {
 
   @Column({ nullable: true })
   phone: string
+
+  @Column({
+    type: 'enum',
+    enum: DocumentType,
+    nullable: true
+  })
+  documentType: DocumentType
+
+  @Column({ nullable: true })
+  documentNumber: string
 
   @Column({ nullable: true })
   website: string

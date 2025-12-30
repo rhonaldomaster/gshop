@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { User, UserRole } from '../database/entities/user.entity';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -16,6 +17,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Affiliate)
+    private affiliateRepository: Repository<Affiliate>,
     private usersService: UsersService,
     private jwtService: JwtService,
     private readonly i18n: I18nService,
@@ -34,30 +37,62 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
+    // Try to login as regular user first
     const user = await this.validateUser(loginDto.email, loginDto.password);
-    if (!user) {
-      throw new UnauthorizedException(
-        this.i18n.t('auth.login.invalid_credentials', { lang: I18nContext.current()?.lang || 'es' })
-      );
+
+    if (user) {
+      // Update last login for user
+      await this.userRepository.update(user.id, {
+        lastLoginAt: new Date(),
+      });
+
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      };
+
+      return {
+        user,
+        access_token: this.jwtService.sign(payload),
+        token_type: 'Bearer',
+        expires_in: '7d',
+      };
     }
 
-    // Update last login
-    await this.userRepository.update(user.id, {
-      lastLoginAt: new Date(),
+    // If not a user, try to login as affiliate
+    const affiliate = await this.affiliateRepository.findOne({
+      where: { email: loginDto.email.toLowerCase() }
     });
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
+    if (affiliate && await bcrypt.compare(loginDto.password, affiliate.passwordHash)) {
+      // Update last active for affiliate
+      await this.affiliateRepository.update(affiliate.id, {
+        lastActiveAt: new Date(),
+      });
 
-    return {
-      user,
-      access_token: this.jwtService.sign(payload),
-      token_type: 'Bearer',
-      expires_in: '7d',
-    };
+      const payload = {
+        sub: affiliate.id,
+        email: affiliate.email,
+        role: 'affiliate',
+        affiliateId: affiliate.id,
+      };
+
+      // Remove passwordHash from response
+      const { passwordHash, ...affiliateWithoutPassword } = affiliate;
+
+      return {
+        user: affiliateWithoutPassword,
+        access_token: this.jwtService.sign(payload),
+        token_type: 'Bearer',
+        expires_in: '7d',
+      };
+    }
+
+    // Neither user nor affiliate found with valid credentials
+    throw new UnauthorizedException(
+      this.i18n.t('auth.login.invalid_credentials', { lang: I18nContext.current()?.lang || 'es' })
+    );
   }
 
   async register(registerDto: RegisterDto) {
