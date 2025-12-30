@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
+import { JwtModule } from '@nestjs/jwt'
 import { AffiliatesService } from './affiliates.service'
 import { CreatorProfileService } from './services/creator-profile.service'
 import { CreatorContentService } from './services/creator-content.service'
@@ -45,6 +46,10 @@ import { LiveStream } from '../live/live.entity'
       Seller,
       LiveStream,
     ]),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
+      signOptions: { expiresIn: '7d' },
+    }),
   ],
   controllers: [CreatorsController, CreatorDashboardController, AdminCreatorController],
   providers: [

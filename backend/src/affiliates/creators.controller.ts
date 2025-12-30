@@ -16,18 +16,35 @@ import {
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { AffiliatesService } from './affiliates.service'
 import { CreatorProfileService } from './services/creator-profile.service'
 import { CreatorContentService } from './services/creator-content.service'
 import { CreatorLiveService } from './services/creator-live.service'
+import { CreateAffiliateDto } from './dto/create-affiliate.dto'
 
 @ApiTags('creators')
 @Controller('creators')
 export class CreatorsController {
   constructor(
+    private affiliatesService: AffiliatesService,
     private creatorProfileService: CreatorProfileService,
     private creatorContentService: CreatorContentService,
     private creatorLiveService: CreatorLiveService,
   ) {}
+
+  // ========== REGISTRATION ==========
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register as affiliate/creator (public endpoint)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Affiliate registered successfully with PENDING status. Returns affiliate data and JWT token for immediate login.'
+  })
+  @ApiResponse({ status: 409, description: 'Email or username already exists' })
+  @ApiResponse({ status: 400, description: 'Validation error - invalid input data' })
+  async registerAffiliate(@Body() createAffiliateDto: CreateAffiliateDto) {
+    return this.affiliatesService.registerAffiliate(createAffiliateDto)
+  }
 
   // ========== PROFILE MANAGEMENT ==========
 

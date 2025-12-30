@@ -1,10 +1,13 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Affiliate } from './entities/affiliate.entity'
+import { JwtService } from '@nestjs/jwt'
+import { Affiliate, AffiliateStatus } from './entities/affiliate.entity'
 import { AffiliateLink } from './entities/affiliate-link.entity'
 import { AffiliateClick } from './entities/affiliate-click.entity'
+import { CreateAffiliateDto } from './dto/create-affiliate.dto'
 import * as crypto from 'crypto'
+import * as bcrypt from 'bcryptjs'
 
 @Injectable()
 export class AffiliatesService {
@@ -15,7 +18,76 @@ export class AffiliatesService {
     private affiliateLinkRepository: Repository<AffiliateLink>,
     @InjectRepository(AffiliateClick)
     private affiliateClickRepository: Repository<AffiliateClick>,
+    private jwtService: JwtService,
   ) {}
+
+  async registerAffiliate(createAffiliateDto: CreateAffiliateDto) {
+    // Check email uniqueness
+    const existingEmail = await this.affiliateRepository.findOne({
+      where: { email: createAffiliateDto.email.toLowerCase() }
+    })
+
+    if (existingEmail) {
+      throw new ConflictException('Email already registered')
+    }
+
+    // Check username uniqueness
+    const existingUsername = await this.affiliateRepository.findOne({
+      where: { username: createAffiliateDto.username }
+    })
+
+    if (existingUsername) {
+      throw new ConflictException('Username already taken')
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(createAffiliateDto.password, 10)
+
+    // Generate unique affiliate code
+    const affiliateCode = `AFF-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`
+
+    // Create affiliate with PENDING status
+    const affiliate = this.affiliateRepository.create({
+      email: createAffiliateDto.email.toLowerCase(),
+      passwordHash,
+      username: createAffiliateDto.username,
+      name: createAffiliateDto.name,
+      phone: createAffiliateDto.phone,
+      website: createAffiliateDto.website,
+      socialMedia: createAffiliateDto.socialMedia,
+      bio: createAffiliateDto.bio,
+      categories: createAffiliateDto.categories,
+      documentType: createAffiliateDto.documentType,
+      documentNumber: createAffiliateDto.documentNumber,
+      affiliateCode,
+      status: AffiliateStatus.PENDING,
+      commissionRate: 5.0, // Default 5%
+      isActive: true,
+      isProfilePublic: false, // Private until approved
+    })
+
+    const savedAffiliate = await this.affiliateRepository.save(affiliate)
+
+    // Generate JWT token
+    const payload = {
+      sub: savedAffiliate.id,
+      email: savedAffiliate.email,
+      role: 'affiliate',
+      affiliateId: savedAffiliate.id,
+    }
+
+    const access_token = this.jwtService.sign(payload)
+
+    // Remove passwordHash from response
+    const { passwordHash: _, ...affiliateWithoutPassword } = savedAffiliate
+
+    return {
+      affiliate: affiliateWithoutPassword,
+      access_token,
+      token_type: 'Bearer',
+      expires_in: '7d',
+    }
+  }
 
   async generateAffiliateCode(): Promise<string> {
     let code: string
