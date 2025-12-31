@@ -12,6 +12,8 @@ import AddressBookScreen from '../screens/profile/AddressBookScreen';
 import WishlistScreen from '../screens/social/WishlistScreen';
 import PaymentMethodsScreen from '../screens/payments/PaymentMethodsScreen';
 import ProductDetailScreen from '../screens/products/ProductDetailScreen';
+import { AffiliateScreen } from '../screens/affiliate/AffiliateScreen';
+import { AffiliateRegistrationScreen } from '../screens/affiliate/AffiliateRegistrationScreen';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -25,6 +27,8 @@ export type ProfileStackParamList = {
   Wishlist: undefined;
   PaymentMethods: undefined;
   ProductDetail: { productId: string };
+  Affiliate: undefined;
+  AffiliateRegistration: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -47,6 +51,8 @@ export default function ProfileNavigator() {
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
       <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} />
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="Affiliate" component={AffiliateScreen} />
+      <Stack.Screen name="AffiliateRegistration" component={AffiliateRegistrationScreen} />
     </Stack.Navigator>
   );
 }

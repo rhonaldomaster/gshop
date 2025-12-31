@@ -70,7 +70,7 @@ class ApiClient {
 
         // List of endpoints that are known to not exist or are optional (analytics/tracking)
         // Also includes endpoints that are optional for unauthenticated users
-        const silencedEndpoints = ['/reviews', '/related', '/recommendations/interactions'];
+        const silencedEndpoints = ['/reviews', '/related', '/recommendations/interactions', '/creators/dashboard'];
         const optionalAuthEndpoints = ['/wishlist'];
 
         const isSilencedEndpoint = silencedEndpoints.some(endpoint =>
@@ -83,8 +83,9 @@ class ApiClient {
 
         if (__DEV__) {
           // Only show warnings for known missing/optional endpoints, errors for real issues
-          if (isSilencedEndpoint && (error.response?.status === 404 || error.response?.status === 400)) {
-            console.warn(`⚠️ Optional feature not available: ${error.config?.url}`);
+          if (isSilencedEndpoint && (error.response?.status === 404 || error.response?.status === 400 || error.response?.status === 500)) {
+            // Silently ignore errors for optional endpoints (user not affiliate, feature not available, etc.)
+            console.log(`ℹ️ Optional feature: ${error.config?.url} (status ${error.response?.status})`);
           } else if (isOptionalAuthEndpoint && error.response?.status === 401 && !this.authToken) {
             // Silently ignore 401 errors for optional auth endpoints when user is not authenticated
             console.log(`🔒 Skipping unauthenticated request: ${error.config?.url}`);

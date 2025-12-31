@@ -213,7 +213,8 @@ class AffiliatesService {
       const response = await api.get('/creators/dashboard/stats');
       return response.data;
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      // Silently throw - error handling happens in UI layer
+      // Expected for non-affiliate users (will show "join program" view)
       throw error;
     }
   }
@@ -393,6 +394,35 @@ class AffiliatesService {
       return response.data;
     } catch (error) {
       console.error('Error fetching share analytics:', error);
+      throw error;
+    }
+  }
+
+  // ========== AFFILIATE REGISTRATION ==========
+
+  // Register as affiliate
+  async registerAffiliate(data: {
+    name: string;
+    username: string;
+    email: string;
+    password: string;
+    phone?: string;
+    documentType?: 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+    documentNumber?: string;
+    bio?: string;
+    website?: string;
+    socialMedia?: string;
+  }): Promise<{
+    affiliate: any;
+    access_token: string;
+    token_type: string;
+    expires_in: string;
+  }> {
+    try {
+      const response = await api.post('/creators/register', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error registering affiliate:', error);
       throw error;
     }
   }

@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { affiliatesService, DashboardStats } from '../../services/affiliates.service';
@@ -28,12 +29,14 @@ interface QuickAction {
 }
 
 export const AffiliateScreen = () => {
+  const navigation = useNavigation();
   const { t } = useTranslation('translation');
   const { user } = useAuth();
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isAffiliate, setIsAffiliate] = useState(false);
+  const [affiliateStatus, setAffiliateStatus] = useState<string | null>(null);
 
   const loadDashboard = useCallback(async () => {
     if (!user?.id) return;
@@ -45,10 +48,21 @@ export const AffiliateScreen = () => {
       const stats = await affiliatesService.getDashboardStats();
       setDashboardStats(stats);
       setIsAffiliate(true);
-    } catch (error) {
-      console.error('Error loading affiliate dashboard:', error);
-      // User might not be an affiliate yet
-      setIsAffiliate(false);
+
+      // Check affiliate status (if available in stats)
+      if ((stats as any).status) {
+        setAffiliateStatus((stats as any).status);
+      }
+    } catch (error: any) {
+      // Check if error indicates pending or rejected status
+      if (error.response?.data?.status) {
+        setAffiliateStatus(error.response.data.status);
+        setIsAffiliate(true); // User is affiliate but not approved yet
+      } else {
+        // User is not an affiliate yet (expected case - don't log error)
+        // 500/404 errors are expected when user hasn't registered as affiliate
+        setIsAffiliate(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -61,21 +75,9 @@ export const AffiliateScreen = () => {
   }, [loadDashboard]);
 
   const handleBecomeAffiliate = useCallback(() => {
-    Alert.alert(
-      t('affiliate.becomeAffiliate'),
-      t('affiliate.becomeAffiliateMessage'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('affiliate.applyNow'),
-          onPress: () => {
-            // Navigate to affiliate registration or application process
-            Alert.alert(t('common.success'), t('affiliate.applicationSubmitted'));
-          },
-        },
-      ]
-    );
-  }, [t]);
+    // Navigate to affiliate registration screen
+    navigation.navigate('AffiliateRegistration' as never);
+  }, [navigation]);
 
   const quickActions: QuickAction[] = [
     {
@@ -144,6 +146,62 @@ export const AffiliateScreen = () => {
     );
   }
 
+  // Show PENDING status view
+  if (isAffiliate && affiliateStatus === 'pending') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.centerContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View style={styles.joinContainer}>
+            <Text style={styles.joinIcon}>{t('affiliate.pendingView.icon')}</Text>
+            <Text style={styles.joinTitle}>{t('affiliate.pendingView.title')}</Text>
+            <Text style={styles.joinDescription}>
+              {t('affiliate.pendingView.message')}
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Show REJECTED status view
+  if (isAffiliate && affiliateStatus === 'rejected') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.centerContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View style={styles.joinContainer}>
+            <Text style={styles.joinIcon}>{t('affiliate.rejectedView.icon')}</Text>
+            <Text style={styles.joinTitle}>{t('affiliate.rejectedView.title')}</Text>
+            <Text style={styles.joinDescription}>
+              {t('affiliate.rejectedView.message')}
+            </Text>
+            <TouchableOpacity
+              style={styles.joinButton}
+              onPress={() => {
+                // Navigate to support
+                console.log('Navigate to support');
+              }}
+            >
+              <Text style={styles.joinButtonText}>{t('affiliate.rejectedView.contactSupport')}</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // Show join program view
   if (!isAffiliate) {
     return (
       <SafeAreaView style={styles.container}>
