@@ -33,7 +33,7 @@ const navigationConfig = [
   { key: 'orders', href: '/dashboard/orders', icon: ShoppingCart },
   { key: 'users', href: '/dashboard/users', icon: Users },
   { key: 'verifySellers', href: '/dashboard/sellers/verify', icon: Store },
-  { key: 'affiliates', href: '/dashboard/affiliates/pending', icon: UserCheck, showBadge: true },
+  { key: 'creators', href: '/dashboard/creators', icon: UserCheck, showBadge: true },
   { key: 'payments', href: '/dashboard/payments', icon: CreditCard },
   { key: 'ads', href: '/dashboard/ads', icon: Target },
   { key: 'live', href: '/dashboard/live', icon: Radio },
