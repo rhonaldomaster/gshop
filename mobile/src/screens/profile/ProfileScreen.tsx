@@ -93,6 +93,13 @@ export default function ProfileScreen() {
       showChevron: true,
     },
     {
+      icon: 'cash-outline',
+      title: t('profile.affiliateProgram'),
+      subtitle: t('profile.earnCommissions'),
+      onPress: () => handleNavigation('Affiliate'),
+      showChevron: true,
+    },
+    {
       icon: 'location-outline',
       title: t('profile.addresses'),
       subtitle: t('profile.manageShippingAddresses'),
