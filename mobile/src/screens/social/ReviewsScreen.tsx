@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { normalizeImageUrl } from '../../config/api.config';
 
 interface Review {
   id: string;
@@ -179,7 +180,7 @@ export default function ReviewsScreen({ navigation, route }: any) {
           onPress={() => navigation.navigate('ProductDetail', { productId: item.productId })}
         >
           <Image
-            source={{ uri: item.product.images[0] || 'https://via.placeholder.com/40x40' }}
+            source={{ uri: normalizeImageUrl(item.product.images[0]) || 'https://via.placeholder.com/40x40' }}
             style={styles.productThumb}
           />
           <Text style={styles.productName} numberOfLines={1}>

@@ -121,6 +121,34 @@ export const buildEndpointUrl = (endpoint: string, params: Record<string, string
   return buildApiUrl(url);
 };
 
+// Helper function to normalize image URLs
+export const normalizeImageUrl = (url: string | null | undefined): string | null => {
+  if (!url) return null;
+
+  // If URL starts with http://localhost or https://localhost, replace with API_BASE_URL
+  if (url.startsWith('http://localhost') || url.startsWith('https://localhost')) {
+    // Extract the path part (e.g., /uploads/products/image.jpg)
+    const urlObj = new URL(url);
+    const pathWithQuery = urlObj.pathname + urlObj.search + urlObj.hash;
+
+    // Return API_BASE_URL + path
+    return `${API_CONFIG.BASE_URL}${pathWithQuery}`;
+  }
+
+  // If URL is already absolute (starts with http:// or https://), return as-is
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+
+  // If URL is relative (starts with /), prepend API_BASE_URL
+  if (url.startsWith('/')) {
+    return `${API_CONFIG.BASE_URL}${url}`;
+  }
+
+  // Otherwise, return as-is
+  return url;
+};
+
 // Response types
 export interface ApiResponse<T> {
   success: boolean;

@@ -20,6 +20,7 @@ import GSInput from '../../components/ui/GSInput';
 import GSButton from '../../components/ui/GSButton';
 import { CachedImage } from '../../components/ui/CachedImage';
 import { Product, ProductSearchFilters } from '../../services/products.service';
+import { normalizeImageUrl } from '../../config/api.config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ITEM_WIDTH = (SCREEN_WIDTH - 60) / 2; // 2 columns with margins
@@ -254,7 +255,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
       <View style={styles.productImageContainer}>
         {product.images && product.images.length > 0 ? (
           <CachedImage
-            uri={product.images[0]}
+            uri={normalizeImageUrl(product.images[0]) || ''}
             style={styles.productImage}
             cacheKey={`product-${product.id}-0`}
             fallbackIcon="image"

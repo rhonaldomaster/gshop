@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { useTranslation } from 'react-i18next';
+import { normalizeImageUrl } from '../../config/api.config';
 
 interface Product {
   id: string;
@@ -257,7 +258,7 @@ export default function SocialShareScreen({ route, navigation }: any) {
         {/* Product Preview */}
         <View style={styles.productPreview}>
           <Image
-            source={{ uri: product.images[0] || 'https://via.placeholder.com/120x120' }}
+            source={{ uri: normalizeImageUrl(product.images[0]) || 'https://via.placeholder.com/120x120' }}
             style={styles.productImage}
           />
           <View style={styles.productInfo}>

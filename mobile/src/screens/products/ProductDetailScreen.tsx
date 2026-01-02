@@ -23,6 +23,7 @@ import GSButton from '../../components/ui/GSButton';
 import { Product } from '../../services/products.service';
 import { wishlistService } from '../../services/wishlist.service';
 import { MaterialIcons } from '@expo/vector-icons';
+import { normalizeImageUrl } from '../../config/api.config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -234,7 +235,8 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
   }
 
   const productImages = product.images || [];
-  const currentImage = productImages[selectedImageIndex] || productImages[0];
+  const currentImageRaw = productImages[selectedImageIndex] || productImages[0];
+  const currentImage = normalizeImageUrl(currentImageRaw);
   const discountPercentage = getDiscountPercentage(product);
   const inStock = isInStock(product);
   const cartQuantity = getItemQuantity(product.id);

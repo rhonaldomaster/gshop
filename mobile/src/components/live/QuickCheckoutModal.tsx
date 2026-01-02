@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { normalizeImageUrl } from '../../config/api.config';
 
 interface Product {
   id: string;
@@ -240,7 +241,7 @@ export function QuickCheckoutModal({
               <Text style={styles.sectionTitle}>{t('checkout.productSummary')}</Text>
               <View style={styles.productCard}>
                 <Image
-                  source={{ uri: product.images[0] }}
+                  source={{ uri: normalizeImageUrl(product.images[0]) || '' }}
                   style={styles.productImage}
                 />
                 <View style={styles.productInfo}>

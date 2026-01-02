@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { wishlistService, WishlistItem } from '../../services/wishlist.service';
 import { useCart } from '../../contexts/CartContext';
+import { normalizeImageUrl } from '../../config/api.config';
 
 export default function WishlistScreen({ navigation }: any) {
   const { t } = useTranslation('translation');
@@ -101,7 +102,7 @@ export default function WishlistScreen({ navigation }: any) {
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: item.product.images[0] || 'https://via.placeholder.com/120x120'
+            uri: normalizeImageUrl(item.product.images[0]) || 'https://via.placeholder.com/120x120'
           }}
           style={styles.productImage}
         />

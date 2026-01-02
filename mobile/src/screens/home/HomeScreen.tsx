@@ -22,6 +22,7 @@ import GSButton from '../../components/ui/GSButton';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeStackParamList } from '../../navigation/HomeNavigator';
 import { Product, Category } from '../../services/products.service';
+import { normalizeImageUrl } from '../../config/api.config';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -216,7 +217,7 @@ export default function HomeScreen() {
                 <View style={styles.productImage}>
                   {item.images && item.images.length > 0 ? (
                     <Image
-                      source={{ uri: item.images[0] }}
+                      source={{ uri: normalizeImageUrl(item.images[0]) || '' }}
                       style={styles.productImageView}
                       resizeMode="cover"
                     />

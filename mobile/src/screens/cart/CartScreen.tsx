@@ -20,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import { CartItem } from '../../contexts/CartContext';
+import { normalizeImageUrl } from '../../config/api.config';
 
 // Cart Item Component
 interface CartItemComponentProps {
@@ -79,7 +80,7 @@ const CartItemComponent: React.FC<CartItemComponentProps> = ({
       <View style={styles.productImageContainer}>
         {item.product.images && item.product.images.length > 0 ? (
           <Image
-            source={{ uri: item.product.images[0] }}
+            source={{ uri: normalizeImageUrl(item.product.images[0]) || '' }}
             style={styles.productImage}
             resizeMode="cover"
           />
@@ -478,7 +479,7 @@ export default function CartScreen() {
       <View style={styles.productImageContainer}>
         {item.product.images && item.product.images.length > 0 ? (
           <Image
-            source={{ uri: item.product.images[0] }}
+            source={{ uri: normalizeImageUrl(item.product.images[0]) || '' }}
             style={styles.productImage}
             resizeMode="cover"
           />

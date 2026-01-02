@@ -25,6 +25,7 @@ import {
   PaymentStatus,
   OrderTrackingInfo,
 } from '../../services/orders.service';
+import { normalizeImageUrl } from '../../config/api.config';
 
 type OrderDetailScreenParams = {
   orderId: string;
@@ -46,7 +47,7 @@ const OrderItemComponent: React.FC<OrderItemComponentProps> = ({ item, onReorder
       <View style={styles.orderItemImage}>
         {item.product?.images && item.product.images.length > 0 ? (
           <Image
-            source={{ uri: item.product.images[0] }}
+            source={{ uri: normalizeImageUrl(item.product.images[0]) || '' }}
             style={styles.productImage}
             resizeMode="cover"
           />

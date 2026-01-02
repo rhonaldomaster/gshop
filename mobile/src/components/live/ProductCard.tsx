@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { normalizeImageUrl } from '../../config/api.config';
 
 interface ProductCardProps {
   product: {
@@ -35,7 +36,7 @@ export function ProductCard({
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: product.product.images[0] || 'https://via.placeholder.com/150x150'
+            uri: normalizeImageUrl(product.product.images[0]) || 'https://via.placeholder.com/150x150'
           }}
           style={styles.productImage}
         />

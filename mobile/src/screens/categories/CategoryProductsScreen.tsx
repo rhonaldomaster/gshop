@@ -10,6 +10,7 @@ import categoriesService, { CategoryProductsParams } from '../../services/catego
 import { Product } from '../../services/products.service';
 import { Ionicons } from '@expo/vector-icons';
 import { useProducts } from '../../hooks/useProducts';
+import { normalizeImageUrl } from '../../config/api.config';
 
 type CategoryProductsRouteProp = RouteProp<{
   params: {
@@ -106,7 +107,7 @@ export default function CategoryProductsScreen() {
       <View style={styles.productImage}>
         {item.images && item.images.length > 0 ? (
           <Image
-            source={{ uri: item.images[0] }}
+            source={{ uri: normalizeImageUrl(item.images[0]) || '' }}
             style={styles.image}
             resizeMode="cover"
           />

@@ -19,7 +19,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import { ordersService, Order, PaymentStatus } from '../../services/orders.service';
-import { PaginatedResponse } from '../../config/api.config';
+import { PaginatedResponse, normalizeImageUrl } from '../../config/api.config';
 
 interface OrderCardProps {
   order: Order;
@@ -50,7 +50,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onPress }) => {
         <View style={styles.orderItemImage}>
           {item.product?.images && item.product.images.length > 0 ? (
             <Image
-              source={{ uri: item.product.images[0] }}
+              source={{ uri: normalizeImageUrl(item.product.images[0]) || '' }}
               style={styles.productImage}
               resizeMode="cover"
             />

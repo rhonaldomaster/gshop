@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { buildApiUrl, API_CONFIG } from '../../config/api.config';
+import { buildApiUrl, API_CONFIG, normalizeImageUrl } from '../../config/api.config';
 
 interface LiveStream {
   id: string;
@@ -188,7 +188,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
       <View style={styles.streamPreview}>
         <Image
           source={{
-            uri: item.products[0]?.product.images[0] || 'https://via.placeholder.com/300x200'
+            uri: normalizeImageUrl(item.products[0]?.product.images[0]) || 'https://via.placeholder.com/300x200'
           }}
           style={styles.previewImage}
         />
