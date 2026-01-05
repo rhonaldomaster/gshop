@@ -68,6 +68,13 @@ export default ({ config }) => {
           },
         },
       ],
+      [
+        '@stripe/stripe-react-native',
+        {
+          merchantIdentifier: 'merchant.com.gshop.app',
+          enableGooglePay: true,
+        },
+      ],
       // Notifications disabled temporarily - causes issues with Android resource naming
       // [
       //   'expo-notifications',
