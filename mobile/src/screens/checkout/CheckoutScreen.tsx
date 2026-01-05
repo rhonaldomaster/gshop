@@ -713,41 +713,48 @@ export default function CheckoutScreen() {
       console.log('🔍 paymentMetadata:', payment.paymentMetadata);
       console.log('🔍 paymentUrl:', payment.paymentUrl);
 
-      // Check if payment has a URL (MercadoPago preference)
-      const paymentUrl = payment.paymentMetadata?.mercadopago_init_point || payment.paymentUrl;
+      // Mark as processing payment to prevent cart empty alert
+      setIsProcessingPayment(true);
 
-      console.log('🔍 Extracted paymentUrl:', paymentUrl);
-      console.log('🔍 Will navigate to WebView:', !!paymentUrl);
-      console.log('🔍 paymentUrl type:', typeof paymentUrl);
-      console.log('🔍 orderId:', order.id);
-      console.log('🔍 paymentId:', payment.id);
+      // Route based on payment method type
+      if (selectedPaymentMethod.id === 'stripe' || selectedPaymentMethod.type === 'card') {
+        // Stripe card payment - navigate to card input screen
+        console.log('🚀 Navigating to StripeCardScreen');
 
-      if (paymentUrl && typeof paymentUrl === 'string') {
-        console.log('🚀 Navigating to PaymentWebView with URL:', paymentUrl);
-
-        // Mark as processing payment to prevent cart empty alert
-        setIsProcessingPayment(true);
-
-        // Navigate to WebView for payment
-        // Cart will be cleared when payment is successful
-        navigation.navigate('PaymentWebView', {
-          paymentUrl: paymentUrl!, // Non-null assertion - we verified it's a string above
+        navigation.navigate('StripeCard', {
           orderId: order.id!,
           paymentId: payment.id!,
+          amount: total,
         });
 
-        console.log('✅ Navigation command executed');
+        console.log('✅ Navigation to StripeCard executed');
       } else {
-        console.error('❌ paymentUrl is not valid:', paymentUrl);
-        // Fallback: show alert and navigate to order detail
-        Alert.alert(
-          t('checkout.alerts.orderPlaced'),
-          t('checkout.alerts.orderPlacedMessage', { orderNumber: order.orderNumber }),
-          [
-            {
-              text: t('checkout.alerts.viewOrder'),
-              onPress: () => {
-                (navigation as any).navigate('OrderDetail', { orderId: order.id });
+        // MercadoPago payment - navigate to WebView
+        const paymentUrl = payment.paymentMetadata?.mercadopago_init_point || payment.paymentUrl;
+
+        console.log('🔍 Extracted MercadoPago paymentUrl:', paymentUrl);
+
+        if (paymentUrl && typeof paymentUrl === 'string') {
+          console.log('🚀 Navigating to PaymentWebView with URL:', paymentUrl);
+
+          navigation.navigate('PaymentWebView', {
+            paymentUrl: paymentUrl!,
+            orderId: order.id!,
+            paymentId: payment.id!,
+          });
+
+          console.log('✅ Navigation to PaymentWebView executed');
+        } else {
+          console.error('❌ paymentUrl is not valid:', paymentUrl);
+          // Fallback: show alert and navigate to order detail
+          Alert.alert(
+            t('checkout.alerts.orderPlaced'),
+            t('checkout.alerts.orderPlacedMessage', { orderNumber: order.orderNumber }),
+            [
+              {
+                text: t('checkout.alerts.viewOrder'),
+                onPress: () => {
+                  (navigation as any).navigate('OrderDetail', { orderId: order.id });
               },
             },
           ],

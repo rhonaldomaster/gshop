@@ -1,17 +1,27 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import {
   PaymentMethod,
+  paymentsService,
 } from '../../services/payments.service';
 import GSText from '../ui/GSText';
 import GSButton from '../ui/GSButton';
+
+interface PaymentProvider {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  enabled: boolean;
+}
 
 interface PaymentMethodSelectionProps {
   orderTotal: number;
@@ -33,21 +43,45 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
 
-  // MercadoPago payment method
-  const mercadoPagoMethod: PaymentMethod = {
-    id: 'mercadopago',
-    type: 'mercadopago',
-    provider: 'MercadoPago',
-    details: {},
-    isDefault: false,
-    createdAt: new Date().toISOString(),
-  };
+  const [providers, setProviders] = useState<PaymentProvider[]>([]);
+  const [loadingProviders, setLoadingProviders] = useState(true);
 
-  // Auto-select MercadoPago on mount
+  // Fetch available payment providers from backend
   useEffect(() => {
-    if (!selectedMethod) {
-      onSelectMethod(mercadoPagoMethod);
-    }
+    const fetchProviders = async () => {
+      try {
+        setLoadingProviders(true);
+        const response = await paymentsService.getAvailableProviders();
+
+        if (response.providers && Array.isArray(response.providers)) {
+          setProviders(response.providers);
+
+          // Auto-select first provider if none selected
+          if (!selectedMethod && response.providers.length > 0) {
+            const firstProvider = response.providers[0];
+            const method: PaymentMethod = {
+              id: firstProvider.id,
+              type: firstProvider.id === 'stripe' ? 'card' : 'mercadopago',
+              provider: firstProvider.name,
+              details: {},
+              isDefault: false,
+              createdAt: new Date().toISOString(),
+            };
+            onSelectMethod(method);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch payment providers:', error);
+        // Fallback to default providers
+        setProviders([
+          { id: 'mercadopago', name: 'MercadoPago', description: 'PSE, cash payments, and cards', icon: '💵', enabled: true },
+        ]);
+      } finally {
+        setLoadingProviders(false);
+      }
+    };
+
+    fetchProviders();
   }, []);
 
   const handleNext = () => {
@@ -61,53 +95,86 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     onNext();
   };
 
+  const handleProviderSelect = (provider: PaymentProvider) => {
+    const method: PaymentMethod = {
+      id: provider.id,
+      type: provider.id === 'stripe' ? 'card' : 'mercadopago',
+      provider: provider.name,
+      details: {},
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    };
+    onSelectMethod(method);
+  };
+
   return (
     <View style={styles.container}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
         {t('checkout.payment.title')}
       </GSText>
 
-      {/* MercadoPago Payment Option */}
-      <TouchableOpacity
-        style={[
-          styles.paymentOption,
-          {
-            borderColor: theme.colors.primary,
-            backgroundColor: theme.colors.primary + '10',
-          },
-        ]}
-        activeOpacity={1}
-      >
-        <View style={styles.paymentOptionContent}>
-          <View style={styles.paymentOptionHeader}>
-            <GSText variant="h2" style={styles.paymentIcon}>💵</GSText>
-            <View style={styles.paymentOptionInfo}>
-              <GSText variant="body" weight="semiBold">
-                MercadoPago
-              </GSText>
-              <GSText variant="caption" color="textSecondary">
-                {t('checkout.payment.mercadopagoDescription') || 'Pago seguro con MercadoPago'}
-              </GSText>
-            </View>
-          </View>
+      {loadingProviders ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <GSText variant="caption" color="textSecondary" style={styles.loadingText}>
+            {t('checkout.payment.loadingMethods') || 'Cargando métodos de pago...'}
+          </GSText>
         </View>
+      ) : (
+        <>
+          {/* Payment Provider Options */}
+          {providers.map((provider) => {
+            const isSelected = selectedMethod?.id === provider.id;
 
-        <View
-          style={[
-            styles.radioButton,
-            {
-              borderColor: theme.colors.primary,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.radioButtonInner,
-              { backgroundColor: theme.colors.primary },
-            ]}
-          />
-        </View>
-      </TouchableOpacity>
+            return (
+              <TouchableOpacity
+                key={provider.id}
+                style={[
+                  styles.paymentOption,
+                  {
+                    borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: isSelected ? theme.colors.primary + '10' : theme.colors.surface,
+                  },
+                ]}
+                onPress={() => handleProviderSelect(provider)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.paymentOptionContent}>
+                  <View style={styles.paymentOptionHeader}>
+                    <GSText variant="h2" style={styles.paymentIcon}>{provider.icon}</GSText>
+                    <View style={styles.paymentOptionInfo}>
+                      <GSText variant="body" weight="semiBold">
+                        {provider.name}
+                      </GSText>
+                      <GSText variant="caption" color="textSecondary">
+                        {provider.description}
+                      </GSText>
+                    </View>
+                  </View>
+                </View>
+
+                <View
+                  style={[
+                    styles.radioButton,
+                    {
+                      borderColor: isSelected ? theme.colors.primary : theme.colors.border,
+                    },
+                  ]}
+                >
+                  {isSelected && (
+                    <View
+                      style={[
+                        styles.radioButtonInner,
+                        { backgroundColor: theme.colors.primary },
+                      ]}
+                    />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </>
+      )}
 
       {/* Info Note */}
       <View style={[styles.infoNote, { backgroundColor: theme.colors.surface }]}>
@@ -146,6 +213,13 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 20,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
   },
   paymentOption: {
     flexDirection: 'row',

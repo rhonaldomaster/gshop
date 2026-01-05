@@ -5,6 +5,7 @@ import CartScreen from '../screens/cart/CartScreen';
 import CheckoutScreen from '../screens/checkout/CheckoutScreen';
 import GuestCheckoutScreen from '../screens/checkout/GuestCheckoutScreen';
 import PaymentWebViewScreen from '../screens/payments/PaymentWebViewScreen';
+import StripeCardScreen from '../screens/payments/StripeCardScreen';
 
 export type CartStackParamList = {
   CartMain: undefined;
@@ -12,6 +13,15 @@ export type CartStackParamList = {
   GuestCheckout: undefined;
   PaymentWebView: {
     paymentUrl: string;
+    orderId: string;
+    paymentId: string;
+  };
+  StripeCard: {
+    orderId: string;
+    paymentId: string;
+    amount: number;
+  };
+  OrderConfirmation: {
     orderId: string;
     paymentId: string;
   };
@@ -35,6 +45,14 @@ export default function CartNavigator() {
         options={{
           headerShown: true,
           title: 'Pago',
+        }}
+      />
+      <Stack.Screen
+        name="StripeCard"
+        component={StripeCardScreen}
+        options={{
+          headerShown: true,
+          title: 'Pago con Tarjeta',
         }}
       />
     </Stack.Navigator>

@@ -185,24 +185,49 @@ class PaymentsService {
     }
   }
 
-  // Process Stripe payment
+  // Process Stripe payment (returns client_secret for SDK)
   async processStripePayment(
-    paymentId: string,
-    cardData: StripePaymentRequest
-  ): Promise<PaymentResponse> {
+    paymentId: string
+  ): Promise<{ clientSecret: string; paymentIntentId: string }> {
     try {
       const url = buildEndpointUrl(API_CONFIG.ENDPOINTS.PAYMENTS.PROCESS_STRIPE, { id: paymentId });
 
-      const response = await apiClient.post<PaymentResponse>(url, cardData);
+      const response = await apiClient.post<any>(url, {});
 
       if (response.success && response.data) {
-        return response.data;
+        // Backend returns { clientSecret, paymentIntentId }
+        return {
+          clientSecret: response.data.clientSecret || response.data.client_secret,
+          paymentIntentId: response.data.paymentIntentId || response.data.payment_intent_id,
+        };
       } else {
         throw new Error(response.message || 'Stripe payment failed');
       }
     } catch (error: any) {
       console.error('PaymentsService: Stripe payment failed', error);
       throw new Error(error.message || 'Card payment failed');
+    }
+  }
+
+  // Get available payment providers (Stripe, MercadoPago)
+  async getAvailableProviders(): Promise<any> {
+    try {
+      const response = await apiClient.get<any>('/payments-v2/config/providers');
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to get payment providers');
+      }
+    } catch (error: any) {
+      console.error('PaymentsService: Get providers failed', error);
+      // Return default providers on error
+      return {
+        providers: [
+          { id: 'stripe', name: 'Credit/Debit Card', icon: '💳', enabled: true },
+          { id: 'mercadopago', name: 'MercadoPago', icon: '💵', enabled: true },
+        ],
+      };
     }
   }
 
