@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
+  Req,
   Headers,
   Res,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { Response } from 'express';
 import { PaymentsV2Service } from './payments-v2.service';
 import { MercadoPagoService } from './mercadopago.service';
+import { PaymentConfigService } from './payment-config.service';
 import { CreatePaymentV2Dto, ProcessCryptoPaymentDto, CreatePaymentMethodDto, CreateInvoiceDto, UpdateInvoiceStatusDto, PaymentStatsQueryDto } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -23,14 +25,27 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../database/entities/user.entity';
 import { PaymentStatus } from './payments-v2.entity';
 import { OrderStatus } from '../database/entities/order.entity';
+import { OrdersService } from '../orders/orders.service';
+import Stripe from 'stripe';
+import { Logger } from '@nestjs/common';
 
 @ApiTags('Payments V2')
 @Controller('payments-v2')
 export class PaymentsV2Controller {
+  private readonly logger = new Logger(PaymentsV2Controller.name);
+  private stripe: Stripe;
+
   constructor(
     private readonly paymentsV2Service: PaymentsV2Service,
     private readonly mercadopagoService: MercadoPagoService,
-  ) {}
+    private readonly ordersService: OrdersService,
+    private readonly paymentConfigService: PaymentConfigService,
+  ) {
+    // Initialize Stripe with API version
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2025-08-27.basil',
+    });
+  }
 
   // Admin: Get all payments with filters and pagination
   @Get()
@@ -41,6 +56,14 @@ export class PaymentsV2Controller {
   @ApiResponse({ status: 200, description: 'Payments retrieved successfully' })
   async findAll(@Query() query: any) {
     return this.paymentsV2Service.findAll(query);
+  }
+
+  // Configuration
+  @Get('config/providers')
+  @ApiOperation({ summary: 'Get available payment providers configuration' })
+  @ApiResponse({ status: 200, description: 'Payment providers configuration retrieved' })
+  async getPaymentProviders() {
+    return this.paymentConfigService.getProvidersConfig();
   }
 
   // Payment Processing
@@ -152,11 +175,226 @@ export class PaymentsV2Controller {
 
   // Webhooks
   @Post('webhooks/stripe')
-  async handleStripeWebhook(@Body() body: any) {
-    // Handle Stripe webhook events
-    // This would typically verify the webhook signature and process events
-    console.log('Stripe webhook received:', body);
-    return { received: true };
+  async handleStripeWebhook(
+    @Headers('stripe-signature') signature: string,
+    @Req() request: any,
+  ) {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      this.logger.error('STRIPE_WEBHOOK_SECRET is not configured');
+      return { error: 'Webhook secret not configured' };
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      // Get raw body (Buffer from express.raw middleware)
+      const rawBody = request.body;
+
+      // Verify webhook signature
+      event = this.stripe.webhooks.constructEvent(
+        rawBody, // Pass Buffer directly for signature verification
+        signature,
+        webhookSecret,
+      );
+
+      this.logger.log(`Stripe webhook received: ${event.type} (ID: ${event.id})`);
+    } catch (err) {
+      this.logger.error(`Webhook signature verification failed: ${err.message}`);
+      return { error: `Webhook Error: ${err.message}` };
+    }
+
+    // Handle different event types
+    try {
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          await this.handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+          break;
+
+        case 'payment_intent.payment_failed':
+          await this.handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+          break;
+
+        case 'payment_intent.requires_action':
+          await this.handlePaymentRequiresAction(event.data.object as Stripe.PaymentIntent);
+          break;
+
+        case 'charge.refunded':
+          await this.handleChargeRefunded(event.data.object as Stripe.Charge);
+          break;
+
+        default:
+          this.logger.warn(`Unhandled Stripe event type: ${event.type}`);
+      }
+
+      return { received: true, eventType: event.type };
+    } catch (error) {
+      this.logger.error(`Error processing webhook event ${event.type}: ${error.message}`);
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Handle successful payment intent
+   */
+  private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+    const paymentId = paymentIntent.metadata.paymentId;
+
+    if (!paymentId) {
+      this.logger.error('Payment ID not found in PaymentIntent metadata');
+      return;
+    }
+
+    try {
+      const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+      // Idempotency check - don't process if already completed
+      if (payment.status === PaymentStatus.COMPLETED) {
+        this.logger.log(`Payment ${paymentId} already completed, skipping`);
+        return;
+      }
+
+      // Update payment status
+      payment.status = PaymentStatus.COMPLETED;
+      payment.processedAt = new Date();
+      payment.stripePaymentIntentId = paymentIntent.id;
+
+      // Extract processing fee from Stripe if available
+      if (paymentIntent.charges?.data?.length > 0) {
+        const charge = paymentIntent.charges.data[0];
+        if (charge.balance_transaction) {
+          const balanceTransaction = charge.balance_transaction as any;
+          payment.processingFee = balanceTransaction.fee ? balanceTransaction.fee / 100 : null;
+        }
+      }
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      // Update order status to CONFIRMED
+      if (payment.orderId) {
+        const order = await this.ordersService.findOne(payment.orderId);
+        if (order) {
+          order.status = OrderStatus.CONFIRMED;
+          await this.ordersService.save(order);
+          this.logger.log(`Order ${payment.orderId} confirmed for payment ${paymentId}`);
+        }
+      }
+
+      this.logger.log(`Stripe payment ${paymentId} confirmed successfully`);
+    } catch (error) {
+      this.logger.error(`Failed to process payment_intent.succeeded for ${paymentId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle failed payment intent
+   */
+  private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+    const paymentId = paymentIntent.metadata.paymentId;
+
+    if (!paymentId) {
+      this.logger.error('Payment ID not found in PaymentIntent metadata');
+      return;
+    }
+
+    try {
+      const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+      payment.status = PaymentStatus.FAILED;
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        stripe_error: paymentIntent.last_payment_error?.message,
+        stripe_error_code: paymentIntent.last_payment_error?.code,
+        stripe_error_type: paymentIntent.last_payment_error?.type,
+      };
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      this.logger.error(`Stripe payment ${paymentId} failed: ${paymentIntent.last_payment_error?.message}`);
+    } catch (error) {
+      this.logger.error(`Failed to process payment_intent.payment_failed for ${paymentId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle payment that requires additional action (3D Secure)
+   */
+  private async handlePaymentRequiresAction(paymentIntent: Stripe.PaymentIntent) {
+    const paymentId = paymentIntent.metadata.paymentId;
+
+    if (!paymentId) {
+      this.logger.error('Payment ID not found in PaymentIntent metadata');
+      return;
+    }
+
+    try {
+      const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+      payment.status = PaymentStatus.PROCESSING;
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        stripe_client_secret: paymentIntent.client_secret,
+        requires_action: true,
+        next_action_type: paymentIntent.next_action?.type,
+      };
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      this.logger.log(`Payment ${paymentId} requires additional action (3D Secure)`);
+    } catch (error) {
+      this.logger.error(`Failed to process payment_intent.requires_action for ${paymentId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle refunded charge
+   */
+  private async handleChargeRefunded(charge: Stripe.Charge) {
+    const paymentIntentId = charge.payment_intent as string;
+
+    if (!paymentIntentId) {
+      this.logger.error('Payment Intent ID not found in Charge');
+      return;
+    }
+
+    try {
+      // Find payment by Stripe PaymentIntent ID
+      const payment = await this.paymentsV2Service.findByStripePaymentIntentId(paymentIntentId);
+
+      if (!payment) {
+        this.logger.error(`Payment not found for Stripe PaymentIntent ID: ${paymentIntentId}`);
+        return;
+      }
+
+      payment.status = PaymentStatus.REFUNDED;
+      payment.refundedAt = new Date();
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        stripe_refund_id: charge.refunds?.data?.[0]?.id,
+        refund_amount: charge.amount_refunded ? charge.amount_refunded / 100 : null,
+      };
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      // Update order status if needed
+      if (payment.orderId) {
+        const order = await this.ordersService.findOne(payment.orderId);
+        if (order) {
+          order.status = OrderStatus.REFUNDED;
+          await this.ordersService.save(order);
+          this.logger.log(`Order ${payment.orderId} marked as REFUNDED`);
+        }
+      }
+
+      this.logger.log(`Stripe charge ${charge.id} refunded successfully`);
+    } catch (error) {
+      this.logger.error(`Failed to process charge.refunded for ${paymentIntentId}: ${error.message}`);
+      throw error;
+    }
   }
 
   @Post('webhooks/polygon')
