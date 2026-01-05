@@ -8,6 +8,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { CartProvider } from './src/contexts/CartContext';
 import { ProductsProvider } from './src/contexts/ProductsContext';
+import { StripeProvider } from './src/providers/StripeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
 
 export default function App() {
@@ -25,19 +26,21 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <ProductsProvider>
-            <CartProvider>
-              <NavigationContainer>
-                <StatusBar style="auto" />
-                <RootNavigator />
-              </NavigationContainer>
-              <Toast />
-            </CartProvider>
-          </ProductsProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <StripeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ProductsProvider>
+              <CartProvider>
+                <NavigationContainer>
+                  <StatusBar style="auto" />
+                  <RootNavigator />
+                </NavigationContainer>
+                <Toast />
+              </CartProvider>
+            </ProductsProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </StripeProvider>
     </SafeAreaProvider>
   );
 }
