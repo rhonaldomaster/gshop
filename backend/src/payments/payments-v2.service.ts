@@ -5,6 +5,7 @@ import { PaymentV2, Invoice, PaymentMethodEntity, CryptoTransaction, PaymentMeth
 import { CreatePaymentV2Dto, CreateInvoiceDto, CreatePaymentMethodDto, ProcessCryptoPaymentDto } from './dto';
 import { Order, OrderStatus } from '../database/entities/order.entity';
 import { MercadoPagoService } from './mercadopago.service';
+import { CurrencyService } from './currency.service';
 import Stripe from 'stripe';
 import { ethers } from 'ethers';
 
@@ -25,6 +26,7 @@ export class PaymentsV2Service {
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
     private mercadopagoService: MercadoPagoService,
+    private currencyService: CurrencyService,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
       apiVersion: '2025-08-27.basil',
@@ -37,10 +39,17 @@ export class PaymentsV2Service {
 
   // Payment Processing
   async createPayment(createPaymentDto: CreatePaymentV2Dto): Promise<PaymentV2> {
-    // Validar que solo se use MercadoPago (Colombia)
-    if (createPaymentDto.paymentMethod !== PaymentMethod.MERCADOPAGO) {
+    // Validate payment method is supported
+    const supportedMethods = [
+      PaymentMethod.MERCADOPAGO,
+      PaymentMethod.STRIPE_CARD,
+      PaymentMethod.USDC_POLYGON,
+      PaymentMethod.GSHOP_TOKENS,
+    ];
+
+    if (!supportedMethods.includes(createPaymentDto.paymentMethod)) {
       throw new BadRequestException(
-        'Solo MercadoPago está disponible en este momento. Otros métodos de pago estarán disponibles próximamente.'
+        `Payment method ${createPaymentDto.paymentMethod} is not supported. Available methods: ${supportedMethods.join(', ')}`
       );
     }
 
@@ -79,13 +88,37 @@ export class PaymentsV2Service {
       payment.status = PaymentStatus.PROCESSING;
       await this.paymentRepository.save(payment);
 
+      // Currency conversion: COP → USD for Stripe
+      let amount = payment.amount;
+      let currency = payment.currency.toUpperCase();
+
+      if (currency === 'COP') {
+        const conversion = await this.currencyService.convertCOPtoUSD(payment.amount);
+        amount = conversion.amountUSD;
+        currency = 'USD';
+
+        // Store conversion details in metadata
+        payment.paymentMetadata = {
+          ...payment.paymentMetadata,
+          original_currency: 'COP',
+          original_amount: payment.amount,
+          exchange_rate: conversion.rate,
+          converted_amount_usd: amount,
+          conversion_timestamp: new Date().toISOString(),
+        };
+      }
+
       const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(payment.amount * 100), // Convert to cents
-        currency: payment.currency.toLowerCase(),
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: currency.toLowerCase(),
         payment_method: paymentMethodId,
         confirmation_method: 'manual',
         confirm: true,
         return_url: `${process.env.APP_URL}/payment/complete`,
+        metadata: {
+          paymentId: payment.id,
+          orderId: payment.orderId,
+        },
       });
 
       payment.stripePaymentIntentId = paymentIntent.id;
@@ -95,6 +128,11 @@ export class PaymentsV2Service {
         payment.processedAt = new Date();
       } else if (paymentIntent.status === 'requires_action') {
         payment.status = PaymentStatus.PENDING;
+        payment.paymentMetadata = {
+          ...payment.paymentMetadata,
+          stripe_client_secret: paymentIntent.client_secret,
+          requires_action: true,
+        };
       } else {
         payment.status = PaymentStatus.FAILED;
         payment.failureReason = 'Payment failed at Stripe';
@@ -625,5 +663,44 @@ export class PaymentsV2Service {
       limit,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  /**
+   * Get payment by ID
+   * @param id Payment UUID
+   * @returns Payment entity
+   */
+  async getPaymentById(id: string): Promise<PaymentV2> {
+    const payment = await this.paymentRepository.findOne({
+      where: { id },
+      relations: ['order', 'user'],
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Payment with ID ${id} not found`);
+    }
+
+    return payment;
+  }
+
+  /**
+   * Save payment entity
+   * @param payment Payment entity to save
+   * @returns Saved payment entity
+   */
+  async savePayment(payment: PaymentV2): Promise<PaymentV2> {
+    return this.paymentRepository.save(payment);
+  }
+
+  /**
+   * Find payment by Stripe PaymentIntent ID
+   * @param paymentIntentId Stripe PaymentIntent ID
+   * @returns Payment entity or null if not found
+   */
+  async findByStripePaymentIntentId(paymentIntentId: string): Promise<PaymentV2 | null> {
+    return this.paymentRepository.findOne({
+      where: { stripePaymentIntentId: paymentIntentId },
+      relations: ['order', 'user'],
+    });
   }
 }
