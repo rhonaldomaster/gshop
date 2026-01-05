@@ -53,7 +53,7 @@ export const AffiliateScreen = () => {
       if ((stats as any).status) {
         setAffiliateStatus((stats as any).status);
       }
-    } catch (error: any) {
+    } catch (error) {
       // Check if error indicates pending or rejected status
       if (error.response?.data?.status) {
         setAffiliateStatus(error.response.data.status);

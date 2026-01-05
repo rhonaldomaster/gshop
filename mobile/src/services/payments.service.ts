@@ -129,7 +129,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to get payment methods');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Get payment methods failed', error);
       throw new Error(error.message || 'Failed to load payment methods');
     }
@@ -179,7 +179,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to create payment');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Create payment failed', error);
       throw new Error(error.message || 'Payment creation failed');
     }
@@ -203,9 +203,30 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Stripe payment failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Stripe payment failed', error);
       throw new Error(error.message || 'Card payment failed');
+    }
+  }
+
+  // Create Stripe Checkout Session for WebView payment
+  async createStripeCheckoutSession(
+    paymentId: string
+  ): Promise<{ sessionUrl: string; sessionId: string }> {
+    try {
+      const response = await apiClient.post<{ sessionUrl: string; sessionId: string }>(
+        `/payments-v2/${paymentId}/stripe-checkout`,
+        {}
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to create Stripe checkout session');
+      }
+    } catch (error) {
+      console.error('PaymentsService: Create Stripe checkout session failed', error);
+      throw new Error(error.message || 'Failed to load Stripe checkout');
     }
   }
 
@@ -219,7 +240,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to get payment providers');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Get providers failed', error);
       // Return default providers on error
       return {
@@ -246,7 +267,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Crypto payment failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Crypto payment failed', error);
       throw new Error(error.message || 'Cryptocurrency payment failed');
     }
@@ -268,7 +289,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Token payment failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Token payment failed', error);
       throw new Error(error.message || 'GSHOP token payment failed');
     }
@@ -290,7 +311,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'MercadoPago payment failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: MercadoPago payment failed', error);
       throw new Error(error.message || 'MercadoPago payment failed');
     }
@@ -306,7 +327,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to get wallet balance');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Get wallet balance failed', error);
       throw new Error(error.message || 'Failed to load wallet balance');
     }
@@ -325,7 +346,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Wallet topup failed');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Wallet topup failed', error);
       throw new Error(error.message || 'Failed to top up wallet');
     }
@@ -355,7 +376,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to add payment method');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Add payment method failed', error);
       throw new Error(error.message || 'Failed to save payment method');
     }
@@ -383,7 +404,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to remove payment method');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Remove payment method failed', error);
       throw new Error(error.message || 'Failed to remove payment method');
     }
@@ -402,7 +423,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Failed to set default payment method');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Set default payment method failed', error);
       throw new Error(error.message || 'Failed to update default payment method');
     }
@@ -418,7 +439,7 @@ class PaymentsService {
       } else {
         throw new Error(response.message || 'Receipt not found');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('PaymentsService: Get receipt failed', error);
       throw new Error(error.message || 'Failed to load payment receipt');
     }

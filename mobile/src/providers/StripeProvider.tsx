@@ -15,6 +15,12 @@ export const StripeProvider: React.FC<StripeProviderProps> = ({ children }) => {
   // Get publishable key from expo constants (loaded from .env.development)
   const publishableKey = Constants.expoConfig?.extra?.STRIPE_PUBLISHABLE_KEY || '';
 
+  // Debug: Log publishable key status
+  console.log('🔑 Stripe publishable key loaded:', publishableKey ? 'YES ✅' : 'NO ❌');
+  if (publishableKey) {
+    console.log('🔑 Key starts with:', publishableKey.substring(0, 20) + '...');
+  }
+
   if (!publishableKey) {
     console.warn(
       '[StripeProvider] STRIPE_PUBLISHABLE_KEY not found in environment variables. ' +

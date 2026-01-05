@@ -15,17 +15,15 @@ import { join } from 'path';
 import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    rawBody: true, // Enable raw body parsing
-  });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Serve static files from uploads directory
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
-  // Raw body parser for Stripe webhooks (must be before global prefix)
-  // This preserves the raw body needed for webhook signature verification
+  // Raw body parser for Stripe webhooks (must be BEFORE global prefix and BEFORE JSON parser)
+  // This preserves the raw body Buffer needed for webhook signature verification
   app.use(
     '/api/v1/payments-v2/webhooks/stripe',
     express.raw({ type: 'application/json' }),

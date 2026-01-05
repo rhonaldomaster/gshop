@@ -146,6 +146,91 @@ export class PaymentsV2Service {
     }
   }
 
+  /**
+   * Create Stripe Checkout Session for WebView payment
+   * Similar to MercadoPago preference creation
+   */
+  async createStripeCheckoutSession(paymentId: string): Promise<{ sessionUrl: string; sessionId: string }> {
+    const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    try {
+      payment.status = PaymentStatus.PROCESSING;
+      await this.paymentRepository.save(payment);
+
+      // Currency conversion: COP → USD for Stripe
+      let amount = payment.amount;
+      let currency = payment.currency.toUpperCase();
+
+      if (currency === 'COP') {
+        const conversion = await this.currencyService.convertCOPtoUSD(payment.amount);
+        amount = conversion.amountUSD;
+        currency = 'USD';
+
+        // Store conversion details in metadata
+        payment.paymentMetadata = {
+          ...payment.paymentMetadata,
+          original_currency: 'COP',
+          original_amount: payment.amount,
+          exchange_rate: conversion.rate,
+          converted_amount_usd: amount,
+          conversion_timestamp: new Date().toISOString(),
+        };
+        await this.paymentRepository.save(payment);
+      }
+
+      // Use public URL for Stripe callbacks (important for ngrok/production)
+      // API_URL_PUBLIC is used for webhooks/callbacks (e.g., ngrok URL)
+      // Falls back to API_URL (local development)
+      const baseUrl = process.env.API_URL_PUBLIC || process.env.API_URL || 'http://localhost:3000';
+
+      // Create Stripe Checkout Session
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: currency.toLowerCase(),
+              product_data: {
+                name: `Order #${payment.orderId}`,
+                description: `Payment for GSHOP order`,
+              },
+              unit_amount: Math.round(amount * 100), // Convert to cents
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${baseUrl}/api/v1/payments-v2/callback/success?paymentId=${paymentId}&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/api/v1/payments-v2/callback/failure?paymentId=${paymentId}`,
+        metadata: {
+          paymentId: payment.id,
+          orderId: payment.orderId,
+        },
+      });
+
+      // Store session ID in payment metadata
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        stripe_checkout_session_id: session.id,
+        stripe_checkout_url: session.url,
+      };
+      await this.paymentRepository.save(payment);
+
+      return {
+        sessionUrl: session.url,
+        sessionId: session.id,
+      };
+    } catch (error) {
+      payment.status = PaymentStatus.FAILED;
+      payment.failureReason = error.message;
+      await this.paymentRepository.save(payment);
+      throw error;
+    }
+  }
+
   async processCryptoPayment(paymentId: string, cryptoPaymentDto: ProcessCryptoPaymentDto): Promise<PaymentV2> {
     const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
     if (!payment) {

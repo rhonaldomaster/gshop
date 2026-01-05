@@ -46,6 +46,16 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   const [providers, setProviders] = useState<PaymentProvider[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(true);
 
+  // Get localized provider name
+  const getProviderName = (providerId: string): string => {
+    return t(`checkout.payment.providers.${providerId}.name`) || providerId;
+  };
+
+  // Get localized provider description
+  const getProviderDescription = (providerId: string): string => {
+    return t(`checkout.payment.providers.${providerId}.description`) || '';
+  };
+
   // Fetch available payment providers from backend
   useEffect(() => {
     const fetchProviders = async () => {
@@ -62,7 +72,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
             const method: PaymentMethod = {
               id: firstProvider.id,
               type: firstProvider.id === 'stripe' ? 'card' : 'mercadopago',
-              provider: firstProvider.name,
+              provider: getProviderName(firstProvider.id),
               details: {},
               isDefault: false,
               createdAt: new Date().toISOString(),
@@ -99,7 +109,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     const method: PaymentMethod = {
       id: provider.id,
       type: provider.id === 'stripe' ? 'card' : 'mercadopago',
-      provider: provider.name,
+      provider: getProviderName(provider.id),
       details: {},
       isDefault: false,
       createdAt: new Date().toISOString(),
@@ -117,7 +127,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="caption" color="textSecondary" style={styles.loadingText}>
-            {t('checkout.payment.loadingMethods') || 'Cargando métodos de pago...'}
+            {t('checkout.payment.loadingMethods')}
           </GSText>
         </View>
       ) : (
@@ -144,10 +154,10 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
                     <GSText variant="h2" style={styles.paymentIcon}>{provider.icon}</GSText>
                     <View style={styles.paymentOptionInfo}>
                       <GSText variant="body" weight="semiBold">
-                        {provider.name}
+                        {getProviderName(provider.id)}
                       </GSText>
                       <GSText variant="caption" color="textSecondary">
-                        {provider.description}
+                        {getProviderDescription(provider.id)}
                       </GSText>
                     </View>
                   </View>
@@ -179,7 +189,7 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
       {/* Info Note */}
       <View style={[styles.infoNote, { backgroundColor: theme.colors.surface }]}>
         <GSText variant="caption" color="textSecondary" style={styles.infoNoteText}>
-          🔒 {t('checkout.payment.securePayment') || 'Pago 100% seguro. Serás redirigido a MercadoPago para completar la transacción.'}
+          🔒 {t('checkout.payment.securePayment')}
         </GSText>
       </View>
 

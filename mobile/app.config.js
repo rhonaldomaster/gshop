@@ -13,7 +13,7 @@ export default ({ config }) => {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
-    newArchEnabled: false,
+    newArchEnabled: true,
     scheme: process.env.APP_SCHEME || 'gshop',
     splash: {
       image: './assets/splash-icon.png',

@@ -82,6 +82,14 @@ export class PaymentsV2Controller {
     return this.paymentsV2Service.processStripePayment(paymentId, paymentMethodId);
   }
 
+  @Post(':id/stripe-checkout')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create Stripe Checkout Session for WebView payment' })
+  @ApiResponse({ status: 200, description: 'Checkout session created successfully' })
+  async createStripeCheckout(@Param('id') paymentId: string) {
+    return this.paymentsV2Service.createStripeCheckoutSession(paymentId);
+  }
+
   @Post(':id/process/crypto')
   @UseGuards(JwtAuthGuard)
   async processCryptoPayment(
@@ -224,6 +232,10 @@ export class PaymentsV2Controller {
           await this.handleChargeRefunded(event.data.object as Stripe.Charge);
           break;
 
+        case 'checkout.session.completed':
+          await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+          break;
+
         default:
           this.logger.warn(`Unhandled Stripe event type: ${event.type}`);
       }
@@ -261,8 +273,10 @@ export class PaymentsV2Controller {
       payment.stripePaymentIntentId = paymentIntent.id;
 
       // Extract processing fee from Stripe if available
-      if (paymentIntent.charges?.data?.length > 0) {
-        const charge = paymentIntent.charges.data[0];
+      // Note: charges is an expandable field, may not be present by default
+      const piWithCharges = paymentIntent as any;
+      if (piWithCharges.charges?.data?.length > 0) {
+        const charge = piWithCharges.charges.data[0];
         if (charge.balance_transaction) {
           const balanceTransaction = charge.balance_transaction as any;
           payment.processingFee = balanceTransaction.fee ? balanceTransaction.fee / 100 : null;
@@ -273,12 +287,8 @@ export class PaymentsV2Controller {
 
       // Update order status to CONFIRMED
       if (payment.orderId) {
-        const order = await this.ordersService.findOne(payment.orderId);
-        if (order) {
-          order.status = OrderStatus.CONFIRMED;
-          await this.ordersService.save(order);
-          this.logger.log(`Order ${payment.orderId} confirmed for payment ${paymentId}`);
-        }
+        await this.ordersService.updateStatus(payment.orderId, OrderStatus.CONFIRMED);
+        this.logger.log(`Order ${payment.orderId} confirmed for payment ${paymentId}`);
       }
 
       this.logger.log(`Stripe payment ${paymentId} confirmed successfully`);
@@ -382,17 +392,58 @@ export class PaymentsV2Controller {
 
       // Update order status if needed
       if (payment.orderId) {
-        const order = await this.ordersService.findOne(payment.orderId);
-        if (order) {
-          order.status = OrderStatus.REFUNDED;
-          await this.ordersService.save(order);
-          this.logger.log(`Order ${payment.orderId} marked as REFUNDED`);
-        }
+        await this.ordersService.updateStatus(payment.orderId, OrderStatus.REFUNDED);
+        this.logger.log(`Order ${payment.orderId} marked as REFUNDED`);
       }
 
       this.logger.log(`Stripe charge ${charge.id} refunded successfully`);
     } catch (error) {
       this.logger.error(`Failed to process charge.refunded for ${paymentIntentId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle completed checkout session (WebView payment)
+   */
+  private async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+    const paymentId = session.metadata.paymentId;
+
+    if (!paymentId) {
+      this.logger.error('Payment ID not found in Checkout Session metadata');
+      return;
+    }
+
+    try {
+      const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+      // Idempotency check - don't process if already completed
+      if (payment.status === PaymentStatus.COMPLETED) {
+        this.logger.log(`Payment ${paymentId} already completed, skipping`);
+        return;
+      }
+
+      // Update payment status
+      payment.status = PaymentStatus.COMPLETED;
+      payment.processedAt = new Date();
+      payment.stripePaymentIntentId = session.payment_intent as string;
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        stripe_checkout_session_id: session.id,
+        stripe_payment_status: session.payment_status,
+      };
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      // Update order status to CONFIRMED
+      if (payment.orderId) {
+        await this.ordersService.updateStatus(payment.orderId, OrderStatus.CONFIRMED);
+        this.logger.log(`Order ${payment.orderId} confirmed for payment ${paymentId}`);
+      }
+
+      this.logger.log(`Stripe checkout session ${session.id} completed successfully for payment ${paymentId}`);
+    } catch (error) {
+      this.logger.error(`Failed to process checkout.session.completed for ${paymentId}: ${error.message}`);
       throw error;
     }
   }
@@ -552,13 +603,45 @@ export class PaymentsV2Controller {
     }
   }
 
-  // Payment callback pages (for MercadoPago back_urls)
+  // Payment callback pages (for MercadoPago back_urls and Stripe success_url)
   @Get('callback/success')
   async paymentSuccessCallback(
     @Query('paymentId') paymentId: string,
+    @Query('session_id') sessionId: string,
     @Res() res: Response,
   ) {
     console.log('✅ Payment success callback:', paymentId);
+
+    // If session_id is present, this is a Stripe checkout success
+    if (sessionId) {
+      console.log('💳 Stripe checkout session completed:', sessionId);
+
+      try {
+        // Update payment and order status
+        const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+        if (payment && payment.status !== PaymentStatus.COMPLETED) {
+          payment.status = PaymentStatus.COMPLETED;
+          payment.processedAt = new Date();
+          payment.paymentMetadata = {
+            ...payment.paymentMetadata,
+            stripe_checkout_session_id: sessionId,
+            completed_via: 'callback',
+          };
+
+          await this.paymentsV2Service.savePayment(payment);
+
+          // Update order status to CONFIRMED
+          if (payment.orderId) {
+            await this.ordersService.updateStatus(payment.orderId, OrderStatus.CONFIRMED);
+            console.log(`✅ Order ${payment.orderId} confirmed after Stripe checkout`);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`Failed to process Stripe checkout callback: ${error.message}`);
+      }
+    }
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(`
       <!DOCTYPE html>
