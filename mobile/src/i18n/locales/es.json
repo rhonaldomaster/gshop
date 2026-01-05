@@ -327,7 +327,18 @@
       "default": "Predeterminado",
       "mercadopagoDescription": "Paga con tarjeta de crédito/débito, PSE o efectivo",
       "loadError": "No se pudieron cargar los métodos de pago",
-      "securePayment": "Pago 100% seguro. Serás redirigido a MercadoPago para completar la transacción."
+      "loadingMethods": "Cargando métodos de pago...",
+      "securePayment": "Pago 100% seguro. Serás redirigido para completar la transacción.",
+      "providers": {
+        "stripe": {
+          "name": "Tarjeta de Crédito/Débito",
+          "description": "Pago seguro con tarjeta"
+        },
+        "mercadopago": {
+          "name": "MercadoPago",
+          "description": "PSE, pagos en efectivo y tarjetas"
+        }
+      }
     },
     "steps": {
       "shipping": "Envío",
@@ -418,6 +429,26 @@
         "postalCodeInvalid": "Código postal inválido (5-6 dígitos)"
       }
     }
+  },
+  "payment": {
+    "cardDetails": "Detalles de Tarjeta",
+    "securePayment": "Pago seguro con encriptación",
+    "totalToPay": "Total a Pagar",
+    "cardInformation": "Información de Tarjeta",
+    "acceptedCards": "Aceptamos Visa, Mastercard y American Express",
+    "secureInfo": "Tu información es procesada de forma segura. No almacenamos los datos de tu tarjeta.",
+    "processing": "Procesando...",
+    "payNow": "Pagar Ahora",
+    "invalidCard": "Tarjeta Inválida",
+    "completeCardDetails": "Por favor completa los datos de la tarjeta",
+    "failed": "Pago Fallido",
+    "tryAgain": "Hubo un error. Intenta de nuevo.",
+    "success": "Pago Exitoso",
+    "orderConfirmed": "Tu orden ha sido confirmada",
+    "error": "Error",
+    "preparingCheckout": "Preparando pantalla de pago",
+    "pending": "Pendiente",
+    "pendingMessage": "Pago pendiente"
   },
   "orders": {
     "title": "Pedidos",

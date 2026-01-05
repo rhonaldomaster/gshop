@@ -333,9 +333,11 @@ interface OrderSummaryProps {
   isPlacingOrder?: boolean;
   shippingCost: number;
   selectedPaymentMethod: PaymentMethod | null;
+  platformFeeRate: number;
+  loadingFeeRate: boolean;
 }
 
-const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, shippingCost, selectedPaymentMethod }) => {
+const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPlacingOrder, shippingCost, selectedPaymentMethod, platformFeeRate, loadingFeeRate }) => {
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const {
@@ -343,24 +345,6 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onBack, onPlaceOrder, isPla
     formatPrice,
     getCartSummary,
   } = useCart();
-  const [platformFeeRate, setPlatformFeeRate] = useState(0);
-  const [loadingFeeRate, setLoadingFeeRate] = useState(true);
-
-  // Fetch platform fee rate on mount
-  useEffect(() => {
-    const fetchFeeRate = async () => {
-      try {
-        const response = await api.get<{ rate: number }>('/config/buyer-platform-fee-rate');
-        setPlatformFeeRate(response.data.rate || 0);
-      } catch (error) {
-        console.error('Error fetching platform fee rate:', error);
-        setPlatformFeeRate(0); // Default to 0 if error
-      } finally {
-        setLoadingFeeRate(false);
-      }
-    };
-    fetchFeeRate();
-  }, []);
 
   const summary = getCartSummary();
   const subtotal = Number(summary.subtotal) || 0;
@@ -528,6 +512,8 @@ export default function CheckoutScreen() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [loadingAddress, setLoadingAddress] = useState(true);
   const [calculatingShipping, setCalculatingShipping] = useState(false);
+  const [platformFeeRate, setPlatformFeeRate] = useState(0);
+  const [loadingFeeRate, setLoadingFeeRate] = useState(true);
 
   // API hooks
   const createOrderApi = useApi(ordersService.createOrder);
@@ -574,6 +560,22 @@ export default function CheckoutScreen() {
 
     loadDefaultAddress();
   }, [user]);
+
+  // Fetch platform fee rate on mount
+  useEffect(() => {
+    const fetchFeeRate = async () => {
+      try {
+        const response = await api.get<{ rate: number }>('/config/buyer-platform-fee-rate');
+        setPlatformFeeRate(response.data.rate || 0);
+      } catch (error) {
+        console.error('Error fetching platform fee rate:', error);
+        setPlatformFeeRate(0); // Default to 0 if error
+      } finally {
+        setLoadingFeeRate(false);
+      }
+    };
+    fetchFeeRate();
+  }, []);
 
   // Check if cart is empty (but not during payment process)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -681,7 +683,8 @@ export default function CheckoutScreen() {
       // Step 2: Calculate order total (VAT already included in prices)
       const summary = items.reduce((acc, item) => acc + Number(item.subtotal || 0), 0);
       const shipping = Number(shippingInfo.shippingCost || 0);
-      const total = Number((summary + shipping).toFixed(2));
+      const platformFee = Number(((summary * platformFeeRate) / 100).toFixed(2));
+      const total = Number((summary + shipping + platformFee).toFixed(2));
 
       // Step 3: Map payment method to backend enum
       const paymentMethodMap: Record<string, string> = {
@@ -755,15 +758,17 @@ export default function CheckoutScreen() {
                 text: t('checkout.alerts.viewOrder'),
                 onPress: () => {
                   (navigation as any).navigate('OrderDetail', { orderId: order.id });
+                },
               },
-            },
-          ],
-          { cancelable: false }
-        );
+            ],
+            { cancelable: false }
+          );
+        }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Order placement error:', error);
-      Alert.alert(t('checkout.alerts.orderFailed'), error.message || t('errors.tryAgain'));
+      const errorMessage = (error as any)?.message || t('errors.tryAgain');
+      Alert.alert(t('checkout.alerts.orderFailed'), errorMessage);
     }
   };
 
@@ -863,6 +868,8 @@ export default function CheckoutScreen() {
             isPlacingOrder={createOrderApi.isLoading}
             shippingCost={shippingInfo?.shippingCost || 0}
             selectedPaymentMethod={selectedPaymentMethod}
+            platformFeeRate={platformFeeRate}
+            loadingFeeRate={loadingFeeRate}
           />
         )}
       </ScrollView>

@@ -88,6 +88,7 @@ export class OrdersService {
         totalVatAmount,
         vatBreakdown,
         shippingAmount,
+        shippingCost: shippingAmount, // For compatibility with seller system
         discountAmount,
         totalAmount,
         shippingAddress: createOrderDto.shippingAddress,
