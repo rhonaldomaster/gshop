@@ -692,6 +692,7 @@ export default function CheckoutScreen() {
         'card': 'stripe_card',
         'crypto': 'usdc_polygon',
         'gshop_tokens': 'gshop_tokens',
+        'wallet': 'wallet_balance',
       };
 
       const paymentMethod = paymentMethodMap[selectedPaymentMethod.type] || 'mercadopago';
@@ -720,7 +721,44 @@ export default function CheckoutScreen() {
       setIsProcessingPayment(true);
 
       // Route based on payment method type
-      if (selectedPaymentMethod.id === 'stripe' || selectedPaymentMethod.type === 'card') {
+      if (selectedPaymentMethod.type === 'wallet') {
+        // Wallet payment - process directly without external redirect
+        console.log('💰 Processing wallet payment for payment:', payment.id);
+
+        const walletResult = await paymentsService.processWalletPayment(payment.id!);
+
+        if (walletResult.success) {
+          console.log('✅ Wallet payment successful:', walletResult);
+
+          // Clear cart and navigate to success
+          Alert.alert(
+            t('checkout.alerts.orderPlaced'),
+            t('checkout.alerts.walletPaymentSuccess', {
+              orderNumber: order.orderNumber,
+              newBalance: new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 0,
+              }).format(walletResult.newWalletBalance || 0),
+            }),
+            [
+              {
+                text: t('checkout.alerts.viewOrder'),
+                onPress: () => {
+                  (navigation as any).navigate('OrderDetail', { orderId: order.id });
+                },
+              },
+            ],
+            { cancelable: false }
+          );
+        } else {
+          console.error('❌ Wallet payment failed:', walletResult.error);
+          Alert.alert(
+            t('checkout.alerts.orderFailed'),
+            walletResult.error || t('checkout.alerts.walletPaymentFailed')
+          );
+        }
+      } else if (selectedPaymentMethod.id === 'stripe' || selectedPaymentMethod.type === 'card') {
         // Stripe card payment - navigate to card input screen
         console.log('🚀 Navigating to StripeCardScreen');
 

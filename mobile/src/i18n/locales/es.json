@@ -337,6 +337,13 @@
         "mercadopago": {
           "name": "MercadoPago",
           "description": "PSE, pagos en efectivo y tarjetas"
+        },
+        "wallet": {
+          "name": "Saldo GSHOP",
+          "description": "Paga con tu saldo disponible",
+          "recommended": "Recomendado",
+          "insufficient": "Saldo insuficiente",
+          "insufficientDescription": "Te faltan {{shortfall}} para pagar con saldo"
         }
       }
     },
@@ -371,6 +378,8 @@
       "pleaseSelectPayment": "Por favor selecciona un método de pago",
       "orderPlaced": "¡Pedido realizado!",
       "orderPlacedMessage": "Tu pedido #{{orderNumber}} ha sido realizado exitosamente",
+      "walletPaymentSuccess": "Tu pedido #{{orderNumber}} ha sido pagado con tu saldo GSHOP. Tu nuevo saldo es {{newBalance}}",
+      "walletPaymentFailed": "No se pudo procesar el pago con tu saldo. Intenta con otro metodo de pago.",
       "viewOrder": "Ver pedido",
       "orderFailed": "Error al realizar el pedido"
     },

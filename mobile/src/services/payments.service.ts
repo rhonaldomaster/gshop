@@ -4,7 +4,7 @@ import { API_CONFIG, buildEndpointUrl } from '../config/api.config';
 // Payment types
 export interface PaymentMethod {
   id: string;
-  type: 'card' | 'mercadopago' | 'crypto' | 'gshop_tokens';
+  type: 'card' | 'mercadopago' | 'crypto' | 'gshop_tokens' | 'wallet';
   provider: string;
   details: {
     last4?: string;
@@ -440,6 +440,95 @@ class PaymentsService {
     return this.getTopupStatus(topupId);
   }
 
+  /**
+   * Check if user can pay an order with wallet balance
+   * Returns balance info and whether payment is possible
+   */
+  async checkCanPayWithWallet(paymentId: string): Promise<{
+    canPay: boolean;
+    paymentAmount: number;
+    currentBalance: number;
+    shortfall: number;
+    currency: string;
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.get<{
+        canPay: boolean;
+        paymentAmount: number;
+        currentBalance: number;
+        shortfall: number;
+        currency: string;
+        error?: string;
+      }>(`/payments-v2/${paymentId}/can-pay-with-wallet`);
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        return {
+          canPay: false,
+          paymentAmount: 0,
+          currentBalance: 0,
+          shortfall: 0,
+          currency: 'COP',
+          error: response.message || 'Failed to check wallet eligibility'
+        };
+      }
+    } catch (error: any) {
+      console.error('PaymentsService: Check wallet eligibility failed', error);
+      return {
+        canPay: false,
+        paymentAmount: 0,
+        currentBalance: 0,
+        shortfall: 0,
+        currency: 'COP',
+        error: error?.message || 'Failed to check wallet balance'
+      };
+    }
+  }
+
+  /**
+   * Process payment using wallet balance
+   * Debits the user's wallet and marks order as paid
+   */
+  async processWalletPayment(paymentId: string): Promise<{
+    success: boolean;
+    paymentId?: string;
+    orderId?: string;
+    amount?: number;
+    walletTransactionId?: string;
+    newWalletBalance?: number;
+    message?: string;
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.post<{
+        success: boolean;
+        paymentId: string;
+        orderId: string;
+        amount: number;
+        walletTransactionId: string;
+        newWalletBalance: number;
+        message: string;
+      }>(`/payments-v2/${paymentId}/process/wallet`, {});
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        return {
+          success: false,
+          error: response.message || 'Wallet payment failed'
+        };
+      }
+    } catch (error: any) {
+      console.error('PaymentsService: Wallet payment failed', error);
+      return {
+        success: false,
+        error: error?.message || 'Failed to process wallet payment'
+      };
+    }
+  }
+
   // Add payment method
   async addPaymentMethod(methodData: {
     type: PaymentMethod['type'];
@@ -477,6 +566,7 @@ class PaymentsService {
       mercadopago: 'mercadopago',
       crypto: 'usdc_polygon',
       gshop_tokens: 'stripe_card', // Use stripe_card for token topups
+      wallet: 'wallet_balance', // GSHOP Wallet balance
     };
 
     return typeMap[type] || 'stripe_card';
@@ -535,11 +625,12 @@ class PaymentsService {
 
   // Helper methods
   getPaymentMethodIcon(type: PaymentMethod['type']): string {
-    const icons = {
+    const icons: Record<PaymentMethod['type'], string> = {
       card: 'card-outline',
       mercadopago: 'wallet-outline',
       crypto: 'logo-bitcoin',
       gshop_tokens: 'diamond-outline',
+      wallet: 'wallet',
     };
 
     return icons[type] || 'payment-outline';

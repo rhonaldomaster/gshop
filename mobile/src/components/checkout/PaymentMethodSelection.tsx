@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   PaymentMethod,
   paymentsService,
@@ -21,6 +22,13 @@ interface PaymentProvider {
   description: string;
   icon: string;
   enabled: boolean;
+}
+
+interface WalletInfo {
+  balance: number;
+  canPay: boolean;
+  shortfall: number;
+  isLoading: boolean;
 }
 
 interface PaymentMethodSelectionProps {
@@ -42,9 +50,26 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
 }) => {
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
+  const { user } = useAuth();
 
   const [providers, setProviders] = useState<PaymentProvider[]>([]);
   const [loadingProviders, setLoadingProviders] = useState(true);
+  const [walletInfo, setWalletInfo] = useState<WalletInfo>({
+    balance: 0,
+    canPay: false,
+    shortfall: 0,
+    isLoading: true,
+  });
+
+  // Format price for display
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
 
   // Get localized provider name
   const getProviderName = (providerId: string): string => {
@@ -55,6 +80,45 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
   const getProviderDescription = (providerId: string): string => {
     return t(`checkout.payment.providers.${providerId}.description`) || '';
   };
+
+  // Fetch wallet balance
+  useEffect(() => {
+    const fetchWalletBalance = async () => {
+      if (!user) {
+        setWalletInfo({
+          balance: 0,
+          canPay: false,
+          shortfall: orderTotal,
+          isLoading: false,
+        });
+        return;
+      }
+
+      try {
+        const walletData = await paymentsService.getWalletBalance();
+        const balance = walletData.tokenBalance || 0;
+        const canPay = balance >= orderTotal;
+        const shortfall = canPay ? 0 : orderTotal - balance;
+
+        setWalletInfo({
+          balance,
+          canPay,
+          shortfall,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error('Failed to fetch wallet balance:', error);
+        setWalletInfo({
+          balance: 0,
+          canPay: false,
+          shortfall: orderTotal,
+          isLoading: false,
+        });
+      }
+    };
+
+    fetchWalletBalance();
+  }, [user, orderTotal]);
 
   // Fetch available payment providers from backend
   useEffect(() => {
@@ -117,13 +181,39 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
     onSelectMethod(method);
   };
 
+  const handleWalletSelect = () => {
+    if (!walletInfo.canPay) {
+      Alert.alert(
+        t('wallet.insufficientBalance'),
+        t('checkout.payment.providers.wallet.insufficientDescription', {
+          shortfall: formatPrice(walletInfo.shortfall),
+        })
+      );
+      return;
+    }
+
+    const method: PaymentMethod = {
+      id: 'wallet',
+      type: 'wallet',
+      provider: t('checkout.payment.providers.wallet.name'),
+      details: {
+        tokenBalance: walletInfo.balance,
+      },
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    };
+    onSelectMethod(method);
+  };
+
+  const isWalletSelected = selectedMethod?.type === 'wallet';
+
   return (
     <View style={styles.container}>
       <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
         {t('checkout.payment.title')}
       </GSText>
 
-      {loadingProviders ? (
+      {loadingProviders || walletInfo.isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="caption" color="textSecondary" style={styles.loadingText}>
@@ -132,6 +222,100 @@ const PaymentMethodSelection: React.FC<PaymentMethodSelectionProps> = ({
         </View>
       ) : (
         <>
+          {/* GSHOP Wallet Option - Show first if user is logged in */}
+          {user && (
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                {
+                  borderColor: isWalletSelected
+                    ? theme.colors.primary
+                    : walletInfo.canPay
+                    ? theme.colors.border
+                    : theme.colors.error + '50',
+                  backgroundColor: isWalletSelected
+                    ? theme.colors.primary + '10'
+                    : walletInfo.canPay
+                    ? theme.colors.surface
+                    : theme.colors.error + '05',
+                },
+              ]}
+              onPress={handleWalletSelect}
+              activeOpacity={0.7}
+              disabled={!walletInfo.canPay}
+            >
+              <View style={styles.paymentOptionContent}>
+                <View style={styles.paymentOptionHeader}>
+                  <GSText variant="h2" style={styles.paymentIcon}>💰</GSText>
+                  <View style={styles.paymentOptionInfo}>
+                    <View style={styles.walletHeader}>
+                      <GSText variant="body" weight="semiBold">
+                        {t('checkout.payment.providers.wallet.name')}
+                      </GSText>
+                      {walletInfo.canPay && (
+                        <View style={[styles.recommendedBadge, { backgroundColor: theme.colors.success + '20' }]}>
+                          <GSText variant="caption" color="success" weight="semiBold">
+                            {t('checkout.payment.providers.wallet.recommended')}
+                          </GSText>
+                        </View>
+                      )}
+                    </View>
+                    <GSText variant="caption" color="textSecondary">
+                      {t('checkout.payment.providers.wallet.description')}
+                    </GSText>
+                    <View style={styles.walletBalanceRow}>
+                      <GSText
+                        variant="body"
+                        weight="bold"
+                        color={walletInfo.canPay ? 'success' : 'error'}
+                      >
+                        {formatPrice(walletInfo.balance)}
+                      </GSText>
+                      {!walletInfo.canPay && (
+                        <GSText variant="caption" color="error" style={styles.insufficientText}>
+                          {t('checkout.payment.providers.wallet.insufficient')}
+                        </GSText>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </View>
+
+              <View
+                style={[
+                  styles.radioButton,
+                  {
+                    borderColor: isWalletSelected
+                      ? theme.colors.primary
+                      : walletInfo.canPay
+                      ? theme.colors.border
+                      : theme.colors.error + '50',
+                  },
+                ]}
+              >
+                {isWalletSelected && (
+                  <View
+                    style={[
+                      styles.radioButtonInner,
+                      { backgroundColor: theme.colors.primary },
+                    ]}
+                  />
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Divider */}
+          {user && providers.length > 0 && (
+            <View style={styles.dividerContainer}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+              <GSText variant="caption" color="textSecondary" style={styles.dividerText}>
+                {t('checkout.payment.orPayWith')}
+              </GSText>
+              <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+            </View>
+          )}
+
           {/* Payment Provider Options */}
           {providers.map((provider) => {
             const isSelected = selectedMethod?.id === provider.id;
@@ -252,6 +436,39 @@ const styles = StyleSheet.create({
   },
   paymentOptionInfo: {
     flex: 1,
+  },
+  walletHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  recommendedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  walletBalanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
+  insufficientText: {
+    marginLeft: 4,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    paddingHorizontal: 12,
   },
   radioButton: {
     width: 20,

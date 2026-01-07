@@ -12,7 +12,7 @@
 | 4 | Backend Pago con Saldo | COMPLETADO | 2026-01-07 | `73fd878` |
 | 5 | Mobile TransferScreen UI | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 6 | Mobile TopUp con Stripe SDK | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
-| 7 | Mobile Checkout con saldo | PENDIENTE | - | - |
+| 7 | Mobile Checkout con saldo | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 8 | Admin Panel verificaciones KYC | PENDIENTE | - | - |
 
 ### Resumen de lo implementado (Backend):
@@ -67,6 +67,26 @@
   - UI mejorada con indicadores de estado y errores
 - `mobile/src/providers/StripeProvider.tsx` - Ya existia, envuelve la app
 - `mobile/App.tsx` - StripeProvider ya integrado
+
+**Fase 7 - Mobile Checkout con Saldo:**
+- `mobile/src/services/payments.service.ts` - Nuevos metodos:
+  - `checkCanPayWithWallet(paymentId)` - Verifica si puede pagar con wallet
+  - `processWalletPayment(paymentId)` - Procesa pago con saldo
+  - Tipo `wallet` agregado a PaymentMethod interface
+- `mobile/src/components/checkout/PaymentMethodSelection.tsx` - Actualizado:
+  - Opcion de "Saldo GSHOP" como metodo de pago
+  - Muestra saldo disponible del usuario
+  - Badge "Recomendado" si tiene saldo suficiente
+  - Mensaje "Saldo insuficiente" con faltante si no tiene saldo
+  - Divider "O paga con" para separar wallet de otros metodos
+- `mobile/src/screens/checkout/CheckoutScreen.tsx` - Actualizado:
+  - Flujo de pago con wallet integrado en handlePlaceOrder
+  - Procesa pago directamente sin redireccion externa
+  - Mensaje de exito con nuevo saldo tras pagar
+- `mobile/src/i18n/locales/es.json` - Traducciones agregadas:
+  - `checkout.payment.providers.wallet.*` - Nombre, descripcion, recomendado, insuficiente
+  - `checkout.alerts.walletPaymentSuccess` - Mensaje de exito
+  - `checkout.alerts.walletPaymentFailed` - Mensaje de error
 
 ### Para continuar implementacion:
 
