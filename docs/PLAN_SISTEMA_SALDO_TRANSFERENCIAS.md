@@ -10,7 +10,7 @@
 | 2 | Backend API de transferencias con fee 0.2% | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 3 | Backend Topup con Stripe | COMPLETADO | 2026-01-07 | `3014797` |
 | 4 | Backend Pago con Saldo | COMPLETADO | 2026-01-07 | `73fd878` |
-| 5 | Mobile TransferScreen UI | PENDIENTE | - | - |
+| 5 | Mobile TransferScreen UI | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 6 | Mobile TopUp con Stripe SDK | PENDIENTE | - | - |
 | 7 | Mobile Checkout con saldo | PENDIENTE | - | - |
 | 8 | Admin Panel verificaciones KYC | PENDIENTE | - | - |
@@ -39,6 +39,18 @@
 - `POST /api/v1/payments-v2/:id/process/wallet` - Pagar orden con saldo
 - `GET /api/v1/payments-v2/:id/can-pay-with-wallet` - Verificar si puede pagar
 - Metodos `payOrderWithWallet()` y `checkSufficientBalance()` en TokenService
+
+**Fase 5 - Mobile TransferScreen UI:**
+- `mobile/src/services/transfer.service.ts` - Servicio con llamadas API de transfers
+- `mobile/src/screens/wallet/TransferScreen.tsx` - Pantalla principal con flujo multi-paso
+- `mobile/src/components/wallet/RecipientSearchInput.tsx` - Input de busqueda de destinatario
+- `mobile/src/components/wallet/RecipientCard.tsx` - Tarjeta de confirmacion de destinatario
+- `mobile/src/components/wallet/TransferAmountInput.tsx` - Input de monto con montos rapidos
+- `mobile/src/components/wallet/TransferPreview.tsx` - Preview con desglose de fee 0.2%
+- `mobile/src/components/wallet/TransferSuccess.tsx` - Pantalla de exito
+- Navegacion actualizada en ProfileNavigator
+- WalletScreen actualizado para navegar a TransferScreen
+- Traducciones i18n agregadas en es.json
 
 ### Para continuar implementacion:
 

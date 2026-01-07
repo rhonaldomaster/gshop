@@ -389,7 +389,6 @@ export default function WalletScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [topupLoading, setTopupLoading] = useState(false);
-  const [showSendModal, setShowSendModal] = useState(false);
 
   // Load wallet data
   const loadWalletData = useCallback(async (isRefresh = false) => {
@@ -454,14 +453,10 @@ export default function WalletScreen() {
     }
   }, [loadWalletData]);
 
-  // Handle send tokens (placeholder)
+  // Handle send tokens - navigate to transfer screen
   const handleSend = useCallback(() => {
-    Alert.alert(
-      'Send Tokens',
-      'Token transfer feature will be available soon!',
-      [{ text: 'OK' }]
-    );
-  }, []);
+    navigation.navigate('Transfer' as any);
+  }, [navigation]);
 
   // Render transaction item
   const renderTransaction = ({ item }: { item: TokenTransaction }) => (
