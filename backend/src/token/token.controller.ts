@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { TokenService } from './token.service';
 import {
@@ -17,7 +18,10 @@ import {
   TopupWalletDto,
   BurnTokensDto,
   MintTokensDto,
-  TokenStatsQueryDto
+  TokenStatsQueryDto,
+  SearchUserDto,
+  TransferPreviewDto,
+  ExecuteTransferDto
 } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TokenTransactionStatus } from './token.entity';
@@ -53,7 +57,7 @@ export class TokenController {
     return this.tokenService.getUserRewards(req.user.id, rewardLimit);
   }
 
-  // Token Transfer
+  // Token Transfer (Legacy - without fee)
   @Post('transfer')
   @UseGuards(JwtAuthGuard)
   async transferTokens(@Request() req, @Body() transferDto: Omit<TransferTokensDto, 'fromUserId'>) {
@@ -62,6 +66,71 @@ export class TokenController {
       fromUserId: req.user.id,
     };
     return this.tokenService.transferTokens(fullTransferDto);
+  }
+
+  // ==========================================
+  // P2P Transfer Endpoints (Option A - Fee Separado)
+  // ==========================================
+
+  /**
+   * Search for a user by email or phone to send a transfer
+   * Returns masked info for privacy
+   */
+  @Get('search-user')
+  @UseGuards(JwtAuthGuard)
+  async searchUser(@Request() req, @Query() query: SearchUserDto) {
+    const result = await this.tokenService.searchUserByEmailOrPhone(
+      query.query,
+      req.user.id
+    );
+
+    if (!result) {
+      throw new NotFoundException('Usuario no encontrado con ese email o telefono');
+    }
+
+    return result;
+  }
+
+  /**
+   * Get user's current transfer limits and usage
+   */
+  @Get('transfer-limits')
+  @UseGuards(JwtAuthGuard)
+  async getTransferLimits(@Request() req) {
+    return this.tokenService.getUserTransferLimits(req.user.id);
+  }
+
+  /**
+   * Get preview of a transfer showing fee breakdown
+   * Option A: Recipient receives full amount, then fee is deducted
+   */
+  @Post('transfer/preview')
+  @UseGuards(JwtAuthGuard)
+  async getTransferPreview(@Request() req, @Body() dto: TransferPreviewDto) {
+    return this.tokenService.getTransferPreview(
+      req.user.id,
+      dto.toUserId,
+      dto.amount
+    );
+  }
+
+  /**
+   * Execute a P2P transfer with platform fee (Option A model)
+   *
+   * Flow:
+   * 1. TRANSFER_OUT: Sender loses full amount
+   * 2. TRANSFER_IN: Recipient receives full amount
+   * 3. PLATFORM_FEE: 0.2% fee deducted from recipient
+   */
+  @Post('transfer/execute')
+  @UseGuards(JwtAuthGuard)
+  async executeTransfer(@Request() req, @Body() dto: ExecuteTransferDto) {
+    return this.tokenService.executeTransferWithFee(
+      req.user.id,
+      dto.toUserId,
+      dto.amount,
+      dto.note
+    );
   }
 
   // Rewards (Admin/System endpoints)

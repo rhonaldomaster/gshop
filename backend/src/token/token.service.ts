@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, ILike } from 'typeorm';
 import {
   GshopWallet,
   GshopTransaction,
@@ -13,7 +13,27 @@ import {
   TokenTransactionType,
   TokenTransactionStatus
 } from './token.entity';
-import { CreateWalletDto, TransferTokensDto, RewardUserDto, TopupWalletDto, TokenStatsQueryDto } from './dto';
+import {
+  CreateWalletDto,
+  TransferTokensDto,
+  RewardUserDto,
+  TopupWalletDto,
+  TokenStatsQueryDto,
+  SearchUserResponseDto,
+  TransferPreviewResponseDto,
+  TransferResultDto,
+  TransferLimitsResponseDto
+} from './dto';
+import { User } from '../users/user.entity';
+import { TransferLimit } from './entities/transfer-limit.entity';
+import { UserVerification } from './entities/user-verification.entity';
+import {
+  VerificationLevel,
+  TRANSFER_LIMITS,
+  calculatePlatformFee,
+  getTransferPreview,
+  PLATFORM_FEE_RATE
+} from './constants/transfer-limits';
 
 @Injectable()
 export class TokenService {
@@ -28,6 +48,12 @@ export class TokenService {
     private topupRepository: Repository<WalletTopup>,
     @InjectRepository(TokenCirculation)
     private circulationRepository: Repository<TokenCirculation>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(TransferLimit)
+    private transferLimitRepository: Repository<TransferLimit>,
+    @InjectRepository(UserVerification)
+    private userVerificationRepository: Repository<UserVerification>,
     private dataSource: DataSource,
   ) {}
 
@@ -381,5 +407,408 @@ export class TokenService {
       reason,
       mintedAt: new Date(),
     });
+  }
+
+  // ==========================================
+  // P2P Transfer Methods (Option A - Fee Separado)
+  // ==========================================
+
+  /**
+   * Search for a user by email or phone number for P2P transfer
+   * Returns masked information for privacy
+   */
+  async searchUserByEmailOrPhone(query: string, currentUserId: string): Promise<SearchUserResponseDto | null> {
+    // Normalize query
+    const normalizedQuery = query.trim().toLowerCase();
+
+    // Search by email or phone
+    const user = await this.userRepository.findOne({
+      where: [
+        { email: ILike(normalizedQuery) },
+        { phone: normalizedQuery }
+      ]
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    // Cannot transfer to yourself
+    if (user.id === currentUserId) {
+      throw new BadRequestException('No puedes transferir a tu propia cuenta');
+    }
+
+    // Mask email (show first 2 chars + ***@domain)
+    const maskedEmail = this.maskEmail(user.email);
+
+    // Mask phone if exists
+    const maskedPhone = user.phone ? this.maskPhone(user.phone) : undefined;
+
+    return {
+      userId: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      maskedEmail,
+      maskedPhone
+    };
+  }
+
+  /**
+   * Mask email for privacy (jo***@gmail.com)
+   */
+  private maskEmail(email: string): string {
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 2) {
+      return `${localPart[0]}***@${domain}`;
+    }
+    return `${localPart.substring(0, 2)}***@${domain}`;
+  }
+
+  /**
+   * Mask phone for privacy (***1234)
+   */
+  private maskPhone(phone: string): string {
+    if (phone.length <= 4) {
+      return '***' + phone;
+    }
+    return '***' + phone.slice(-4);
+  }
+
+  /**
+   * Get or create transfer limit record for a user
+   */
+  async getOrCreateTransferLimit(userId: string): Promise<TransferLimit> {
+    let transferLimit = await this.transferLimitRepository.findOne({
+      where: { userId }
+    });
+
+    if (!transferLimit) {
+      // Check user's verification level
+      const verification = await this.userVerificationRepository.findOne({
+        where: { userId }
+      });
+
+      const verificationLevel = verification?.level || VerificationLevel.NONE;
+
+      // Create new transfer limit record
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      transferLimit = this.transferLimitRepository.create({
+        userId,
+        verificationLevel,
+        dailyTransferred: 0,
+        monthlyTransferred: 0,
+        totalLifetimeTransferred: 0,
+        dailyTransferCount: 0,
+        monthlyTransferCount: 0,
+        totalTransferCount: 0,
+        lastDailyReset: today,
+        lastMonthlyReset: today
+      });
+
+      await this.transferLimitRepository.save(transferLimit);
+    } else {
+      // Check and reset if needed
+      if (transferLimit.checkAndResetIfNeeded()) {
+        await this.transferLimitRepository.save(transferLimit);
+      }
+    }
+
+    return transferLimit;
+  }
+
+  /**
+   * Get user's current transfer limits and usage
+   */
+  async getUserTransferLimits(userId: string): Promise<TransferLimitsResponseDto> {
+    const transferLimit = await this.getOrCreateTransferLimit(userId);
+    const limits = transferLimit.getLimits();
+
+    // Map verification level to friendly name
+    const levelNames: Record<string, string> = {
+      [VerificationLevel.NONE]: 'Sin verificar',
+      [VerificationLevel.LEVEL_1]: 'Verificacion Basica',
+      [VerificationLevel.LEVEL_2]: 'Verificacion Completa'
+    };
+
+    const canUpgrade = transferLimit.verificationLevel !== VerificationLevel.LEVEL_2;
+    const nextLevelMap: Record<string, string> = {
+      [VerificationLevel.NONE]: VerificationLevel.LEVEL_1,
+      [VerificationLevel.LEVEL_1]: VerificationLevel.LEVEL_2
+    };
+
+    return {
+      level: transferLimit.verificationLevel,
+      levelName: levelNames[transferLimit.verificationLevel],
+      limits: {
+        minPerTransaction: limits.minPerTransaction,
+        maxPerTransaction: limits.maxPerTransaction,
+        dailyLimit: limits.dailyLimit,
+        monthlyLimit: limits.monthlyLimit
+      },
+      usage: {
+        dailyTransferred: Number(transferLimit.dailyTransferred),
+        dailyRemaining: transferLimit.getDailyRemaining(),
+        monthlyTransferred: Number(transferLimit.monthlyTransferred),
+        monthlyRemaining: transferLimit.getMonthlyRemaining(),
+        dailyTransferCount: transferLimit.dailyTransferCount,
+        monthlyTransferCount: transferLimit.monthlyTransferCount
+      },
+      canUpgrade,
+      nextLevel: canUpgrade ? nextLevelMap[transferLimit.verificationLevel] : undefined
+    };
+  }
+
+  /**
+   * Validate if a transfer is allowed based on user's limits
+   */
+  async validateTransferLimits(userId: string, amount: number): Promise<{ valid: boolean; error?: string }> {
+    const transferLimit = await this.getOrCreateTransferLimit(userId);
+    const canTransferResult = transferLimit.canTransfer(amount);
+
+    if (!canTransferResult.allowed) {
+      return { valid: false, error: canTransferResult.reason };
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * Get transfer preview showing fee breakdown (Option A model)
+   */
+  async getTransferPreview(
+    fromUserId: string,
+    toUserId: string,
+    amount: number
+  ): Promise<TransferPreviewResponseDto> {
+    // Validate recipient exists
+    const recipient = await this.userRepository.findOne({ where: { id: toUserId } });
+    if (!recipient) {
+      throw new NotFoundException('Destinatario no encontrado');
+    }
+
+    // Validate sender has sufficient balance
+    const senderWallet = await this.getUserWallet(fromUserId);
+    if (Number(senderWallet.balance) < amount) {
+      throw new BadRequestException('Saldo insuficiente para realizar la transferencia');
+    }
+
+    // Validate transfer limits
+    const limitValidation = await this.validateTransferLimits(fromUserId, amount);
+    if (!limitValidation.valid) {
+      throw new ForbiddenException(limitValidation.error);
+    }
+
+    // Calculate fee preview (Option A)
+    const preview = getTransferPreview(amount);
+
+    return {
+      ...preview,
+      recipientName: `${recipient.firstName} ${recipient.lastName}`
+    };
+  }
+
+  /**
+   * Execute P2P transfer with fee (Option A model)
+   *
+   * Flow:
+   * 1. Sender sends full amount -> Sender balance decreases by amount
+   * 2. Recipient receives full amount -> Recipient balance increases by amount
+   * 3. Platform fee deducted from recipient -> Recipient balance decreases by fee
+   * 4. Result: Recipient has (amount - fee), Sender has (balance - amount)
+   */
+  async executeTransferWithFee(
+    fromUserId: string,
+    toUserId: string,
+    amount: number,
+    note?: string
+  ): Promise<TransferResultDto> {
+    // Validate recipient exists
+    const recipient = await this.userRepository.findOne({ where: { id: toUserId } });
+    if (!recipient) {
+      throw new NotFoundException('Destinatario no encontrado');
+    }
+
+    // Validate sender wallet and balance
+    const senderWallet = await this.getUserWallet(fromUserId);
+    if (Number(senderWallet.balance) < amount) {
+      throw new BadRequestException('Saldo insuficiente para realizar la transferencia');
+    }
+
+    // Validate transfer limits
+    const limitValidation = await this.validateTransferLimits(fromUserId, amount);
+    if (!limitValidation.valid) {
+      throw new ForbiddenException(limitValidation.error);
+    }
+
+    // Cannot transfer to yourself
+    if (fromUserId === toUserId) {
+      throw new BadRequestException('No puedes transferir a tu propia cuenta');
+    }
+
+    // Generate unique transfer ID
+    const transferId = `TRF_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
+    // Calculate fee
+    const platformFee = calculatePlatformFee(amount);
+
+    // Start transaction
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const transactions: TransferResultDto['transactions'] = [];
+
+    try {
+      // Step 1: Debit sender (full amount)
+      const senderWalletEntity = await queryRunner.manager.findOne(GshopWallet, {
+        where: { userId: fromUserId, isActive: true }
+      });
+
+      if (!senderWalletEntity) {
+        throw new NotFoundException('Wallet del remitente no encontrada');
+      }
+
+      const senderBalanceBefore = Number(senderWalletEntity.balance);
+      senderWalletEntity.balance = senderBalanceBefore - amount;
+      senderWalletEntity.totalSpent = Number(senderWalletEntity.totalSpent) + amount;
+      senderWalletEntity.lastTransactionAt = new Date();
+
+      await queryRunner.manager.save(GshopWallet, senderWalletEntity);
+
+      // Create TRANSFER_OUT transaction for sender
+      const senderTx = queryRunner.manager.create(GshopTransaction, {
+        userId: fromUserId,
+        walletId: senderWalletEntity.id,
+        type: TokenTransactionType.TRANSFER_OUT,
+        status: TokenTransactionStatus.COMPLETED,
+        amount: -amount,
+        description: `Transferencia a ${recipient.firstName} ${recipient.lastName}`,
+        reference: transferId,
+        toUserId,
+        metadata: { note, transferId }
+      });
+      await queryRunner.manager.save(GshopTransaction, senderTx);
+
+      transactions.push({
+        type: 'TRANSFER_OUT',
+        amount: -amount,
+        userId: fromUserId,
+        description: `Enviaste $${amount.toLocaleString()} a ${recipient.firstName}`
+      });
+
+      // Step 2: Credit recipient (full amount)
+      let recipientWallet = await queryRunner.manager.findOne(GshopWallet, {
+        where: { userId: toUserId, isActive: true }
+      });
+
+      if (!recipientWallet) {
+        // Auto-create wallet for recipient
+        recipientWallet = queryRunner.manager.create(GshopWallet, {
+          userId: toUserId,
+          balance: 0,
+          totalEarned: 0,
+          totalSpent: 0,
+          cashbackRate: 0.05,
+          isActive: true
+        });
+        recipientWallet = await queryRunner.manager.save(GshopWallet, recipientWallet);
+      }
+
+      const recipientBalanceBefore = Number(recipientWallet.balance);
+      recipientWallet.balance = recipientBalanceBefore + amount;
+      recipientWallet.totalEarned = Number(recipientWallet.totalEarned) + amount;
+      recipientWallet.lastTransactionAt = new Date();
+
+      await queryRunner.manager.save(GshopWallet, recipientWallet);
+
+      // Create TRANSFER_IN transaction for recipient
+      const sender = await queryRunner.manager.findOne(User, { where: { id: fromUserId } });
+      const senderName = sender ? `${sender.firstName} ${sender.lastName}` : 'Usuario';
+
+      const recipientTx = queryRunner.manager.create(GshopTransaction, {
+        userId: toUserId,
+        walletId: recipientWallet.id,
+        type: TokenTransactionType.TRANSFER_IN,
+        status: TokenTransactionStatus.COMPLETED,
+        amount: amount,
+        description: `Recibiste de ${senderName}`,
+        reference: transferId,
+        fromUserId,
+        metadata: { note, transferId }
+      });
+      await queryRunner.manager.save(GshopTransaction, recipientTx);
+
+      transactions.push({
+        type: 'TRANSFER_IN',
+        amount: amount,
+        userId: toUserId,
+        description: `Recibiste $${amount.toLocaleString()} de ${senderName}`
+      });
+
+      // Step 3: Charge platform fee to recipient (if applicable)
+      if (platformFee > 0) {
+        recipientWallet.balance = Number(recipientWallet.balance) - platformFee;
+        recipientWallet.totalSpent = Number(recipientWallet.totalSpent) + platformFee;
+
+        await queryRunner.manager.save(GshopWallet, recipientWallet);
+
+        // Create PLATFORM_FEE transaction
+        const feeTx = queryRunner.manager.create(GshopTransaction, {
+          userId: toUserId,
+          walletId: recipientWallet.id,
+          type: TokenTransactionType.PLATFORM_FEE,
+          status: TokenTransactionStatus.COMPLETED,
+          amount: -platformFee,
+          fee: platformFee,
+          description: 'Comision de servicio GSHOP',
+          reference: transferId,
+          metadata: {
+            transferId,
+            feeRate: PLATFORM_FEE_RATE,
+            originalAmount: amount
+          }
+        });
+        await queryRunner.manager.save(GshopTransaction, feeTx);
+
+        transactions.push({
+          type: 'PLATFORM_FEE',
+          amount: -platformFee,
+          userId: toUserId,
+          description: `Comision de servicio GSHOP (${PLATFORM_FEE_RATE * 100}%)`
+        });
+      }
+
+      // Step 4: Update sender's transfer limits
+      const transferLimit = await this.getOrCreateTransferLimit(fromUserId);
+      transferLimit.recordTransfer(amount);
+      await queryRunner.manager.save(TransferLimit, transferLimit);
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Update circulation stats (outside transaction)
+      await this.updateCirculation('P2P_TRANSFER', amount);
+
+      return {
+        success: true,
+        transferId,
+        transactions,
+        summary: {
+          amountSent: amount,
+          feeCharged: platformFee,
+          recipientNetBalance: amount - platformFee,
+          senderNewBalance: Number(senderWalletEntity.balance)
+        },
+        timestamp: new Date()
+      };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

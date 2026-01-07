@@ -9,6 +9,9 @@ import {
   WalletTopup,
   TokenCirculation
 } from './token.entity';
+import { UserVerification } from './entities/user-verification.entity';
+import { TransferLimit } from './entities/transfer-limit.entity';
+import { User } from '../users/user.entity';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import {
       TokenReward,
       WalletTopup,
       TokenCirculation,
+      UserVerification,
+      TransferLimit,
+      User, // For searching users by email/phone
     ]),
   ],
   controllers: [TokenController],

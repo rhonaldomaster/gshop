@@ -10,6 +10,7 @@ export enum TokenTransactionType {
   TRANSFER = 'transfer',
   TRANSFER_OUT = 'transfer_out',
   TRANSFER_IN = 'transfer_in',
+  PLATFORM_FEE = 'platform_fee',  // Fee charged to recipient on P2P transfers (0.2%)
   BONUS = 'bonus',
   PENALTY = 'penalty',
   TOPUP = 'topup',
