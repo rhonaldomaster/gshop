@@ -101,6 +101,116 @@ export class PaymentsV2Controller {
     return this.paymentsV2Service.processCryptoPayment(paymentId, cryptoPaymentDto);
   }
 
+  /**
+   * Process payment using wallet balance
+   * POST /api/v1/payments-v2/:id/process/wallet
+   *
+   * This endpoint allows users to pay for orders using their GSHOP wallet balance.
+   * The payment ID should reference an existing payment record.
+   */
+  @Post(':id/process/wallet')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Pay for order using wallet balance' })
+  @ApiResponse({ status: 200, description: 'Payment processed successfully' })
+  @ApiResponse({ status: 400, description: 'Insufficient balance or invalid payment' })
+  async processWalletPayment(
+    @Param('id') paymentId: string,
+    @Request() req,
+  ) {
+    const userId = req.user.id;
+
+    // Get payment to find order
+    const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+    if (!payment) {
+      return { success: false, error: 'Pago no encontrado' };
+    }
+
+    if (payment.status === PaymentStatus.COMPLETED) {
+      return { success: false, error: 'Este pago ya fue procesado' };
+    }
+
+    if (!payment.orderId) {
+      return { success: false, error: 'Este pago no tiene una orden asociada' };
+    }
+
+    try {
+      // Process payment with wallet
+      const result = await this.tokenService.payOrderWithWallet(
+        userId,
+        payment.orderId,
+        Number(payment.amount)
+      );
+
+      // Update payment status
+      payment.status = PaymentStatus.COMPLETED;
+      payment.processedAt = new Date();
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        paymentMethod: 'wallet_balance',
+        walletTransactionId: result.transactionId,
+        newWalletBalance: result.newBalance
+      };
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      // Update order status to CONFIRMED
+      await this.ordersService.updateStatus(payment.orderId, OrderStatus.CONFIRMED);
+
+      this.logger.log(`Order ${payment.orderId} paid with wallet balance by user ${userId}`);
+
+      return {
+        success: true,
+        paymentId: payment.id,
+        orderId: payment.orderId,
+        amount: payment.amount,
+        walletTransactionId: result.transactionId,
+        newWalletBalance: result.newBalance,
+        message: 'Pago procesado exitosamente con saldo de wallet'
+      };
+    } catch (error) {
+      this.logger.error(`Wallet payment failed for payment ${paymentId}: ${error.message}`);
+
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Check if user can pay with wallet balance
+   * GET /api/v1/payments-v2/:id/can-pay-with-wallet
+   */
+  @Get(':id/can-pay-with-wallet')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Check if user can pay order with wallet balance' })
+  async canPayWithWallet(
+    @Param('id') paymentId: string,
+    @Request() req,
+  ) {
+    const userId = req.user.id;
+
+    const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+    if (!payment) {
+      return { canPay: false, error: 'Pago no encontrado' };
+    }
+
+    const balanceCheck = await this.tokenService.checkSufficientBalance(
+      userId,
+      Number(payment.amount)
+    );
+
+    return {
+      canPay: balanceCheck.hasSufficientBalance,
+      paymentAmount: Number(payment.amount),
+      currentBalance: balanceCheck.currentBalance,
+      shortfall: balanceCheck.shortfall,
+      currency: 'COP'
+    };
+  }
+
   @Post('crypto/verify/:id')
   @UseGuards(JwtAuthGuard)
   async verifyCryptoTransaction(@Param('id') cryptoTxId: string) {
