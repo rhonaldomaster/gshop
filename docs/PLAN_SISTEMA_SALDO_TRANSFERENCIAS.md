@@ -1,5 +1,59 @@
 # Plan de Implementacion: Sistema de Saldo y Transferencias P2P - GSHOP
 
+---
+
+## PROGRESO DE IMPLEMENTACION
+
+| Fase | Descripcion | Estado | Fecha | Commit |
+|------|-------------|--------|-------|--------|
+| 1 | Entidades KYC y Limites (migraciones) | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
+| 2 | Backend API de transferencias con fee 0.2% | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
+| 3 | Backend Topup con Stripe | COMPLETADO | 2026-01-07 | `3014797` |
+| 4 | Backend Pago con Saldo | COMPLETADO | 2026-01-07 | `73fd878` |
+| 5 | Mobile TransferScreen UI | PENDIENTE | - | - |
+| 6 | Mobile TopUp con Stripe SDK | PENDIENTE | - | - |
+| 7 | Mobile Checkout con saldo | PENDIENTE | - | - |
+| 8 | Admin Panel verificaciones KYC | PENDIENTE | - | - |
+
+### Resumen de lo implementado (Backend):
+
+**Fase 1 - KYC y Limites:**
+- Entidad `UserVerification` en `src/token/entities/user-verification.entity.ts`
+- Entidad `TransferLimit` en `src/token/entities/transfer-limit.entity.ts`
+- Constantes de limites en `src/token/constants/transfer-limits.ts`
+- Migracion ejecutada
+
+**Fase 2 - API Transferencias P2P:**
+- `GET /api/v1/tokens/search-user` - Buscar usuario por email/telefono
+- `GET /api/v1/tokens/transfer-limits` - Obtener limites del usuario
+- `POST /api/v1/tokens/transfer/preview` - Preview con desglose de fee
+- `POST /api/v1/tokens/transfer/execute` - Ejecutar transferencia con fee 0.2%
+
+**Fase 3 - Stripe Topup:**
+- `POST /api/v1/tokens/topup/stripe-intent` - Crear PaymentIntent de Stripe
+- `GET /api/v1/tokens/topup/:id/status` - Consultar estado de recarga
+- Webhook handlers en `payments-v2.controller.ts` para success/failure
+- Conversion COP a USD automatica via `CurrencyService`
+
+**Fase 4 - Pago con Saldo:**
+- `POST /api/v1/payments-v2/:id/process/wallet` - Pagar orden con saldo
+- `GET /api/v1/payments-v2/:id/can-pay-with-wallet` - Verificar si puede pagar
+- Metodos `payOrderWithWallet()` y `checkSufficientBalance()` en TokenService
+
+### Para continuar implementacion:
+
+```bash
+# Cambiar a la rama de desarrollo
+git checkout feature/balance-transfer
+
+# Ver commits de esta feature
+git log --oneline
+
+# Continuar con Fase 5 (Mobile TransferScreen)
+```
+
+---
+
 ## Resumen Ejecutivo
 
 Implementar un sistema completo de wallet donde los usuarios puedan:
