@@ -11,7 +11,7 @@
 | 3 | Backend Topup con Stripe | COMPLETADO | 2026-01-07 | `3014797` |
 | 4 | Backend Pago con Saldo | COMPLETADO | 2026-01-07 | `73fd878` |
 | 5 | Mobile TransferScreen UI | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
-| 6 | Mobile TopUp con Stripe SDK | PENDIENTE | - | - |
+| 6 | Mobile TopUp con Stripe SDK | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 7 | Mobile Checkout con saldo | PENDIENTE | - | - |
 | 8 | Admin Panel verificaciones KYC | PENDIENTE | - | - |
 
@@ -51,6 +51,22 @@
 - Navegacion actualizada en ProfileNavigator
 - WalletScreen actualizado para navegar a TransferScreen
 - Traducciones i18n agregadas en es.json
+
+**Fase 6 - Mobile TopUp con Stripe SDK:**
+- `mobile/src/services/payments.service.ts` - Nuevos metodos:
+  - `createStripeTopupIntent(amountCOP)` - Crea PaymentIntent en backend
+  - `getTopupStatus(topupId)` - Consulta estado de recarga
+  - `pollTopupStatus(topupId)` - Polling hasta completado/fallido
+  - Interfaces `StripeTopupIntentResponse` y `TopupStatusResponse`
+- `mobile/src/screens/wallet/WalletScreen.tsx` - TopupModal actualizado:
+  - Integracion con Stripe SDK usando `useStripe()` hook
+  - `initPaymentSheet()` y `presentPaymentSheet()` para pago nativo
+  - Flujo multi-paso: amount -> processing -> success/error
+  - Montos en COP (pesos colombianos) con Quick Amounts
+  - Polling automatico post-pago para confirmar acreditacion
+  - UI mejorada con indicadores de estado y errores
+- `mobile/src/providers/StripeProvider.tsx` - Ya existia, envuelve la app
+- `mobile/App.tsx` - StripeProvider ya integrado
 
 ### Para continuar implementacion:
 

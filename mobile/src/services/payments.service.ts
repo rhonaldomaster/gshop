@@ -111,6 +111,26 @@ export interface TopupRequest {
   currency?: string;
 }
 
+export interface StripeTopupIntentResponse {
+  topupId: string;
+  clientSecret: string;
+  publishableKey: string;
+  amountCOP: number;
+  amountUSD: number;
+  exchangeRate: number;
+  expiresAt: string;
+}
+
+export interface TopupStatusResponse {
+  topupId: string;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  amount: number;
+  currency: string;
+  stripePaymentIntentId?: string;
+  processedAt?: string;
+  createdAt: string;
+}
+
 class PaymentsService {
   // Get user payment methods
   getPaymentMethods = async (): Promise<PaymentMethod[]> => {
@@ -333,7 +353,7 @@ class PaymentsService {
     }
   }
 
-  // Top up wallet
+  // Top up wallet (legacy method)
   async topupWallet(topupData: TopupRequest): Promise<{ success: boolean; transactionId: string }> {
     try {
       const response = await apiClient.post<{ success: boolean; transactionId: string }>(
@@ -350,6 +370,74 @@ class PaymentsService {
       console.error('PaymentsService: Wallet topup failed', error);
       throw new Error(error.message || 'Failed to top up wallet');
     }
+  }
+
+  /**
+   * Create Stripe Payment Intent for wallet topup
+   * Returns clientSecret for Stripe SDK to confirm payment
+   * @param amountCOP Amount in Colombian Pesos (COP)
+   */
+  async createStripeTopupIntent(amountCOP: number): Promise<StripeTopupIntentResponse> {
+    try {
+      const response = await apiClient.post<StripeTopupIntentResponse>(
+        '/tokens/topup/stripe-intent',
+        { amount: amountCOP }
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to create topup intent');
+      }
+    } catch (error) {
+      console.error('PaymentsService: Create Stripe topup intent failed', error);
+      throw new Error(error.message || 'Failed to initialize payment');
+    }
+  }
+
+  /**
+   * Get topup status by ID
+   * Use this to check if payment was confirmed after Stripe SDK completes
+   */
+  async getTopupStatus(topupId: string): Promise<TopupStatusResponse> {
+    try {
+      const response = await apiClient.get<TopupStatusResponse>(
+        `/tokens/topup/${topupId}/status`
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to get topup status');
+      }
+    } catch (error) {
+      console.error('PaymentsService: Get topup status failed', error);
+      throw new Error(error.message || 'Failed to check payment status');
+    }
+  }
+
+  /**
+   * Poll topup status until completed or timeout
+   * Useful after Stripe SDK confirms payment - webhooks may take a moment
+   */
+  async pollTopupStatus(
+    topupId: string,
+    maxAttempts = 10,
+    intervalMs = 2000
+  ): Promise<TopupStatusResponse> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const status = await this.getTopupStatus(topupId);
+
+      if (status.status === 'completed' || status.status === 'failed') {
+        return status;
+      }
+
+      // Wait before next attempt
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+
+    // Return last status even if still pending
+    return this.getTopupStatus(topupId);
   }
 
   // Add payment method
