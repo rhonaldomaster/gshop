@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TokenController } from './token.controller';
 import { TokenService } from './token.service';
@@ -12,6 +12,7 @@ import {
 import { UserVerification } from './entities/user-verification.entity';
 import { TransferLimit } from './entities/transfer-limit.entity';
 import { User } from '../users/user.entity';
+import { PaymentsV2Module } from '../payments/payments-v2.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { User } from '../users/user.entity';
       TransferLimit,
       User, // For searching users by email/phone
     ]),
+    forwardRef(() => PaymentsV2Module), // For CurrencyService (COP → USD conversion)
   ],
   controllers: [TokenController],
   providers: [TokenService],

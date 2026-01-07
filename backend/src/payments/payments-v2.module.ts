@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
 import { PaymentsV2Controller } from './payments-v2.controller';
@@ -10,6 +10,7 @@ import { PaymentConfigService } from './payment-config.service';
 import { PaymentV2, Invoice, PaymentMethodEntity, CryptoTransaction } from './payments-v2.entity';
 import { Order } from '../database/entities/order.entity';
 import { OrdersModule } from '../orders/orders.module';
+import { TokenModule } from '../token/token.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { OrdersModule } from '../orders/orders.module';
     ]),
     HttpModule, // For CurrencyService to fetch exchange rates
     OrdersModule, // For OrdersService in webhook handler
+    forwardRef(() => TokenModule), // For TokenService in webhook handler (wallet topups)
   ],
   controllers: [PaymentsV2Controller],
   providers: [
@@ -31,6 +33,6 @@ import { OrdersModule } from '../orders/orders.module';
     CurrencyService,
     PaymentConfigService,
   ],
-  exports: [PaymentsV2Service],
+  exports: [PaymentsV2Service, CurrencyService],
 })
 export class PaymentsV2Module {}

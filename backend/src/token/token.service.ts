@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, ILike } from 'typeorm';
 import {
@@ -22,7 +22,9 @@ import {
   SearchUserResponseDto,
   TransferPreviewResponseDto,
   TransferResultDto,
-  TransferLimitsResponseDto
+  TransferLimitsResponseDto,
+  StripeTopupResponseDto,
+  TopupStatusDto
 } from './dto';
 import { User } from '../users/user.entity';
 import { TransferLimit } from './entities/transfer-limit.entity';
@@ -34,9 +36,14 @@ import {
   getTransferPreview,
   PLATFORM_FEE_RATE
 } from './constants/transfer-limits';
+import { CurrencyService } from '../payments/currency.service';
+import Stripe from 'stripe';
 
 @Injectable()
 export class TokenService {
+  private readonly logger = new Logger(TokenService.name);
+  private stripe: Stripe;
+
   constructor(
     @InjectRepository(GshopWallet)
     private walletRepository: Repository<GshopWallet>,
@@ -55,7 +62,12 @@ export class TokenService {
     @InjectRepository(UserVerification)
     private userVerificationRepository: Repository<UserVerification>,
     private dataSource: DataSource,
-  ) {}
+    private currencyService: CurrencyService,
+  ) {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2025-08-27.basil',
+    });
+  }
 
   // Wallet Management
   async createWallet(userId: string, createWalletDto?: CreateWalletDto): Promise<GshopWallet> {
@@ -810,5 +822,339 @@ export class TokenService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  // ==========================================
+  // Stripe Topup Methods (Wallet Recharge)
+  // ==========================================
+
+  /**
+   * Create a Stripe Payment Intent for wallet topup
+   * Creates a pending transaction and returns clientSecret for mobile Stripe SDK
+   */
+  async createStripeTopupIntent(userId: string, amountCOP: number): Promise<StripeTopupResponseDto> {
+    // Validate minimum amount
+    if (amountCOP < 1000) {
+      throw new BadRequestException('El monto minimo de recarga es $1,000 COP');
+    }
+
+    // Maximum topup amount: $50,000,000 COP
+    if (amountCOP > 50000000) {
+      throw new BadRequestException('El monto maximo de recarga es $50,000,000 COP');
+    }
+
+    // Ensure user has a wallet
+    const wallet = await this.getUserWallet(userId);
+
+    // Convert COP to USD for Stripe
+    const { amountUSD, rate } = await this.currencyService.convertCOPtoUSD(amountCOP);
+
+    // Stripe minimum is $0.50 USD
+    if (amountUSD < 0.5) {
+      throw new BadRequestException('El monto es muy bajo para procesar. Minimo $1,000 COP');
+    }
+
+    // Generate unique topup ID
+    const topupId = `TOPUP_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+
+    try {
+      // Create pending transaction record
+      const pendingTx = this.transactionRepository.create({
+        userId,
+        walletId: wallet.id,
+        type: TokenTransactionType.TOPUP,
+        status: TokenTransactionStatus.PENDING,
+        amount: amountCOP,
+        reference: topupId,
+        description: 'Recarga de saldo via Stripe',
+        metadata: {
+          topupId,
+          amountCOP,
+          amountUSD,
+          exchangeRate: rate,
+          paymentMethod: 'stripe',
+          createdAt: new Date().toISOString()
+        }
+      });
+      const savedTx = await this.transactionRepository.save(pendingTx);
+
+      // Create Stripe Payment Intent
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: Math.round(amountUSD * 100), // Convert to cents
+        currency: 'usd',
+        metadata: {
+          topupId,
+          transactionId: savedTx.id,
+          userId,
+          amountCOP: amountCOP.toString(),
+          type: 'wallet_topup'
+        },
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      // Update transaction with Stripe PaymentIntent ID
+      savedTx.metadata = {
+        ...savedTx.metadata,
+        stripePaymentIntentId: paymentIntent.id
+      };
+      await this.transactionRepository.save(savedTx);
+
+      this.logger.log(`Created Stripe topup intent ${topupId} for user ${userId}: $${amountCOP} COP = $${amountUSD} USD`);
+
+      // Set expiration time (30 minutes)
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 30);
+
+      return {
+        topupId,
+        clientSecret: paymentIntent.client_secret,
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+        amountCOP,
+        amountUSD,
+        exchangeRate: rate,
+        expiresAt
+      };
+
+    } catch (error) {
+      this.logger.error(`Failed to create Stripe topup intent: ${error.message}`);
+      throw new BadRequestException(`Error al crear la recarga: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get topup status by topup ID or transaction ID
+   */
+  async getTopupStatus(topupIdOrTxId: string): Promise<TopupStatusDto> {
+    // Try to find by reference (topupId) first, then by id
+    let transaction = await this.transactionRepository.findOne({
+      where: { reference: topupIdOrTxId, type: TokenTransactionType.TOPUP }
+    });
+
+    if (!transaction) {
+      transaction = await this.transactionRepository.findOne({
+        where: { id: topupIdOrTxId, type: TokenTransactionType.TOPUP }
+      });
+    }
+
+    if (!transaction) {
+      throw new NotFoundException('Recarga no encontrada');
+    }
+
+    return {
+      topupId: transaction.reference || transaction.id,
+      status: transaction.status,
+      amount: Number(transaction.amount),
+      currency: 'COP',
+      stripePaymentIntentId: transaction.metadata?.stripePaymentIntentId,
+      processedAt: transaction.processedAt,
+      createdAt: transaction.createdAt
+    };
+  }
+
+  /**
+   * Process completed Stripe topup (called from webhook handler)
+   * This credits the user's wallet after successful payment
+   */
+  async processStripeTopupSuccess(
+    stripePaymentIntentId: string,
+    amountUSDCents: number
+  ): Promise<{ success: boolean; transactionId?: string; error?: string }> {
+    // Find the pending transaction by Stripe Payment Intent ID
+    const transactions = await this.transactionRepository.find({
+      where: { type: TokenTransactionType.TOPUP, status: TokenTransactionStatus.PENDING }
+    });
+
+    const transaction = transactions.find(
+      tx => tx.metadata?.stripePaymentIntentId === stripePaymentIntentId
+    );
+
+    if (!transaction) {
+      this.logger.warn(`No pending topup found for PaymentIntent: ${stripePaymentIntentId}`);
+      return { success: false, error: 'Transaction not found' };
+    }
+
+    // Prevent double processing
+    if (transaction.status === TokenTransactionStatus.COMPLETED) {
+      this.logger.warn(`Topup ${transaction.reference} already completed`);
+      return { success: true, transactionId: transaction.id };
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const amountCOP = Number(transaction.amount);
+
+      // Get user's wallet
+      const wallet = await queryRunner.manager.findOne(GshopWallet, {
+        where: { userId: transaction.userId, isActive: true }
+      });
+
+      if (!wallet) {
+        throw new Error('Wallet not found');
+      }
+
+      // Credit wallet
+      wallet.balance = Number(wallet.balance) + amountCOP;
+      wallet.totalEarned = Number(wallet.totalEarned) + amountCOP;
+      wallet.lastTransactionAt = new Date();
+
+      await queryRunner.manager.save(GshopWallet, wallet);
+
+      // Update transaction status
+      transaction.status = TokenTransactionStatus.COMPLETED;
+      transaction.processedAt = new Date();
+      transaction.metadata = {
+        ...transaction.metadata,
+        stripeAmountUSDCents: amountUSDCents,
+        completedAt: new Date().toISOString()
+      };
+
+      await queryRunner.manager.save(GshopTransaction, transaction);
+
+      await queryRunner.commitTransaction();
+
+      // Update circulation stats
+      await this.updateCirculation('TOPUP', amountCOP);
+
+      this.logger.log(`Successfully processed topup ${transaction.reference}: +$${amountCOP} COP to user ${transaction.userId}`);
+
+      return { success: true, transactionId: transaction.id };
+
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(`Failed to process topup: ${error.message}`);
+      return { success: false, error: error.message };
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  /**
+   * Handle failed Stripe topup (called from webhook handler)
+   */
+  async processStripeTopupFailure(
+    stripePaymentIntentId: string,
+    failureReason: string
+  ): Promise<void> {
+    const transactions = await this.transactionRepository.find({
+      where: { type: TokenTransactionType.TOPUP, status: TokenTransactionStatus.PENDING }
+    });
+
+    const transaction = transactions.find(
+      tx => tx.metadata?.stripePaymentIntentId === stripePaymentIntentId
+    );
+
+    if (!transaction) {
+      this.logger.warn(`No pending topup found for failed PaymentIntent: ${stripePaymentIntentId}`);
+      return;
+    }
+
+    transaction.status = TokenTransactionStatus.FAILED;
+    transaction.metadata = {
+      ...transaction.metadata,
+      failureReason,
+      failedAt: new Date().toISOString()
+    };
+
+    await this.transactionRepository.save(transaction);
+
+    this.logger.log(`Marked topup ${transaction.reference} as failed: ${failureReason}`);
+  }
+
+  // ==========================================
+  // Order Payment with Wallet Balance
+  // ==========================================
+
+  /**
+   * Pay for an order using wallet balance
+   * @param userId - The user making the payment
+   * @param orderId - The order to pay for
+   * @param amount - The total amount to pay (in COP)
+   * @returns Payment result with transaction ID
+   */
+  async payOrderWithWallet(
+    userId: string,
+    orderId: string,
+    amount: number
+  ): Promise<{ success: boolean; transactionId: string; newBalance: number }> {
+    // Validate amount
+    if (amount <= 0) {
+      throw new BadRequestException('El monto debe ser mayor a cero');
+    }
+
+    // Get user's wallet
+    const wallet = await this.walletRepository.findOne({
+      where: { userId, isActive: true }
+    });
+
+    if (!wallet) {
+      throw new NotFoundException('Wallet no encontrado. Por favor cree una wallet primero.');
+    }
+
+    // Check sufficient balance
+    if (Number(wallet.balance) < amount) {
+      throw new BadRequestException(
+        `Saldo insuficiente. Balance actual: $${Number(wallet.balance).toLocaleString()} COP, ` +
+        `Monto requerido: $${amount.toLocaleString()} COP`
+      );
+    }
+
+    // Process the payment using updateWalletBalance with PURCHASE type
+    const updatedWallet = await this.updateWalletBalance(
+      userId,
+      -amount, // Negative for debit
+      TokenTransactionType.PURCHASE,
+      {
+        orderId,
+        description: `Pago de orden #${orderId.slice(-8).toUpperCase()}`,
+        paymentMethod: 'wallet_balance'
+      }
+    );
+
+    // Get the transaction ID (most recent transaction for this order)
+    const transaction = await this.transactionRepository.findOne({
+      where: { userId, type: TokenTransactionType.PURCHASE },
+      order: { createdAt: 'DESC' }
+    });
+
+    this.logger.log(`Order ${orderId} paid with wallet balance: $${amount} COP by user ${userId}`);
+
+    return {
+      success: true,
+      transactionId: transaction?.id || 'unknown',
+      newBalance: Number(updatedWallet.balance)
+    };
+  }
+
+  /**
+   * Check if user has sufficient balance for an order
+   * @param userId - The user ID
+   * @param amount - The amount to check
+   * @returns Whether user has sufficient balance
+   */
+  async checkSufficientBalance(userId: string, amount: number): Promise<{
+    hasSufficientBalance: boolean;
+    currentBalance: number;
+    requiredAmount: number;
+    shortfall: number;
+  }> {
+    const wallet = await this.walletRepository.findOne({
+      where: { userId, isActive: true }
+    });
+
+    const currentBalance = wallet ? Number(wallet.balance) : 0;
+    const hasSufficientBalance = currentBalance >= amount;
+    const shortfall = hasSufficientBalance ? 0 : amount - currentBalance;
+
+    return {
+      hasSufficientBalance,
+      currentBalance,
+      requiredAmount: amount,
+      shortfall
+    };
   }
 }

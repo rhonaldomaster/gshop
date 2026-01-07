@@ -21,7 +21,8 @@ import {
   TokenStatsQueryDto,
   SearchUserDto,
   TransferPreviewDto,
-  ExecuteTransferDto
+  ExecuteTransferDto,
+  CreateStripeTopupDto
 } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TokenTransactionStatus } from './token.entity';
@@ -162,6 +163,36 @@ export class TokenController {
     @Body() body: { status: TokenTransactionStatus }
   ) {
     return this.tokenService.processTopup(topupId, body.status);
+  }
+
+  // ==========================================
+  // Stripe Topup Endpoints (Wallet Recharge)
+  // ==========================================
+
+  /**
+   * Create a Stripe Payment Intent for wallet topup
+   * Returns clientSecret for mobile Stripe SDK
+   *
+   * POST /tokens/topup/stripe-intent
+   * Body: { amount: number } // Amount in COP
+   * Response: { topupId, clientSecret, publishableKey, amountCOP, amountUSD, exchangeRate, expiresAt }
+   */
+  @Post('topup/stripe-intent')
+  @UseGuards(JwtAuthGuard)
+  async createStripeTopupIntent(@Request() req, @Body() dto: CreateStripeTopupDto) {
+    return this.tokenService.createStripeTopupIntent(req.user.id, dto.amount);
+  }
+
+  /**
+   * Get topup status by ID
+   *
+   * GET /tokens/topup/:id/status
+   * Response: { topupId, status, amount, currency, stripePaymentIntentId?, processedAt?, createdAt }
+   */
+  @Get('topup/:id/status')
+  @UseGuards(JwtAuthGuard)
+  async getTopupStatus(@Param('id') topupId: string) {
+    return this.tokenService.getTopupStatus(topupId);
   }
 
   // Analytics & Stats

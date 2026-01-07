@@ -99,6 +99,34 @@ export class TransferLimitsResponseDto {
   nextLevel?: string;
 }
 
+// Stripe Topup DTOs
+
+export class CreateStripeTopupDto {
+  @IsNumber()
+  @Min(1000) // Minimum $1,000 COP
+  amount: number; // Amount in COP
+}
+
+export class StripeTopupResponseDto {
+  topupId: string;
+  clientSecret: string;
+  publishableKey: string;
+  amountCOP: number;
+  amountUSD: number;
+  exchangeRate: number;
+  expiresAt: Date;
+}
+
+export class TopupStatusDto {
+  topupId: string;
+  status: string;
+  amount: number;
+  currency: string;
+  stripePaymentIntentId?: string;
+  processedAt?: Date;
+  createdAt: Date;
+}
+
 export class TransferTokensDto {
   @IsString()
   fromUserId: string;

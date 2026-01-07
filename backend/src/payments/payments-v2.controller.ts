@@ -26,6 +26,7 @@ import { UserRole } from '../database/entities/user.entity';
 import { PaymentStatus } from './payments-v2.entity';
 import { OrderStatus } from '../database/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
+import { TokenService } from '../token/token.service';
 import Stripe from 'stripe';
 import { Logger } from '@nestjs/common';
 
@@ -40,6 +41,7 @@ export class PaymentsV2Controller {
     private readonly mercadopagoService: MercadoPagoService,
     private readonly ordersService: OrdersService,
     private readonly paymentConfigService: PaymentConfigService,
+    private readonly tokenService: TokenService,
   ) {
     // Initialize Stripe with API version
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -251,6 +253,12 @@ export class PaymentsV2Controller {
    * Handle successful payment intent
    */
   private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+    // Check if this is a wallet topup
+    if (paymentIntent.metadata.type === 'wallet_topup') {
+      await this.handleWalletTopupSuccess(paymentIntent);
+      return;
+    }
+
     const paymentId = paymentIntent.metadata.paymentId;
 
     if (!paymentId) {
@@ -299,9 +307,41 @@ export class PaymentsV2Controller {
   }
 
   /**
+   * Handle successful wallet topup payment
+   */
+  private async handleWalletTopupSuccess(paymentIntent: Stripe.PaymentIntent) {
+    const topupId = paymentIntent.metadata.topupId;
+    const userId = paymentIntent.metadata.userId;
+
+    this.logger.log(`Processing wallet topup success: ${topupId} for user ${userId}`);
+
+    try {
+      const result = await this.tokenService.processStripeTopupSuccess(
+        paymentIntent.id,
+        paymentIntent.amount // amount in cents
+      );
+
+      if (result.success) {
+        this.logger.log(`Wallet topup ${topupId} completed successfully`);
+      } else {
+        this.logger.error(`Wallet topup ${topupId} failed: ${result.error}`);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to process wallet topup ${topupId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Handle failed payment intent
    */
   private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+    // Check if this is a wallet topup
+    if (paymentIntent.metadata.type === 'wallet_topup') {
+      await this.handleWalletTopupFailure(paymentIntent);
+      return;
+    }
+
     const paymentId = paymentIntent.metadata.paymentId;
 
     if (!paymentId) {
@@ -325,6 +365,24 @@ export class PaymentsV2Controller {
       this.logger.error(`Stripe payment ${paymentId} failed: ${paymentIntent.last_payment_error?.message}`);
     } catch (error) {
       this.logger.error(`Failed to process payment_intent.payment_failed for ${paymentId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle failed wallet topup payment
+   */
+  private async handleWalletTopupFailure(paymentIntent: Stripe.PaymentIntent) {
+    const topupId = paymentIntent.metadata.topupId;
+    const failureReason = paymentIntent.last_payment_error?.message || 'Unknown error';
+
+    this.logger.log(`Processing wallet topup failure: ${topupId}`);
+
+    try {
+      await this.tokenService.processStripeTopupFailure(paymentIntent.id, failureReason);
+      this.logger.log(`Wallet topup ${topupId} marked as failed: ${failureReason}`);
+    } catch (error) {
+      this.logger.error(`Failed to process wallet topup failure ${topupId}: ${error.message}`);
       throw error;
     }
   }
