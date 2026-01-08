@@ -15,6 +15,7 @@ import ProductDetailScreen from '../screens/products/ProductDetailScreen';
 import { AffiliateScreen } from '../screens/affiliate/AffiliateScreen';
 import { AffiliateRegistrationScreen } from '../screens/affiliate/AffiliateRegistrationScreen';
 import TransferScreen from '../screens/wallet/TransferScreen';
+import WalletScreen from '../screens/wallet/WalletScreen';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -31,6 +32,7 @@ export type ProfileStackParamList = {
   Affiliate: undefined;
   AffiliateRegistration: undefined;
   Transfer: undefined;
+  Wallet: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -56,6 +58,7 @@ export default function ProfileNavigator() {
       <Stack.Screen name="Affiliate" component={AffiliateScreen} />
       <Stack.Screen name="AffiliateRegistration" component={AffiliateRegistrationScreen} />
       <Stack.Screen name="Transfer" component={TransferScreen} />
+      <Stack.Screen name="Wallet" component={WalletScreen} />
     </Stack.Navigator>
   );
 }

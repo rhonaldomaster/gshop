@@ -86,6 +86,13 @@ export default function ProfileScreen() {
       showChevron: true,
     },
     {
+      icon: 'wallet-outline',
+      title: t('profile.myWallet'),
+      subtitle: t('profile.manageBalance'),
+      onPress: () => handleNavigation('Wallet'),
+      showChevron: true,
+    },
+    {
       icon: 'heart-outline',
       title: t('wishlist.title'),
       subtitle: t('profile.savedItems'),
