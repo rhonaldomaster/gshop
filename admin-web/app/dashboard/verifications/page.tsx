@@ -98,8 +98,11 @@ export default function VerificationsPage() {
       setStats(statsData)
       setError('')
     } catch (err: any) {
-      setError('Error al cargar verificaciones')
-      console.error('Error fetching verifications:', err)
+      // Only show error if it's a real network/server error, not empty results
+      if (err?.response?.status >= 500 || err?.message?.includes('Network')) {
+        setError('Error al cargar verificaciones')
+        console.error('Error fetching verifications:', err)
+      }
       setVerifications([])
     } finally {
       setLoading(false)
@@ -203,7 +206,7 @@ export default function VerificationsPage() {
           </div>
           <Button variant="outline" onClick={fetchData} disabled={loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            {t('common.refresh') || 'Actualizar'}
+            {t('common.refresh')}
           </Button>
         </div>
 

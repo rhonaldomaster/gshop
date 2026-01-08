@@ -1065,6 +1065,9 @@
       "allStatus": "Todos los estados",
       "allLevels": "Todos los niveles"
     },
+    "common": {
+      "refresh": "Actualizar"
+    },
     "table": {
       "user": "Usuario",
       "level": "Nivel",
