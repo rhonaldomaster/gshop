@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -35,6 +36,7 @@ export default function TransferScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
 
   // State
   const [currentStep, setCurrentStep] = useState<TransferStep>('search');
@@ -73,7 +75,7 @@ export default function TransferScreen() {
       setBalance(walletData);
       setLimits(limitsData);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo cargar la informacion');
+      Alert.alert(t('common.error'), error.message || t('wallet.transferScreen.loadError'));
     }
   };
 
@@ -91,14 +93,14 @@ export default function TransferScreen() {
       if (result) {
         setRecipient(result);
       } else {
-        setSearchError('No se encontro un usuario con esos datos');
+        setSearchError(t('wallet.transferScreen.userNotFound'));
       }
     } catch (error: any) {
-      setSearchError(error.message || 'Error al buscar usuario');
+      setSearchError(error.message || t('wallet.transferScreen.searchError'));
     } finally {
       setSearchLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, t]);
 
   // Confirm recipient and move to amount step
   const handleConfirmRecipient = useCallback(() => {
@@ -149,11 +151,11 @@ export default function TransferScreen() {
       setPreview(previewData);
       setCurrentStep('preview');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo obtener el preview');
+      Alert.alert(t('common.error'), error.message || t('wallet.transferScreen.previewError'));
     } finally {
       setPreviewLoading(false);
     }
-  }, [recipient, amount, limits, balance]);
+  }, [recipient, amount, limits, balance, t]);
 
   // Execute transfer
   const handleExecuteTransfer = useCallback(async () => {
@@ -168,11 +170,11 @@ export default function TransferScreen() {
       setTransferResult(result);
       setCurrentStep('success');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo completar la transferencia');
+      Alert.alert(t('common.error'), error.message || t('wallet.transferScreen.transferError'));
     } finally {
       setTransferLoading(false);
     }
-  }, [recipient, amount]);
+  }, [recipient, amount, t]);
 
   // Go back to previous step
   const handleBack = useCallback(() => {
@@ -232,10 +234,10 @@ export default function TransferScreen() {
             <View style={styles.stepHeader}>
               <Ionicons name="person-add" size={32} color={theme.colors.primary} />
               <GSText variant="h3" weight="bold" style={{ marginTop: 12 }}>
-                A quien envias?
+                {t('wallet.transferScreen.searchRecipient')}
               </GSText>
               <GSText variant="body" color="textSecondary" style={{ marginTop: 4 }}>
-                Busca por email o numero de telefono
+                {t('wallet.transferScreen.searchPlaceholder')}
               </GSText>
             </View>
 
@@ -264,7 +266,7 @@ export default function TransferScreen() {
             <View style={styles.stepHeader}>
               <Ionicons name="cash" size={32} color={theme.colors.primary} />
               <GSText variant="h3" weight="bold" style={{ marginTop: 12 }}>
-                Cuanto deseas enviar?
+                {t('wallet.transferScreen.enterAmount')}
               </GSText>
             </View>
 
@@ -291,7 +293,7 @@ export default function TransferScreen() {
 
             <View style={styles.actionContainer}>
               <GSButton
-                title="Continuar"
+                title={t('wallet.transferScreen.continue')}
                 onPress={handleProceedToPreview}
                 loading={previewLoading}
                 disabled={amount <= 0 || !!amountError || previewLoading}
@@ -339,7 +341,7 @@ export default function TransferScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Enviar Dinero
+            {t('wallet.transferScreen.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -347,13 +349,13 @@ export default function TransferScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="person-outline" size={60} color={theme.colors.textSecondary} />
           <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-            Inicia Sesion
+            {t('wallet.transferScreen.loginRequired')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-            Necesitas iniciar sesion para enviar dinero
+            {t('wallet.transferScreen.loginRequiredMessage')}
           </GSText>
           <GSButton
-            title="Iniciar Sesion"
+            title={t('auth.signIn')}
             onPress={() => navigation.navigate('Auth' as any)}
             style={styles.signInButton}
           />
@@ -371,7 +373,7 @@ export default function TransferScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            Enviar Dinero
+            {t('wallet.transferScreen.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
