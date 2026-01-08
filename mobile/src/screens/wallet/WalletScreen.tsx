@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -30,9 +31,10 @@ interface WalletCardProps {
   balance: WalletBalance;
   onTopup: () => void;
   onSend: () => void;
+  t: (key: string, options?: any) => string;
 }
 
-const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => {
+const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) => {
   const { theme } = useTheme();
 
   return (
@@ -42,7 +44,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
           <Ionicons name="diamond" size={24} color={theme.colors.white} />
         </View>
         <GSText variant="body" color="white" weight="medium">
-          GSHOP Wallet
+          {t('wallet.myWallet')}
         </GSText>
       </View>
 
@@ -59,7 +61,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
         <View style={styles.pendingRewards}>
           <Ionicons name="gift-outline" size={16} color={theme.colors.white} />
           <GSText variant="caption" color="white" style={{ marginLeft: 4 }}>
-            +{paymentsService.formatTokenAmount(balance.pendingRewards)} pending rewards
+            +{paymentsService.formatTokenAmount(balance.pendingRewards)} {t('wallet.pendingRewards')}
           </GSText>
         </View>
       )}
@@ -71,7 +73,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
         >
           <Ionicons name="add" size={20} color={theme.colors.white} />
           <GSText variant="caption" color="white" weight="medium" style={{ marginTop: 4 }}>
-            Top Up
+            {t('wallet.topUp')}
           </GSText>
         </TouchableOpacity>
 
@@ -81,7 +83,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
         >
           <Ionicons name="send" size={20} color={theme.colors.white} />
           <GSText variant="caption" color="white" weight="medium" style={{ marginTop: 4 }}>
-            Send
+            {t('wallet.send')}
           </GSText>
         </TouchableOpacity>
       </View>
@@ -207,6 +209,7 @@ interface TopupModalProps {
     amountUSD?: number;
     error?: string;
   } | null;
+  t: (key: string, options?: any) => string;
 }
 
 const TopupModal: React.FC<TopupModalProps> = ({
@@ -216,6 +219,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
   isLoading,
   topupStep,
   topupResult,
+  t,
 }) => {
   const { theme } = useTheme();
   const [amount, setAmount] = useState('');
@@ -235,11 +239,11 @@ const TopupModal: React.FC<TopupModalProps> = ({
   const handleSubmit = () => {
     const numAmount = Number(amount.replace(/[.,]/g, ''));
     if (numAmount < 10000) {
-      Alert.alert('Monto invalido', 'El monto minimo de recarga es $10,000 COP');
+      Alert.alert(t('wallet.topupModal.invalidAmount'), t('wallet.topupModal.minAmountError'));
       return;
     }
     if (numAmount > 5000000) {
-      Alert.alert('Monto invalido', 'El monto maximo de recarga es $5,000,000 COP');
+      Alert.alert(t('wallet.topupModal.invalidAmount'), t('wallet.topupModal.maxAmountError'));
       return;
     }
 
@@ -254,11 +258,11 @@ const TopupModal: React.FC<TopupModalProps> = ({
   const renderAmountStep = () => (
     <>
       <GSText variant="h4" weight="bold" style={styles.formTitle}>
-        Monto a recargar (COP)
+        {t('wallet.topupModal.amountToTopup')}
       </GSText>
 
       <GSInput
-        label="Ingresa el monto"
+        label={t('wallet.topupModal.enterAmount')}
         value={amount}
         onChangeText={(text) => {
           // Only allow numbers
@@ -286,7 +290,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
           >
             <GSText
               variant="caption"
-              weight="medium"
+              weight="semiBold"
               color={amount === quickAmount.toString() ? 'white' : 'text'}
             >
               {formatCOP(quickAmount)}
@@ -298,8 +302,8 @@ const TopupModal: React.FC<TopupModalProps> = ({
       <View style={[styles.paymentMethodOption, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}>
         <View style={styles.methodInfo}>
           <Ionicons name="card-outline" size={20} color={theme.colors.primary} />
-          <GSText variant="body" weight="medium" style={{ marginLeft: 12 }}>
-            Tarjeta de credito o debito
+          <GSText variant="body" weight="semiBold" style={{ marginLeft: 12 }}>
+            {t('wallet.topupModal.creditDebitCard')}
           </GSText>
         </View>
         <Ionicons name="shield-checkmark" size={20} color={theme.colors.success} />
@@ -309,11 +313,11 @@ const TopupModal: React.FC<TopupModalProps> = ({
         <View style={styles.topupInfoRow}>
           <Ionicons name="lock-closed" size={14} color={theme.colors.textSecondary} />
           <GSText variant="caption" color="textSecondary" style={{ marginLeft: 6 }}>
-            Pago seguro procesado por Stripe
+            {t('wallet.topupModal.securePayment')}
           </GSText>
         </View>
         <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
-          El saldo se acreditara inmediatamente a tu wallet
+          {t('wallet.topupModal.instantCredit')}
         </GSText>
       </View>
     </>
@@ -323,10 +327,10 @@ const TopupModal: React.FC<TopupModalProps> = ({
     <View style={styles.stepContainer}>
       <ActivityIndicator size="large" color={theme.colors.primary} />
       <GSText variant="h4" weight="bold" style={{ marginTop: 20 }}>
-        Procesando pago...
+        {t('wallet.topupModal.processing')}
       </GSText>
       <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
-        No cierres esta pantalla mientras se procesa tu pago
+        {t('wallet.topupModal.dontClose')}
       </GSText>
     </View>
   );
@@ -337,7 +341,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
         <Ionicons name="checkmark-circle" size={60} color={theme.colors.success} />
       </View>
       <GSText variant="h3" weight="bold" style={{ marginTop: 20 }}>
-        Recarga exitosa
+        {t('wallet.topUpSuccess')}
       </GSText>
       {topupResult?.amountCOP && (
         <GSText variant="h4" color="primary" weight="bold" style={{ marginTop: 8 }}>
@@ -345,7 +349,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
         </GSText>
       )}
       <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
-        Tu saldo ha sido actualizado
+        {t('wallet.topupModal.balanceUpdated')}
       </GSText>
     </View>
   );
@@ -356,10 +360,10 @@ const TopupModal: React.FC<TopupModalProps> = ({
         <Ionicons name="close-circle" size={60} color={theme.colors.error} />
       </View>
       <GSText variant="h3" weight="bold" style={{ marginTop: 20 }}>
-        Error en el pago
+        {t('wallet.topupModal.paymentError')}
       </GSText>
       <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
-        {topupResult?.error || 'No se pudo procesar tu pago. Intenta de nuevo.'}
+        {topupResult?.error || t('wallet.topupModal.paymentErrorMessage')}
       </GSText>
     </View>
   );
@@ -375,11 +379,11 @@ const TopupModal: React.FC<TopupModalProps> = ({
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={handleClose} disabled={topupStep === 'processing'}>
             <GSText variant="body" color={topupStep === 'processing' ? 'textSecondary' : 'text'}>
-              {topupStep === 'success' || topupStep === 'error' ? 'Cerrar' : 'Cancelar'}
+              {topupStep === 'success' || topupStep === 'error' ? t('common.close') : t('common.cancel')}
             </GSText>
           </TouchableOpacity>
           <GSText variant="h4" weight="bold">
-            Recargar Wallet
+            {t('wallet.topUpWallet')}
           </GSText>
           <View style={{ width: 50 }} />
         </View>
@@ -396,7 +400,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
         <View style={styles.modalFooter}>
           {topupStep === 'amount' && (
             <GSButton
-              title={amount ? `Pagar ${formatCOP(Number(amount))}` : 'Recargar'}
+              title={amount ? t('wallet.topupModal.payAmount', { amount: formatCOP(Number(amount)) }) : t('wallet.topUp')}
               onPress={handleSubmit}
               loading={isLoading}
               disabled={!amount || isLoading}
@@ -405,7 +409,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
           )}
           {(topupStep === 'success' || topupStep === 'error') && (
             <GSButton
-              title={topupStep === 'success' ? 'Listo' : 'Intentar de nuevo'}
+              title={topupStep === 'success' ? t('common.done') : t('common.tryAgain')}
               onPress={topupStep === 'success' ? handleClose : () => onClose()}
               style={styles.topupButton}
             />
@@ -421,6 +425,7 @@ export default function WalletScreen() {
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { t } = useTranslation();
 
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -445,12 +450,12 @@ export default function WalletScreen() {
       setWalletBalance(balance);
     } catch (error: any) {
       console.error('Failed to load wallet data:', error);
-      Alert.alert('Error', error.message || 'Failed to load wallet data');
+      Alert.alert(t('common.error'), error.message || t('wallet.errors.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -574,7 +579,7 @@ export default function WalletScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            GSHOP Wallet
+            {t('wallet.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -582,13 +587,13 @@ export default function WalletScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="person-outline" size={60} color={theme.colors.textSecondary} />
           <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-            Sign in Required
+            {t('wallet.signInRequired')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-            Sign in to access your GSHOP wallet and manage your tokens
+            {t('wallet.signInToAccess')}
           </GSText>
           <GSButton
-            title="Sign In"
+            title={t('auth.signIn')}
             onPress={() => navigation.navigate('Auth' as any)}
             style={styles.signInButton}
           />
@@ -609,7 +614,7 @@ export default function WalletScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            GSHOP Wallet
+            {t('wallet.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -617,7 +622,7 @@ export default function WalletScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Loading wallet...
+            {t('wallet.loadingWallet')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -635,7 +640,7 @@ export default function WalletScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <GSText variant="h3" weight="bold">
-          GSHOP Wallet
+          {t('wallet.title')}
         </GSText>
         <TouchableOpacity onPress={() => navigation.navigate('PaymentMethods' as any)}>
           <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
@@ -659,6 +664,7 @@ export default function WalletScreen() {
             balance={walletBalance}
             onTopup={() => setShowTopupModal(true)}
             onSend={handleSend}
+            t={t}
           />
         )}
 
@@ -670,10 +676,10 @@ export default function WalletScreen() {
           >
             <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              Top Up
+              {t('wallet.topUp')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
-              Add tokens
+              {t('wallet.quickActions.addTokens')}
             </GSText>
           </TouchableOpacity>
 
@@ -683,10 +689,10 @@ export default function WalletScreen() {
           >
             <Ionicons name="send-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              Send
+              {t('wallet.send')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
-              Transfer tokens
+              {t('wallet.quickActions.transferTokens')}
             </GSText>
           </TouchableOpacity>
 
@@ -696,10 +702,10 @@ export default function WalletScreen() {
           >
             <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              Methods
+              {t('wallet.quickActions.methods')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
-              Payment cards
+              {t('wallet.quickActions.paymentCards')}
             </GSText>
           </TouchableOpacity>
         </View>
@@ -709,21 +715,21 @@ export default function WalletScreen() {
           <View style={styles.rewardsHeader}>
             <Ionicons name="gift" size={20} color={theme.colors.success} />
             <GSText variant="h4" weight="bold" style={{ marginLeft: 8 }}>
-              Cashback Rewards
+              {t('wallet.cashbackRewards.title')}
             </GSText>
           </View>
           <GSText variant="body" color="textSecondary" style={{ marginBottom: 8 }}>
-            Earn 5% cashback on every purchase in GSHOP tokens
+            {t('wallet.cashbackRewards.description')}
           </GSText>
           <GSText variant="caption" color="textSecondary">
-            Rewards are automatically added to your wallet after order delivery
+            {t('wallet.cashbackRewards.autoAdded')}
           </GSText>
         </View>
 
         {/* Transaction History */}
         <View style={styles.transactionsSection}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Recent Transactions
+            {t('wallet.recentTransactions')}
           </GSText>
 
           {walletBalance?.transactions && walletBalance.transactions.length > 0 ? (
@@ -738,10 +744,10 @@ export default function WalletScreen() {
             <View style={styles.emptyTransactions}>
               <Ionicons name="receipt-outline" size={40} color={theme.colors.textSecondary} />
               <GSText variant="body" color="textSecondary" style={{ marginTop: 12, textAlign: 'center' }}>
-                No transactions yet
+                {t('wallet.noTransactionsYet')}
               </GSText>
               <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-                Your transaction history will appear here
+                {t('wallet.transactionHistoryWillAppear')}
               </GSText>
             </View>
           )}
@@ -756,6 +762,7 @@ export default function WalletScreen() {
         isLoading={topupLoading}
         topupStep={topupStep}
         topupResult={topupResult}
+        t={t}
       />
     </SafeAreaView>
   );

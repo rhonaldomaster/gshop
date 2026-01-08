@@ -5,6 +5,7 @@
     "success": "Éxito",
     "info": "Información",
     "cancel": "Cancelar",
+    "close": "Cerrar",
     "ok": "Aceptar",
     "save": "Guardar",
     "delete": "Eliminar",
@@ -1088,7 +1089,7 @@
     "payoutRequestedMessage": "Tu solicitud de pago ha sido enviada y será procesada dentro de 3-5 días hábiles.",
     "failedRequestPayout": "Error al solicitar pago. Por favor intenta nuevamente.",
     "signInToViewCommissions": "Por favor inicia sesión para ver tus comisiones",
-    "status": {
+    "payoutStatus": {
       "completed": "Completado",
       "pending": "Pendiente",
       "processing": "Procesando",
@@ -1199,7 +1200,7 @@
     "receive": "Recibir",
     "transactions": "Transacciones",
     "recentTransactions": "Transacciones recientes",
-    "transaction History": "Historial de transacciones",
+    "transactionHistory": "Historial de transacciones",
     "cashback": "Cashback",
     "cashbackEarned": "Cashback ganado",
     "rewards": "Recompensas",
@@ -1216,6 +1217,42 @@
     "customAmount": "Monto personalizado",
     "topUpSuccess": "Recarga exitosa",
     "transactionId": "ID de transaccion",
+    "pendingRewards": "pendientes",
+    "signInRequired": "Iniciar sesión requerido",
+    "signInToAccess": "Inicia sesión para acceder a tu billetera GSHOP y gestionar tus tokens",
+    "loadingWallet": "Cargando billetera...",
+    "noTransactionsYet": "No hay transacciones aún",
+    "transactionHistoryWillAppear": "Tu historial de transacciones aparecerá aquí",
+    "quickActions": {
+      "addTokens": "Agregar saldo",
+      "transferTokens": "Transferir saldo",
+      "methods": "Métodos",
+      "paymentCards": "Tarjetas de pago"
+    },
+    "cashbackRewards": {
+      "title": "Recompensas Cashback",
+      "description": "Gana 5% de cashback en cada compra en tokens GSHOP",
+      "autoAdded": "Las recompensas se agregan automáticamente a tu billetera después de la entrega del pedido"
+    },
+    "topupModal": {
+      "amountToTopup": "Monto a recargar",
+      "enterAmount": "Ingresa el monto (COP)",
+      "creditDebitCard": "Tarjeta de crédito/débito",
+      "securePayment": "Pago seguro con Stripe",
+      "instantCredit": "El saldo se acredita instantáneamente",
+      "processing": "Procesando pago...",
+      "dontClose": "No cierres esta pantalla",
+      "balanceUpdated": "Tu saldo ha sido actualizado",
+      "paymentError": "Error en el pago",
+      "paymentErrorMessage": "No se pudo procesar tu pago. Intenta nuevamente.",
+      "invalidAmount": "Monto inválido",
+      "minAmountError": "El monto mínimo es $10,000 COP",
+      "maxAmountError": "El monto máximo es $5,000,000 COP",
+      "payAmount": "Pagar {{amount}}"
+    },
+    "errors": {
+      "loadFailed": "No se pudo cargar la información de la billetera"
+    },
     "transferScreen": {
       "title": "Enviar Dinero",
       "searchRecipient": "A quien envias?",
