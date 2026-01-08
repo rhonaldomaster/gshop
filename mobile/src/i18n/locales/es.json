@@ -1306,6 +1306,11 @@
         "level1": "Nivel 1",
         "level2": "Nivel 2"
       }
+    },
+    "transactionStatus": {
+      "completed": "Completada",
+      "pending": "Pendiente",
+      "failed": "Fallida"
     }
   },
   "search": {

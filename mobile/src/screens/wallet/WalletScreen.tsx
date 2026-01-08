@@ -93,9 +93,10 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) 
 
 interface TransactionItemProps {
   transaction: TokenTransaction;
+  t: (key: string, options?: any) => string;
 }
 
-const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
+const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => {
   const { theme } = useTheme();
 
   const getTransactionIcon = (type: TokenTransaction['type']) => {
@@ -132,7 +133,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
 
   const getAmountDisplay = (amount: number, type: TokenTransaction['type']) => {
     const sign = ['reward', 'topup'].includes(type) ? '+' : '-';
-    return `${sign}${paymentsService.formatTokenAmount(Math.abs(amount))}`;
+    return `${sign}${paymentsService.formatPrice(Math.abs(amount), 'COP')}`;
   };
 
   const getStatusColor = (status: TokenTransaction['status']) => {
@@ -189,7 +190,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
           variant="caption"
           style={{ color: getStatusColor(transaction.status) }}
         >
-          {transaction.status}
+          {t(`wallet.transactionStatus.${transaction.status}`)}
         </GSText>
       </View>
     </View>
@@ -564,7 +565,7 @@ export default function WalletScreen() {
 
   // Render transaction item
   const renderTransaction = ({ item }: { item: TokenTransaction }) => (
-    <TransactionItem transaction={item} />
+    <TransactionItem transaction={item} t={t} />
   );
 
   // Show login prompt for guests
