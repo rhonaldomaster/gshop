@@ -82,10 +82,22 @@ class TransferService {
   // Get current user transfer limits
   async getTransferLimits(): Promise<TransferLimits> {
     try {
-      const response = await apiClient.get<TransferLimits>('/tokens/transfer-limits');
+      const response = await apiClient.get<any>('/tokens/transfer-limits');
 
       if (response.success && response.data) {
-        return response.data;
+        const data = response.data;
+        // Map API response to expected interface
+        return {
+          level: data.level,
+          dailyRemaining: data.usage?.dailyRemaining ?? 0,
+          monthlyRemaining: data.usage?.monthlyRemaining ?? 0,
+          maxPerTransaction: data.limits?.maxPerTransaction ?? 0,
+          minPerTransaction: data.limits?.minPerTransaction ?? 0,
+          dailyLimit: data.limits?.dailyLimit ?? 0,
+          monthlyLimit: data.limits?.monthlyLimit ?? 0,
+          dailyTransferred: data.usage?.dailyTransferred ?? 0,
+          monthlyTransferred: data.usage?.monthlyTransferred ?? 0,
+        };
       }
       throw new Error('Failed to get transfer limits');
     } catch (error: any) {
