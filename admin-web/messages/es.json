@@ -23,6 +23,8 @@
     "pending": "Pendiente",
     "approved": "Aprobado",
     "rejected": "Rechazado",
+    "suspended": "Suspendido",
+    "all": "Todos",
     "download": "Descargar",
     "upload": "Subir",
     "refresh": "Actualizar"
