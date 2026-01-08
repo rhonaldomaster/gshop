@@ -1641,6 +1641,12 @@
     "failedToAddCard": "Error al agregar la tarjeta",
     "card": "tarjeta",
     "paymentMethodType": "método de pago",
-    "expires": "Vence"
+    "expires": "Vence",
+    "mercadoPagoDescription": "Todos los pagos se procesan de forma segura a través de MercadoPago. No necesitas configurar métodos de pago adicionales.",
+    "securePay": "Pagos 100% seguros",
+    "allCards": "Acepta todas las tarjetas",
+    "instantProcess": "Procesamiento instantáneo",
+    "dataProtected": "Datos protegidos",
+    "mercadoPagoNote": "Al realizar un pago, serás redirigido a MercadoPago para completar la transacción de forma segura."
   }
 }
