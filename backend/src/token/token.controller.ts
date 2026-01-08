@@ -22,7 +22,8 @@ import {
   SearchUserDto,
   TransferPreviewDto,
   ExecuteTransferDto,
-  CreateStripeTopupDto
+  CreateStripeTopupDto,
+  AdminTransactionFilterDto
 } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TokenTransactionStatus } from './token.entity';
@@ -267,5 +268,53 @@ export class TokenController {
       exchangeRate: 0.01,
       marketCap: stats.totalCirculation * 0.01,
     };
+  }
+
+  // ==========================================
+  // Admin Transaction Endpoints
+  // ==========================================
+
+  /**
+   * Get all transactions with filters (Admin)
+   *
+   * GET /tokens/admin/transactions
+   * Query params: type, status, startDate, endDate, search, page, limit
+   */
+  @Get('admin/transactions')
+  @UseGuards(JwtAuthGuard)
+  async getAdminTransactions(@Query() filters: AdminTransactionFilterDto) {
+    // Convert page and limit to numbers
+    const parsedFilters = {
+      ...filters,
+      page: filters.page ? Number(filters.page) : 1,
+      limit: filters.limit ? Number(filters.limit) : 20
+    };
+    return this.tokenService.getAdminTransactions(parsedFilters);
+  }
+
+  /**
+   * Get transaction statistics (Admin)
+   *
+   * GET /tokens/admin/transactions/stats
+   */
+  @Get('admin/transactions/stats')
+  @UseGuards(JwtAuthGuard)
+  async getAdminTransactionStats() {
+    return this.tokenService.getAdminTransactionStats();
+  }
+
+  /**
+   * Get a single transaction by ID (Admin)
+   *
+   * GET /tokens/admin/transactions/:id
+   */
+  @Get('admin/transactions/:id')
+  @UseGuards(JwtAuthGuard)
+  async getAdminTransactionById(@Param('id') id: string) {
+    const transaction = await this.tokenService.getAdminTransactionById(id);
+    if (!transaction) {
+      throw new NotFoundException('Transaccion no encontrada');
+    }
+    return transaction;
   }
 }

@@ -24,7 +24,10 @@ import {
   TransferResultDto,
   TransferLimitsResponseDto,
   StripeTopupResponseDto,
-  TopupStatusDto
+  TopupStatusDto,
+  AdminTransactionFilterDto,
+  AdminTransactionStatsDto,
+  AdminTransactionResponseDto
 } from './dto';
 import { User } from '../users/user.entity';
 import { TransferLimit } from './entities/transfer-limit.entity';
@@ -1155,6 +1158,283 @@ export class TokenService {
       currentBalance,
       requiredAmount: amount,
       shortfall
+    };
+  }
+
+  // ==========================================
+  // Admin Transaction Methods
+  // ==========================================
+
+  /**
+   * Get all transactions with filters for admin panel
+   */
+  async getAdminTransactions(filters: AdminTransactionFilterDto): Promise<{
+    data: AdminTransactionResponseDto[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const {
+      type,
+      status,
+      startDate,
+      endDate,
+      search,
+      page = 1,
+      limit = 20
+    } = filters;
+
+    const queryBuilder = this.transactionRepository
+      .createQueryBuilder('tx')
+      .leftJoinAndSelect('tx.user', 'user')
+      .orderBy('tx.createdAt', 'DESC');
+
+    // Filter by type
+    if (type && type !== 'all') {
+      queryBuilder.andWhere('tx.type = :type', { type });
+    }
+
+    // Filter by status
+    if (status && status !== 'all') {
+      queryBuilder.andWhere('tx.status = :status', { status });
+    }
+
+    // Filter by date range
+    if (startDate) {
+      queryBuilder.andWhere('tx.createdAt >= :startDate', {
+        startDate: new Date(startDate)
+      });
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      queryBuilder.andWhere('tx.createdAt <= :endDate', { endDate: end });
+    }
+
+    // Search by user email or reference
+    if (search) {
+      queryBuilder.andWhere(
+        '(user.email ILIKE :search OR tx.reference ILIKE :search OR user.firstName ILIKE :search OR user.lastName ILIKE :search)',
+        { search: `%${search}%` }
+      );
+    }
+
+    // Get total count
+    const total = await queryBuilder.getCount();
+
+    // Apply pagination
+    const skip = (page - 1) * limit;
+    queryBuilder.skip(skip).take(limit);
+
+    const transactions = await queryBuilder.getMany();
+
+    // Fetch fromUser and toUser info for transfers
+    const userIds = new Set<string>();
+    transactions.forEach(tx => {
+      if (tx.fromUserId) userIds.add(tx.fromUserId);
+      if (tx.toUserId) userIds.add(tx.toUserId);
+    });
+
+    const users = userIds.size > 0
+      ? await this.userRepository.find({
+          where: [...userIds].map(id => ({ id }))
+        })
+      : [];
+
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Map to response DTOs
+    const data: AdminTransactionResponseDto[] = transactions.map(tx => {
+      const fromUser = tx.fromUserId ? userMap.get(tx.fromUserId) : undefined;
+      const toUser = tx.toUserId ? userMap.get(tx.toUserId) : undefined;
+
+      return {
+        id: tx.id,
+        type: tx.type,
+        status: tx.status,
+        amount: Number(tx.amount),
+        fee: Number(tx.fee) || 0,
+        reference: tx.reference || '',
+        description: tx.description || '',
+        createdAt: tx.createdAt,
+        processedAt: tx.processedAt,
+        user: tx.user ? {
+          id: tx.user.id,
+          firstName: tx.user.firstName,
+          lastName: tx.user.lastName,
+          email: tx.user.email
+        } : null,
+        fromUser: fromUser ? {
+          id: fromUser.id,
+          firstName: fromUser.firstName,
+          lastName: fromUser.lastName,
+          email: fromUser.email
+        } : undefined,
+        toUser: toUser ? {
+          id: toUser.id,
+          firstName: toUser.firstName,
+          lastName: toUser.lastName,
+          email: toUser.email
+        } : undefined,
+        metadata: tx.metadata
+      };
+    });
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  /**
+   * Get transaction statistics for admin dashboard
+   */
+  async getAdminTransactionStats(): Promise<AdminTransactionStatsDto> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Total transactions
+    const totalTransactions = await this.transactionRepository.count();
+
+    // Total volume (sum of absolute amounts)
+    const volumeResult = await this.transactionRepository
+      .createQueryBuilder('tx')
+      .select('SUM(ABS(tx.amount))', 'volume')
+      .getRawOne();
+    const totalVolume = Number(volumeResult?.volume) || 0;
+
+    // Total platform fees collected
+    const feesResult = await this.transactionRepository
+      .createQueryBuilder('tx')
+      .select('SUM(ABS(tx.amount))', 'fees')
+      .where('tx.type = :type', { type: TokenTransactionType.PLATFORM_FEE })
+      .andWhere('tx.status = :status', { status: TokenTransactionStatus.COMPLETED })
+      .getRawOne();
+    const totalFees = Number(feesResult?.fees) || 0;
+
+    // Transfers (in + out)
+    const transfersResult = await this.transactionRepository
+      .createQueryBuilder('tx')
+      .select('COUNT(*)', 'count')
+      .addSelect('SUM(ABS(tx.amount))', 'volume')
+      .where('tx.type IN (:...types)', {
+        types: [TokenTransactionType.TRANSFER_IN, TokenTransactionType.TRANSFER_OUT]
+      })
+      .andWhere('tx.status = :status', { status: TokenTransactionStatus.COMPLETED })
+      .getRawOne();
+    const transfersCount = Number(transfersResult?.count) || 0;
+    const transfersVolume = Number(transfersResult?.volume) || 0;
+
+    // Topups
+    const topupsResult = await this.transactionRepository
+      .createQueryBuilder('tx')
+      .select('COUNT(*)', 'count')
+      .addSelect('SUM(tx.amount)', 'volume')
+      .where('tx.type = :type', { type: TokenTransactionType.TOPUP })
+      .andWhere('tx.status = :status', { status: TokenTransactionStatus.COMPLETED })
+      .getRawOne();
+    const topupsCount = Number(topupsResult?.count) || 0;
+    const topupsVolume = Number(topupsResult?.volume) || 0;
+
+    // Purchases
+    const purchasesResult = await this.transactionRepository
+      .createQueryBuilder('tx')
+      .select('COUNT(*)', 'count')
+      .addSelect('SUM(ABS(tx.amount))', 'volume')
+      .where('tx.type = :type', { type: TokenTransactionType.PURCHASE })
+      .andWhere('tx.status = :status', { status: TokenTransactionStatus.COMPLETED })
+      .getRawOne();
+    const purchasesCount = Number(purchasesResult?.count) || 0;
+    const purchasesVolume = Number(purchasesResult?.volume) || 0;
+
+    // Pending transactions
+    const pendingTransactions = await this.transactionRepository.count({
+      where: { status: TokenTransactionStatus.PENDING }
+    });
+
+    // Today's transactions
+    const todayResult = await this.transactionRepository
+      .createQueryBuilder('tx')
+      .select('COUNT(*)', 'count')
+      .addSelect('SUM(ABS(tx.amount))', 'volume')
+      .where('tx.createdAt >= :today', { today })
+      .getRawOne();
+    const todayTransactions = Number(todayResult?.count) || 0;
+    const todayVolume = Number(todayResult?.volume) || 0;
+
+    return {
+      totalTransactions,
+      totalVolume,
+      totalFees,
+      transfersCount,
+      transfersVolume,
+      topupsCount,
+      topupsVolume,
+      purchasesCount,
+      purchasesVolume,
+      pendingTransactions,
+      todayTransactions,
+      todayVolume
+    };
+  }
+
+  /**
+   * Get a single transaction by ID for admin
+   */
+  async getAdminTransactionById(transactionId: string): Promise<AdminTransactionResponseDto | null> {
+    const tx = await this.transactionRepository.findOne({
+      where: { id: transactionId },
+      relations: ['user']
+    });
+
+    if (!tx) {
+      return null;
+    }
+
+    // Fetch fromUser and toUser if applicable
+    let fromUser = null;
+    let toUser = null;
+
+    if (tx.fromUserId) {
+      fromUser = await this.userRepository.findOne({ where: { id: tx.fromUserId } });
+    }
+    if (tx.toUserId) {
+      toUser = await this.userRepository.findOne({ where: { id: tx.toUserId } });
+    }
+
+    return {
+      id: tx.id,
+      type: tx.type,
+      status: tx.status,
+      amount: Number(tx.amount),
+      fee: Number(tx.fee) || 0,
+      reference: tx.reference || '',
+      description: tx.description || '',
+      createdAt: tx.createdAt,
+      processedAt: tx.processedAt,
+      user: tx.user ? {
+        id: tx.user.id,
+        firstName: tx.user.firstName,
+        lastName: tx.user.lastName,
+        email: tx.user.email
+      } : null,
+      fromUser: fromUser ? {
+        id: fromUser.id,
+        firstName: fromUser.firstName,
+        lastName: fromUser.lastName,
+        email: fromUser.email
+      } : undefined,
+      toUser: toUser ? {
+        id: toUser.id,
+        firstName: toUser.firstName,
+        lastName: toUser.lastName,
+        email: toUser.email
+      } : undefined,
+      metadata: tx.metadata
     };
   }
 }

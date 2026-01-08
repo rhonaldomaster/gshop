@@ -40,6 +40,7 @@
     "creators": "Creadores",
     "affiliates": "Afiliados Pendientes",
     "payments": "Pagos",
+    "transactions": "Transferencias",
     "sellers": "Vendedores",
     "live": "Transmisiones en vivo",
     "ads": "Anuncios",
@@ -1076,6 +1077,74 @@
       "status": "Estado",
       "submittedAt": "Fecha de envío",
       "actions": "Acciones"
+    }
+  },
+  "transactions": {
+    "title": "Transferencias de Saldo",
+    "description": "Monitorea transferencias P2P, recargas, pagos con wallet y comisiones de la plataforma",
+    "common": {
+      "refresh": "Actualizar",
+      "search": "Buscar"
+    },
+    "stats": {
+      "totalVolume": "Volumen total",
+      "transactions": "transacciones",
+      "feesCollected": "Comisiones recaudadas",
+      "platformFees": "Fees de plataforma (0.2%)",
+      "transfers": "Transferencias P2P",
+      "p2pTransfers": "transferencias P2P",
+      "todayVolume": "Volumen de hoy",
+      "todayTransactions": "transacciones hoy",
+      "topups": "Recargas",
+      "recharges": "recargas completadas",
+      "purchases": "Compras con saldo",
+      "walletPurchases": "pagos con wallet",
+      "pending": "Pendientes",
+      "pendingTransactions": "transacciones pendientes"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por email, nombre o referencia...",
+      "allTypes": "Todos los tipos",
+      "allStatus": "Todos los estados"
+    },
+    "type": {
+      "transfer_in": "Recibido",
+      "transfer_out": "Enviado",
+      "platform_fee": "Comisión",
+      "topup": "Recarga",
+      "purchase": "Compra",
+      "reward": "Recompensa",
+      "cashback": "Cashback",
+      "withdrawal": "Retiro",
+      "burn": "Quemado",
+      "mint": "Creado"
+    },
+    "status": {
+      "completed": "Completado",
+      "pending": "Pendiente",
+      "failed": "Fallido",
+      "cancelled": "Cancelado"
+    },
+    "table": {
+      "type": "Tipo",
+      "user": "Usuario",
+      "description": "Descripción",
+      "amount": "Monto",
+      "status": "Estado",
+      "date": "Fecha"
+    },
+    "empty": {
+      "noTransactions": "No hay transacciones",
+      "noTransactionsDescription": "Las transacciones aparecerán aquí cuando los usuarios realicen operaciones con su saldo"
+    },
+    "errors": {
+      "loadFailed": "Error al cargar las transacciones"
+    },
+    "pagination": {
+      "showing": "Mostrando {from} a {to} de {total} transacciones",
+      "page": "Página {current} de {total}",
+      "previous": "Anterior",
+      "next": "Siguiente"
     }
   }
 }

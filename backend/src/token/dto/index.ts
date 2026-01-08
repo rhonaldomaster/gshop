@@ -1,4 +1,5 @@
 import { IsString, IsNumber, IsEnum, IsOptional, Min, IsObject, MinLength, MaxLength, IsNotEmpty } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { RewardTier } from '../token.entity';
 
 export class CreateWalletDto {
@@ -211,4 +212,84 @@ export class TokenStatsQueryDto {
   @IsOptional()
   @IsString()
   endDate?: string;
+}
+
+// Admin Transaction DTOs
+
+export class AdminTransactionFilterDto {
+  @IsOptional()
+  @IsString()
+  type?: string; // transfer_in, transfer_out, platform_fee, topup, purchase, etc.
+
+  @IsOptional()
+  @IsString()
+  status?: string; // pending, completed, failed, cancelled
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string; // Search by user email or transaction reference
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
+}
+
+export class AdminTransactionStatsDto {
+  totalTransactions: number;
+  totalVolume: number;
+  totalFees: number;
+  transfersCount: number;
+  transfersVolume: number;
+  topupsCount: number;
+  topupsVolume: number;
+  purchasesCount: number;
+  purchasesVolume: number;
+  pendingTransactions: number;
+  todayTransactions: number;
+  todayVolume: number;
+}
+
+export class AdminTransactionResponseDto {
+  id: string;
+  type: string;
+  status: string;
+  amount: number;
+  fee: number;
+  reference: string;
+  description: string;
+  createdAt: Date;
+  processedAt: Date;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  fromUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  toUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  metadata?: any;
 }
