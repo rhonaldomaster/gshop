@@ -2,6 +2,8 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TokenController } from './token.controller';
 import { TokenService } from './token.service';
+import { VerificationController } from './verification.controller';
+import { VerificationService } from './verification.service';
 import {
   GshopWallet,
   GshopTransaction,
@@ -28,8 +30,8 @@ import { PaymentsV2Module } from '../payments/payments-v2.module';
     ]),
     forwardRef(() => PaymentsV2Module), // For CurrencyService (COP → USD conversion)
   ],
-  controllers: [TokenController],
-  providers: [TokenService],
-  exports: [TokenService],
+  controllers: [TokenController, VerificationController],
+  providers: [TokenService, VerificationService],
+  exports: [TokenService, VerificationService],
 })
 export class TokenModule {}

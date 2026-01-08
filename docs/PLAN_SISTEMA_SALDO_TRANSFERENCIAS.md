@@ -13,7 +13,7 @@
 | 5 | Mobile TransferScreen UI | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 6 | Mobile TopUp con Stripe SDK | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 7 | Mobile Checkout con saldo | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
-| 8 | Admin Panel verificaciones KYC | PENDIENTE | - | - |
+| 8 | Admin Panel verificaciones KYC | COMPLETADO | 2026-01-08 | `feature/balance-transfer` |
 
 ### Resumen de lo implementado (Backend):
 
@@ -87,6 +87,41 @@
   - `checkout.payment.providers.wallet.*` - Nombre, descripcion, recomendado, insuficiente
   - `checkout.alerts.walletPaymentSuccess` - Mensaje de exito
   - `checkout.alerts.walletPaymentFailed` - Mensaje de error
+
+**Fase 8 - Admin Panel verificaciones KYC:**
+- `backend/src/token/dto/verification.dto.ts` - DTOs creados:
+  - `ReviewVerificationDto` - Para aprobar/rechazar verificaciones
+  - `VerificationFilterDto` - Filtros para listar verificaciones
+  - `VerificationResponseDto` - Respuesta de verificacion individual
+  - `VerificationStatsDto` - Estadisticas de verificaciones
+- `backend/src/token/verification.service.ts` - Servicio con metodos:
+  - `getAllVerifications()` - Lista todas las verificaciones con filtros
+  - `getPendingVerifications()` - Lista solo las pendientes
+  - `getVerificationById()` - Obtener una verificacion con usuario
+  - `reviewVerification()` - Aprobar/rechazar/solicitar cambios
+  - `getVerificationStats()` - Estadisticas por estado
+- `backend/src/token/verification.controller.ts` - Endpoints:
+  - `GET /api/v1/verifications` - Listar con filtros
+  - `GET /api/v1/verifications/pending` - Solo pendientes
+  - `GET /api/v1/verifications/stats` - Estadisticas
+  - `GET /api/v1/verifications/:id` - Detalle con usuario
+  - `PUT /api/v1/verifications/:id/review` - Aprobar/rechazar
+- `backend/src/token/token.module.ts` - Agregados VerificationController y VerificationService
+- `admin-web/app/dashboard/verifications/page.tsx` - Pagina principal:
+  - Tarjetas de estadisticas (pendientes, en revision, aprobadas, rechazadas)
+  - Tabla de verificaciones con columnas de usuario, nivel, estado, fecha
+  - Filtros por estado y nivel de verificacion
+  - Modal de revision rapida para aprobar/rechazar/solicitar cambios
+- `admin-web/app/dashboard/verifications/[id]/page.tsx` - Detalle:
+  - Informacion del usuario (nombre, email, documento)
+  - Level 1: Documentos de identidad con visor de imagenes
+  - Level 2: Informacion de direccion y ocupacion
+  - Panel de acciones para aprobar/rechazar
+  - Historial de revisiones anteriores
+- `admin-web/messages/es.json` - Traducciones agregadas:
+  - `navigation.verifyKYC` - Link de navegacion
+  - `verifications.*` - Todas las traducciones del modulo
+- `admin-web/components/layout/sidebar.tsx` - Agregado link "Verificar KYC" con icono ShieldCheck
 
 ### Para continuar implementacion:
 

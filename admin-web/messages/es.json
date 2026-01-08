@@ -34,6 +34,7 @@
     "orders": "Pedidos",
     "users": "Usuarios",
     "verifySellers": "Verificar Vendedores",
+    "verifyKYC": "Verificaciones KYC",
     "creators": "Creadores",
     "affiliates": "Afiliados Pendientes",
     "payments": "Pagos",
@@ -959,5 +960,117 @@
     "contactInformation": "Información de contacto",
     "socialMediaLinks": "Enlaces de redes sociales",
     "applicationDetails": "Detalles de la solicitud"
+  },
+  "verifications": {
+    "title": "Verificaciones KYC",
+    "description": "Revisa y aprueba solicitudes de verificación de identidad",
+    "pendingTitle": "Verificaciones Pendientes",
+    "pendingDescription": "Solicitudes de verificación KYC que requieren revisión",
+    "allVerifications": "Todas las verificaciones",
+    "stats": {
+      "pending": "Pendientes",
+      "underReview": "En revisión",
+      "approved": "Aprobados",
+      "rejected": "Rechazados",
+      "needsUpdate": "Requieren actualización",
+      "pendingLevel1": "Nivel 1 pendientes",
+      "pendingLevel2": "Nivel 2 pendientes",
+      "avgReviewTime": "Tiempo promedio de revisión"
+    },
+    "status": {
+      "not_started": "No iniciado",
+      "pending": "Pendiente",
+      "under_review": "En revisión",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "needs_update": "Requiere actualización"
+    },
+    "level": {
+      "none": "Sin verificar",
+      "level_1": "Nivel 1 - Básico",
+      "level_2": "Nivel 2 - Completo"
+    },
+    "documentType": {
+      "CC": "Cédula de Ciudadanía",
+      "CE": "Cédula de Extranjería",
+      "PA": "Pasaporte",
+      "TI": "Tarjeta de Identidad",
+      "NIT": "NIT"
+    },
+    "fields": {
+      "fullLegalName": "Nombre legal completo",
+      "documentType": "Tipo de documento",
+      "documentNumber": "Número de documento",
+      "dateOfBirth": "Fecha de nacimiento",
+      "address": "Dirección",
+      "city": "Ciudad",
+      "state": "Departamento",
+      "postalCode": "Código postal",
+      "country": "País",
+      "sourceOfFunds": "Origen de fondos",
+      "occupation": "Ocupación",
+      "monthlyIncome": "Ingresos mensuales"
+    },
+    "documents": {
+      "title": "Documentos",
+      "documentFront": "Documento (Frente)",
+      "documentBack": "Documento (Reverso)",
+      "selfie": "Selfie con documento",
+      "viewDocument": "Ver documento",
+      "noDocument": "No disponible"
+    },
+    "actions": {
+      "approve": "Aprobar verificación",
+      "reject": "Rechazar verificación",
+      "needsUpdate": "Solicitar actualización",
+      "viewDetails": "Ver detalles"
+    },
+    "review": {
+      "approveTitle": "Aprobar verificación",
+      "approveMessage": "El usuario será verificado y sus límites de transferencia aumentarán.",
+      "rejectTitle": "Rechazar verificación",
+      "rejectMessage": "Se notificará al usuario con la razón del rechazo.",
+      "needsUpdateTitle": "Solicitar actualización",
+      "needsUpdateMessage": "El usuario podrá corregir y volver a enviar sus documentos.",
+      "reasonLabel": "Razón",
+      "reasonPlaceholder": "Explica la razón del rechazo o qué documentos debe actualizar...",
+      "reasonRequired": "Por favor proporciona una razón",
+      "adminNotesLabel": "Notas internas (no visibles al usuario)",
+      "adminNotesPlaceholder": "Notas adicionales para el equipo...",
+      "successApproved": "Verificación aprobada exitosamente",
+      "successRejected": "Verificación rechazada",
+      "successNeedsUpdate": "Se ha solicitado actualización de documentos",
+      "error": "Error al procesar la verificación"
+    },
+    "detail": {
+      "title": "Detalle de verificación",
+      "userInfo": "Información del usuario",
+      "kycInfo": "Información KYC",
+      "level1Info": "Información Nivel 1",
+      "level2Info": "Información Nivel 2",
+      "reviewHistory": "Historial de revisión",
+      "submittedAt": "Enviado",
+      "reviewedBy": "Revisado por",
+      "reviewedAt": "Fecha de revisión",
+      "attempts": "Intentos de revisión",
+      "previousRejection": "Razón de rechazo anterior"
+    },
+    "empty": {
+      "noPending": "No hay verificaciones pendientes",
+      "noPendingDescription": "Todas las solicitudes de verificación han sido procesadas",
+      "noVerifications": "No hay verificaciones",
+      "noVerificationsDescription": "Las verificaciones aparecerán aquí cuando los usuarios las envíen"
+    },
+    "filters": {
+      "allStatus": "Todos los estados",
+      "allLevels": "Todos los niveles"
+    },
+    "table": {
+      "user": "Usuario",
+      "level": "Nivel",
+      "status": "Estado",
+      "submittedAt": "Fecha de envío",
+      "actions": "Acciones"
+    }
   }
 }
