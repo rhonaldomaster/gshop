@@ -104,10 +104,7 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
         <View style={styles.detailRow}>
           <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
           <GSText variant="caption" color="textSecondary" style={{ marginLeft: 6 }}>
-            {result.transactions[0]
-              ? formatDate(result.transactions[0].createdAt)
-              : formatDate(new Date().toISOString())
-            }
+            {formatDate(result.timestamp || new Date().toISOString())}
           </GSText>
         </View>
       </View>

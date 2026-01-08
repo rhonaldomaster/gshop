@@ -59,6 +59,7 @@ export interface TransferExecuteResponse {
     feeCharged: number;
     recipientNetBalance: number;
   };
+  timestamp: string;
 }
 
 class TransferService {
