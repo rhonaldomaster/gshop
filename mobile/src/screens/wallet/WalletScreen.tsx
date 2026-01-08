@@ -50,10 +50,10 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) 
 
       <View style={styles.balanceSection}>
         <GSText variant="h1" color="white" weight="bold">
-          {paymentsService.formatTokenAmount(balance.tokenBalance)}
+          {paymentsService.formatPrice(balance.tokenBalance, 'COP')}
         </GSText>
         <GSText variant="body" color="white" style={{ opacity: 0.8 }}>
-          ≈ {paymentsService.formatPrice(balance.usdValue, 'USD')}
+          {t('wallet.availableBalance')}
         </GSText>
       </View>
 

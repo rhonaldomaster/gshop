@@ -1193,6 +1193,7 @@
     "title": "Billetera",
     "myWallet": "Mi billetera GSHOP",
     "balance": "Saldo",
+    "availableBalance": "Saldo disponible",
     "tokens": "Tokens GSHOP",
     "topUp": "Recargar",
     "withdraw": "Retirar",
