@@ -14,6 +14,7 @@
 | 6 | Mobile TopUp con Stripe SDK | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 7 | Mobile Checkout con saldo | COMPLETADO | 2026-01-07 | `feature/balance-transfer` |
 | 8 | Admin Panel verificaciones KYC | COMPLETADO | 2026-01-08 | `feature/balance-transfer` |
+| 9 | Migraciones de Base de Datos | COMPLETADO | 2026-01-08 | (incluido en Fase 1) |
 
 ### Resumen de lo implementado (Backend):
 
@@ -122,6 +123,25 @@
   - `navigation.verifyKYC` - Link de navegacion
   - `verifications.*` - Todas las traducciones del modulo
 - `admin-web/components/layout/sidebar.tsx` - Agregado link "Verificar KYC" con icono ShieldCheck
+
+**Fase 9 - Migraciones de Base de Datos (ya incluidas en fases anteriores):**
+- `1767199000000-CreateGshopWalletAndTransactionTables.ts` - Tablas de wallet y transacciones:
+  - `gshop_wallets` - Wallet de usuarios con balance, tier, cashback
+  - `gshop_transactions` - Transacciones con types: transfer_out, transfer_in, platform_fee, topup, etc.
+  - `reward_campaigns` - Campanas de recompensas
+  - `referral_rewards` - Sistema de referidos
+  - `token_metrics` - Metricas del sistema de tokens
+- `1767200000000-CreateUserVerificationsTable.ts` - Tabla de verificacion KYC:
+  - Campos Level 1: fullLegalName, documentType, documentNumber, documentFrontUrl, documentBackUrl, selfieUrl
+  - Campos Level 2: address, city, state, postalCode, country, sourceOfFunds, occupation, monthlyIncome
+  - Campos de metadata: rejectionReason, verifiedBy, verifiedAt, adminNotes, reviewAttempts
+  - Enums: verification_level_enum, document_type_enum, verification_status_enum
+- `1767200000001-CreateTransferLimitsTable.ts` - Tabla de limites de transferencia:
+  - Tracking diario: dailyTransferred, lastDailyReset, dailyTransferCount
+  - Tracking mensual: monthlyTransferred, lastMonthlyReset, monthlyTransferCount
+  - Tracking lifetime: totalLifetimeTransferred, totalTransferCount
+  - Vinculo con nivel de verificacion via verificationLevel
+- Campo `AddVerificationLevelToUser` - NO implementado (marcado como opcional/redundante en el plan original, el nivel ya esta en UserVerification)
 
 ### Para continuar implementacion:
 
