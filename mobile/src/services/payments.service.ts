@@ -340,12 +340,35 @@ class PaymentsService {
   // Get wallet balance
   async getWalletBalance(): Promise<WalletBalance> {
     try {
-      const response = await apiClient.get<WalletBalance>('/tokens/wallet');
+      // Fetch wallet and transactions in parallel
+      const [walletResponse, transactionsResponse] = await Promise.all([
+        apiClient.get<any>('/tokens/wallet'),
+        apiClient.get<any>('/tokens/wallet/transactions?limit=10'),
+      ]);
 
-      if (response.success && response.data) {
-        return response.data;
+      if (walletResponse.success && walletResponse.data) {
+        const walletData = walletResponse.data;
+        const transactions = transactionsResponse.success && transactionsResponse.data
+          ? transactionsResponse.data
+          : [];
+
+        // Map API response to WalletBalance interface
+        return {
+          tokenBalance: parseFloat(walletData.balance) || 0,
+          usdValue: parseFloat(walletData.balance) || 0, // Same value for now since it's COP
+          pendingRewards: parseFloat(walletData.lockedBalance) || 0,
+          transactions: transactions.map((tx: any) => ({
+            id: tx.id,
+            type: tx.type,
+            amount: parseFloat(tx.amount) || 0,
+            description: tx.description || tx.type,
+            createdAt: tx.createdAt,
+            status: tx.status,
+            orderId: tx.orderId,
+          })),
+        };
       } else {
-        throw new Error(response.message || 'Failed to get wallet balance');
+        throw new Error(walletResponse.message || 'Failed to get wallet balance');
       }
     } catch (error) {
       console.error('PaymentsService: Get wallet balance failed', error);
