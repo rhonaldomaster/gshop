@@ -67,6 +67,15 @@ interface Verification {
 
 type ReviewAction = 'approve' | 'reject' | 'needs_update'
 
+const getImageUrl = (url?: string): string | undefined => {
+  if (!url) return undefined
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url
+  }
+  const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1').replace('/api/v1', '')
+  return `${backendUrl}${url.startsWith('/') ? '' : '/'}${url}`
+}
+
 export default function VerificationDetailPage() {
   const t = useTranslations('verifications')
   const params = useParams()
@@ -314,12 +323,12 @@ export default function VerificationDetailPage() {
                       }`}
                       onClick={() =>
                         verification.documentFrontUrl &&
-                        setImageModal(verification.documentFrontUrl)
+                        setImageModal(getImageUrl(verification.documentFrontUrl)!)
                       }
                     >
                       {verification.documentFrontUrl ? (
                         <img
-                          src={verification.documentFrontUrl}
+                          src={getImageUrl(verification.documentFrontUrl)}
                           alt="Document Front"
                           className="w-full h-20 object-cover rounded mb-2"
                         />
@@ -331,7 +340,7 @@ export default function VerificationDetailPage() {
                       </p>
                       {verification.documentFrontUrl && (
                         <a
-                          href={verification.documentFrontUrl}
+                          href={getImageUrl(verification.documentFrontUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary flex items-center justify-center gap-1 mt-1"
@@ -351,12 +360,12 @@ export default function VerificationDetailPage() {
                           : 'bg-muted/30'
                       }`}
                       onClick={() =>
-                        verification.documentBackUrl && setImageModal(verification.documentBackUrl)
+                        verification.documentBackUrl && setImageModal(getImageUrl(verification.documentBackUrl)!)
                       }
                     >
                       {verification.documentBackUrl ? (
                         <img
-                          src={verification.documentBackUrl}
+                          src={getImageUrl(verification.documentBackUrl)}
                           alt="Document Back"
                           className="w-full h-20 object-cover rounded mb-2"
                         />
@@ -366,7 +375,7 @@ export default function VerificationDetailPage() {
                       <p className="text-xs text-muted-foreground">{t('documents.documentBack')}</p>
                       {verification.documentBackUrl && (
                         <a
-                          href={verification.documentBackUrl}
+                          href={getImageUrl(verification.documentBackUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary flex items-center justify-center gap-1 mt-1"
@@ -384,12 +393,12 @@ export default function VerificationDetailPage() {
                         verification.selfieUrl ? 'cursor-pointer hover:bg-muted/50' : 'bg-muted/30'
                       }`}
                       onClick={() =>
-                        verification.selfieUrl && setImageModal(verification.selfieUrl)
+                        verification.selfieUrl && setImageModal(getImageUrl(verification.selfieUrl)!)
                       }
                     >
                       {verification.selfieUrl ? (
                         <img
-                          src={verification.selfieUrl}
+                          src={getImageUrl(verification.selfieUrl)}
                           alt="Selfie"
                           className="w-full h-20 object-cover rounded mb-2"
                         />
@@ -399,7 +408,7 @@ export default function VerificationDetailPage() {
                       <p className="text-xs text-muted-foreground">{t('documents.selfie')}</p>
                       {verification.selfieUrl && (
                         <a
-                          href={verification.selfieUrl}
+                          href={getImageUrl(verification.selfieUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-primary flex items-center justify-center gap-1 mt-1"
