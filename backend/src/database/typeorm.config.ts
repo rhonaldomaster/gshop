@@ -52,6 +52,17 @@ import { PlatformConfig } from './entities/platform-config.entity';
 import { Invoice as CommissionInvoice } from './entities/invoice.entity';
 import { AuditLog } from './entities/audit-log.entity';
 
+// Token/Wallet System Entities
+import {
+  GshopWallet,
+  GshopTransaction,
+  RewardCampaign,
+  ReferralReward,
+  TokenMetrics
+} from '../token/token.entity';
+import { UserVerification } from '../token/entities/user-verification.entity';
+import { TransferLimit } from '../token/entities/transfer-limit.entity';
+
 export const typeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -79,7 +90,10 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
     AffiliateVideo, AffiliateVideoProduct, VideoInteraction,
     AffiliateProduct, AffiliateNotification,
     // Recommendation system entities
-    UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics
+    UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics,
+    // Token/Wallet system entities
+    GshopWallet, GshopTransaction, RewardCampaign, ReferralReward, TokenMetrics,
+    UserVerification, TransferLimit
   ],
   migrations: ['dist/src/database/migrations/*.js'],
   synchronize: false, // Disabled to prevent schema conflicts with manual migrations

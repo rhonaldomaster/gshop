@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useStripe } from '@stripe/stripe-react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -22,17 +24,17 @@ import {
   paymentsService,
   WalletBalance,
   TokenTransaction,
-  TopupRequest,
-  PaymentMethod,
+  StripeTopupIntentResponse,
 } from '../../services/payments.service';
 
 interface WalletCardProps {
   balance: WalletBalance;
   onTopup: () => void;
   onSend: () => void;
+  t: (key: string, options?: any) => string;
 }
 
-const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => {
+const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) => {
   const { theme } = useTheme();
 
   return (
@@ -42,16 +44,16 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
           <Ionicons name="diamond" size={24} color={theme.colors.white} />
         </View>
         <GSText variant="body" color="white" weight="medium">
-          GSHOP Wallet
+          {t('wallet.myWallet')}
         </GSText>
       </View>
 
       <View style={styles.balanceSection}>
         <GSText variant="h1" color="white" weight="bold">
-          {paymentsService.formatTokenAmount(balance.tokenBalance)}
+          {paymentsService.formatPrice(balance.tokenBalance, 'COP')}
         </GSText>
         <GSText variant="body" color="white" style={{ opacity: 0.8 }}>
-          ≈ {paymentsService.formatPrice(balance.usdValue, 'USD')}
+          {t('wallet.availableBalance')}
         </GSText>
       </View>
 
@@ -59,7 +61,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
         <View style={styles.pendingRewards}>
           <Ionicons name="gift-outline" size={16} color={theme.colors.white} />
           <GSText variant="caption" color="white" style={{ marginLeft: 4 }}>
-            +{paymentsService.formatTokenAmount(balance.pendingRewards)} pending rewards
+            +{paymentsService.formatTokenAmount(balance.pendingRewards)} {t('wallet.pendingRewards')}
           </GSText>
         </View>
       )}
@@ -71,7 +73,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
         >
           <Ionicons name="add" size={20} color={theme.colors.white} />
           <GSText variant="caption" color="white" weight="medium" style={{ marginTop: 4 }}>
-            Top Up
+            {t('wallet.topUp')}
           </GSText>
         </TouchableOpacity>
 
@@ -81,7 +83,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
         >
           <Ionicons name="send" size={20} color={theme.colors.white} />
           <GSText variant="caption" color="white" weight="medium" style={{ marginTop: 4 }}>
-            Send
+            {t('wallet.send')}
           </GSText>
         </TouchableOpacity>
       </View>
@@ -91,9 +93,10 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend }) => 
 
 interface TransactionItemProps {
   transaction: TokenTransaction;
+  t: (key: string, options?: any) => string;
 }
 
-const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
+const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => {
   const { theme } = useTheme();
 
   const getTransactionIcon = (type: TokenTransaction['type']) => {
@@ -104,33 +107,42 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
         return 'bag-outline';
       case 'transfer':
         return 'swap-horizontal-outline';
+      case 'transfer_in':
+        return 'arrow-down-circle-outline';
+      case 'transfer_out':
+        return 'arrow-up-circle-outline';
       case 'topup':
         return 'add-circle-outline';
       case 'withdrawal':
         return 'remove-circle-outline';
+      case 'platform_fee':
+        return 'pricetag-outline';
       default:
         return 'ellipse-outline';
     }
   };
 
-  const getTransactionColor = (type: TokenTransaction['type']) => {
+  const getTransactionColor = (type: TokenTransaction['type'], amount: number) => {
     switch (type) {
       case 'reward':
       case 'topup':
+      case 'transfer_in':
         return theme.colors.success;
       case 'purchase':
       case 'withdrawal':
+      case 'transfer_out':
+      case 'platform_fee':
         return theme.colors.error;
       case 'transfer':
-        return theme.colors.warning;
+        return amount >= 0 ? theme.colors.success : theme.colors.error;
       default:
         return theme.colors.textSecondary;
     }
   };
 
-  const getAmountDisplay = (amount: number, type: TokenTransaction['type']) => {
-    const sign = ['reward', 'topup'].includes(type) ? '+' : '-';
-    return `${sign}${paymentsService.formatTokenAmount(Math.abs(amount))}`;
+  const getAmountDisplay = (amount: number) => {
+    const sign = amount >= 0 ? '+' : '';
+    return `${sign}${paymentsService.formatPrice(amount, 'COP')}`;
   };
 
   const getStatusColor = (status: TokenTransaction['status']) => {
@@ -148,11 +160,11 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
 
   return (
     <View style={styles.transactionItem}>
-      <View style={[styles.transactionIcon, { backgroundColor: getTransactionColor(transaction.type) + '20' }]}>
+      <View style={[styles.transactionIcon, { backgroundColor: getTransactionColor(transaction.type, transaction.amount) + '20' }]}>
         <Ionicons
           name={getTransactionIcon(transaction.type) as any}
           size={20}
-          color={getTransactionColor(transaction.type)}
+          color={getTransactionColor(transaction.type, transaction.amount)}
         />
       </View>
 
@@ -179,199 +191,239 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction }) => {
         <GSText
           variant="body"
           weight="medium"
-          style={{ color: getTransactionColor(transaction.type) }}
+          style={{ color: getTransactionColor(transaction.type, transaction.amount) }}
         >
-          {getAmountDisplay(transaction.amount, transaction.type)}
+          {getAmountDisplay(transaction.amount)}
         </GSText>
         <GSText
           variant="caption"
           style={{ color: getStatusColor(transaction.status) }}
         >
-          {transaction.status}
+          {t(`wallet.transactionStatus.${transaction.status}`)}
         </GSText>
       </View>
     </View>
   );
 };
 
+type TopupStep = 'amount' | 'processing' | 'success' | 'error';
+
 interface TopupModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (amount: number, paymentMethodId: string) => void;
-  paymentMethods: PaymentMethod[];
+  onSubmit: (amountCOP: number) => Promise<void>;
   isLoading: boolean;
+  topupStep: TopupStep;
+  topupResult: {
+    amountCOP?: number;
+    amountUSD?: number;
+    error?: string;
+  } | null;
+  t: (key: string, options?: any) => string;
 }
 
 const TopupModal: React.FC<TopupModalProps> = ({
   visible,
   onClose,
   onSubmit,
-  paymentMethods,
   isLoading,
+  topupStep,
+  topupResult,
+  t,
 }) => {
   const { theme } = useTheme();
   const [amount, setAmount] = useState('');
-  const [selectedMethodId, setSelectedMethodId] = useState<string>('');
 
-  const quickAmounts = [10, 25, 50, 100];
+  // Quick amounts in COP (Colombian Pesos)
+  const quickAmounts = [50000, 100000, 200000, 500000];
 
-  useEffect(() => {
-    if (paymentMethods.length > 0) {
-      const defaultMethod = paymentMethods.find(m => m.isDefault) || paymentMethods[0];
-      setSelectedMethodId(defaultMethod.id);
-    }
-  }, [paymentMethods]);
+  const formatCOP = (value: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
 
   const handleSubmit = () => {
-    const numAmount = Number(amount);
-    if (numAmount < 5) {
-      Alert.alert('Invalid Amount', 'Minimum topup amount is $5');
+    const numAmount = Number(amount.replace(/[.,]/g, ''));
+    if (numAmount < 10000) {
+      Alert.alert(t('wallet.topupModal.invalidAmount'), t('wallet.topupModal.minAmountError'));
       return;
     }
-    if (numAmount > 1000) {
-      Alert.alert('Invalid Amount', 'Maximum topup amount is $1000');
-      return;
-    }
-    if (!selectedMethodId) {
-      Alert.alert('Payment Method Required', 'Please select a payment method');
+    if (numAmount > 5000000) {
+      Alert.alert(t('wallet.topupModal.invalidAmount'), t('wallet.topupModal.maxAmountError'));
       return;
     }
 
-    onSubmit(numAmount, selectedMethodId);
+    onSubmit(numAmount);
   };
 
-  const getMethodDisplay = (method: PaymentMethod) => {
-    switch (method.type) {
-      case 'card':
-        return `•••• ${method.details.last4} (${method.details.brand?.toUpperCase()})`;
-      case 'mercadopago':
-        return 'MercadoPago Wallet';
-      default:
-        return method.provider;
-    }
+  const handleClose = () => {
+    setAmount('');
+    onClose();
   };
+
+  const renderAmountStep = () => (
+    <>
+      <GSText variant="h4" weight="bold" style={styles.formTitle}>
+        {t('wallet.topupModal.amountToTopup')}
+      </GSText>
+
+      <GSInput
+        label={t('wallet.topupModal.enterAmount')}
+        value={amount}
+        onChangeText={(text) => {
+          // Only allow numbers
+          const cleaned = text.replace(/[^0-9]/g, '');
+          setAmount(cleaned);
+        }}
+        placeholder="0"
+        keyboardType="numeric"
+        style={styles.amountInput}
+      />
+
+      <View style={styles.quickAmounts}>
+        {quickAmounts.map((quickAmount) => (
+          <TouchableOpacity
+            key={quickAmount}
+            style={[
+              styles.quickAmountButton,
+              {
+                backgroundColor: amount === quickAmount.toString()
+                  ? theme.colors.primary
+                  : theme.colors.surface,
+              },
+            ]}
+            onPress={() => setAmount(quickAmount.toString())}
+          >
+            <GSText
+              variant="caption"
+              weight="semiBold"
+              color={amount === quickAmount.toString() ? 'white' : 'text'}
+            >
+              {formatCOP(quickAmount)}
+            </GSText>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={[styles.paymentMethodOption, { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary }]}>
+        <View style={styles.methodInfo}>
+          <Ionicons name="card-outline" size={20} color={theme.colors.primary} />
+          <GSText variant="body" weight="semiBold" style={{ marginLeft: 12 }}>
+            {t('wallet.topupModal.creditDebitCard')}
+          </GSText>
+        </View>
+        <Ionicons name="shield-checkmark" size={20} color={theme.colors.success} />
+      </View>
+
+      <View style={styles.topupInfo}>
+        <View style={styles.topupInfoRow}>
+          <Ionicons name="lock-closed" size={14} color={theme.colors.textSecondary} />
+          <GSText variant="caption" color="textSecondary" style={{ marginLeft: 6 }}>
+            {t('wallet.topupModal.securePayment')}
+          </GSText>
+        </View>
+        <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center', marginTop: 8 }}>
+          {t('wallet.topupModal.instantCredit')}
+        </GSText>
+      </View>
+    </>
+  );
+
+  const renderProcessingStep = () => (
+    <View style={styles.stepContainer}>
+      <ActivityIndicator size="large" color={theme.colors.primary} />
+      <GSText variant="h4" weight="bold" style={{ marginTop: 20 }}>
+        {t('wallet.topupModal.processing')}
+      </GSText>
+      <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
+        {t('wallet.topupModal.dontClose')}
+      </GSText>
+    </View>
+  );
+
+  const renderSuccessStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={[styles.successIcon, { backgroundColor: theme.colors.success + '20' }]}>
+        <Ionicons name="checkmark-circle" size={60} color={theme.colors.success} />
+      </View>
+      <GSText variant="h3" weight="bold" style={{ marginTop: 20 }}>
+        {t('wallet.topUpSuccess')}
+      </GSText>
+      {topupResult?.amountCOP && (
+        <GSText variant="h4" color="primary" weight="bold" style={{ marginTop: 8 }}>
+          +{formatCOP(topupResult.amountCOP)}
+        </GSText>
+      )}
+      <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
+        {t('wallet.topupModal.balanceUpdated')}
+      </GSText>
+    </View>
+  );
+
+  const renderErrorStep = () => (
+    <View style={styles.stepContainer}>
+      <View style={[styles.successIcon, { backgroundColor: theme.colors.error + '20' }]}>
+        <Ionicons name="close-circle" size={60} color={theme.colors.error} />
+      </View>
+      <GSText variant="h3" weight="bold" style={{ marginTop: 20 }}>
+        {t('wallet.topupModal.paymentError')}
+      </GSText>
+      <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
+        {topupResult?.error || t('wallet.topupModal.paymentErrorMessage')}
+      </GSText>
+    </View>
+  );
 
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose}>
-            <GSText variant="body" color="textSecondary">
-              Cancel
+          <TouchableOpacity onPress={handleClose} disabled={topupStep === 'processing'}>
+            <GSText variant="body" color={topupStep === 'processing' ? 'textSecondary' : 'text'}>
+              {topupStep === 'success' || topupStep === 'error' ? t('common.close') : t('common.cancel')}
             </GSText>
           </TouchableOpacity>
           <GSText variant="h4" weight="bold">
-            Top Up Wallet
+            {t('wallet.topUpWallet')}
           </GSText>
           <View style={{ width: 50 }} />
         </View>
 
         <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
           <View style={styles.topupForm}>
-            <GSText variant="h4" weight="bold" style={styles.formTitle}>
-              Amount (USD)
-            </GSText>
-
-            <GSInput
-              label="Enter amount"
-              value={amount}
-              onChangeText={setAmount}
-              placeholder="0"
-              keyboardType="numeric"
-              style={styles.amountInput}
-            />
-
-            <View style={styles.quickAmounts}>
-              {quickAmounts.map((quickAmount) => (
-                <TouchableOpacity
-                  key={quickAmount}
-                  style={[
-                    styles.quickAmountButton,
-                    {
-                      backgroundColor: amount === quickAmount.toString()
-                        ? theme.colors.primary
-                        : theme.colors.surface,
-                    },
-                  ]}
-                  onPress={() => setAmount(quickAmount.toString())}
-                >
-                  <GSText
-                    variant="body"
-                    weight="medium"
-                    color={amount === quickAmount.toString() ? 'white' : 'text'}
-                  >
-                    ${quickAmount}
-                  </GSText>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <GSText variant="h4" weight="bold" style={styles.formTitle}>
-              Payment Method
-            </GSText>
-
-            {paymentMethods.map((method) => (
-              <TouchableOpacity
-                key={method.id}
-                style={[
-                  styles.paymentMethodOption,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: selectedMethodId === method.id ? theme.colors.primary : theme.colors.border,
-                  },
-                ]}
-                onPress={() => setSelectedMethodId(method.id)}
-              >
-                <View style={styles.methodInfo}>
-                  <Ionicons
-                    name={paymentsService.getPaymentMethodIcon(method.type) as any}
-                    size={20}
-                    color={selectedMethodId === method.id ? theme.colors.primary : theme.colors.textSecondary}
-                  />
-                  <GSText variant="body" weight="medium" style={{ marginLeft: 12 }}>
-                    {getMethodDisplay(method)}
-                  </GSText>
-                </View>
-                <View
-                  style={[
-                    styles.radioButton,
-                    {
-                      borderColor: selectedMethodId === method.id ? theme.colors.primary : theme.colors.border,
-                      backgroundColor: selectedMethodId === method.id ? theme.colors.primary : 'transparent',
-                    },
-                  ]}
-                >
-                  {selectedMethodId === method.id && (
-                    <Ionicons name="checkmark" size={12} color={theme.colors.white} />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
-
-            <View style={styles.topupInfo}>
-              <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-                You will receive {amount ? (Number(amount) * 100).toFixed(0) : '0'} GSHOP tokens
-              </GSText>
-              <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center', marginTop: 4 }}>
-                Exchange rate: 1 USD = 100 GSHOP tokens
-              </GSText>
-            </View>
+            {topupStep === 'amount' && renderAmountStep()}
+            {topupStep === 'processing' && renderProcessingStep()}
+            {topupStep === 'success' && renderSuccessStep()}
+            {topupStep === 'error' && renderErrorStep()}
           </View>
         </ScrollView>
 
         <View style={styles.modalFooter}>
-          <GSButton
-            title={`Top Up ${amount ? `$${amount}` : ''}`}
-            onPress={handleSubmit}
-            loading={isLoading}
-            disabled={!amount || !selectedMethodId}
-            style={styles.topupButton}
-          />
+          {topupStep === 'amount' && (
+            <GSButton
+              title={amount ? t('wallet.topupModal.payAmount', { amount: formatCOP(Number(amount)) }) : t('wallet.topUp')}
+              onPress={handleSubmit}
+              loading={isLoading}
+              disabled={!amount || isLoading}
+              style={styles.topupButton}
+            />
+          )}
+          {(topupStep === 'success' || topupStep === 'error') && (
+            <GSButton
+              title={topupStep === 'success' ? t('common.done') : t('common.tryAgain')}
+              onPress={topupStep === 'success' ? handleClose : () => onClose()}
+              style={styles.topupButton}
+            />
+          )}
         </View>
       </SafeAreaView>
     </Modal>
@@ -382,14 +434,20 @@ export default function WalletScreen() {
   const { theme } = useTheme();
   const navigation = useNavigation();
   const { isAuthenticated } = useAuth();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { t } = useTranslation();
 
   const [walletBalance, setWalletBalance] = useState<WalletBalance | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTopupModal, setShowTopupModal] = useState(false);
   const [topupLoading, setTopupLoading] = useState(false);
-  const [showSendModal, setShowSendModal] = useState(false);
+  const [topupStep, setTopupStep] = useState<TopupStep>('amount');
+  const [topupResult, setTopupResult] = useState<{
+    amountCOP?: number;
+    amountUSD?: number;
+    error?: string;
+  } | null>(null);
 
   // Load wallet data
   const loadWalletData = useCallback(async (isRefresh = false) => {
@@ -398,21 +456,16 @@ export default function WalletScreen() {
         setLoading(true);
       }
 
-      const [balance, methods] = await Promise.all([
-        paymentsService.getWalletBalance(),
-        paymentsService.getPaymentMethods().catch(() => []),
-      ]);
-
+      const balance = await paymentsService.getWalletBalance();
       setWalletBalance(balance);
-      setPaymentMethods(methods.filter(m => m.type !== 'gshop_tokens')); // Exclude tokens for topup
     } catch (error: any) {
       console.error('Failed to load wallet data:', error);
-      Alert.alert('Error', error.message || 'Failed to load wallet data');
+      Alert.alert(t('common.error'), error.message || t('wallet.errors.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -426,46 +479,102 @@ export default function WalletScreen() {
     loadWalletData(true);
   }, [loadWalletData]);
 
-  // Handle topup
-  const handleTopup = useCallback(async (amount: number, paymentMethodId: string) => {
+  // Handle topup with Stripe SDK
+  const handleTopup = useCallback(async (amountCOP: number) => {
     try {
       setTopupLoading(true);
+      setTopupStep('processing');
 
-      const topupRequest: TopupRequest = {
-        amount,
-        paymentMethodId,
-        currency: 'USD',
-      };
+      // Step 1: Create Payment Intent on backend
+      console.log('Creating Stripe topup intent for', amountCOP, 'COP');
+      const intentResponse = await paymentsService.createStripeTopupIntent(amountCOP);
+      console.log('Got intent response:', intentResponse);
 
-      await paymentsService.topupWallet(topupRequest);
+      // Step 2: Initialize Stripe Payment Sheet
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: intentResponse.clientSecret,
+        merchantDisplayName: 'GSHOP',
+        style: 'automatic',
+        defaultBillingDetails: {
+          address: {
+            country: 'CO',
+          },
+        },
+      });
 
-      Alert.alert(
-        'Topup Successful',
-        `Your wallet has been topped up with ${paymentsService.formatTokenAmount(amount * 100)}`,
-        [{ text: 'OK', onPress: () => setShowTopupModal(false) }]
-      );
+      if (initError) {
+        console.error('Stripe init error:', initError);
+        setTopupStep('error');
+        setTopupResult({ error: initError.message });
+        setTopupLoading(false);
+        return;
+      }
 
-      loadWalletData();
+      // Step 3: Present Payment Sheet to user
+      const { error: paymentError } = await presentPaymentSheet();
+
+      if (paymentError) {
+        // User cancelled or payment failed
+        if (paymentError.code === 'Canceled') {
+          console.log('User cancelled payment');
+          setTopupStep('amount');
+          setTopupLoading(false);
+          return;
+        }
+
+        console.error('Stripe payment error:', paymentError);
+        setTopupStep('error');
+        setTopupResult({ error: paymentError.message });
+        setTopupLoading(false);
+        return;
+      }
+
+      // Step 4: Payment succeeded on Stripe side, poll for backend confirmation
+      console.log('Payment succeeded, polling for confirmation...');
+      const finalStatus = await paymentsService.pollTopupStatus(intentResponse.topupId);
+
+      if (finalStatus.status === 'completed') {
+        setTopupStep('success');
+        setTopupResult({
+          amountCOP: intentResponse.amountCOP,
+          amountUSD: intentResponse.amountUSD,
+        });
+        // Reload wallet data to show new balance
+        loadWalletData();
+      } else {
+        // Payment might still be processing or failed on backend
+        setTopupStep('success'); // Show success since Stripe confirmed
+        setTopupResult({
+          amountCOP: intentResponse.amountCOP,
+          amountUSD: intentResponse.amountUSD,
+        });
+        loadWalletData();
+      }
     } catch (error: any) {
       console.error('Topup failed:', error);
-      Alert.alert('Topup Failed', error.message || 'Failed to top up wallet');
+      setTopupStep('error');
+      setTopupResult({ error: error.message || 'No se pudo procesar tu pago' });
     } finally {
       setTopupLoading(false);
     }
-  }, [loadWalletData]);
+  }, [initPaymentSheet, presentPaymentSheet, loadWalletData]);
 
-  // Handle send tokens (placeholder)
-  const handleSend = useCallback(() => {
-    Alert.alert(
-      'Send Tokens',
-      'Token transfer feature will be available soon!',
-      [{ text: 'OK' }]
-    );
+  // Handle modal close
+  const handleCloseTopupModal = useCallback(() => {
+    setShowTopupModal(false);
+    setTopupStep('amount');
+    setTopupResult(null);
+    setTopupLoading(false);
   }, []);
+
+  // Handle send tokens - navigate to transfer screen
+  const handleSend = useCallback(() => {
+    navigation.navigate('Transfer' as any);
+  }, [navigation]);
 
   // Render transaction item
   const renderTransaction = ({ item }: { item: TokenTransaction }) => (
-    <TransactionItem transaction={item} />
+    <TransactionItem transaction={item} t={t} />
   );
 
   // Show login prompt for guests
@@ -480,7 +589,7 @@ export default function WalletScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            GSHOP Wallet
+            {t('wallet.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -488,13 +597,13 @@ export default function WalletScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="person-outline" size={60} color={theme.colors.textSecondary} />
           <GSText variant="h3" weight="bold" style={styles.emptyTitle}>
-            Sign in Required
+            {t('wallet.signInRequired')}
           </GSText>
           <GSText variant="body" color="textSecondary" style={styles.emptySubtitle}>
-            Sign in to access your GSHOP wallet and manage your tokens
+            {t('wallet.signInToAccess')}
           </GSText>
           <GSButton
-            title="Sign In"
+            title={t('auth.signIn')}
             onPress={() => navigation.navigate('Auth' as any)}
             style={styles.signInButton}
           />
@@ -515,7 +624,7 @@ export default function WalletScreen() {
             <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
           <GSText variant="h3" weight="bold">
-            GSHOP Wallet
+            {t('wallet.title')}
           </GSText>
           <View style={{ width: 24 }} />
         </View>
@@ -523,7 +632,7 @@ export default function WalletScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <GSText variant="body" color="textSecondary" style={{ marginTop: 16 }}>
-            Loading wallet...
+            {t('wallet.loadingWallet')}
           </GSText>
         </View>
       </SafeAreaView>
@@ -541,7 +650,7 @@ export default function WalletScreen() {
           <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <GSText variant="h3" weight="bold">
-          GSHOP Wallet
+          {t('wallet.title')}
         </GSText>
         <TouchableOpacity onPress={() => navigation.navigate('PaymentMethods' as any)}>
           <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
@@ -565,6 +674,7 @@ export default function WalletScreen() {
             balance={walletBalance}
             onTopup={() => setShowTopupModal(true)}
             onSend={handleSend}
+            t={t}
           />
         )}
 
@@ -576,10 +686,10 @@ export default function WalletScreen() {
           >
             <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              Top Up
+              {t('wallet.topUp')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
-              Add tokens
+              {t('wallet.quickActions.addTokens')}
             </GSText>
           </TouchableOpacity>
 
@@ -589,10 +699,10 @@ export default function WalletScreen() {
           >
             <Ionicons name="send-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              Send
+              {t('wallet.send')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
-              Transfer tokens
+              {t('wallet.quickActions.transferTokens')}
             </GSText>
           </TouchableOpacity>
 
@@ -602,34 +712,18 @@ export default function WalletScreen() {
           >
             <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
             <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              Methods
+              {t('wallet.quickActions.methods')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
-              Payment cards
+              {t('wallet.quickActions.paymentCards')}
             </GSText>
           </TouchableOpacity>
-        </View>
-
-        {/* Rewards Info */}
-        <View style={[styles.rewardsSection, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.rewardsHeader}>
-            <Ionicons name="gift" size={20} color={theme.colors.success} />
-            <GSText variant="h4" weight="bold" style={{ marginLeft: 8 }}>
-              Cashback Rewards
-            </GSText>
-          </View>
-          <GSText variant="body" color="textSecondary" style={{ marginBottom: 8 }}>
-            Earn 5% cashback on every purchase in GSHOP tokens
-          </GSText>
-          <GSText variant="caption" color="textSecondary">
-            Rewards are automatically added to your wallet after order delivery
-          </GSText>
         </View>
 
         {/* Transaction History */}
         <View style={styles.transactionsSection}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
-            Recent Transactions
+            {t('wallet.recentTransactions')}
           </GSText>
 
           {walletBalance?.transactions && walletBalance.transactions.length > 0 ? (
@@ -644,10 +738,10 @@ export default function WalletScreen() {
             <View style={styles.emptyTransactions}>
               <Ionicons name="receipt-outline" size={40} color={theme.colors.textSecondary} />
               <GSText variant="body" color="textSecondary" style={{ marginTop: 12, textAlign: 'center' }}>
-                No transactions yet
+                {t('wallet.noTransactionsYet')}
               </GSText>
               <GSText variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-                Your transaction history will appear here
+                {t('wallet.transactionHistoryWillAppear')}
               </GSText>
             </View>
           )}
@@ -657,10 +751,12 @@ export default function WalletScreen() {
       {/* Topup Modal */}
       <TopupModal
         visible={showTopupModal}
-        onClose={() => setShowTopupModal(false)}
+        onClose={handleCloseTopupModal}
         onSubmit={handleTopup}
-        paymentMethods={paymentMethods}
         isLoading={topupLoading}
+        topupStep={topupStep}
+        topupResult={topupResult}
+        t={t}
       />
     </SafeAreaView>
   );
@@ -759,17 +855,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
   },
-  rewardsSection: {
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
-  },
-  rewardsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   transactionsSection: {
     paddingHorizontal: 16,
     paddingBottom: 24,
@@ -867,6 +952,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
   },
+  topupInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
@@ -874,5 +964,18 @@ const styles = StyleSheet.create({
   },
   topupButton: {
     marginBottom: 0,
+  },
+  stepContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  successIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

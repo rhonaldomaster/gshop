@@ -4,7 +4,7 @@ import { API_CONFIG, buildEndpointUrl } from '../config/api.config';
 // Payment types
 export interface PaymentMethod {
   id: string;
-  type: 'card' | 'mercadopago' | 'crypto' | 'gshop_tokens';
+  type: 'card' | 'mercadopago' | 'crypto' | 'gshop_tokens' | 'wallet';
   provider: string;
   details: {
     last4?: string;
@@ -97,7 +97,7 @@ export interface WalletBalance {
 
 export interface TokenTransaction {
   id: string;
-  type: 'reward' | 'purchase' | 'transfer' | 'topup' | 'withdrawal';
+  type: 'reward' | 'purchase' | 'transfer' | 'topup' | 'withdrawal' | 'transfer_out' | 'transfer_in' | 'platform_fee';
   amount: number;
   description: string;
   createdAt: string;
@@ -109,6 +109,26 @@ export interface TopupRequest {
   amount: number;
   paymentMethodId: string;
   currency?: string;
+}
+
+export interface StripeTopupIntentResponse {
+  topupId: string;
+  clientSecret: string;
+  publishableKey: string;
+  amountCOP: number;
+  amountUSD: number;
+  exchangeRate: number;
+  expiresAt: string;
+}
+
+export interface TopupStatusResponse {
+  topupId: string;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  amount: number;
+  currency: string;
+  stripePaymentIntentId?: string;
+  processedAt?: string;
+  createdAt: string;
 }
 
 class PaymentsService {
@@ -320,12 +340,35 @@ class PaymentsService {
   // Get wallet balance
   async getWalletBalance(): Promise<WalletBalance> {
     try {
-      const response = await apiClient.get<WalletBalance>('/tokens/wallet');
+      // Fetch wallet and transactions in parallel
+      const [walletResponse, transactionsResponse] = await Promise.all([
+        apiClient.get<any>('/tokens/wallet'),
+        apiClient.get<any>('/tokens/wallet/transactions?limit=10'),
+      ]);
 
-      if (response.success && response.data) {
-        return response.data;
+      if (walletResponse.success && walletResponse.data) {
+        const walletData = walletResponse.data;
+        const transactions = transactionsResponse.success && transactionsResponse.data
+          ? transactionsResponse.data
+          : [];
+
+        // Map API response to WalletBalance interface
+        return {
+          tokenBalance: parseFloat(walletData.balance) || 0,
+          usdValue: parseFloat(walletData.balance) || 0, // Same value for now since it's COP
+          pendingRewards: parseFloat(walletData.lockedBalance) || 0,
+          transactions: transactions.map((tx: any) => ({
+            id: tx.id,
+            type: tx.type,
+            amount: parseFloat(tx.amount) || 0,
+            description: tx.description || tx.type,
+            createdAt: tx.createdAt,
+            status: tx.status,
+            orderId: tx.orderId,
+          })),
+        };
       } else {
-        throw new Error(response.message || 'Failed to get wallet balance');
+        throw new Error(walletResponse.message || 'Failed to get wallet balance');
       }
     } catch (error) {
       console.error('PaymentsService: Get wallet balance failed', error);
@@ -333,7 +376,7 @@ class PaymentsService {
     }
   }
 
-  // Top up wallet
+  // Top up wallet (legacy method)
   async topupWallet(topupData: TopupRequest): Promise<{ success: boolean; transactionId: string }> {
     try {
       const response = await apiClient.post<{ success: boolean; transactionId: string }>(
@@ -349,6 +392,163 @@ class PaymentsService {
     } catch (error) {
       console.error('PaymentsService: Wallet topup failed', error);
       throw new Error(error.message || 'Failed to top up wallet');
+    }
+  }
+
+  /**
+   * Create Stripe Payment Intent for wallet topup
+   * Returns clientSecret for Stripe SDK to confirm payment
+   * @param amountCOP Amount in Colombian Pesos (COP)
+   */
+  async createStripeTopupIntent(amountCOP: number): Promise<StripeTopupIntentResponse> {
+    try {
+      const response = await apiClient.post<StripeTopupIntentResponse>(
+        '/tokens/topup/stripe-intent',
+        { amount: amountCOP }
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to create topup intent');
+      }
+    } catch (error) {
+      console.error('PaymentsService: Create Stripe topup intent failed', error);
+      throw new Error(error.message || 'Failed to initialize payment');
+    }
+  }
+
+  /**
+   * Get topup status by ID
+   * Use this to check if payment was confirmed after Stripe SDK completes
+   */
+  async getTopupStatus(topupId: string): Promise<TopupStatusResponse> {
+    try {
+      const response = await apiClient.get<TopupStatusResponse>(
+        `/tokens/topup/${topupId}/status`
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Failed to get topup status');
+      }
+    } catch (error) {
+      console.error('PaymentsService: Get topup status failed', error);
+      throw new Error(error.message || 'Failed to check payment status');
+    }
+  }
+
+  /**
+   * Poll topup status until completed or timeout
+   * Useful after Stripe SDK confirms payment - webhooks may take a moment
+   */
+  async pollTopupStatus(
+    topupId: string,
+    maxAttempts = 10,
+    intervalMs = 2000
+  ): Promise<TopupStatusResponse> {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const status = await this.getTopupStatus(topupId);
+
+      if (status.status === 'completed' || status.status === 'failed') {
+        return status;
+      }
+
+      // Wait before next attempt
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+
+    // Return last status even if still pending
+    return this.getTopupStatus(topupId);
+  }
+
+  /**
+   * Check if user can pay an order with wallet balance
+   * Returns balance info and whether payment is possible
+   */
+  async checkCanPayWithWallet(paymentId: string): Promise<{
+    canPay: boolean;
+    paymentAmount: number;
+    currentBalance: number;
+    shortfall: number;
+    currency: string;
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.get<{
+        canPay: boolean;
+        paymentAmount: number;
+        currentBalance: number;
+        shortfall: number;
+        currency: string;
+        error?: string;
+      }>(`/payments-v2/${paymentId}/can-pay-with-wallet`);
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        return {
+          canPay: false,
+          paymentAmount: 0,
+          currentBalance: 0,
+          shortfall: 0,
+          currency: 'COP',
+          error: response.message || 'Failed to check wallet eligibility'
+        };
+      }
+    } catch (error: any) {
+      console.error('PaymentsService: Check wallet eligibility failed', error);
+      return {
+        canPay: false,
+        paymentAmount: 0,
+        currentBalance: 0,
+        shortfall: 0,
+        currency: 'COP',
+        error: error?.message || 'Failed to check wallet balance'
+      };
+    }
+  }
+
+  /**
+   * Process payment using wallet balance
+   * Debits the user's wallet and marks order as paid
+   */
+  async processWalletPayment(paymentId: string): Promise<{
+    success: boolean;
+    paymentId?: string;
+    orderId?: string;
+    amount?: number;
+    walletTransactionId?: string;
+    newWalletBalance?: number;
+    message?: string;
+    error?: string;
+  }> {
+    try {
+      const response = await apiClient.post<{
+        success: boolean;
+        paymentId: string;
+        orderId: string;
+        amount: number;
+        walletTransactionId: string;
+        newWalletBalance: number;
+        message: string;
+      }>(`/payments-v2/${paymentId}/process/wallet`, {});
+
+      if (response.success && response.data) {
+        return response.data;
+      } else {
+        return {
+          success: false,
+          error: response.message || 'Wallet payment failed'
+        };
+      }
+    } catch (error: any) {
+      console.error('PaymentsService: Wallet payment failed', error);
+      return {
+        success: false,
+        error: error?.message || 'Failed to process wallet payment'
+      };
     }
   }
 
@@ -389,6 +589,7 @@ class PaymentsService {
       mercadopago: 'mercadopago',
       crypto: 'usdc_polygon',
       gshop_tokens: 'stripe_card', // Use stripe_card for token topups
+      wallet: 'wallet_balance', // GSHOP Wallet balance
     };
 
     return typeMap[type] || 'stripe_card';
@@ -447,11 +648,12 @@ class PaymentsService {
 
   // Helper methods
   getPaymentMethodIcon(type: PaymentMethod['type']): string {
-    const icons = {
+    const icons: Record<PaymentMethod['type'], string> = {
       card: 'card-outline',
       mercadopago: 'wallet-outline',
       crypto: 'logo-bitcoin',
       gshop_tokens: 'diamond-outline',
+      wallet: 'wallet',
     };
 
     return icons[type] || 'payment-outline';

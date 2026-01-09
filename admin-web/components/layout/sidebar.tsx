@@ -22,6 +22,8 @@ import {
   Radio,
   Store,
   UserCheck,
+  ShieldCheck,
+  ArrowLeftRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
@@ -33,8 +35,10 @@ const navigationConfig = [
   { key: 'orders', href: '/dashboard/orders', icon: ShoppingCart },
   { key: 'users', href: '/dashboard/users', icon: Users },
   { key: 'verifySellers', href: '/dashboard/sellers/verify', icon: Store },
+  { key: 'verifyKYC', href: '/dashboard/verifications', icon: ShieldCheck },
   { key: 'creators', href: '/dashboard/creators', icon: UserCheck, showBadge: true },
   { key: 'payments', href: '/dashboard/payments', icon: CreditCard },
+  { key: 'transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
   { key: 'ads', href: '/dashboard/ads', icon: Target },
   { key: 'live', href: '/dashboard/live', icon: Radio },
   { key: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },

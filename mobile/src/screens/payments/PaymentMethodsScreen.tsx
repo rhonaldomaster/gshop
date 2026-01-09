@@ -48,8 +48,7 @@ export default function PaymentMethodsScreen() {
 
           {/* Description */}
           <GSText variant="body" color="textSecondary" style={styles.description}>
-            {t('payments.mercadoPagoDescription') ||
-              'Todos los pagos se procesan de forma segura a través de MercadoPago. No necesitas configurar métodos de pago adicionales.'}
+            {t('payments.mercadoPagoDescription')}
           </GSText>
 
           {/* Features List */}
@@ -57,28 +56,28 @@ export default function PaymentMethodsScreen() {
             <View style={styles.featureItem}>
               <Ionicons name="shield-checkmark" size={24} color={theme.colors.success} />
               <GSText variant="body" style={styles.featureText}>
-                {t('payments.securePay') || 'Pagos 100% seguros'}
+                {t('payments.securePay')}
               </GSText>
             </View>
 
             <View style={styles.featureItem}>
               <Ionicons name="card" size={24} color={theme.colors.success} />
               <GSText variant="body" style={styles.featureText}>
-                {t('payments.allCards') || 'Acepta todas las tarjetas'}
+                {t('payments.allCards')}
               </GSText>
             </View>
 
             <View style={styles.featureItem}>
               <Ionicons name="flash" size={24} color={theme.colors.success} />
               <GSText variant="body" style={styles.featureText}>
-                {t('payments.instantProcess') || 'Procesamiento instantáneo'}
+                {t('payments.instantProcess')}
               </GSText>
             </View>
 
             <View style={styles.featureItem}>
               <Ionicons name="lock-closed" size={24} color={theme.colors.success} />
               <GSText variant="body" style={styles.featureText}>
-                {t('payments.dataProtected') || 'Datos protegidos'}
+                {t('payments.dataProtected')}
               </GSText>
             </View>
           </View>
@@ -87,8 +86,7 @@ export default function PaymentMethodsScreen() {
           <View style={[styles.infoNote, { backgroundColor: theme.colors.surface }]}>
             <Ionicons name="information-circle-outline" size={20} color={theme.colors.primary} />
             <GSText variant="caption" color="textSecondary" style={styles.infoNoteText}>
-              {t('payments.mercadoPagoNote') ||
-                'Al realizar un pago, serás redirigido a MercadoPago para completar la transacción de forma segura.'}
+              {t('payments.mercadoPagoNote')}
             </GSText>
           </View>
         </View>

@@ -23,6 +23,8 @@
     "pending": "Pendiente",
     "approved": "Aprobado",
     "rejected": "Rechazado",
+    "suspended": "Suspendido",
+    "all": "Todos",
     "download": "Descargar",
     "upload": "Subir",
     "refresh": "Actualizar"
@@ -34,9 +36,11 @@
     "orders": "Pedidos",
     "users": "Usuarios",
     "verifySellers": "Verificar Vendedores",
+    "verifyKYC": "Verificaciones KYC",
     "creators": "Creadores",
     "affiliates": "Afiliados Pendientes",
     "payments": "Pagos",
+    "transactions": "Transferencias",
     "sellers": "Vendedores",
     "live": "Transmisiones en vivo",
     "ads": "Anuncios",
@@ -959,5 +963,207 @@
     "contactInformation": "Información de contacto",
     "socialMediaLinks": "Enlaces de redes sociales",
     "applicationDetails": "Detalles de la solicitud"
+  },
+  "verifications": {
+    "title": "Verificaciones KYC",
+    "description": "Revisa y aprueba solicitudes de verificación de identidad",
+    "pendingTitle": "Verificaciones Pendientes",
+    "pendingDescription": "Solicitudes de verificación KYC que requieren revisión",
+    "allVerifications": "Todas las verificaciones",
+    "stats": {
+      "pending": "Pendientes",
+      "underReview": "En revisión",
+      "approved": "Aprobados",
+      "rejected": "Rechazados",
+      "needsUpdate": "Requieren actualización",
+      "pendingLevel1": "Nivel 1 pendientes",
+      "pendingLevel2": "Nivel 2 pendientes",
+      "avgReviewTime": "Tiempo promedio de revisión"
+    },
+    "status": {
+      "not_started": "No iniciado",
+      "pending": "Pendiente",
+      "under_review": "En revisión",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "needs_update": "Requiere actualización"
+    },
+    "level": {
+      "none": "Sin verificar",
+      "level_1": "Nivel 1 - Básico",
+      "level_2": "Nivel 2 - Completo"
+    },
+    "documentType": {
+      "CC": "Cédula de Ciudadanía",
+      "CE": "Cédula de Extranjería",
+      "PA": "Pasaporte",
+      "TI": "Tarjeta de Identidad",
+      "NIT": "NIT"
+    },
+    "fields": {
+      "fullLegalName": "Nombre legal completo",
+      "documentType": "Tipo de documento",
+      "documentNumber": "Número de documento",
+      "dateOfBirth": "Fecha de nacimiento",
+      "address": "Dirección",
+      "city": "Ciudad",
+      "state": "Departamento",
+      "postalCode": "Código postal",
+      "country": "País",
+      "sourceOfFunds": "Origen de fondos",
+      "occupation": "Ocupación",
+      "monthlyIncome": "Ingresos mensuales",
+      "email": "Email",
+      "phone": "Teléfono"
+    },
+    "documents": {
+      "title": "Documentos",
+      "documentFront": "Documento (Frente)",
+      "documentBack": "Documento (Reverso)",
+      "selfie": "Selfie con documento",
+      "viewDocument": "Ver documento",
+      "noDocument": "No disponible",
+      "open": "Abrir"
+    },
+    "actions": {
+      "approve": "Aprobar verificación",
+      "reject": "Rechazar verificación",
+      "needsUpdate": "Solicitar actualización",
+      "viewDetails": "Ver detalles"
+    },
+    "review": {
+      "approveTitle": "Aprobar verificación",
+      "approveMessage": "El usuario será verificado y sus límites de transferencia aumentarán.",
+      "rejectTitle": "Rechazar verificación",
+      "rejectMessage": "Se notificará al usuario con la razón del rechazo.",
+      "needsUpdateTitle": "Solicitar actualización",
+      "needsUpdateMessage": "El usuario podrá corregir y volver a enviar sus documentos.",
+      "reasonLabel": "Razón",
+      "reasonPlaceholder": "Explica la razón del rechazo o qué documentos debe actualizar...",
+      "reasonRequired": "Por favor proporciona una razón",
+      "adminNotesLabel": "Notas internas (no visibles al usuario)",
+      "adminNotesPlaceholder": "Notas adicionales para el equipo...",
+      "successApproved": "Verificación aprobada exitosamente",
+      "successRejected": "Verificación rechazada",
+      "successNeedsUpdate": "Se ha solicitado actualización de documentos",
+      "error": "Error al procesar la verificación",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "processing": "Procesando..."
+    },
+    "detail": {
+      "title": "Detalle de verificación",
+      "userInfo": "Información del usuario",
+      "kycInfo": "Información KYC",
+      "level1Info": "Información Nivel 1",
+      "level1Description": "Documento de identidad y selfie",
+      "level2Info": "Información Nivel 2",
+      "level2Description": "Dirección y origen de fondos",
+      "reviewHistory": "Historial de revisión",
+      "submittedAt": "Enviado",
+      "reviewedBy": "Revisado por",
+      "reviewedAt": "Fecha de revisión",
+      "attempts": "Intentos de revisión",
+      "previousRejection": "Razón de rechazo anterior",
+      "level1Submitted": "Nivel 1 enviado",
+      "level1Approved": "Nivel 1 aprobado",
+      "level2Submitted": "Nivel 2 enviado",
+      "level2Approved": "Nivel 2 aprobado",
+      "created": "Creado",
+      "updated": "Actualizado",
+      "actions": "Acciones",
+      "clickToClose": "Clic para cerrar",
+      "loadError": "Error al cargar la verificación",
+      "notFound": "Verificación no encontrada"
+    },
+    "empty": {
+      "noPending": "No hay verificaciones pendientes",
+      "noPendingDescription": "Todas las solicitudes de verificación han sido procesadas",
+      "noVerifications": "No hay verificaciones",
+      "noVerificationsDescription": "Las verificaciones aparecerán aquí cuando los usuarios las envíen"
+    },
+    "filters": {
+      "allStatus": "Todos los estados",
+      "allLevels": "Todos los niveles"
+    },
+    "common": {
+      "refresh": "Actualizar",
+      "back": "Volver"
+    },
+    "table": {
+      "user": "Usuario",
+      "level": "Nivel",
+      "status": "Estado",
+      "submittedAt": "Fecha de envío",
+      "actions": "Acciones"
+    }
+  },
+  "transactions": {
+    "title": "Transferencias de Saldo",
+    "description": "Monitorea transferencias P2P, recargas, pagos con wallet y comisiones de la plataforma",
+    "common": {
+      "refresh": "Actualizar",
+      "search": "Buscar"
+    },
+    "stats": {
+      "totalVolume": "Volumen total",
+      "transactions": "transacciones",
+      "feesCollected": "Comisiones recaudadas",
+      "platformFees": "Fees de plataforma (0.2%)",
+      "transfers": "Transferencias P2P",
+      "p2pTransfers": "transferencias P2P",
+      "todayVolume": "Volumen de hoy",
+      "todayTransactions": "transacciones hoy",
+      "topups": "Recargas",
+      "recharges": "recargas completadas",
+      "purchases": "Compras con saldo",
+      "walletPurchases": "pagos con wallet",
+      "pending": "Pendientes",
+      "pendingTransactions": "transacciones pendientes"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por email, nombre o referencia...",
+      "allTypes": "Todos los tipos",
+      "allStatus": "Todos los estados"
+    },
+    "type": {
+      "transfer_in": "Recibido",
+      "transfer_out": "Enviado",
+      "platform_fee": "Comisión",
+      "topup": "Recarga",
+      "purchase": "Compra",
+      "reward": "Recompensa",
+      "cashback": "Cashback",
+      "withdrawal": "Retiro",
+      "burn": "Quemado",
+      "mint": "Creado"
+    },
+    "status": {
+      "completed": "Completado",
+      "pending": "Pendiente",
+      "failed": "Fallido",
+      "cancelled": "Cancelado"
+    },
+    "table": {
+      "type": "Tipo",
+      "user": "Usuario",
+      "description": "Descripción",
+      "amount": "Monto",
+      "status": "Estado",
+      "date": "Fecha"
+    },
+    "empty": {
+      "noTransactions": "No hay transacciones",
+      "noTransactionsDescription": "Las transacciones aparecerán aquí cuando los usuarios realicen operaciones con su saldo"
+    },
+    "errors": {
+      "loadFailed": "Error al cargar las transacciones"
+    },
+    "pagination": {
+      "showing": "Mostrando {from} a {to} de {total} transacciones",
+      "page": "Página {current} de {total}",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    }
   }
 }

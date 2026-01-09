@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsEnum, IsOptional, Min, IsObject } from 'class-validator';
+import { IsString, IsNumber, IsEnum, IsOptional, Min, IsObject, MinLength, MaxLength, IsNotEmpty } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { RewardTier } from '../token.entity';
 
 export class CreateWalletDto {
@@ -6,6 +7,125 @@ export class CreateWalletDto {
   @IsNumber()
   @Min(0)
   cashbackRate?: number;
+}
+
+// P2P Transfer DTOs
+
+export class SearchUserDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(3)
+  @MaxLength(100)
+  query: string; // Email or phone number
+}
+
+export class SearchUserResponseDto {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  maskedEmail: string;
+  maskedPhone?: string;
+}
+
+export class TransferPreviewDto {
+  @IsString()
+  @IsNotEmpty()
+  toUserId: string;
+
+  @IsNumber()
+  @Min(100) // Minimum $100 COP
+  amount: number;
+}
+
+export class TransferPreviewResponseDto {
+  amountSent: number;         // What sender pays
+  amountReceived: number;     // What recipient receives (full amount)
+  platformFee: number;        // Fee charged to recipient after receipt
+  recipientNetAmount: number; // What recipient keeps after fee
+  feePercentage: string;      // e.g., "0.2%"
+  recipientName: string;      // Recipient's name for confirmation
+}
+
+export class ExecuteTransferDto {
+  @IsString()
+  @IsNotEmpty()
+  toUserId: string;
+
+  @IsNumber()
+  @Min(100) // Minimum $100 COP
+  amount: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  note?: string;
+}
+
+export class TransferResultDto {
+  success: boolean;
+  transferId: string;
+  transactions: {
+    type: string;
+    amount: number;
+    userId: string;
+    description: string;
+  }[];
+  summary: {
+    amountSent: number;
+    feeCharged: number;
+    recipientNetBalance: number;
+    senderNewBalance: number;
+  };
+  timestamp: Date;
+}
+
+export class TransferLimitsResponseDto {
+  level: string;
+  levelName: string;
+  limits: {
+    minPerTransaction: number;
+    maxPerTransaction: number;
+    dailyLimit: number;
+    monthlyLimit: number;
+  };
+  usage: {
+    dailyTransferred: number;
+    dailyRemaining: number;
+    monthlyTransferred: number;
+    monthlyRemaining: number;
+    dailyTransferCount: number;
+    monthlyTransferCount: number;
+  };
+  canUpgrade: boolean;
+  nextLevel?: string;
+}
+
+// Stripe Topup DTOs
+
+export class CreateStripeTopupDto {
+  @IsNumber()
+  @Min(1000) // Minimum $1,000 COP
+  amount: number; // Amount in COP
+}
+
+export class StripeTopupResponseDto {
+  topupId: string;
+  clientSecret: string;
+  publishableKey: string;
+  amountCOP: number;
+  amountUSD: number;
+  exchangeRate: number;
+  expiresAt: Date;
+}
+
+export class TopupStatusDto {
+  topupId: string;
+  status: string;
+  amount: number;
+  currency: string;
+  stripePaymentIntentId?: string;
+  processedAt?: Date;
+  createdAt: Date;
 }
 
 export class TransferTokensDto {
@@ -92,4 +212,84 @@ export class TokenStatsQueryDto {
   @IsOptional()
   @IsString()
   endDate?: string;
+}
+
+// Admin Transaction DTOs
+
+export class AdminTransactionFilterDto {
+  @IsOptional()
+  @IsString()
+  type?: string; // transfer_in, transfer_out, platform_fee, topup, purchase, etc.
+
+  @IsOptional()
+  @IsString()
+  status?: string; // pending, completed, failed, cancelled
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string; // Search by user email or transaction reference
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit?: number;
+}
+
+export class AdminTransactionStatsDto {
+  totalTransactions: number;
+  totalVolume: number;
+  totalFees: number;
+  transfersCount: number;
+  transfersVolume: number;
+  topupsCount: number;
+  topupsVolume: number;
+  purchasesCount: number;
+  purchasesVolume: number;
+  pendingTransactions: number;
+  todayTransactions: number;
+  todayVolume: number;
+}
+
+export class AdminTransactionResponseDto {
+  id: string;
+  type: string;
+  status: string;
+  amount: number;
+  fee: number;
+  reference: string;
+  description: string;
+  createdAt: Date;
+  processedAt: Date;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  fromUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  toUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  metadata?: any;
 }

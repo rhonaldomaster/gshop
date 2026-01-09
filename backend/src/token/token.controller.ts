@@ -8,6 +8,7 @@ import {
   Query,
   UseGuards,
   Request,
+  NotFoundException,
 } from '@nestjs/common';
 import { TokenService } from './token.service';
 import {
@@ -17,7 +18,12 @@ import {
   TopupWalletDto,
   BurnTokensDto,
   MintTokensDto,
-  TokenStatsQueryDto
+  TokenStatsQueryDto,
+  SearchUserDto,
+  TransferPreviewDto,
+  ExecuteTransferDto,
+  CreateStripeTopupDto,
+  AdminTransactionFilterDto
 } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TokenTransactionStatus } from './token.entity';
@@ -53,7 +59,7 @@ export class TokenController {
     return this.tokenService.getUserRewards(req.user.id, rewardLimit);
   }
 
-  // Token Transfer
+  // Token Transfer (Legacy - without fee)
   @Post('transfer')
   @UseGuards(JwtAuthGuard)
   async transferTokens(@Request() req, @Body() transferDto: Omit<TransferTokensDto, 'fromUserId'>) {
@@ -62,6 +68,71 @@ export class TokenController {
       fromUserId: req.user.id,
     };
     return this.tokenService.transferTokens(fullTransferDto);
+  }
+
+  // ==========================================
+  // P2P Transfer Endpoints (Option A - Fee Separado)
+  // ==========================================
+
+  /**
+   * Search for a user by email or phone to send a transfer
+   * Returns masked info for privacy
+   */
+  @Get('search-user')
+  @UseGuards(JwtAuthGuard)
+  async searchUser(@Request() req, @Query() query: SearchUserDto) {
+    const result = await this.tokenService.searchUserByEmailOrPhone(
+      query.query,
+      req.user.id
+    );
+
+    if (!result) {
+      throw new NotFoundException('Usuario no encontrado con ese email o telefono');
+    }
+
+    return result;
+  }
+
+  /**
+   * Get user's current transfer limits and usage
+   */
+  @Get('transfer-limits')
+  @UseGuards(JwtAuthGuard)
+  async getTransferLimits(@Request() req) {
+    return this.tokenService.getUserTransferLimits(req.user.id);
+  }
+
+  /**
+   * Get preview of a transfer showing fee breakdown
+   * Option A: Recipient receives full amount, then fee is deducted
+   */
+  @Post('transfer/preview')
+  @UseGuards(JwtAuthGuard)
+  async getTransferPreview(@Request() req, @Body() dto: TransferPreviewDto) {
+    return this.tokenService.getTransferPreview(
+      req.user.id,
+      dto.toUserId,
+      dto.amount
+    );
+  }
+
+  /**
+   * Execute a P2P transfer with platform fee (Option A model)
+   *
+   * Flow:
+   * 1. TRANSFER_OUT: Sender loses full amount
+   * 2. TRANSFER_IN: Recipient receives full amount
+   * 3. PLATFORM_FEE: 0.2% fee deducted from recipient
+   */
+  @Post('transfer/execute')
+  @UseGuards(JwtAuthGuard)
+  async executeTransfer(@Request() req, @Body() dto: ExecuteTransferDto) {
+    return this.tokenService.executeTransferWithFee(
+      req.user.id,
+      dto.toUserId,
+      dto.amount,
+      dto.note
+    );
   }
 
   // Rewards (Admin/System endpoints)
@@ -93,6 +164,36 @@ export class TokenController {
     @Body() body: { status: TokenTransactionStatus }
   ) {
     return this.tokenService.processTopup(topupId, body.status);
+  }
+
+  // ==========================================
+  // Stripe Topup Endpoints (Wallet Recharge)
+  // ==========================================
+
+  /**
+   * Create a Stripe Payment Intent for wallet topup
+   * Returns clientSecret for mobile Stripe SDK
+   *
+   * POST /tokens/topup/stripe-intent
+   * Body: { amount: number } // Amount in COP
+   * Response: { topupId, clientSecret, publishableKey, amountCOP, amountUSD, exchangeRate, expiresAt }
+   */
+  @Post('topup/stripe-intent')
+  @UseGuards(JwtAuthGuard)
+  async createStripeTopupIntent(@Request() req, @Body() dto: CreateStripeTopupDto) {
+    return this.tokenService.createStripeTopupIntent(req.user.id, dto.amount);
+  }
+
+  /**
+   * Get topup status by ID
+   *
+   * GET /tokens/topup/:id/status
+   * Response: { topupId, status, amount, currency, stripePaymentIntentId?, processedAt?, createdAt }
+   */
+  @Get('topup/:id/status')
+  @UseGuards(JwtAuthGuard)
+  async getTopupStatus(@Param('id') topupId: string) {
+    return this.tokenService.getTopupStatus(topupId);
   }
 
   // Analytics & Stats
@@ -167,5 +268,53 @@ export class TokenController {
       exchangeRate: 0.01,
       marketCap: stats.totalCirculation * 0.01,
     };
+  }
+
+  // ==========================================
+  // Admin Transaction Endpoints
+  // ==========================================
+
+  /**
+   * Get all transactions with filters (Admin)
+   *
+   * GET /tokens/admin/transactions
+   * Query params: type, status, startDate, endDate, search, page, limit
+   */
+  @Get('admin/transactions')
+  @UseGuards(JwtAuthGuard)
+  async getAdminTransactions(@Query() filters: AdminTransactionFilterDto) {
+    // Convert page and limit to numbers
+    const parsedFilters = {
+      ...filters,
+      page: filters.page ? Number(filters.page) : 1,
+      limit: filters.limit ? Number(filters.limit) : 20
+    };
+    return this.tokenService.getAdminTransactions(parsedFilters);
+  }
+
+  /**
+   * Get transaction statistics (Admin)
+   *
+   * GET /tokens/admin/transactions/stats
+   */
+  @Get('admin/transactions/stats')
+  @UseGuards(JwtAuthGuard)
+  async getAdminTransactionStats() {
+    return this.tokenService.getAdminTransactionStats();
+  }
+
+  /**
+   * Get a single transaction by ID (Admin)
+   *
+   * GET /tokens/admin/transactions/:id
+   */
+  @Get('admin/transactions/:id')
+  @UseGuards(JwtAuthGuard)
+  async getAdminTransactionById(@Param('id') id: string) {
+    const transaction = await this.tokenService.getAdminTransactionById(id);
+    if (!transaction) {
+      throw new NotFoundException('Transaccion no encontrada');
+    }
+    return transaction;
   }
 }

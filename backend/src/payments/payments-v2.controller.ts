@@ -26,6 +26,7 @@ import { UserRole } from '../database/entities/user.entity';
 import { PaymentStatus } from './payments-v2.entity';
 import { OrderStatus } from '../database/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
+import { TokenService } from '../token/token.service';
 import Stripe from 'stripe';
 import { Logger } from '@nestjs/common';
 
@@ -40,6 +41,7 @@ export class PaymentsV2Controller {
     private readonly mercadopagoService: MercadoPagoService,
     private readonly ordersService: OrdersService,
     private readonly paymentConfigService: PaymentConfigService,
+    private readonly tokenService: TokenService,
   ) {
     // Initialize Stripe with API version
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -97,6 +99,116 @@ export class PaymentsV2Controller {
     @Body() cryptoPaymentDto: ProcessCryptoPaymentDto,
   ) {
     return this.paymentsV2Service.processCryptoPayment(paymentId, cryptoPaymentDto);
+  }
+
+  /**
+   * Process payment using wallet balance
+   * POST /api/v1/payments-v2/:id/process/wallet
+   *
+   * This endpoint allows users to pay for orders using their GSHOP wallet balance.
+   * The payment ID should reference an existing payment record.
+   */
+  @Post(':id/process/wallet')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Pay for order using wallet balance' })
+  @ApiResponse({ status: 200, description: 'Payment processed successfully' })
+  @ApiResponse({ status: 400, description: 'Insufficient balance or invalid payment' })
+  async processWalletPayment(
+    @Param('id') paymentId: string,
+    @Request() req,
+  ) {
+    const userId = req.user.id;
+
+    // Get payment to find order
+    const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+    if (!payment) {
+      return { success: false, error: 'Pago no encontrado' };
+    }
+
+    if (payment.status === PaymentStatus.COMPLETED) {
+      return { success: false, error: 'Este pago ya fue procesado' };
+    }
+
+    if (!payment.orderId) {
+      return { success: false, error: 'Este pago no tiene una orden asociada' };
+    }
+
+    try {
+      // Process payment with wallet
+      const result = await this.tokenService.payOrderWithWallet(
+        userId,
+        payment.orderId,
+        Number(payment.amount)
+      );
+
+      // Update payment status
+      payment.status = PaymentStatus.COMPLETED;
+      payment.processedAt = new Date();
+      payment.paymentMetadata = {
+        ...payment.paymentMetadata,
+        paymentMethod: 'wallet_balance',
+        walletTransactionId: result.transactionId,
+        newWalletBalance: result.newBalance
+      };
+
+      await this.paymentsV2Service.savePayment(payment);
+
+      // Update order status to CONFIRMED
+      await this.ordersService.updateStatus(payment.orderId, OrderStatus.CONFIRMED);
+
+      this.logger.log(`Order ${payment.orderId} paid with wallet balance by user ${userId}`);
+
+      return {
+        success: true,
+        paymentId: payment.id,
+        orderId: payment.orderId,
+        amount: payment.amount,
+        walletTransactionId: result.transactionId,
+        newWalletBalance: result.newBalance,
+        message: 'Pago procesado exitosamente con saldo de wallet'
+      };
+    } catch (error) {
+      this.logger.error(`Wallet payment failed for payment ${paymentId}: ${error.message}`);
+
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Check if user can pay with wallet balance
+   * GET /api/v1/payments-v2/:id/can-pay-with-wallet
+   */
+  @Get(':id/can-pay-with-wallet')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Check if user can pay order with wallet balance' })
+  async canPayWithWallet(
+    @Param('id') paymentId: string,
+    @Request() req,
+  ) {
+    const userId = req.user.id;
+
+    const payment = await this.paymentsV2Service.getPaymentById(paymentId);
+
+    if (!payment) {
+      return { canPay: false, error: 'Pago no encontrado' };
+    }
+
+    const balanceCheck = await this.tokenService.checkSufficientBalance(
+      userId,
+      Number(payment.amount)
+    );
+
+    return {
+      canPay: balanceCheck.hasSufficientBalance,
+      paymentAmount: Number(payment.amount),
+      currentBalance: balanceCheck.currentBalance,
+      shortfall: balanceCheck.shortfall,
+      currency: 'COP'
+    };
   }
 
   @Post('crypto/verify/:id')
@@ -251,6 +363,12 @@ export class PaymentsV2Controller {
    * Handle successful payment intent
    */
   private async handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+    // Check if this is a wallet topup
+    if (paymentIntent.metadata.type === 'wallet_topup') {
+      await this.handleWalletTopupSuccess(paymentIntent);
+      return;
+    }
+
     const paymentId = paymentIntent.metadata.paymentId;
 
     if (!paymentId) {
@@ -299,9 +417,41 @@ export class PaymentsV2Controller {
   }
 
   /**
+   * Handle successful wallet topup payment
+   */
+  private async handleWalletTopupSuccess(paymentIntent: Stripe.PaymentIntent) {
+    const topupId = paymentIntent.metadata.topupId;
+    const userId = paymentIntent.metadata.userId;
+
+    this.logger.log(`Processing wallet topup success: ${topupId} for user ${userId}`);
+
+    try {
+      const result = await this.tokenService.processStripeTopupSuccess(
+        paymentIntent.id,
+        paymentIntent.amount // amount in cents
+      );
+
+      if (result.success) {
+        this.logger.log(`Wallet topup ${topupId} completed successfully`);
+      } else {
+        this.logger.error(`Wallet topup ${topupId} failed: ${result.error}`);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to process wallet topup ${topupId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Handle failed payment intent
    */
   private async handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+    // Check if this is a wallet topup
+    if (paymentIntent.metadata.type === 'wallet_topup') {
+      await this.handleWalletTopupFailure(paymentIntent);
+      return;
+    }
+
     const paymentId = paymentIntent.metadata.paymentId;
 
     if (!paymentId) {
@@ -325,6 +475,24 @@ export class PaymentsV2Controller {
       this.logger.error(`Stripe payment ${paymentId} failed: ${paymentIntent.last_payment_error?.message}`);
     } catch (error) {
       this.logger.error(`Failed to process payment_intent.payment_failed for ${paymentId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Handle failed wallet topup payment
+   */
+  private async handleWalletTopupFailure(paymentIntent: Stripe.PaymentIntent) {
+    const topupId = paymentIntent.metadata.topupId;
+    const failureReason = paymentIntent.last_payment_error?.message || 'Unknown error';
+
+    this.logger.log(`Processing wallet topup failure: ${topupId}`);
+
+    try {
+      await this.tokenService.processStripeTopupFailure(paymentIntent.id, failureReason);
+      this.logger.log(`Wallet topup ${topupId} marked as failed: ${failureReason}`);
+    } catch (error) {
+      this.logger.error(`Failed to process wallet topup failure ${topupId}: ${error.message}`);
       throw error;
     }
   }
