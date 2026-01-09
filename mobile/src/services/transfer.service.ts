@@ -27,7 +27,7 @@ export interface TransferPreviewRequest {
 }
 
 export interface TransferPreviewResponse {
-  amountToSend: number;
+  amountSent: number;
   amountReceived: number;
   platformFee: number;
   recipientNetAmount: number;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../ui/GSText';
 import { TransferPreviewResponse } from '../../services/transfer.service';
@@ -22,6 +23,7 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
   isLoading,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container}>
@@ -29,7 +31,7 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
       <View style={[styles.header, { backgroundColor: theme.colors.primary }]}>
         <Ionicons name="swap-horizontal" size={24} color={theme.colors.white} />
         <GSText variant="h4" color="white" weight="bold" style={{ marginLeft: 8 }}>
-          Resumen de Transferencia
+          {t('wallet.transferPreview.title')}
         </GSText>
       </View>
 
@@ -40,75 +42,29 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
           <View style={styles.rowLabel}>
             <Ionicons name="arrow-up-circle-outline" size={20} color={theme.colors.text} />
             <GSText variant="body" style={{ marginLeft: 8 }}>
-              Tu envias
+              {t('wallet.transferPreview.youSend')}
             </GSText>
           </View>
           <GSText variant="h4" weight="bold">
-            {transferService.formatCOP(preview.amountToSend)}
+            {transferService.formatCOP(Number(preview.amountSent) || 0)}
           </GSText>
         </View>
 
         {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.gray300 }]} />
 
         {/* Recipient Gets */}
-        <View style={styles.row}>
-          <View style={styles.rowLabel}>
-            <Ionicons name="arrow-down-circle-outline" size={20} color={theme.colors.success} />
-            <GSText variant="body" style={{ marginLeft: 8 }}>
-              {preview.recipientName} recibe
-            </GSText>
-          </View>
-          <GSText variant="h4" weight="bold" style={{ color: theme.colors.success }}>
-            {transferService.formatCOP(preview.amountReceived)}
-          </GSText>
-        </View>
-
-        {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
-        {/* Platform Fee */}
-        <View style={styles.row}>
-          <View style={styles.rowLabel}>
-            <Ionicons name="remove-circle-outline" size={20} color={theme.colors.warning} />
-            <View style={{ marginLeft: 8, flex: 1 }}>
-              <GSText variant="body">
-                Comision GSHOP ({preview.feePercentage})
-              </GSText>
-              <GSText variant="caption" color="textSecondary">
-                Se descuenta del monto recibido
-              </GSText>
-            </View>
-          </View>
-          <GSText variant="body" weight="medium" style={{ color: theme.colors.warning }}>
-            -{transferService.formatCOP(preview.platformFee)}
-          </GSText>
-        </View>
-
-        {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
-        {/* Net Amount */}
         <View style={[styles.row, styles.highlightRow]}>
           <View style={styles.rowLabel}>
-            <Ionicons name="wallet-outline" size={20} color={theme.colors.primary} />
+            <Ionicons name="arrow-down-circle-outline" size={20} color={theme.colors.success} />
             <GSText variant="body" weight="bold" style={{ marginLeft: 8 }}>
-              {preview.recipientName} tendra
+              {t('wallet.transferPreview.recipientReceives', { name: preview.recipientName })}
             </GSText>
           </View>
-          <GSText variant="h3" weight="bold" style={{ color: theme.colors.primary }}>
-            {transferService.formatCOP(preview.recipientNetAmount)}
+          <GSText variant="h3" weight="bold" style={{ color: theme.colors.success }}>
+            {transferService.formatCOP(Number(preview.amountReceived) || 0)}
           </GSText>
         </View>
-      </View>
-
-      {/* Info Note */}
-      <View style={[styles.infoNote, { backgroundColor: theme.colors.info + '15' }]}>
-        <Ionicons name="information-circle" size={20} color={theme.colors.info} />
-        <GSText variant="caption" style={{ marginLeft: 8, flex: 1, color: theme.colors.info }}>
-          La comision de servicio de 0.2% permite mantener GSHOP seguro y confiable.
-          El destinatario recibe el monto completo y luego se descuenta la comision.
-        </GSText>
       </View>
 
       {/* Actions */}
@@ -118,8 +74,8 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
           onPress={onCancel}
           disabled={isLoading}
         >
-          <GSText variant="body" weight="medium">
-            Cancelar
+          <GSText variant="body" weight="semiBold">
+            {t('common.cancel')}
           </GSText>
         </TouchableOpacity>
 
@@ -137,7 +93,7 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
             <>
               <Ionicons name="checkmark-circle" size={20} color={theme.colors.white} />
               <GSText variant="body" weight="bold" color="white" style={{ marginLeft: 8 }}>
-                Confirmar Envio
+                {t('wallet.transferPreview.confirmSend')}
               </GSText>
             </>
           )}
@@ -178,14 +134,6 @@ const styles = StyleSheet.create({
   },
   highlightRow: {
     paddingVertical: 16,
-  },
-  infoNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderRadius: 8,
   },
   actions: {
     flexDirection: 'row',

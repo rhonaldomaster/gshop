@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { UserVerification, VerificationStatus } from './entities/user-verification.entity';
+import { UserVerification, VerificationStatus, DocumentType } from './entities/user-verification.entity';
 import { TransferLimit } from './entities/transfer-limit.entity';
 import { VerificationLevel } from './constants/transfer-limits';
 import { User } from '../users/user.entity';
@@ -10,6 +10,8 @@ import {
   VerificationFilterDto,
   VerificationResponseDto,
   VerificationStatsDto,
+  SubmitLevel1VerificationDto,
+  SubmitLevel2VerificationDto,
 } from './dto/verification.dto';
 
 @Injectable()
@@ -395,6 +397,203 @@ export class VerificationService {
       pendingLevel1,
       pendingLevel2,
       avgReviewTimeHours: Number(recentApproved?.avgHours) || 0,
+    };
+  }
+
+  /**
+   * Submit Level 1 KYC verification (basic identity)
+   * For users with level NONE wanting to upgrade to LEVEL_1
+   */
+  async submitLevel1Verification(
+    userId: string,
+    dto: SubmitLevel1VerificationDto,
+  ): Promise<{ success: boolean; message: string; verification: VerificationResponseDto }> {
+    // Check if user exists
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Get or create verification record
+    let verification = await this.verificationRepository.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+
+    if (!verification) {
+      verification = this.verificationRepository.create({
+        userId,
+        level: VerificationLevel.NONE,
+        verificationStatus: VerificationStatus.NOT_STARTED,
+      });
+    }
+
+    // Check if can submit Level 1
+    if (verification.level !== VerificationLevel.NONE) {
+      throw new BadRequestException(
+        'Ya tienes verificacion Level 1 o superior. Usa el endpoint de Level 2 para aumentar tus limites.',
+      );
+    }
+
+    if (
+      verification.verificationStatus === VerificationStatus.PENDING ||
+      verification.verificationStatus === VerificationStatus.UNDER_REVIEW
+    ) {
+      throw new BadRequestException(
+        'Ya tienes una solicitud de verificacion en proceso. Espera la revision.',
+      );
+    }
+
+    // Update verification with Level 1 data
+    verification.fullLegalName = dto.fullLegalName;
+    verification.documentType = dto.documentType;
+    verification.documentNumber = dto.documentNumber;
+    verification.documentFrontUrl = dto.documentFrontUrl;
+    verification.documentBackUrl = dto.documentBackUrl || null;
+    verification.selfieUrl = dto.selfieUrl;
+    verification.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+    verification.verificationStatus = VerificationStatus.PENDING;
+    verification.level1SubmittedAt = new Date();
+    verification.rejectionReason = null; // Clear previous rejection reason
+
+    await this.verificationRepository.save(verification);
+
+    // Reload with user relation
+    verification = await this.verificationRepository.findOne({
+      where: { id: verification.id },
+      relations: ['user'],
+    });
+
+    this.logger.log(`Level 1 verification submitted by user ${userId}`);
+
+    return {
+      success: true,
+      message: 'Solicitud de verificacion Level 1 enviada exitosamente. Sera revisada en las proximas 24-48 horas.',
+      verification: this.mapToResponseDto(verification),
+    };
+  }
+
+  /**
+   * Submit Level 2 KYC verification (extended)
+   * For users with level LEVEL_1 wanting to upgrade to LEVEL_2
+   */
+  async submitLevel2Verification(
+    userId: string,
+    dto: SubmitLevel2VerificationDto,
+  ): Promise<{ success: boolean; message: string; verification: VerificationResponseDto }> {
+    // Get verification record
+    const verification = await this.verificationRepository.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+
+    if (!verification) {
+      throw new NotFoundException(
+        'No tienes verificacion Level 1. Primero completa la verificacion basica.',
+      );
+    }
+
+    // Check if can submit Level 2
+    if (verification.level !== VerificationLevel.LEVEL_1) {
+      if (verification.level === VerificationLevel.NONE) {
+        throw new BadRequestException(
+          'Primero debes completar la verificacion Level 1 antes de solicitar Level 2.',
+        );
+      }
+      throw new BadRequestException('Ya tienes la verificacion Level 2 (maxima).');
+    }
+
+    if (
+      verification.verificationStatus === VerificationStatus.PENDING ||
+      verification.verificationStatus === VerificationStatus.UNDER_REVIEW
+    ) {
+      throw new BadRequestException(
+        'Ya tienes una solicitud de verificacion en proceso. Espera la revision.',
+      );
+    }
+
+    // Update verification with Level 2 data
+    verification.address = dto.address;
+    verification.city = dto.city;
+    verification.state = dto.state;
+    verification.postalCode = dto.postalCode || null;
+    verification.country = dto.country;
+    verification.sourceOfFunds = dto.sourceOfFunds;
+    verification.occupation = dto.occupation || null;
+    verification.monthlyIncome = dto.monthlyIncome || null;
+    verification.verificationStatus = VerificationStatus.PENDING;
+    verification.level2SubmittedAt = new Date();
+    verification.rejectionReason = null; // Clear previous rejection reason
+
+    await this.verificationRepository.save(verification);
+
+    this.logger.log(`Level 2 verification submitted by user ${userId}`);
+
+    return {
+      success: true,
+      message: 'Solicitud de verificacion Level 2 enviada exitosamente. Sera revisada en las proximas 24-48 horas.',
+      verification: this.mapToResponseDto(verification),
+    };
+  }
+
+  /**
+   * Update verification after rejection (resubmit)
+   * User can update their data when status is NEEDS_UPDATE or REJECTED
+   */
+  async updateVerificationData(
+    userId: string,
+    dto: Partial<SubmitLevel1VerificationDto & SubmitLevel2VerificationDto>,
+  ): Promise<{ success: boolean; message: string; verification: VerificationResponseDto }> {
+    const verification = await this.verificationRepository.findOne({
+      where: { userId },
+      relations: ['user'],
+    });
+
+    if (!verification) {
+      throw new NotFoundException('No tienes una solicitud de verificacion activa.');
+    }
+
+    // Can only update if rejected or needs update
+    if (
+      verification.verificationStatus !== VerificationStatus.NEEDS_UPDATE &&
+      verification.verificationStatus !== VerificationStatus.REJECTED
+    ) {
+      throw new BadRequestException(
+        'Solo puedes actualizar tu verificacion si fue rechazada o requiere cambios.',
+      );
+    }
+
+    // Update Level 1 fields if provided
+    if (dto.fullLegalName) verification.fullLegalName = dto.fullLegalName;
+    if (dto.documentType) verification.documentType = dto.documentType;
+    if (dto.documentNumber) verification.documentNumber = dto.documentNumber;
+    if (dto.documentFrontUrl) verification.documentFrontUrl = dto.documentFrontUrl;
+    if (dto.documentBackUrl !== undefined) verification.documentBackUrl = dto.documentBackUrl || null;
+    if (dto.selfieUrl) verification.selfieUrl = dto.selfieUrl;
+    if (dto.dateOfBirth) verification.dateOfBirth = new Date(dto.dateOfBirth);
+
+    // Update Level 2 fields if provided
+    if (dto.address) verification.address = dto.address;
+    if (dto.city) verification.city = dto.city;
+    if (dto.state) verification.state = dto.state;
+    if (dto.postalCode !== undefined) verification.postalCode = dto.postalCode || null;
+    if (dto.country) verification.country = dto.country;
+    if (dto.sourceOfFunds) verification.sourceOfFunds = dto.sourceOfFunds;
+    if (dto.occupation !== undefined) verification.occupation = dto.occupation || null;
+    if (dto.monthlyIncome !== undefined) verification.monthlyIncome = dto.monthlyIncome || null;
+
+    // Set back to pending
+    verification.verificationStatus = VerificationStatus.PENDING;
+    verification.rejectionReason = null;
+
+    await this.verificationRepository.save(verification);
+
+    this.logger.log(`Verification updated by user ${userId}`);
+
+    return {
+      success: true,
+      message: 'Verificacion actualizada y enviada para revision.',
+      verification: this.mapToResponseDto(verification),
     };
   }
 

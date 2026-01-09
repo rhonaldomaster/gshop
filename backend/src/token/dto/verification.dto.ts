@@ -1,7 +1,87 @@
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID, IsNotEmpty, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { VerificationLevel } from '../constants/transfer-limits';
-import { VerificationStatus } from '../entities/user-verification.entity';
+import { VerificationStatus, DocumentType } from '../entities/user-verification.entity';
+
+// DTO for Level 1 KYC submission (basic identity)
+export class SubmitLevel1VerificationDto {
+  @ApiProperty({ description: 'Full legal name as shown on ID document' })
+  @IsNotEmpty()
+  @IsString()
+  fullLegalName: string;
+
+  @ApiProperty({ enum: DocumentType, description: 'Type of ID document' })
+  @IsEnum(DocumentType)
+  documentType: DocumentType;
+
+  @ApiProperty({ description: 'Document number' })
+  @IsNotEmpty()
+  @IsString()
+  documentNumber: string;
+
+  @ApiProperty({ description: 'URL of document front image' })
+  @IsNotEmpty()
+  @IsString()
+  documentFrontUrl: string;
+
+  @ApiPropertyOptional({ description: 'URL of document back image (optional for passports)' })
+  @IsOptional()
+  @IsString()
+  documentBackUrl?: string;
+
+  @ApiProperty({ description: 'URL of selfie image' })
+  @IsNotEmpty()
+  @IsString()
+  selfieUrl: string;
+
+  @ApiPropertyOptional({ description: 'Date of birth (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString()
+  dateOfBirth?: string;
+}
+
+// DTO for Level 2 KYC submission (extended verification)
+export class SubmitLevel2VerificationDto {
+  @ApiProperty({ description: 'Street address' })
+  @IsNotEmpty()
+  @IsString()
+  address: string;
+
+  @ApiProperty({ description: 'City' })
+  @IsNotEmpty()
+  @IsString()
+  city: string;
+
+  @ApiProperty({ description: 'State/Department' })
+  @IsNotEmpty()
+  @IsString()
+  state: string;
+
+  @ApiPropertyOptional({ description: 'Postal code' })
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
+
+  @ApiProperty({ description: 'Country', default: 'Colombia' })
+  @IsNotEmpty()
+  @IsString()
+  country: string;
+
+  @ApiProperty({ description: 'Source of funds (salary, business, investments, etc.)' })
+  @IsNotEmpty()
+  @IsString()
+  sourceOfFunds: string;
+
+  @ApiPropertyOptional({ description: 'Occupation/profession' })
+  @IsOptional()
+  @IsString()
+  occupation?: string;
+
+  @ApiPropertyOptional({ description: 'Monthly income range' })
+  @IsOptional()
+  @IsString()
+  monthlyIncome?: string;
+}
 
 export class ReviewVerificationDto {
   @ApiProperty({

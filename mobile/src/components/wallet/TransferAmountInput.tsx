@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../ui/GSText';
 import { TransferLimits, transferService } from '../../services/transfer.service';
@@ -16,6 +18,7 @@ interface TransferAmountInputProps {
   limits: TransferLimits;
   balance: number;
   error?: string | null;
+  showUpgradePrompt?: boolean;
 }
 
 export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
@@ -24,9 +27,40 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
   limits,
   balance,
   error,
+  showUpgradePrompt = true,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
+  const navigation = useNavigation<any>();
   const [inputValue, setInputValue] = useState(value > 0 ? value.toString() : '');
+
+  // Check if user can upgrade their limits
+  const canUpgrade = useMemo(() => {
+    // Can upgrade if not at max level (level_2)
+    return limits.level !== 'level_2';
+  }, [limits.level]);
+
+  // Check if user is hitting their limits
+  const isHittingLimits = useMemo(() => {
+    if (!canUpgrade) return false;
+    // Show upgrade prompt if:
+    // 1. Current amount exceeds daily/monthly remaining
+    // 2. Current amount exceeds max per transaction
+    // 3. Daily remaining is less than 20% of max per transaction
+    // 4. Monthly remaining is low
+    const amountExceedsDaily = value > limits.dailyRemaining;
+    const amountExceedsMonthly = value > limits.monthlyRemaining;
+    const amountExceedsMax = value > limits.maxPerTransaction;
+    const dailyLow = limits.dailyRemaining < limits.maxPerTransaction * 0.2;
+    const monthlyLow = limits.monthlyRemaining < limits.dailyLimit * 0.5;
+    return amountExceedsDaily || amountExceedsMonthly || amountExceedsMax || dailyLow || monthlyLow;
+  }, [canUpgrade, limits, value]);
+
+  const handleUpgradeLimits = useCallback(() => {
+    navigation.navigate('Profile', {
+      screen: 'Verification',
+    });
+  }, [navigation]);
 
   const quickAmounts = [10000, 50000, 100000, 500000];
 
@@ -92,7 +126,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
       </View>
 
       <GSText variant="caption" color="textSecondary" style={styles.currency}>
-        COP (Pesos Colombianos)
+        {t('wallet.transferScreen.currency')}
       </GSText>
 
       {/* Error Message */}
@@ -139,7 +173,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
             <Ionicons name="wallet-outline" size={18} color={theme.colors.primary} />
             <View style={{ marginLeft: 8 }}>
               <GSText variant="caption" color="textSecondary">
-                Tu saldo
+                {t('wallet.transferScreen.yourBalance')}
               </GSText>
               <GSText variant="body" weight="bold">
                 {transferService.formatCOP(balance)}
@@ -151,7 +185,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
             <Ionicons name="today-outline" size={18} color={theme.colors.warning} />
             <View style={{ marginLeft: 8 }}>
               <GSText variant="caption" color="textSecondary">
-                Limite diario disponible
+                {t('wallet.transferScreen.dailyLimitRemaining')}
               </GSText>
               <GSText variant="body" weight="bold">
                 {transferService.formatCOP(limits.dailyRemaining)}
@@ -165,10 +199,36 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
       <View style={styles.levelInfo}>
         <Ionicons name="shield-checkmark-outline" size={14} color={theme.colors.textSecondary} />
         <GSText variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
-          Nivel: {transferService.getLevelDisplayName(limits.level)} |
-          Max por transaccion: {transferService.formatCOP(limits.maxPerTransaction)}
+          {t('wallet.transferScreen.levelInfo')}: {transferService.getLevelDisplayName(limits.level)} |
+          {t('wallet.transferScreen.maxPerTransaction')}: {transferService.formatCOP(limits.maxPerTransaction)}
         </GSText>
       </View>
+
+      {/* Upgrade Limits Prompt */}
+      {showUpgradePrompt && canUpgrade && isHittingLimits && (
+        <TouchableOpacity
+          style={[styles.upgradePrompt, { backgroundColor: theme.colors.primary + '15', borderColor: theme.colors.primary }]}
+          onPress={handleUpgradeLimits}
+          activeOpacity={0.7}
+        >
+          <View style={styles.upgradePromptContent}>
+            <View style={[styles.upgradeIconContainer, { backgroundColor: theme.colors.primary }]}>
+              <Ionicons name="trending-up" size={18} color={theme.colors.white} />
+            </View>
+            <View style={styles.upgradeTextContainer}>
+              <GSText variant="body" weight="semibold" style={{ color: theme.colors.primary }}>
+                {t('wallet.transferScreen.upgradeLimits')}
+              </GSText>
+              <GSText variant="caption" color="textSecondary">
+                {limits.level === 'none'
+                  ? t('wallet.transferScreen.upgradeLevel1Message')
+                  : t('wallet.transferScreen.upgradeLevel2Message')}
+              </GSText>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.primary} />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -248,6 +308,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
+  },
+  upgradePrompt: {
+    marginTop: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  upgradePromptContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  upgradeIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upgradeTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 8,
   },
 });
 
