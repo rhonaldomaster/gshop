@@ -70,27 +70,6 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
           </GSText>
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
-        <View style={styles.summaryRow}>
-          <GSText variant="body" color="textSecondary">
-            Comision GSHOP
-          </GSText>
-          <GSText variant="body" style={{ color: theme.colors.warning }}>
-            -{transferService.formatCOP(result.summary.feeCharged)}
-          </GSText>
-        </View>
-
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
-        <View style={styles.summaryRow}>
-          <GSText variant="body" color="textSecondary">
-            {recipientName} recibio
-          </GSText>
-          <GSText variant="h4" weight="bold" style={{ color: theme.colors.success }}>
-            {transferService.formatCOP(result.summary.recipientNetBalance)}
-          </GSText>
-        </View>
       </View>
 
       {/* Transaction Details */}
@@ -116,7 +95,7 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
           onPress={onNewTransfer}
         >
           <Ionicons name="add" size={20} color={theme.colors.primary} />
-          <GSText variant="body" weight="medium" style={{ color: theme.colors.primary, marginLeft: 8 }}>
+          <GSText variant="body" weight="semiBold" style={{ color: theme.colors.primary, marginLeft: 8 }}>
             Nueva Transferencia
           </GSText>
         </TouchableOpacity>
@@ -126,7 +105,7 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
           onPress={onDone}
         >
           <Ionicons name="home-outline" size={20} color={theme.colors.white} />
-          <GSText variant="body" weight="medium" color="white" style={{ marginLeft: 8 }}>
+          <GSText variant="body" weight="semiBold" color="white" style={{ marginLeft: 8 }}>
             Volver a Wallet
           </GSText>
         </TouchableOpacity>
