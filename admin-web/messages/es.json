@@ -1012,7 +1012,9 @@
       "country": "País",
       "sourceOfFunds": "Origen de fondos",
       "occupation": "Ocupación",
-      "monthlyIncome": "Ingresos mensuales"
+      "monthlyIncome": "Ingresos mensuales",
+      "email": "Email",
+      "phone": "Teléfono"
     },
     "documents": {
       "title": "Documentos",
@@ -1020,7 +1022,8 @@
       "documentBack": "Documento (Reverso)",
       "selfie": "Selfie con documento",
       "viewDocument": "Ver documento",
-      "noDocument": "No disponible"
+      "noDocument": "No disponible",
+      "open": "Abrir"
     },
     "actions": {
       "approve": "Aprobar verificación",
@@ -1043,20 +1046,35 @@
       "successApproved": "Verificación aprobada exitosamente",
       "successRejected": "Verificación rechazada",
       "successNeedsUpdate": "Se ha solicitado actualización de documentos",
-      "error": "Error al procesar la verificación"
+      "error": "Error al procesar la verificación",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar",
+      "processing": "Procesando..."
     },
     "detail": {
       "title": "Detalle de verificación",
       "userInfo": "Información del usuario",
       "kycInfo": "Información KYC",
       "level1Info": "Información Nivel 1",
+      "level1Description": "Documento de identidad y selfie",
       "level2Info": "Información Nivel 2",
+      "level2Description": "Dirección y origen de fondos",
       "reviewHistory": "Historial de revisión",
       "submittedAt": "Enviado",
       "reviewedBy": "Revisado por",
       "reviewedAt": "Fecha de revisión",
       "attempts": "Intentos de revisión",
-      "previousRejection": "Razón de rechazo anterior"
+      "previousRejection": "Razón de rechazo anterior",
+      "level1Submitted": "Nivel 1 enviado",
+      "level1Approved": "Nivel 1 aprobado",
+      "level2Submitted": "Nivel 2 enviado",
+      "level2Approved": "Nivel 2 aprobado",
+      "created": "Creado",
+      "updated": "Actualizado",
+      "actions": "Acciones",
+      "clickToClose": "Clic para cerrar",
+      "loadError": "Error al cargar la verificación",
+      "notFound": "Verificación no encontrada"
     },
     "empty": {
       "noPending": "No hay verificaciones pendientes",
@@ -1069,7 +1087,8 @@
       "allLevels": "Todos los niveles"
     },
     "common": {
-      "refresh": "Actualizar"
+      "refresh": "Actualizar",
+      "back": "Volver"
     },
     "table": {
       "user": "Usuario",

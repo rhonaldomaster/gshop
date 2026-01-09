@@ -94,7 +94,7 @@ export default function VerificationDetailPage() {
       setVerification(data)
       setError('')
     } catch (err: any) {
-      setError('Error al cargar la verificacion')
+      setError(t('detail.loadError'))
       console.error('Error fetching verification:', err)
     } finally {
       setLoading(false)
@@ -189,10 +189,10 @@ export default function VerificationDetailPage() {
       <DashboardLayout>
         <div className="space-y-6">
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error || 'Verificacion no encontrada'}
+            {error || t('detail.notFound')}
           </div>
           <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+            <ArrowLeft className="mr-2 h-4 w-4" /> {t('common.back')}
           </Button>
         </div>
       </DashboardLayout>
@@ -257,11 +257,11 @@ export default function VerificationDetailPage() {
                   <p className="font-medium">{verification.fullLegalName || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="text-sm text-muted-foreground">{t('fields.email')}</p>
                   <p className="font-medium">{verification.user?.email || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Telefono</p>
+                  <p className="text-sm text-muted-foreground">{t('fields.phone')}</p>
                   <p className="font-medium">{verification.user?.phone || 'N/A'}</p>
                 </div>
                 <div>
@@ -282,7 +282,7 @@ export default function VerificationDetailPage() {
                   <FileText className="h-5 w-5" />
                   {t('detail.level1Info')}
                 </CardTitle>
-                <CardDescription>Documento de identidad y selfie</CardDescription>
+                <CardDescription>{t('detail.level1Description')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -338,7 +338,7 @@ export default function VerificationDetailPage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Abrir
+                          {t('documents.open')}
                         </a>
                       )}
                     </div>
@@ -373,7 +373,7 @@ export default function VerificationDetailPage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Abrir
+                          {t('documents.open')}
                         </a>
                       )}
                     </div>
@@ -406,7 +406,7 @@ export default function VerificationDetailPage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <ExternalLink className="h-3 w-3" />
-                          Abrir
+                          {t('documents.open')}
                         </a>
                       )}
                     </div>
@@ -425,7 +425,7 @@ export default function VerificationDetailPage() {
                     <MapPin className="h-5 w-5" />
                     {t('detail.level2Info')}
                   </CardTitle>
-                  <CardDescription>Direccion y origen de fondos</CardDescription>
+                  <CardDescription>{t('detail.level2Description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
@@ -474,7 +474,7 @@ export default function VerificationDetailPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5" />
-                    Acciones
+                    {t('detail.actions')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -519,25 +519,25 @@ export default function VerificationDetailPage() {
                 </div>
                 {verification.level1SubmittedAt && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Nivel 1 enviado</p>
+                    <p className="text-sm text-muted-foreground">{t('detail.level1Submitted')}</p>
                     <p className="font-medium">{formatDate(verification.level1SubmittedAt)}</p>
                   </div>
                 )}
                 {verification.level1ApprovedAt && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Nivel 1 aprobado</p>
+                    <p className="text-sm text-muted-foreground">{t('detail.level1Approved')}</p>
                     <p className="font-medium">{formatDate(verification.level1ApprovedAt)}</p>
                   </div>
                 )}
                 {verification.level2SubmittedAt && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Nivel 2 enviado</p>
+                    <p className="text-sm text-muted-foreground">{t('detail.level2Submitted')}</p>
                     <p className="font-medium">{formatDate(verification.level2SubmittedAt)}</p>
                   </div>
                 )}
                 {verification.level2ApprovedAt && (
                   <div>
-                    <p className="text-sm text-muted-foreground">Nivel 2 aprobado</p>
+                    <p className="text-sm text-muted-foreground">{t('detail.level2Approved')}</p>
                     <p className="font-medium">{formatDate(verification.level2ApprovedAt)}</p>
                   </div>
                 )}
@@ -552,11 +552,11 @@ export default function VerificationDetailPage() {
                 )}
                 <Separator />
                 <div>
-                  <p className="text-sm text-muted-foreground">Creado</p>
+                  <p className="text-sm text-muted-foreground">{t('detail.created')}</p>
                   <p className="font-medium">{formatDate(verification.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Actualizado</p>
+                  <p className="text-sm text-muted-foreground">{t('detail.updated')}</p>
                   <p className="font-medium">{formatDate(verification.updatedAt)}</p>
                 </div>
               </CardContent>
@@ -576,7 +576,7 @@ export default function VerificationDetailPage() {
                 alt="Document Preview"
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
-              <p className="text-white text-center mt-2">Clic para cerrar</p>
+              <p className="text-white text-center mt-2">{t('detail.clickToClose')}</p>
             </div>
           </div>
         )}
@@ -640,7 +640,7 @@ export default function VerificationDetailPage() {
                   disabled={submitting}
                   className="flex-1"
                 >
-                  Cancelar
+                  {t('review.cancel')}
                 </Button>
                 <Button
                   onClick={handleReview}
@@ -653,7 +653,7 @@ export default function VerificationDetailPage() {
                       : 'bg-red-600 hover:bg-red-700'
                   }`}
                 >
-                  {submitting ? 'Procesando...' : 'Confirmar'}
+                  {submitting ? t('review.processing') : t('review.confirm')}
                 </Button>
               </div>
             </div>
