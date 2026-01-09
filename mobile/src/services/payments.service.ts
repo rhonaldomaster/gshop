@@ -97,7 +97,7 @@ export interface WalletBalance {
 
 export interface TokenTransaction {
   id: string;
-  type: 'reward' | 'purchase' | 'transfer' | 'topup' | 'withdrawal';
+  type: 'reward' | 'purchase' | 'transfer' | 'topup' | 'withdrawal' | 'transfer_out' | 'transfer_in' | 'platform_fee';
   amount: number;
   description: string;
   createdAt: string;

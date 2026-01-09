@@ -107,33 +107,42 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
         return 'bag-outline';
       case 'transfer':
         return 'swap-horizontal-outline';
+      case 'transfer_in':
+        return 'arrow-down-circle-outline';
+      case 'transfer_out':
+        return 'arrow-up-circle-outline';
       case 'topup':
         return 'add-circle-outline';
       case 'withdrawal':
         return 'remove-circle-outline';
+      case 'platform_fee':
+        return 'pricetag-outline';
       default:
         return 'ellipse-outline';
     }
   };
 
-  const getTransactionColor = (type: TokenTransaction['type']) => {
+  const getTransactionColor = (type: TokenTransaction['type'], amount: number) => {
     switch (type) {
       case 'reward':
       case 'topup':
+      case 'transfer_in':
         return theme.colors.success;
       case 'purchase':
       case 'withdrawal':
+      case 'transfer_out':
+      case 'platform_fee':
         return theme.colors.error;
       case 'transfer':
-        return theme.colors.warning;
+        return amount >= 0 ? theme.colors.success : theme.colors.error;
       default:
         return theme.colors.textSecondary;
     }
   };
 
-  const getAmountDisplay = (amount: number, type: TokenTransaction['type']) => {
-    const sign = ['reward', 'topup'].includes(type) ? '+' : '-';
-    return `${sign}${paymentsService.formatPrice(Math.abs(amount), 'COP')}`;
+  const getAmountDisplay = (amount: number) => {
+    const sign = amount >= 0 ? '+' : '';
+    return `${sign}${paymentsService.formatPrice(amount, 'COP')}`;
   };
 
   const getStatusColor = (status: TokenTransaction['status']) => {
@@ -151,11 +160,11 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
 
   return (
     <View style={styles.transactionItem}>
-      <View style={[styles.transactionIcon, { backgroundColor: getTransactionColor(transaction.type) + '20' }]}>
+      <View style={[styles.transactionIcon, { backgroundColor: getTransactionColor(transaction.type, transaction.amount) + '20' }]}>
         <Ionicons
           name={getTransactionIcon(transaction.type) as any}
           size={20}
-          color={getTransactionColor(transaction.type)}
+          color={getTransactionColor(transaction.type, transaction.amount)}
         />
       </View>
 
@@ -182,9 +191,9 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
         <GSText
           variant="body"
           weight="medium"
-          style={{ color: getTransactionColor(transaction.type) }}
+          style={{ color: getTransactionColor(transaction.type, transaction.amount) }}
         >
-          {getAmountDisplay(transaction.amount, transaction.type)}
+          {getAmountDisplay(transaction.amount)}
         </GSText>
         <GSText
           variant="caption"
