@@ -711,22 +711,6 @@ export default function WalletScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Rewards Info */}
-        <View style={[styles.rewardsSection, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.rewardsHeader}>
-            <Ionicons name="gift" size={20} color={theme.colors.success} />
-            <GSText variant="h4" weight="bold" style={{ marginLeft: 8 }}>
-              {t('wallet.cashbackRewards.title')}
-            </GSText>
-          </View>
-          <GSText variant="body" color="textSecondary" style={{ marginBottom: 8 }}>
-            {t('wallet.cashbackRewards.description')}
-          </GSText>
-          <GSText variant="caption" color="textSecondary">
-            {t('wallet.cashbackRewards.autoAdded')}
-          </GSText>
-        </View>
-
         {/* Transaction History */}
         <View style={styles.transactionsSection}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
@@ -861,17 +845,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-  },
-  rewardsSection: {
-    margin: 16,
-    marginTop: 0,
-    padding: 16,
-    borderRadius: 12,
-  },
-  rewardsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
   },
   transactionsSection: {
     paddingHorizontal: 16,
