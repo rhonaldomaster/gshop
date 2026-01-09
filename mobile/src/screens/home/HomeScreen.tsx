@@ -101,11 +101,12 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container}>
       {/* Floating Wallet Button */}
       <TouchableOpacity
-        style={[styles.floatingWalletButton, { backgroundColor: theme.colors.primary }]}
+        style={[styles.floatingWalletButton, { backgroundColor: theme.colors.secondary }]}
         onPress={() => navigation.navigate('Profile' as any, { screen: 'Wallet' })}
         activeOpacity={0.8}
       >
-        <Ionicons name="wallet-outline" size={24} color="white" />
+        <Ionicons name="wallet-outline" size={20} color="white" />
+        <GSText variant="caption" color="white" weight="semiBold">Wallet</GSText>
       </TouchableOpacity>
 
       <ScrollView
@@ -484,9 +485,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 8,
     top: '50%',
-    marginTop: -24,
-    width: 48,
-    height: 48,
+    marginTop: -32,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
