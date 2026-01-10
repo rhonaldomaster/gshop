@@ -41,6 +41,7 @@ import {
 } from './constants/transfer-limits';
 import { CurrencyService } from '../payments/currency.service';
 import Stripe from 'stripe';
+import { generateUniqueDynamicCode } from './utils/dynamic-code.generator';
 
 @Injectable()
 export class TokenService {
@@ -665,6 +666,10 @@ export class TokenService {
     // Generate unique transfer ID
     const transferId = `TRF_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
+    // Generate unique dynamic code for this transfer
+    const dynamicCode = await generateUniqueDynamicCode(this.transactionRepository);
+    const executedAt = new Date();
+
     // Calculate fee
     const platformFee = calculatePlatformFee(amount);
 
@@ -702,7 +707,9 @@ export class TokenService {
         description: `Transferencia a ${recipient.firstName} ${recipient.lastName}`,
         reference: transferId,
         toUserId,
-        metadata: { note, transferId }
+        dynamicCode,
+        executedAt,
+        metadata: { note, transferId, dynamicCode, executedAt: executedAt.toISOString() }
       });
       await queryRunner.manager.save(GshopTransaction, senderTx);
 
@@ -751,7 +758,9 @@ export class TokenService {
         description: `Recibiste de ${senderName}`,
         reference: transferId,
         fromUserId,
-        metadata: { note, transferId }
+        dynamicCode,
+        executedAt,
+        metadata: { note, transferId, dynamicCode, executedAt: executedAt.toISOString() }
       });
       await queryRunner.manager.save(GshopTransaction, recipientTx);
 
@@ -779,10 +788,14 @@ export class TokenService {
           fee: platformFee,
           description: 'Comision de servicio GSHOP',
           reference: transferId,
+          dynamicCode,
+          executedAt,
           metadata: {
             transferId,
             feeRate: PLATFORM_FEE_RATE,
-            originalAmount: amount
+            originalAmount: amount,
+            relatedTransferCode: dynamicCode,
+            executedAt: executedAt.toISOString()
           }
         });
         await queryRunner.manager.save(GshopTransaction, feeTx);
@@ -809,6 +822,8 @@ export class TokenService {
       return {
         success: true,
         transferId,
+        dynamicCode,
+        executedAt: executedAt.toISOString(),
         transactions,
         summary: {
           amountSent: amount,

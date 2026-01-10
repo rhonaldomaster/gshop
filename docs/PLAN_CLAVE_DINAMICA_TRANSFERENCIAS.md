@@ -1187,7 +1187,16 @@ Agregar dentro del objeto `transactions`:
 - `backend/src/token/utils/dynamic-code.generator.ts`
 - `backend/src/token/utils/index.ts`
 
-### Fase 3: Modificar TokenService - PENDIENTE
+### Fase 3: Modificar TokenService - COMPLETADO
+- [x] Importar `generateUniqueDynamicCode` en TokenService
+- [x] Generar codigo dinamico antes de crear transacciones
+- [x] Agregar `dynamicCode` y `executedAt` a TRANSFER_OUT
+- [x] Agregar `dynamicCode` y `executedAt` a TRANSFER_IN
+- [x] Agregar `dynamicCode` y `executedAt` a PLATFORM_FEE
+- [x] Incluir `dynamicCode` y `executedAt` en el response
+
+**Archivos modificados:**
+- `backend/src/token/token.service.ts`
 
 ### Fase 4: Actualizar DTOs - PENDIENTE
 
