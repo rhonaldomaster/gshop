@@ -1212,7 +1212,18 @@ Agregar dentro del objeto `transactions`:
 - `backend/src/token/dto/index.ts`
 - `backend/src/token/token.service.ts`
 
-### Fase 5: Endpoints de verificacion - PENDIENTE
+### Fase 5: Endpoints de verificacion - COMPLETADO
+- [x] Crear endpoint `GET /tokens/transactions/verify/:code` para usuarios
+- [x] Crear endpoint `GET /tokens/admin/transactions/verify/:code` para admins
+- [x] Implementar `verifyTransactionByCode()` en TokenService
+- [x] Implementar `adminVerifyTransactionByCode()` en TokenService
+- [x] Validar formato de codigo con `isValidDynamicCodeFormat()`
+- [x] Normalizar codigo con `normalizeDynamicCode()`
+- [x] Verificar acceso del usuario a la transaccion
+
+**Archivos modificados:**
+- `backend/src/token/token.controller.ts`
+- `backend/src/token/token.service.ts`
 
 ### Fase 6: Mobile App - PENDIENTE
 

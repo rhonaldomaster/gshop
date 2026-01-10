@@ -1456,4 +1456,119 @@ export class TokenService {
       metadata: tx.metadata
     };
   }
+
+  // ==========================================
+  // Transaction Verification by Dynamic Code
+  // ==========================================
+
+  /**
+   * Verify a transaction by dynamic code (User endpoint)
+   * User must be part of the transaction to view it
+   */
+  async verifyTransactionByCode(code: string, userId: string) {
+    const transactions = await this.transactionRepository.find({
+      where: { dynamicCode: code },
+      relations: ['user'],
+      order: { createdAt: 'ASC' }
+    });
+
+    if (transactions.length === 0) {
+      throw new NotFoundException('Transaccion no encontrada con ese codigo');
+    }
+
+    // Verify user is part of the transaction
+    const userInvolved = transactions.some(
+      tx => tx.userId === userId || tx.fromUserId === userId || tx.toUserId === userId
+    );
+
+    if (!userInvolved) {
+      throw new ForbiddenException('No tienes acceso a esta transaccion');
+    }
+
+    return {
+      dynamicCode: code,
+      verified: true,
+      transactions: transactions.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        status: tx.status,
+        amount: Number(tx.amount),
+        fee: Number(tx.fee) || 0,
+        description: tx.description || '',
+        executedAt: tx.executedAt,
+        user: tx.user ? {
+          id: tx.user.id,
+          firstName: tx.user.firstName,
+          lastName: tx.user.lastName,
+          email: tx.user.email
+        } : null
+      }))
+    };
+  }
+
+  /**
+   * Verify a transaction by dynamic code (Admin endpoint)
+   * Shows full details including sender/receiver summary
+   */
+  async adminVerifyTransactionByCode(code: string) {
+    const transactions = await this.transactionRepository.find({
+      where: { dynamicCode: code },
+      relations: ['user'],
+      order: { createdAt: 'ASC' }
+    });
+
+    if (transactions.length === 0) {
+      throw new NotFoundException('Transaccion no encontrada con ese codigo');
+    }
+
+    // Find sender and receiver transactions
+    const transferOut = transactions.find(tx => tx.type === TokenTransactionType.TRANSFER_OUT);
+    const transferIn = transactions.find(tx => tx.type === TokenTransactionType.TRANSFER_IN);
+    const platformFee = transactions.find(tx => tx.type === TokenTransactionType.PLATFORM_FEE);
+
+    // Load sender and receiver users
+    let sender = null;
+    let receiver = null;
+
+    if (transferOut?.userId) {
+      sender = await this.userRepository.findOne({ where: { id: transferOut.userId } });
+    }
+    if (transferIn?.userId) {
+      receiver = await this.userRepository.findOne({ where: { id: transferIn.userId } });
+    }
+
+    return {
+      dynamicCode: code,
+      verified: true,
+      transactions: transactions.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        status: tx.status,
+        amount: Number(tx.amount),
+        fee: Number(tx.fee) || 0,
+        description: tx.description || '',
+        executedAt: tx.executedAt,
+        user: tx.user ? {
+          id: tx.user.id,
+          firstName: tx.user.firstName,
+          lastName: tx.user.lastName,
+          email: tx.user.email
+        } : null
+      })),
+      summary: {
+        sender: sender ? {
+          name: `${sender.firstName} ${sender.lastName}`,
+          email: sender.email
+        } : { name: 'Desconocido', email: '' },
+        receiver: receiver ? {
+          name: `${receiver.firstName} ${receiver.lastName}`,
+          email: receiver.email
+        } : { name: 'Desconocido', email: '' },
+        amountSent: Math.abs(Number(transferOut?.amount) || 0),
+        platformFee: Math.abs(Number(platformFee?.amount) || 0),
+        netReceived: Number(transferIn?.amount || 0) - Math.abs(Number(platformFee?.amount) || 0),
+        executedAt: transferOut?.executedAt?.toISOString() || ''
+      }
+    };
+  }
 }
