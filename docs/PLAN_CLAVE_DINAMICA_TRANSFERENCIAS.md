@@ -1162,3 +1162,31 @@ Agregar dentro del objeto `transactions`:
 - Reclamos resueltos usando el codigo dinamico
 - Tasa de copia del codigo (engagement)
 - Busquedas de admin por codigo (uso del panel)
+
+---
+
+## Progreso de Implementacion
+
+### Fase 1: Migracion BD y Entity - COMPLETADO
+- [x] Agregar campos `dynamicCode` y `executedAt` a `GshopTransaction` entity
+- [x] Crear migracion `1767300000000-AddDynamicCodeToTransactions.ts`
+- [x] Indice para busquedas rapidas por codigo
+- [x] Script para generar codigos a transacciones existentes
+
+**Archivos modificados:**
+- `backend/src/token/token.entity.ts`
+- `backend/src/database/migrations/1767300000000-AddDynamicCodeToTransactions.ts`
+
+### Fase 2: Utilidad de generacion de codigo - PENDIENTE
+
+### Fase 3: Modificar TokenService - PENDIENTE
+
+### Fase 4: Actualizar DTOs - PENDIENTE
+
+### Fase 5: Endpoints de verificacion - PENDIENTE
+
+### Fase 6: Mobile App - PENDIENTE
+
+### Fase 7: Admin Panel - PENDIENTE
+
+### Fase 8: Traducciones i18n - PENDIENTE
