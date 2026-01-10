@@ -1177,7 +1177,15 @@ Agregar dentro del objeto `transactions`:
 - `backend/src/token/token.entity.ts`
 - `backend/src/database/migrations/1767300000000-AddDynamicCodeToTransactions.ts`
 
-### Fase 2: Utilidad de generacion de codigo - PENDIENTE
+### Fase 2: Utilidad de generacion de codigo - COMPLETADO
+- [x] Crear `generateDynamicCode()` - genera codigo aleatorio GS-XXXXXX
+- [x] Crear `generateUniqueDynamicCode()` - verifica unicidad en BD
+- [x] Crear `isValidDynamicCodeFormat()` - valida formato
+- [x] Crear `normalizeDynamicCode()` - normaliza a mayusculas
+
+**Archivos creados:**
+- `backend/src/token/utils/dynamic-code.generator.ts`
+- `backend/src/token/utils/index.ts`
 
 ### Fase 3: Modificar TokenService - PENDIENTE
 
