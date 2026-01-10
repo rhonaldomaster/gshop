@@ -64,6 +64,8 @@ export class ExecuteTransferDto {
 export class TransferResultDto {
   success: boolean;
   transferId: string;
+  dynamicCode: string;      // Unique verification code (e.g., "GS-7K3M9P")
+  executedAt: string;       // ISO timestamp of execution
   transactions: {
     type: string;
     amount: number;
@@ -271,6 +273,8 @@ export class AdminTransactionResponseDto {
   fee: number;
   reference: string;
   description: string;
+  dynamicCode?: string;     // Unique verification code for transfers (e.g., "GS-7K3M9P")
+  executedAt?: Date;        // Exact execution timestamp for transfers
   createdAt: Date;
   processedAt: Date;
   user: {
@@ -292,4 +296,56 @@ export class AdminTransactionResponseDto {
     email: string;
   };
   metadata?: any;
+}
+
+// Transaction Verification DTOs (for dynamic code lookup)
+
+export class VerifyTransactionByCodeDto {
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(9)  // "GS-" + 6 chars
+  @MaxLength(10)
+  code: string;
+}
+
+export class TransactionDetailDto {
+  id: string;
+  type: string;
+  status: string;
+  amount: number;
+  fee: number;
+  description: string;
+  executedAt: Date;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export class TransactionVerificationResponseDto {
+  dynamicCode: string;
+  verified: boolean;
+  transactions: TransactionDetailDto[];
+}
+
+export class AdminTransactionVerificationResponseDto {
+  dynamicCode: string;
+  verified: boolean;
+  transactions: TransactionDetailDto[];
+  summary: {
+    sender: {
+      name: string;
+      email: string;
+    };
+    receiver: {
+      name: string;
+      email: string;
+    };
+    amountSent: number;
+    platformFee: number;
+    netReceived: number;
+    executedAt: string;
+  };
 }

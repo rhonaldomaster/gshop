@@ -1272,6 +1272,8 @@ export class TokenService {
         fee: Number(tx.fee) || 0,
         reference: tx.reference || '',
         description: tx.description || '',
+        dynamicCode: tx.dynamicCode || undefined,
+        executedAt: tx.executedAt || undefined,
         createdAt: tx.createdAt,
         processedAt: tx.processedAt,
         user: tx.user ? {
@@ -1429,6 +1431,8 @@ export class TokenService {
       fee: Number(tx.fee) || 0,
       reference: tx.reference || '',
       description: tx.description || '',
+      dynamicCode: tx.dynamicCode || undefined,
+      executedAt: tx.executedAt || undefined,
       createdAt: tx.createdAt,
       processedAt: tx.processedAt,
       user: tx.user ? {

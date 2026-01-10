@@ -1198,7 +1198,19 @@ Agregar dentro del objeto `transactions`:
 **Archivos modificados:**
 - `backend/src/token/token.service.ts`
 
-### Fase 4: Actualizar DTOs - PENDIENTE
+### Fase 4: Actualizar DTOs - COMPLETADO
+- [x] Agregar `dynamicCode` y `executedAt` a `TransferResultDto`
+- [x] Agregar `dynamicCode` y `executedAt` a `AdminTransactionResponseDto`
+- [x] Crear `VerifyTransactionByCodeDto` para validacion de input
+- [x] Crear `TransactionDetailDto` para respuesta de transacciones
+- [x] Crear `TransactionVerificationResponseDto` para usuarios
+- [x] Crear `AdminTransactionVerificationResponseDto` para admins
+- [x] Actualizar `getAdminTransactions()` para incluir nuevos campos
+- [x] Actualizar `getAdminTransactionById()` para incluir nuevos campos
+
+**Archivos modificados:**
+- `backend/src/token/dto/index.ts`
+- `backend/src/token/token.service.ts`
 
 ### Fase 5: Endpoints de verificacion - PENDIENTE
 
