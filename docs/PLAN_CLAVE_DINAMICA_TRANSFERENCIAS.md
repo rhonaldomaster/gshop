@@ -1225,7 +1225,26 @@ Agregar dentro del objeto `transactions`:
 - `backend/src/token/token.controller.ts`
 - `backend/src/token/token.service.ts`
 
-### Fase 6: Mobile App - PENDIENTE
+### Fase 6: Mobile App - COMPLETADO
+- [x] Agregar `dynamicCode` y `executedAt` a `TransferExecuteResponse` en transfer.service.ts
+- [x] Agregar `TransactionVerificationResponse` interface
+- [x] Agregar metodo `verifyTransactionByCode()` al TransferService
+- [x] Agregar metodo `isValidDynamicCodeFormat()` al TransferService
+- [x] Modificar `TransferSuccess.tsx` para mostrar clave dinamica prominente
+- [x] Agregar funcionalidad de copiar codigo al portapapeles (usando Clipboard de React Native)
+- [x] Agregar feedback visual cuando se copia el codigo
+- [x] Agregar `dynamicCode` y `executedAt` a `TokenTransaction` en payments.service.ts
+- [x] Modificar `TransactionItem` en WalletScreen para mostrar codigo en transferencias P2P
+- [x] Agregar estilo `dynamicCodeBadge` para el badge del codigo
+- [x] Implementar i18n en TransferSuccess.tsx (usando useTranslation)
+- [x] Agregar traducciones para codigo dinamico en es.json
+
+**Archivos modificados:**
+- `mobile/src/services/transfer.service.ts`
+- `mobile/src/services/payments.service.ts`
+- `mobile/src/components/wallet/TransferSuccess.tsx`
+- `mobile/src/screens/wallet/WalletScreen.tsx`
+- `mobile/src/i18n/locales/es.json`
 
 ### Fase 7: Admin Panel - PENDIENTE
 

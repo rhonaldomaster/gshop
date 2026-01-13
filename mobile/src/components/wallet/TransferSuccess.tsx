@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Clipboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../ui/GSText';
 import { TransferExecuteResponse } from '../../services/transfer.service';
@@ -20,15 +21,26 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
   onNewTransfer,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
+  const [codeCopied, setCodeCopied] = useState(false);
 
-  const formatDate = (dateStr: string) => {
+  const formatDateTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
     });
+  };
+
+  const copyDynamicCode = () => {
+    if (result.dynamicCode) {
+      Clipboard.setString(result.dynamicCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    }
   };
 
   return (
@@ -42,30 +54,68 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
 
       {/* Title */}
       <GSText variant="h2" weight="bold" style={styles.title}>
-        Transferencia Exitosa!
+        {t('wallet.transferScreen.success')}
       </GSText>
       <GSText variant="body" color="textSecondary" style={styles.subtitle}>
-        Tu dinero ha sido enviado correctamente
+        {t('wallet.transferScreen.successMessage')}
       </GSText>
+
+      {/* Dynamic Code Section - PROMINENT */}
+      {result.dynamicCode && (
+        <View style={styles.dynamicCodeContainer}>
+          <GSText variant="caption" color="textSecondary">
+            {t('wallet.transferScreen.dynamicCode.label')}
+          </GSText>
+          <TouchableOpacity
+            style={[
+              styles.dynamicCodeBox,
+              {
+                backgroundColor: theme.colors.primary + '10',
+                borderColor: theme.colors.primary,
+              },
+            ]}
+            onPress={copyDynamicCode}
+            activeOpacity={0.7}
+          >
+            <GSText
+              variant="h2"
+              weight="bold"
+              style={[styles.dynamicCodeText, { color: theme.colors.primary }]}
+            >
+              {result.dynamicCode}
+            </GSText>
+            <Ionicons
+              name={codeCopied ? 'checkmark-circle' : 'copy-outline'}
+              size={24}
+              color={codeCopied ? theme.colors.success : theme.colors.primary}
+            />
+          </TouchableOpacity>
+          <GSText variant="caption" color="textSecondary" style={styles.hint}>
+            {codeCopied
+              ? t('wallet.transferScreen.dynamicCode.copied')
+              : t('wallet.transferScreen.dynamicCode.copyHint')}
+          </GSText>
+        </View>
+      )}
 
       {/* Summary Card */}
       <View style={[styles.summaryCard, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.summaryRow}>
           <GSText variant="body" color="textSecondary">
-            Monto enviado
+            {t('wallet.transferScreen.amountSent')}
           </GSText>
           <GSText variant="h3" weight="bold">
             {transferService.formatCOP(result.summary.amountSent)}
           </GSText>
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View style={[styles.divider, { backgroundColor: theme.colors.gray300 }]} />
 
         <View style={styles.summaryRow}>
           <GSText variant="body" color="textSecondary">
-            Destinatario
+            {t('wallet.transferScreen.recipient')}
           </GSText>
-          <GSText variant="body" weight="medium">
+          <GSText variant="body" weight="semiBold">
             {recipientName}
           </GSText>
         </View>
@@ -75,15 +125,15 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
       {/* Transaction Details */}
       <View style={[styles.detailsCard, { backgroundColor: theme.colors.gray100 }]}>
         <View style={styles.detailRow}>
-          <Ionicons name="document-text-outline" size={16} color={theme.colors.textSecondary} />
+          <Ionicons name="key-outline" size={16} color={theme.colors.textSecondary} />
           <GSText variant="caption" color="textSecondary" style={{ marginLeft: 6 }}>
-            ID: {result.transferId.slice(0, 8)}...
+            {result.dynamicCode || `ID: ${result.transferId.slice(0, 8)}...`}
           </GSText>
         </View>
         <View style={styles.detailRow}>
           <Ionicons name="time-outline" size={16} color={theme.colors.textSecondary} />
           <GSText variant="caption" color="textSecondary" style={{ marginLeft: 6 }}>
-            {formatDate(result.timestamp || new Date().toISOString())}
+            {formatDateTime(result.executedAt || result.timestamp || new Date().toISOString())}
           </GSText>
         </View>
       </View>
@@ -96,7 +146,7 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
         >
           <Ionicons name="add" size={20} color={theme.colors.primary} />
           <GSText variant="body" weight="semiBold" style={{ color: theme.colors.primary, marginLeft: 8 }}>
-            Nueva Transferencia
+            {t('wallet.transferScreen.newTransfer')}
           </GSText>
         </TouchableOpacity>
 
@@ -106,7 +156,7 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
         >
           <Ionicons name="home-outline" size={20} color={theme.colors.white} />
           <GSText variant="body" weight="semiBold" color="white" style={{ marginLeft: 8 }}>
-            Volver a Wallet
+            {t('wallet.transferScreen.backToWallet')}
           </GSText>
         </TouchableOpacity>
       </View>
@@ -142,7 +192,30 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
+  },
+  dynamicCodeContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+    width: '100%',
+  },
+  dynamicCodeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    marginVertical: 8,
+  },
+  dynamicCodeText: {
+    letterSpacing: 4,
+    marginRight: 12,
+  },
+  hint: {
+    textAlign: 'center',
+    marginTop: 4,
   },
   summaryCard: {
     width: '100%',

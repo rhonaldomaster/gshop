@@ -173,7 +173,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
           {transaction.description}
         </GSText>
         <GSText variant="caption" color="textSecondary">
-          {new Date(transaction.createdAt).toLocaleDateString('es-CO', {
+          {new Date(transaction.executedAt || transaction.createdAt).toLocaleDateString('es-CO', {
             day: '2-digit',
             month: 'short',
             hour: '2-digit',
@@ -184,6 +184,16 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
           <GSText variant="caption" color="textSecondary">
             Order #{transaction.orderId.slice(0, 8)}
           </GSText>
+        )}
+        {/* Show dynamic code for P2P transfers */}
+        {(transaction.type === 'transfer_out' || transaction.type === 'transfer_in') &&
+          transaction.dynamicCode && (
+          <View style={styles.dynamicCodeBadge}>
+            <Ionicons name="key-outline" size={12} color={theme.colors.textSecondary} />
+            <GSText variant="caption" color="textSecondary" style={{ marginLeft: 4, fontFamily: 'monospace' }}>
+              {transaction.dynamicCode}
+            </GSText>
+          </View>
         )}
       </View>
 
@@ -879,6 +889,11 @@ const styles = StyleSheet.create({
   },
   transactionContent: {
     flex: 1,
+  },
+  dynamicCodeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
   },
   transactionAmount: {
     alignItems: 'flex-end',
