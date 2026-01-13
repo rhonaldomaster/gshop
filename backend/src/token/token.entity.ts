@@ -138,7 +138,7 @@ export class GshopTransaction {
   @Column({ nullable: true })
   paymentMethod: string;
 
-  @Column('varchar', { length: 10, nullable: true, unique: true })
+  @Column('varchar', { length: 10, nullable: true })
   dynamicCode: string;
 
   @Column({ type: 'timestamp', nullable: true })

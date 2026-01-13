@@ -4,22 +4,22 @@ export class AddDynamicCodeToTransactions1767300000000 implements MigrationInter
   name = 'AddDynamicCodeToTransactions1767300000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add dynamic_code column (unique, for transfer verification)
+    // Add dynamicCode column (unique, for transfer verification)
     await queryRunner.query(`
       ALTER TABLE "gshop_transactions"
-      ADD COLUMN "dynamic_code" VARCHAR(10) UNIQUE
+      ADD COLUMN "dynamicCode" VARCHAR(10) UNIQUE
     `);
 
-    // Add executed_at column (exact timestamp of execution)
+    // Add executedAt column (exact timestamp of execution)
     await queryRunner.query(`
       ALTER TABLE "gshop_transactions"
-      ADD COLUMN "executed_at" TIMESTAMP
+      ADD COLUMN "executedAt" TIMESTAMP
     `);
 
-    // Create index for fast lookups by dynamic_code
+    // Create index for fast lookups by dynamicCode
     await queryRunner.query(`
       CREATE INDEX "idx_transactions_dynamic_code"
-      ON "gshop_transactions"("dynamic_code")
+      ON "gshop_transactions"("dynamicCode")
     `);
 
     // Generate dynamic codes for existing transfer transactions
@@ -27,7 +27,7 @@ export class AddDynamicCodeToTransactions1767300000000 implements MigrationInter
     await queryRunner.query(`
       UPDATE "gshop_transactions"
       SET
-        "dynamic_code" = CONCAT('GS-',
+        "dynamicCode" = CONCAT('GS-',
           UPPER(
             TRANSLATE(
               SUBSTRING(MD5(RANDOM()::TEXT || id::TEXT), 1, 6),
@@ -36,15 +36,15 @@ export class AddDynamicCodeToTransactions1767300000000 implements MigrationInter
             )
           )
         ),
-        "executed_at" = "created_at"
+        "executedAt" = "createdAt"
       WHERE "type" IN ('transfer_out', 'transfer_in', 'platform_fee')
-        AND "dynamic_code" IS NULL
+        AND "dynamicCode" IS NULL
     `);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_transactions_dynamic_code"`);
-    await queryRunner.query(`ALTER TABLE "gshop_transactions" DROP COLUMN IF EXISTS "executed_at"`);
-    await queryRunner.query(`ALTER TABLE "gshop_transactions" DROP COLUMN IF EXISTS "dynamic_code"`);
+    await queryRunner.query(`ALTER TABLE "gshop_transactions" DROP COLUMN IF EXISTS "executedAt"`);
+    await queryRunner.query(`ALTER TABLE "gshop_transactions" DROP COLUMN IF EXISTS "dynamicCode"`);
   }
 }
