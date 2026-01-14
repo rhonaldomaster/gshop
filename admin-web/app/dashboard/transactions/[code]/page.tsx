@@ -18,7 +18,7 @@ import {
   DollarSign,
   Coins,
 } from 'lucide-react'
-import { apiClient, formatDate } from '@/lib/api-client'
+import { apiClient } from '@/lib/api-client'
 
 interface TransactionUser {
   id: string
@@ -35,19 +35,24 @@ interface LinkedTransaction {
   status: string
   description: string
   user: TransactionUser | null
-  createdAt: string
+  executedAt: string | null
+}
+
+interface SummaryUser {
+  name: string
+  email: string
 }
 
 interface TransactionVerification {
   dynamicCode: string
   verified: boolean
-  executedAt: string
-  sender: TransactionUser
-  receiver: TransactionUser
   summary: {
+    sender: SummaryUser
+    receiver: SummaryUser
     amountSent: number
     platformFee: number
     netReceived: number
+    executedAt: string
   }
   transactions: LinkedTransaction[]
 }
@@ -82,7 +87,7 @@ export default function TransactionDetailPage() {
     setError('')
     try {
       const data = await apiClient.get<TransactionVerification>(
-        `/tokens/verify-transaction/${code}`
+        `/tokens/admin/transactions/verify/${code}`
       )
       setVerification(data)
     } catch (err: any) {
@@ -93,8 +98,11 @@ export default function TransactionDetailPage() {
     }
   }
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('es-CO', {
+  const formatDateTime = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '-'
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return '-'
+    return date.toLocaleString('es-CO', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -249,10 +257,10 @@ export default function TransactionDetailPage() {
                 </div>
                 <div>
                   <div className="font-medium text-lg">
-                    {verification.sender.firstName} {verification.sender.lastName}
+                    {verification.summary.sender.name}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {verification.sender.email}
+                    {verification.summary.sender.email}
                   </div>
                 </div>
               </div>
@@ -272,10 +280,10 @@ export default function TransactionDetailPage() {
                 </div>
                 <div>
                   <div className="font-medium text-lg">
-                    {verification.receiver.firstName} {verification.receiver.lastName}
+                    {verification.summary.receiver.name}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {verification.receiver.email}
+                    {verification.summary.receiver.email}
                   </div>
                 </div>
               </div>
@@ -291,7 +299,7 @@ export default function TransactionDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xl font-medium">
-              {formatDateTime(verification.executedAt)}
+              {formatDateTime(verification.summary.executedAt)}
             </div>
           </CardContent>
         </Card>
@@ -340,7 +348,7 @@ export default function TransactionDetailPage() {
                       {formatCurrency(Math.abs(tx.amount))}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {formatDate(tx.createdAt)}
+                      {formatDateTime(tx.executedAt)}
                     </div>
                   </div>
                 </div>
