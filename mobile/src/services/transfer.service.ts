@@ -53,6 +53,8 @@ export interface TransferTransaction {
 export interface TransferExecuteResponse {
   success: boolean;
   transferId: string;
+  dynamicCode: string;      // Dynamic verification code (e.g., "GS-7K3M9P")
+  executedAt: string;       // Exact execution timestamp
   transactions: TransferTransaction[];
   summary: {
     amountSent: number;
@@ -60,6 +62,18 @@ export interface TransferExecuteResponse {
     recipientNetBalance: number;
   };
   timestamp: string;
+}
+
+// Transaction verification types
+export interface TransactionVerificationResponse {
+  dynamicCode: string;
+  verified: boolean;
+  transactions: {
+    type: string;
+    amount: number;
+    description: string;
+    executedAt: string;
+  }[];
 }
 
 class TransferService {
@@ -222,6 +236,30 @@ class TransferService {
       default:
         return 'Desconocido';
     }
+  }
+
+  // Verify transaction by dynamic code
+  async verifyTransactionByCode(code: string): Promise<TransactionVerificationResponse> {
+    try {
+      const normalizedCode = code.toUpperCase().trim();
+      const response = await apiClient.get<TransactionVerificationResponse>(
+        `/tokens/transactions/verify/${encodeURIComponent(normalizedCode)}`
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+      throw new Error('Transaction not found');
+    } catch (error: any) {
+      console.error('TransferService: Verify transaction failed', error);
+      throw new Error(error.message || 'No se pudo verificar la transaccion');
+    }
+  }
+
+  // Validate dynamic code format
+  isValidDynamicCodeFormat(code: string): boolean {
+    const pattern = /^GS-[A-Z2-9]{6}$/;
+    return pattern.test(code.toUpperCase().trim());
   }
 }
 

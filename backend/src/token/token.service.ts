@@ -41,6 +41,7 @@ import {
 } from './constants/transfer-limits';
 import { CurrencyService } from '../payments/currency.service';
 import Stripe from 'stripe';
+import { generateUniqueDynamicCode } from './utils/dynamic-code.generator';
 
 @Injectable()
 export class TokenService {
@@ -665,6 +666,10 @@ export class TokenService {
     // Generate unique transfer ID
     const transferId = `TRF_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
 
+    // Generate unique dynamic code for this transfer
+    const dynamicCode = await generateUniqueDynamicCode(this.transactionRepository);
+    const executedAt = new Date();
+
     // Calculate fee
     const platformFee = calculatePlatformFee(amount);
 
@@ -702,7 +707,9 @@ export class TokenService {
         description: `Transferencia a ${recipient.firstName} ${recipient.lastName}`,
         reference: transferId,
         toUserId,
-        metadata: { note, transferId }
+        dynamicCode,
+        executedAt,
+        metadata: { note, transferId, dynamicCode, executedAt: executedAt.toISOString() }
       });
       await queryRunner.manager.save(GshopTransaction, senderTx);
 
@@ -751,7 +758,9 @@ export class TokenService {
         description: `Recibiste de ${senderName}`,
         reference: transferId,
         fromUserId,
-        metadata: { note, transferId }
+        dynamicCode,
+        executedAt,
+        metadata: { note, transferId, dynamicCode, executedAt: executedAt.toISOString() }
       });
       await queryRunner.manager.save(GshopTransaction, recipientTx);
 
@@ -779,10 +788,14 @@ export class TokenService {
           fee: platformFee,
           description: 'Comision de servicio GSHOP',
           reference: transferId,
+          dynamicCode,
+          executedAt,
           metadata: {
             transferId,
             feeRate: PLATFORM_FEE_RATE,
-            originalAmount: amount
+            originalAmount: amount,
+            relatedTransferCode: dynamicCode,
+            executedAt: executedAt.toISOString()
           }
         });
         await queryRunner.manager.save(GshopTransaction, feeTx);
@@ -809,6 +822,8 @@ export class TokenService {
       return {
         success: true,
         transferId,
+        dynamicCode,
+        executedAt: executedAt.toISOString(),
         transactions,
         summary: {
           amountSent: amount,
@@ -1257,6 +1272,8 @@ export class TokenService {
         fee: Number(tx.fee) || 0,
         reference: tx.reference || '',
         description: tx.description || '',
+        dynamicCode: tx.dynamicCode || undefined,
+        executedAt: tx.executedAt || undefined,
         createdAt: tx.createdAt,
         processedAt: tx.processedAt,
         user: tx.user ? {
@@ -1414,6 +1431,8 @@ export class TokenService {
       fee: Number(tx.fee) || 0,
       reference: tx.reference || '',
       description: tx.description || '',
+      dynamicCode: tx.dynamicCode || undefined,
+      executedAt: tx.executedAt || undefined,
       createdAt: tx.createdAt,
       processedAt: tx.processedAt,
       user: tx.user ? {
@@ -1435,6 +1454,121 @@ export class TokenService {
         email: toUser.email
       } : undefined,
       metadata: tx.metadata
+    };
+  }
+
+  // ==========================================
+  // Transaction Verification by Dynamic Code
+  // ==========================================
+
+  /**
+   * Verify a transaction by dynamic code (User endpoint)
+   * User must be part of the transaction to view it
+   */
+  async verifyTransactionByCode(code: string, userId: string) {
+    const transactions = await this.transactionRepository.find({
+      where: { dynamicCode: code },
+      relations: ['user'],
+      order: { createdAt: 'ASC' }
+    });
+
+    if (transactions.length === 0) {
+      throw new NotFoundException('Transaccion no encontrada con ese codigo');
+    }
+
+    // Verify user is part of the transaction
+    const userInvolved = transactions.some(
+      tx => tx.userId === userId || tx.fromUserId === userId || tx.toUserId === userId
+    );
+
+    if (!userInvolved) {
+      throw new ForbiddenException('No tienes acceso a esta transaccion');
+    }
+
+    return {
+      dynamicCode: code,
+      verified: true,
+      transactions: transactions.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        status: tx.status,
+        amount: Number(tx.amount),
+        fee: Number(tx.fee) || 0,
+        description: tx.description || '',
+        executedAt: tx.executedAt,
+        user: tx.user ? {
+          id: tx.user.id,
+          firstName: tx.user.firstName,
+          lastName: tx.user.lastName,
+          email: tx.user.email
+        } : null
+      }))
+    };
+  }
+
+  /**
+   * Verify a transaction by dynamic code (Admin endpoint)
+   * Shows full details including sender/receiver summary
+   */
+  async adminVerifyTransactionByCode(code: string) {
+    const transactions = await this.transactionRepository.find({
+      where: { dynamicCode: code },
+      relations: ['user'],
+      order: { createdAt: 'ASC' }
+    });
+
+    if (transactions.length === 0) {
+      throw new NotFoundException('Transaccion no encontrada con ese codigo');
+    }
+
+    // Find sender and receiver transactions
+    const transferOut = transactions.find(tx => tx.type === TokenTransactionType.TRANSFER_OUT);
+    const transferIn = transactions.find(tx => tx.type === TokenTransactionType.TRANSFER_IN);
+    const platformFee = transactions.find(tx => tx.type === TokenTransactionType.PLATFORM_FEE);
+
+    // Load sender and receiver users
+    let sender = null;
+    let receiver = null;
+
+    if (transferOut?.userId) {
+      sender = await this.userRepository.findOne({ where: { id: transferOut.userId } });
+    }
+    if (transferIn?.userId) {
+      receiver = await this.userRepository.findOne({ where: { id: transferIn.userId } });
+    }
+
+    return {
+      dynamicCode: code,
+      verified: true,
+      transactions: transactions.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        status: tx.status,
+        amount: Number(tx.amount),
+        fee: Number(tx.fee) || 0,
+        description: tx.description || '',
+        executedAt: tx.executedAt,
+        user: tx.user ? {
+          id: tx.user.id,
+          firstName: tx.user.firstName,
+          lastName: tx.user.lastName,
+          email: tx.user.email
+        } : null
+      })),
+      summary: {
+        sender: sender ? {
+          name: `${sender.firstName} ${sender.lastName}`,
+          email: sender.email
+        } : { name: 'Desconocido', email: '' },
+        receiver: receiver ? {
+          name: `${receiver.firstName} ${receiver.lastName}`,
+          email: receiver.email
+        } : { name: 'Desconocido', email: '' },
+        amountSent: Math.abs(Number(transferOut?.amount) || 0),
+        platformFee: Math.abs(Number(platformFee?.amount) || 0),
+        netReceived: Number(transferIn?.amount || 0) - Math.abs(Number(platformFee?.amount) || 0),
+        executedAt: transferOut?.executedAt?.toISOString() || ''
+      }
     };
   }
 }

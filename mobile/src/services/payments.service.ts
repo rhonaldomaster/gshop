@@ -103,6 +103,8 @@ export interface TokenTransaction {
   createdAt: string;
   status: 'pending' | 'completed' | 'failed';
   orderId?: string;
+  dynamicCode?: string;   // Dynamic verification code for P2P transfers (e.g., "GS-7K3M9P")
+  executedAt?: string;    // Exact execution timestamp
 }
 
 export interface TopupRequest {

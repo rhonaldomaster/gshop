@@ -36,7 +36,10 @@ import {
   DollarSign,
   ChevronLeft,
   ChevronRight,
+  Key,
+  Eye,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { apiClient, formatDate } from '@/lib/api-client'
 
 interface Transaction {
@@ -49,6 +52,8 @@ interface Transaction {
   description: string
   createdAt: string
   processedAt: string
+  dynamicCode: string | null
+  executedAt: string | null
   user: {
     id: string
     firstName: string
@@ -104,6 +109,7 @@ const formatCurrency = (amount: number): string => {
 
 export default function TransactionsPage() {
   const t = useTranslations('transactions')
+  const router = useRouter()
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [stats, setStats] = useState<TransactionStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -111,6 +117,7 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [codeSearch, setCodeSearch] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -159,6 +166,18 @@ export default function TransactionsPage() {
   const handleSearch = () => {
     setPage(1)
     fetchData()
+  }
+
+  const handleCodeSearch = () => {
+    const code = codeSearch.toUpperCase().trim()
+    if (code.startsWith('GS-') && code.length === 9) {
+      router.push(`/dashboard/transactions/${code}`)
+    }
+  }
+
+  const isValidCodeFormat = (code: string) => {
+    const pattern = /^GS-[A-Z2-9]{6}$/
+    return pattern.test(code.toUpperCase().trim())
   }
 
   const getTypeBadge = (type: string) => {
@@ -336,6 +355,29 @@ export default function TransactionsPage() {
           </div>
         )}
 
+        {/* Code Search */}
+        <div className="flex gap-2">
+          <div className="relative">
+            <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('dynamicCode.searchPlaceholder')}
+              value={codeSearch}
+              onChange={(e) => setCodeSearch(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === 'Enter' && handleCodeSearch()}
+              className="pl-10 w-[220px] font-mono"
+              maxLength={9}
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleCodeSearch}
+            disabled={!isValidCodeFormat(codeSearch)}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            {t('dynamicCode.verify')}
+          </Button>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-wrap gap-4">
           <div className="flex-1 min-w-[200px]">
@@ -411,6 +453,7 @@ export default function TransactionsPage() {
                       <TableHead>{t('table.user')}</TableHead>
                       <TableHead>{t('table.description')}</TableHead>
                       <TableHead className="text-right">{t('table.amount')}</TableHead>
+                      <TableHead>{t('table.dynamicCode')}</TableHead>
                       <TableHead>{t('table.status')}</TableHead>
                       <TableHead>{t('table.date')}</TableHead>
                     </TableRow>
@@ -456,6 +499,21 @@ export default function TransactionsPage() {
                             <div className="text-xs text-muted-foreground">
                               Fee: {formatCurrency(tx.fee)}
                             </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {tx.dynamicCode ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="font-mono text-primary hover:bg-primary/10"
+                              onClick={() => router.push(`/dashboard/transactions/${tx.dynamicCode}`)}
+                            >
+                              <Key className="mr-1 h-3 w-3" />
+                              {tx.dynamicCode}
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
                         <TableCell>

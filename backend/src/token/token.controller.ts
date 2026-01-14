@@ -9,6 +9,7 @@ import {
   UseGuards,
   Request,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { TokenService } from './token.service';
 import {
@@ -23,10 +24,13 @@ import {
   TransferPreviewDto,
   ExecuteTransferDto,
   CreateStripeTopupDto,
-  AdminTransactionFilterDto
+  AdminTransactionFilterDto,
+  TransactionVerificationResponseDto,
+  AdminTransactionVerificationResponseDto
 } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TokenTransactionStatus } from './token.entity';
+import { normalizeDynamicCode, isValidDynamicCodeFormat } from './utils/dynamic-code.generator';
 
 @Controller('tokens')
 export class TokenController {
@@ -133,6 +137,28 @@ export class TokenController {
       dto.amount,
       dto.note
     );
+  }
+
+  /**
+   * Verify a transfer by dynamic code (User endpoint)
+   * User must be part of the transaction (sender or receiver)
+   *
+   * GET /tokens/transactions/verify/:code
+   * Response: { dynamicCode, verified, transactions }
+   */
+  @Get('transactions/verify/:code')
+  @UseGuards(JwtAuthGuard)
+  async verifyTransactionByCode(
+    @Param('code') code: string,
+    @Request() req
+  ): Promise<TransactionVerificationResponseDto> {
+    const normalizedCode = normalizeDynamicCode(code);
+
+    if (!isValidDynamicCodeFormat(normalizedCode)) {
+      throw new NotFoundException('Formato de codigo invalido. Use el formato GS-XXXXXX');
+    }
+
+    return this.tokenService.verifyTransactionByCode(normalizedCode, req.user.id);
   }
 
   // Rewards (Admin/System endpoints)
@@ -316,5 +342,26 @@ export class TokenController {
       throw new NotFoundException('Transaccion no encontrada');
     }
     return transaction;
+  }
+
+  /**
+   * Verify a transfer by dynamic code (Admin endpoint)
+   * Shows full details including sender/receiver info and summary
+   *
+   * GET /tokens/admin/transactions/verify/:code
+   * Response: { dynamicCode, verified, transactions, summary }
+   */
+  @Get('admin/transactions/verify/:code')
+  @UseGuards(JwtAuthGuard)
+  async adminVerifyTransactionByCode(
+    @Param('code') code: string
+  ): Promise<AdminTransactionVerificationResponseDto> {
+    const normalizedCode = normalizeDynamicCode(code);
+
+    if (!isValidDynamicCodeFormat(normalizedCode)) {
+      throw new NotFoundException('Formato de codigo invalido. Use el formato GS-XXXXXX');
+    }
+
+    return this.tokenService.adminVerifyTransactionByCode(normalizedCode);
   }
 }

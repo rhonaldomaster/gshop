@@ -1262,6 +1262,11 @@
       "preview": "Resumen de Transferencia",
       "success": "Transferencia Exitosa!",
       "successMessage": "Tu dinero ha sido enviado correctamente",
+      "dynamicCode": {
+        "label": "Clave de Transaccion",
+        "copyHint": "Toca para copiar - Guarda este codigo como comprobante",
+        "copied": "Codigo copiado!"
+      },
       "youSend": "Tu envias",
       "recipientReceives": "recibe",
       "platformFee": "Comision GSHOP",
@@ -1278,6 +1283,7 @@
       "newTransfer": "Nueva Transferencia",
       "backToWallet": "Volver a Wallet",
       "amountSent": "Monto enviado",
+      "recipient": "Destinatario",
       "recipientReceived": "recibio",
       "yourBalance": "Tu saldo",
       "dailyLimitRemaining": "Limite diario disponible",

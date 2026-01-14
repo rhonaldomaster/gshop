@@ -1150,7 +1150,8 @@
       "description": "Descripción",
       "amount": "Monto",
       "status": "Estado",
-      "date": "Fecha"
+      "date": "Fecha",
+      "dynamicCode": "Codigo"
     },
     "empty": {
       "noTransactions": "No hay transacciones",
@@ -1164,6 +1165,25 @@
       "page": "Página {current} de {total}",
       "previous": "Anterior",
       "next": "Siguiente"
+    },
+    "dynamicCode": {
+      "searchPlaceholder": "Buscar por codigo (GS-XXXXXX)",
+      "verify": "Verificar",
+      "viewDetails": "Ver detalles"
+    },
+    "detail": {
+      "title": "Detalle de Transferencia",
+      "verified": "Verificado",
+      "sender": "Emisor (Quien envio)",
+      "receiver": "Receptor (Quien recibio)",
+      "executedAt": "Fecha y hora de ejecucion",
+      "linkedTransactions": "Transacciones vinculadas",
+      "notFound": "Codigo no encontrado",
+      "notFoundDescription": "No existe ninguna transaccion con el codigo",
+      "amountSent": "Monto enviado",
+      "platformFee": "Comision plataforma",
+      "netReceived": "Neto recibido",
+      "back": "Volver a transacciones"
     }
   }
 }
