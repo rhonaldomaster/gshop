@@ -1,5 +1,6 @@
 
 import { ConfigService } from '@nestjs/config';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Product } from './entities/product.entity';
@@ -63,7 +64,7 @@ import {
 import { UserVerification } from '../token/entities/user-verification.entity';
 import { TransferLimit } from '../token/entities/transfer-limit.entity';
 
-export const typeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
+export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
   port: configService.get('DB_PORT', 5432),
@@ -101,5 +102,11 @@ export const typeOrmConfig = (configService: ConfigService): DataSourceOptions =
   ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+// Separate config for TypeORM CLI (migrations)
+export const dataSourceConfig = (configService: ConfigService): DataSourceOptions => ({
+  ...typeOrmConfig(configService),
+  type: 'postgres',
+} as DataSourceOptions);
+
 const configService = new ConfigService();
-export default new DataSource(typeOrmConfig(configService));
+export default new DataSource(dataSourceConfig(configService));

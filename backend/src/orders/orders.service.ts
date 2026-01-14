@@ -1,6 +1,6 @@
 
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Order, OrderStatus } from '../database/entities/order.entity';
 import { OrderItem } from '../database/entities/order-item.entity';
@@ -28,6 +28,7 @@ export class OrdersService {
     private liveStreamRepository: Repository<LiveStream>,
     @InjectRepository(Affiliate)
     private affiliateRepository: Repository<Affiliate>,
+    @InjectDataSource()
     private dataSource: DataSource,
     private platformConfigService: PlatformConfigService,
     private eventEmitter: EventEmitter2,

@@ -34,6 +34,7 @@ export const API_CONFIG = {
       LOGOUT: '/auth/logout',
       REFRESH: '/auth/refresh',
       PROFILE: '/auth/profile',
+      SOCIAL: '/auth/social',
     },
 
     // Products

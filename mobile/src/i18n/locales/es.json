@@ -63,7 +63,10 @@
     "loginRequired": "Inicio de sesión requerido",
     "loginToAddWishlist": "Por favor inicia sesión para agregar artículos a tu lista de deseos",
     "loginToAddCart": "Por favor inicia sesión para agregar artículos a tu carrito",
-    "loginToPurchase": "Por favor inicia sesión para realizar una compra"
+    "loginToPurchase": "Por favor inicia sesión para realizar una compra",
+    "socialLoginError": "Error de inicio de sesión",
+    "socialLoginErrorMessage": "No se pudo completar el inicio de sesión. Por favor intenta nuevamente.",
+    "socialLoginCancelled": "Inicio de sesión cancelado"
   },
   "welcome": {
     "tagline": "Tu experiencia de compra social",

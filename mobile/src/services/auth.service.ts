@@ -45,6 +45,12 @@ export interface UpdateProfileRequest {
   bio?: string;
 }
 
+export interface SocialLoginRequest {
+  accessToken: string;
+  provider: 'google' | 'facebook';
+  idToken?: string;
+}
+
 class AuthService {
   // Login with email and password
   async login(credentials: LoginRequest): Promise<AuthResponse> {
@@ -66,6 +72,27 @@ class AuthService {
     } catch (error: any) {
       console.error('AuthService: Login failed', error);
       throw new Error(error.message || 'Login failed. Please check your credentials.');
+    }
+  }
+
+  // Social login (Google/Facebook)
+  async socialLogin(socialData: SocialLoginRequest): Promise<AuthResponse> {
+    try {
+      const response = await apiClient.post<AuthResponse>(
+        API_CONFIG.ENDPOINTS.AUTH.SOCIAL,
+        socialData,
+      );
+
+      if (response.success && response.data) {
+        await this.storeAuthData(response.data);
+        await apiClient.setAuthToken(response.data.access_token);
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Social login failed');
+      }
+    } catch (error: any) {
+      console.error('AuthService: Social login failed', error);
+      throw new Error(error.message || 'Social login failed. Please try again.');
     }
   }
 

@@ -11,6 +11,8 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SocialLoginDto, SocialProvider, SocialUserData } from './dto/social-login.dto';
+import { SocialAuthService } from './services/social-auth.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +24,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private readonly i18n: I18nService,
+    private socialAuthService: SocialAuthService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -203,5 +206,115 @@ export class AuthService {
     const { password, ...userWithoutPassword } = updatedUser;
 
     return userWithoutPassword;
+  }
+
+  async socialLogin(socialLoginDto: SocialLoginDto) {
+    // 1. Validate token with provider
+    const socialUserData = await this.socialAuthService.validateSocialToken(
+      socialLoginDto.accessToken,
+      socialLoginDto.provider,
+    );
+
+    // 2. Check if user exists by social ID
+    let user = await this.findUserBySocialId(
+      socialUserData.id,
+      socialLoginDto.provider,
+    );
+
+    if (user) {
+      // User found by social ID - login directly
+      await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+      return this.generateAuthResponse(user);
+    }
+
+    // 3. Check if user exists by email
+    user = await this.findUserByEmail(socialUserData.email);
+
+    if (user) {
+      // User exists with same email - link social account automatically
+      await this.linkSocialAccount(user.id, socialUserData, socialLoginDto.provider);
+      user = await this.findUserById(user.id);
+      await this.userRepository.update(user.id, { lastLoginAt: new Date() });
+      return this.generateAuthResponse(user);
+    }
+
+    // 4. Create new user with social data
+    user = await this.createSocialUser(socialUserData, socialLoginDto.provider);
+    return this.generateAuthResponse(user);
+  }
+
+  private async findUserBySocialId(
+    socialId: string,
+    provider: SocialProvider,
+  ): Promise<User | null> {
+    const field = provider === SocialProvider.GOOGLE ? 'googleId' : 'facebookId';
+    return this.userRepository.findOne({
+      where: { [field]: socialId },
+    });
+  }
+
+  private async linkSocialAccount(
+    userId: string,
+    socialData: SocialUserData,
+    provider: SocialProvider,
+  ): Promise<void> {
+    const updateData: Partial<User> = {
+      socialProvider: provider,
+      socialAvatarUrl: socialData.avatar,
+    };
+
+    if (provider === SocialProvider.GOOGLE) {
+      updateData.googleId = socialData.id;
+    } else {
+      updateData.facebookId = socialData.id;
+    }
+
+    // Update avatar if user doesn't have one
+    const user = await this.findUserById(userId);
+    if (!user.avatar && socialData.avatar) {
+      updateData.avatar = socialData.avatar;
+    }
+
+    await this.userRepository.update(userId, updateData);
+  }
+
+  private async createSocialUser(
+    socialData: SocialUserData,
+    provider: SocialProvider,
+  ): Promise<User> {
+    const socialIdField =
+      provider === SocialProvider.GOOGLE ? 'googleId' : 'facebookId';
+
+    const user = this.userRepository.create({
+      email: socialData.email.toLowerCase(),
+      firstName: socialData.firstName,
+      lastName: socialData.lastName,
+      avatar: socialData.avatar,
+      socialAvatarUrl: socialData.avatar,
+      socialProvider: provider,
+      isSocialAccount: true,
+      emailVerified: true,
+      password: '',
+      role: UserRole.BUYER,
+      [socialIdField]: socialData.id,
+    });
+
+    return this.userRepository.save(user);
+  }
+
+  private generateAuthResponse(user: User) {
+    const { password, ...userWithoutPassword } = user;
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return {
+      user: userWithoutPassword,
+      access_token: this.jwtService.sign(payload),
+      token_type: 'Bearer',
+      expires_in: '7d',
+    };
   }
 }

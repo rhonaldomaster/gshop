@@ -86,6 +86,26 @@ export class User {
 
   @ApiProperty()
   @Column({ nullable: true })
+  googleId: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  facebookId: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  socialProvider: string;
+
+  @ApiProperty()
+  @Column({ nullable: true })
+  socialAvatarUrl: string;
+
+  @ApiProperty()
+  @Column({ default: false })
+  isSocialAccount: boolean;
+
+  @ApiProperty()
+  @Column({ nullable: true })
   lastLoginAt: Date;
 
   @ApiProperty()

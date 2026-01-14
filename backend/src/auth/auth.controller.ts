@@ -17,6 +17,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { StorageService } from '../common/storage/storage.service';
 
@@ -42,6 +43,15 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('social')
+  @ApiOperation({ summary: 'Login or register with social provider (Google/Facebook)' })
+  @ApiResponse({ status: 200, description: 'Social login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid social token' })
+  @ApiResponse({ status: 400, description: 'Email not provided by social provider' })
+  async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
+    return this.authService.socialLogin(socialLoginDto);
   }
 
   @Get('profile')

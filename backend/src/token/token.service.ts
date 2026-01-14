@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, ILike } from 'typeorm';
 import {
   GshopWallet,
@@ -65,6 +65,7 @@ export class TokenService {
     private transferLimitRepository: Repository<TransferLimit>,
     @InjectRepository(UserVerification)
     private userVerificationRepository: Repository<UserVerification>,
+    @InjectDataSource()
     private dataSource: DataSource,
     private currencyService: CurrencyService,
   ) {

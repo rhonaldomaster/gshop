@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Invoice, InvoiceType, InvoiceStatus } from '../database/entities/invoice.entity';
 import { Order } from '../database/entities/order.entity';
 import { ConfigService } from '../config/config.service';
@@ -16,7 +16,6 @@ export class InvoicingService {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly configService: ConfigService,
-    private readonly dataSource: DataSource,
   ) {}
 
   /**
