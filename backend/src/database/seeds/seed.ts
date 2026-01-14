@@ -2,7 +2,7 @@
 import { DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
-import { typeOrmConfig } from '../typeorm.config';
+import { dataSourceConfig } from '../typeorm.config';
 import { User, UserRole, UserStatus } from '../entities/user.entity';
 import { Category } from '../entities/category.entity';
 import { Product, ProductStatus } from '../entities/product.entity';
@@ -11,7 +11,7 @@ import { Seller, SellerType, DocumentType, VerificationStatus } from '../../sell
 
 async function seed() {
   const configService = new ConfigService();
-  const dataSource = new DataSource(typeOrmConfig(configService));
+  const dataSource = new DataSource(dataSourceConfig(configService));
 
   try {
     await dataSource.initialize();

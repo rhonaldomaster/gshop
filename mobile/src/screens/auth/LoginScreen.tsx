@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useSocialAuth } from '../../hooks/useSocialAuth';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
@@ -24,7 +27,7 @@ type LoginNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'
 export default function LoginScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation<LoginNavigationProp>();
-  const { login } = useAuth();
+  const { login, socialLogin } = useAuth();
   const { theme } = useTheme();
 
   const [formData, setFormData] = useState({
@@ -33,6 +36,28 @@ export default function LoginScreen() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleSocialSuccess = async (response: any) => {
+    // Social login handled in useSocialAuth hook via authService
+  };
+
+  const handleSocialError = (error: Error) => {
+    Alert.alert(
+      t('auth.socialLoginError'),
+      error.message || t('auth.socialLoginErrorMessage'),
+    );
+  };
+
+  const {
+    loginWithGoogle,
+    loginWithFacebook,
+    isLoading: isSocialLoading,
+    error: socialError,
+    isGoogleEnabled,
+    isFacebookEnabled,
+  } = useSocialAuth(handleSocialSuccess, handleSocialError);
+
+  const hasSocialLogin = isGoogleEnabled || isFacebookEnabled;
 
   const handleLogin = async () => {
     if (!formData.email || !formData.password) {
@@ -125,30 +150,58 @@ export default function LoginScreen() {
               style={styles.signInButton}
             />
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <GSText variant="caption" color="#6B7280" style={styles.dividerText}>
-                {t('auth.continueWith')}
-              </GSText>
-              <View style={styles.dividerLine} />
-            </View>
+            {/* Social Login Section - Only show if at least one provider is configured */}
+            {hasSocialLogin && (
+              <>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <GSText variant="caption" color="#6B7280" style={styles.dividerText}>
+                    {t('auth.continueWith')}
+                  </GSText>
+                  <View style={styles.dividerLine} />
+                </View>
 
-            {/* Social Login Buttons */}
-            <View style={styles.socialButtons}>
-              <TouchableOpacity style={styles.socialButton}>
-                <GSText variant="body">🔵</GSText>
-                <GSText variant="body" weight="semiBold">
-                  {t('auth.facebook')}
-                </GSText>
-              </TouchableOpacity>
+                <View style={styles.socialButtons}>
+                  {isFacebookEnabled && (
+                    <TouchableOpacity
+                      style={[styles.socialButton, styles.facebookButton]}
+                      onPress={loginWithFacebook}
+                      disabled={isSocialLoading}
+                    >
+                      {isSocialLoading ? (
+                        <ActivityIndicator size="small" color="#1877F2" />
+                      ) : (
+                        <>
+                          <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+                          <GSText variant="body" weight="semiBold">
+                            {t('auth.facebook')}
+                          </GSText>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
 
-              <TouchableOpacity style={styles.socialButton}>
-                <GSText variant="body">🔴</GSText>
-                <GSText variant="body" weight="semiBold">
-                  {t('auth.google')}
-                </GSText>
-              </TouchableOpacity>
-            </View>
+                  {isGoogleEnabled && (
+                    <TouchableOpacity
+                      style={[styles.socialButton, styles.googleButton]}
+                      onPress={loginWithGoogle}
+                      disabled={isSocialLoading}
+                    >
+                      {isSocialLoading ? (
+                        <ActivityIndicator size="small" color="#DB4437" />
+                      ) : (
+                        <>
+                          <Ionicons name="logo-google" size={20} color="#DB4437" />
+                          <GSText variant="body" weight="semiBold">
+                            {t('auth.google')}
+                          </GSText>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
           </View>
         </ScrollView>
 
@@ -252,6 +305,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
     gap: 8,
+  },
+  facebookButton: {
+    borderColor: '#1877F2',
+    backgroundColor: '#E7F3FF',
+  },
+  googleButton: {
+    borderColor: '#DB4437',
+    backgroundColor: '#FEEAE9',
   },
   footer: {
     padding: 20,

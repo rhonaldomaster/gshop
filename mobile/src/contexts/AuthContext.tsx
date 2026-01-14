@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authService, User, LoginRequest, RegisterRequest } from '../services/auth.service';
+import { authService, User, LoginRequest, RegisterRequest, SocialLoginRequest } from '../services/auth.service';
 import { API_CONFIG } from '../config/api.config';
 
 interface AuthState {
@@ -14,6 +14,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
+  socialLogin: (socialData: SocialLoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<User>;
 }
@@ -155,6 +156,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const socialLogin = async (socialData: SocialLoginRequest) => {
+    dispatch({ type: 'LOGIN_START' });
+
+    try {
+      const authResponse = await authService.socialLogin(socialData);
+
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          user: authResponse.user,
+          token: authResponse.access_token,
+        },
+      });
+    } catch (error: any) {
+      console.error('Social login error:', error);
+      dispatch({ type: 'LOGIN_FAILURE' });
+      throw new Error(error.message || 'Social login failed');
+    }
+  };
+
   const logout = async () => {
     try {
       await authService.logout();
@@ -180,11 +201,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider 
+    <AuthContext.Provider
       value={{
         ...state,
         login,
         register,
+        socialLogin,
         logout,
         updateProfile,
       }}

@@ -5,8 +5,10 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
+import { HttpModule } from '@nestjs/axios';
 import { memoryStorage } from 'multer';
 import { AuthService } from './auth.service';
+import { SocialAuthService } from './services/social-auth.service';
 import { AuthController } from './auth.controller';
 import { AuthSellerController } from './auth-seller.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -24,6 +26,7 @@ import { StorageModule } from '../common/storage/storage.module';
     SellersModule,
     StorageModule,
     PassportModule,
+    HttpModule,
     MulterModule.register({
       storage: memoryStorage(),
       limits: {
@@ -42,7 +45,7 @@ import { StorageModule } from '../common/storage/storage.module';
     }),
   ],
   controllers: [AuthController, AuthSellerController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, SocialAuthService, LocalStrategy, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

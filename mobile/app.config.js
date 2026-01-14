@@ -120,6 +120,11 @@ export default ({ config }) => {
       DEBUG_MODE: process.env.DEBUG_MODE === 'true',
       ENABLE_DEV_MENU: process.env.ENABLE_DEV_MENU === 'true',
       LOG_LEVEL: process.env.LOG_LEVEL || 'debug',
+      // OAuth Social Login
+      GOOGLE_WEB_CLIENT_ID: process.env.GOOGLE_WEB_CLIENT_ID || '',
+      GOOGLE_IOS_CLIENT_ID: process.env.GOOGLE_IOS_CLIENT_ID || '',
+      GOOGLE_ANDROID_CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
+      FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID || '',
     },
   };
 };
