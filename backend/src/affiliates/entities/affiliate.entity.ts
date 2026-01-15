@@ -17,10 +17,14 @@ export class Affiliate {
   @PrimaryGeneratedColumn('uuid')
   id: string
 
+  // Link to existing user (optional - for users who convert to affiliates)
+  @Column({ nullable: true })
+  userId: string
+
   @Column({ unique: true })
   email: string
 
-  @Column()
+  @Column({ nullable: true })
   passwordHash: string
 
   @Column()

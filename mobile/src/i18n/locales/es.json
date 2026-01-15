@@ -942,6 +942,9 @@
     "registration": {
       "title": "Aplicar como Afiliado",
       "subtitle": "Únete al programa de afiliados de GSHOP y comienza a ganar comisiones",
+      "subtitleAuthenticated": "Completa tu perfil de afiliado para comenzar a ganar comisiones",
+      "loggedInAs": "Conectado como {{email}}",
+      "submitAuthenticated": "Activar cuenta de afiliado",
       "personalInfo": "Información Personal",
       "socialMedia": "Redes Sociales",
       "security": "Seguridad",

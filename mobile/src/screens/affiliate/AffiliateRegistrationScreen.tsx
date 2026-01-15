@@ -28,6 +28,9 @@ export const AffiliateRegistrationScreen = () => {
   const { login, user } = useAuth();
   const { t } = useTranslation('translation');
 
+  // Check if user is authenticated (simplified flow without password)
+  const isAuthenticated = !!user;
+
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -43,6 +46,9 @@ export const AffiliateRegistrationScreen = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Pre-fill form with user data if authenticated
   useEffect(() => {
@@ -62,34 +68,35 @@ export const AffiliateRegistrationScreen = () => {
       }));
     }
   }, [user]);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Required fields
-    if (!formData.name.trim()) {
-      newErrors.name = t('affiliate.registration.nameRequired');
-    }
+    // Username is always required
     if (!formData.username.trim()) {
       newErrors.username = t('affiliate.registration.usernameRequired');
     } else if (formData.username.length < 3) {
       newErrors.username = t('affiliate.registration.usernameMinLength');
     }
-    if (!formData.email.trim()) {
-      newErrors.email = t('affiliate.registration.emailRequired');
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t('affiliate.registration.emailInvalid');
-    }
-    if (!formData.password) {
-      newErrors.password = t('affiliate.registration.passwordRequired');
-    } else if (formData.password.length < 8) {
-      newErrors.password = t('affiliate.registration.passwordMinLength');
-    }
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = t('affiliate.registration.passwordMismatch');
+
+    // For unauthenticated users, require additional fields
+    if (!isAuthenticated) {
+      if (!formData.name.trim()) {
+        newErrors.name = t('affiliate.registration.nameRequired');
+      }
+      if (!formData.email.trim()) {
+        newErrors.email = t('affiliate.registration.emailRequired');
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = t('affiliate.registration.emailInvalid');
+      }
+      if (!formData.password) {
+        newErrors.password = t('affiliate.registration.passwordRequired');
+      } else if (formData.password.length < 8) {
+        newErrors.password = t('affiliate.registration.passwordMinLength');
+      }
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = t('affiliate.registration.passwordMismatch');
+      }
     }
 
     setErrors(newErrors);
@@ -107,26 +114,21 @@ export const AffiliateRegistrationScreen = () => {
 
     setIsLoading(true);
     try {
-      const response = await affiliatesService.registerAffiliate({
-        name: formData.name,
-        username: formData.username,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone || undefined,
-        documentType: formData.documentType,
-        documentNumber: formData.documentNumber || undefined,
-        bio: formData.bio || undefined,
-        website: formData.website || undefined,
-        socialMedia: formData.socialMedia || undefined,
-      });
-
-      // Auto-login with returned token
-      if (response.access_token) {
-        await login(formData.email, formData.password);
+      if (isAuthenticated) {
+        // Authenticated user - use convert endpoint (no password needed)
+        const response = await affiliatesService.convertToAffiliate({
+          username: formData.username,
+          phone: formData.phone || undefined,
+          documentType: formData.documentType,
+          documentNumber: formData.documentNumber || undefined,
+          bio: formData.bio || undefined,
+          website: formData.website || undefined,
+          socialMedia: formData.socialMedia || undefined,
+        });
 
         Alert.alert(
           t('common.success'),
-          t('affiliate.registration.successMessage'),
+          response.message || t('affiliate.registration.successMessage'),
           [
             {
               text: t('common.ok'),
@@ -134,6 +136,36 @@ export const AffiliateRegistrationScreen = () => {
             },
           ]
         );
+      } else {
+        // Unauthenticated user - use register endpoint (creates new account)
+        const response = await affiliatesService.registerAffiliate({
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || undefined,
+          documentType: formData.documentType,
+          documentNumber: formData.documentNumber || undefined,
+          bio: formData.bio || undefined,
+          website: formData.website || undefined,
+          socialMedia: formData.socialMedia || undefined,
+        });
+
+        // Auto-login with returned token
+        if (response.access_token) {
+          await login(formData.email, formData.password);
+
+          Alert.alert(
+            t('common.success'),
+            t('affiliate.registration.successMessage'),
+            [
+              {
+                text: t('common.ok'),
+                onPress: () => navigation.goBack(),
+              },
+            ]
+          );
+        }
       }
     } catch (error: any) {
       console.error('Error registering affiliate:', error);
@@ -174,9 +206,21 @@ export const AffiliateRegistrationScreen = () => {
               {t('affiliate.registration.title')}
             </GSText>
             <GSText variant="body" color="textSecondary" style={styles.subtitle}>
-              {t('affiliate.registration.subtitle')}
+              {isAuthenticated
+                ? t('affiliate.registration.subtitleAuthenticated')
+                : t('affiliate.registration.subtitle')}
             </GSText>
           </View>
+
+          {/* Authenticated user info banner */}
+          {isAuthenticated && (
+            <View style={[styles.userBanner, { backgroundColor: theme.colors.success + '20' }]}>
+              <Ionicons name="checkmark-circle" size={20} color={theme.colors.success} />
+              <GSText variant="body" style={styles.userBannerText}>
+                {t('affiliate.registration.loggedInAs', { email: user?.email })}
+              </GSText>
+            </View>
+          )}
 
           {/* Form */}
           <View style={styles.form}>
@@ -185,14 +229,17 @@ export const AffiliateRegistrationScreen = () => {
               {t('affiliate.registration.personalInfo')}
             </GSText>
 
-            <GSInput
-              label={t('affiliate.registration.fullName')}
-              placeholder={t('affiliate.registration.fullNamePlaceholder')}
-              value={formData.name}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-              error={errors.name}
-              leftIcon={<Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} />}
-            />
+            {/* Name - only show for unauthenticated users */}
+            {!isAuthenticated && (
+              <GSInput
+                label={t('affiliate.registration.fullName')}
+                placeholder={t('affiliate.registration.fullNamePlaceholder')}
+                value={formData.name}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+                error={errors.name}
+                leftIcon={<Ionicons name="person-outline" size={20} color={theme.colors.textSecondary} />}
+              />
+            )}
 
             <GSInput
               label={t('affiliate.registration.username')}
@@ -204,16 +251,19 @@ export const AffiliateRegistrationScreen = () => {
               leftIcon={<Ionicons name="at-outline" size={20} color={theme.colors.textSecondary} />}
             />
 
-            <GSInput
-              label={t('affiliate.registration.email')}
-              placeholder={t('affiliate.registration.emailPlaceholder')}
-              value={formData.email}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
-              error={errors.email}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              leftIcon={<Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} />}
-            />
+            {/* Email - only show for unauthenticated users */}
+            {!isAuthenticated && (
+              <GSInput
+                label={t('affiliate.registration.email')}
+                placeholder={t('affiliate.registration.emailPlaceholder')}
+                value={formData.email}
+                onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+                error={errors.email}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                leftIcon={<Ionicons name="mail-outline" size={20} color={theme.colors.textSecondary} />}
+              />
+            )}
 
             <GSInput
               label={t('affiliate.registration.phone')}
@@ -233,8 +283,8 @@ export const AffiliateRegistrationScreen = () => {
                   onValueChange={(value) => setFormData(prev => ({ ...prev, documentType: value as DocumentType }))}
                   style={styles.pickerInput}
                 >
-                  <Picker.Item label="Cédula de Ciudadanía (CC)" value="CC" />
-                  <Picker.Item label="Cédula de Extranjería (CE)" value="CE" />
+                  <Picker.Item label="Cedula de Ciudadania (CC)" value="CC" />
+                  <Picker.Item label="Cedula de Extranjeria (CE)" value="CE" />
                   <Picker.Item label="NIT" value="NIT" />
                   <Picker.Item label="Pasaporte" value="PASSPORT" />
                 </Picker>
@@ -250,48 +300,52 @@ export const AffiliateRegistrationScreen = () => {
               leftIcon={<Ionicons name="card-outline" size={20} color={theme.colors.textSecondary} />}
             />
 
-            {/* Password Section */}
-            <GSText variant="h3" style={styles.sectionTitle}>
-              {t('affiliate.registration.security')}
-            </GSText>
+            {/* Password Section - only show for unauthenticated users */}
+            {!isAuthenticated && (
+              <>
+                <GSText variant="h3" style={styles.sectionTitle}>
+                  {t('affiliate.registration.security')}
+                </GSText>
 
-            <GSInput
-              label={t('affiliate.registration.password')}
-              placeholder={t('affiliate.registration.passwordPlaceholder')}
-              value={formData.password}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
-              error={errors.password}
-              secureTextEntry={!showPassword}
-              rightIcon={
-                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={theme.colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              }
-              leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
-            />
+                <GSInput
+                  label={t('affiliate.registration.password')}
+                  placeholder={t('affiliate.registration.passwordPlaceholder')}
+                  value={formData.password}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
+                  error={errors.password}
+                  secureTextEntry={!showPassword}
+                  rightIcon={
+                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color={theme.colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  }
+                  leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
+                />
 
-            <GSInput
-              label={t('affiliate.registration.confirmPassword')}
-              placeholder={t('affiliate.registration.confirmPasswordPlaceholder')}
-              value={formData.confirmPassword}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
-              error={errors.confirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              rightIcon={
-                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  <Ionicons
-                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={theme.colors.textSecondary}
-                  />
-                </TouchableOpacity>
-              }
-              leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
-            />
+                <GSInput
+                  label={t('affiliate.registration.confirmPassword')}
+                  placeholder={t('affiliate.registration.confirmPasswordPlaceholder')}
+                  value={formData.confirmPassword}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, confirmPassword: text }))}
+                  error={errors.confirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  rightIcon={
+                    <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                      <Ionicons
+                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={20}
+                        color={theme.colors.textSecondary}
+                      />
+                    </TouchableOpacity>
+                  }
+                  leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
+                />
+              </>
+            )}
 
             {/* Social Media Section */}
             <GSText variant="h3" style={styles.sectionTitle}>
@@ -329,7 +383,9 @@ export const AffiliateRegistrationScreen = () => {
             />
 
             <GSButton
-              title={t('affiliate.registration.submit')}
+              title={isAuthenticated
+                ? t('affiliate.registration.submitAuthenticated')
+                : t('affiliate.registration.submit')}
               onPress={handleRegister}
               loading={isLoading}
               style={styles.submitButton}
@@ -391,6 +447,17 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: 'center',
     paddingHorizontal: 20,
+  },
+  userBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    gap: 8,
+  },
+  userBannerText: {
+    flex: 1,
   },
   form: {
     gap: 20,

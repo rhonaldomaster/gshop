@@ -21,6 +21,7 @@ import { CreatorProfileService } from './services/creator-profile.service'
 import { CreatorContentService } from './services/creator-content.service'
 import { CreatorLiveService } from './services/creator-live.service'
 import { CreateAffiliateDto } from './dto/create-affiliate.dto'
+import { ConvertToAffiliateDto } from './dto/convert-to-affiliate.dto'
 
 @ApiTags('creators')
 @Controller('creators')
@@ -44,6 +45,61 @@ export class CreatorsController {
   @ApiResponse({ status: 400, description: 'Validation error - invalid input data' })
   async registerAffiliate(@Body() createAffiliateDto: CreateAffiliateDto) {
     return this.affiliatesService.registerAffiliate(createAffiliateDto)
+  }
+
+  @Post('convert')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Convert authenticated user to affiliate',
+    description: 'Allows an existing authenticated user to become an affiliate without creating new credentials.'
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully converted to affiliate with PENDING status.'
+  })
+  @ApiResponse({ status: 409, description: 'User is already an affiliate or username taken' })
+  @ApiResponse({ status: 401, description: 'User not authenticated' })
+  async convertToAffiliate(
+    @Request() req,
+    @Body() convertDto: ConvertToAffiliateDto,
+  ) {
+    const userId = req.user.sub
+    const userEmail = req.user.email
+    const userName = req.user.firstName && req.user.lastName
+      ? `${req.user.firstName} ${req.user.lastName}`
+      : req.user.email.split('@')[0]
+
+    return this.affiliatesService.convertUserToAffiliate(
+      userId,
+      userEmail,
+      userName,
+      convertDto,
+    )
+  }
+
+  @Get('status')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Check if current user is an affiliate' })
+  async checkAffiliateStatus(@Request() req) {
+    const userId = req.user.sub
+    const affiliate = await this.affiliatesService.getAffiliateByUserId(userId)
+
+    if (!affiliate) {
+      return { isAffiliate: false, affiliate: null }
+    }
+
+    return {
+      isAffiliate: true,
+      affiliate: {
+        id: affiliate.id,
+        username: affiliate.username,
+        status: affiliate.status,
+        commissionRate: affiliate.commissionRate,
+        affiliateCode: affiliate.affiliateCode,
+      }
+    }
   }
 
   // ========== PROFILE MANAGEMENT ==========

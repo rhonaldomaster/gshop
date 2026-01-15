@@ -400,7 +400,7 @@ class AffiliatesService {
 
   // ========== AFFILIATE REGISTRATION ==========
 
-  // Register as affiliate
+  // Register as affiliate (for unauthenticated users - creates new account)
   async registerAffiliate(data: {
     name: string;
     username: string;
@@ -423,6 +423,49 @@ class AffiliatesService {
       return response.data;
     } catch (error) {
       console.error('Error registering affiliate:', error);
+      throw error;
+    }
+  }
+
+  // Convert existing user to affiliate (for authenticated users - no password needed)
+  async convertToAffiliate(data: {
+    username: string;
+    phone?: string;
+    documentType?: 'CC' | 'CE' | 'NIT' | 'PASSPORT';
+    documentNumber?: string;
+    bio?: string;
+    website?: string;
+    socialMedia?: string;
+    categories?: string[];
+  }): Promise<{
+    affiliate: any;
+    message: string;
+  }> {
+    try {
+      const response = await api.post('/creators/convert', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error converting to affiliate:', error);
+      throw error;
+    }
+  }
+
+  // Check if current user is already an affiliate
+  async checkAffiliateStatus(): Promise<{
+    isAffiliate: boolean;
+    affiliate: {
+      id: string;
+      username: string;
+      status: string;
+      commissionRate: number;
+      affiliateCode: string;
+    } | null;
+  }> {
+    try {
+      const response = await api.get('/creators/status');
+      return response.data;
+    } catch (error) {
+      console.error('Error checking affiliate status:', error);
       throw error;
     }
   }
