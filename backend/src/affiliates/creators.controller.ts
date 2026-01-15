@@ -64,7 +64,7 @@ export class CreatorsController {
     @Request() req,
     @Body() convertDto: ConvertToAffiliateDto,
   ) {
-    const userId = req.user.sub
+    const userId = req.user.id
     const userEmail = req.user.email
     const userName = req.user.firstName && req.user.lastName
       ? `${req.user.firstName} ${req.user.lastName}`
@@ -83,7 +83,7 @@ export class CreatorsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Check if current user is an affiliate' })
   async checkAffiliateStatus(@Request() req) {
-    const userId = req.user.sub
+    const userId = req.user.id
     const affiliate = await this.affiliatesService.getAffiliateByUserId(userId)
 
     if (!affiliate) {
@@ -118,7 +118,7 @@ export class CreatorsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update creator profile' })
   async updateProfile(@Request() req, @Body() updateData: any) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorProfileService.updateProfile(affiliateId, updateData)
   }
 
@@ -130,7 +130,7 @@ export class CreatorsController {
     @Request() req,
     @Param('creatorId', ParseUUIDPipe) creatorId: string,
   ) {
-    const userId = req.user.sub
+    const userId = req.user.id
     await this.creatorProfileService.followAffiliate(userId, creatorId)
     return { success: true, message: 'Successfully followed creator' }
   }
@@ -143,7 +143,7 @@ export class CreatorsController {
     @Request() req,
     @Param('creatorId', ParseUUIDPipe) creatorId: string,
   ) {
-    const userId = req.user.sub
+    const userId = req.user.id
     await this.creatorProfileService.unfollowAffiliate(userId, creatorId)
     return { success: true, message: 'Successfully unfollowed creator' }
   }
@@ -186,7 +186,7 @@ export class CreatorsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new video' })
   async createVideo(@Request() req, @Body() videoData: any) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorContentService.createVideo(affiliateId, videoData)
   }
 
@@ -199,7 +199,7 @@ export class CreatorsController {
     @Param('videoId', ParseUUIDPipe) videoId: string,
     @Body() updateData: any,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorContentService.updateVideo(videoId, affiliateId, updateData)
   }
 
@@ -211,7 +211,7 @@ export class CreatorsController {
     @Request() req,
     @Param('videoId', ParseUUIDPipe) videoId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorContentService.publishVideo(videoId, affiliateId)
   }
 
@@ -223,7 +223,7 @@ export class CreatorsController {
     @Request() req,
     @Param('videoId', ParseUUIDPipe) videoId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     await this.creatorContentService.deleteVideo(videoId, affiliateId)
     return { success: true, message: 'Video deleted successfully' }
   }
@@ -238,7 +238,7 @@ export class CreatorsController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
     @Query('status') status?: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorContentService.getAffiliateVideos(affiliateId, status as any, page || 1, limit || 20)
   }
 
@@ -270,7 +270,7 @@ export class CreatorsController {
     @Param('videoId', ParseUUIDPipe) videoId: string,
     @Body() interactionData: { type: string; content?: string; watchDuration?: number },
   ) {
-    const userId = req.user.sub
+    const userId = req.user.id
     await this.creatorContentService.trackInteraction(
       videoId,
       userId,
@@ -289,7 +289,7 @@ export class CreatorsController {
     @Request() req,
     @Param('videoId', ParseUUIDPipe) videoId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorContentService.getVideoAnalytics(videoId, affiliateId)
   }
 
@@ -303,7 +303,7 @@ export class CreatorsController {
     @Request() req,
     @Body() streamData: { title: string; description?: string; sellerId: string; productIds?: string[] },
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorLiveService.createAffiliateStream(affiliateId, streamData.sellerId, streamData)
   }
 
@@ -315,7 +315,7 @@ export class CreatorsController {
     @Request() req,
     @Body() streamData: { title: string; description?: string; sellerId: string; scheduledAt: string; productIds?: string[] },
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     const scheduledAt = new Date(streamData.scheduledAt)
 
     return this.creatorLiveService.scheduleStream(affiliateId, streamData.sellerId, {
@@ -332,7 +332,7 @@ export class CreatorsController {
     @Request() req,
     @Param('streamId', ParseUUIDPipe) streamId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorLiveService.startAffiliateStream(streamId, affiliateId)
   }
 
@@ -344,7 +344,7 @@ export class CreatorsController {
     @Request() req,
     @Param('streamId', ParseUUIDPipe) streamId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorLiveService.endAffiliateStream(streamId, affiliateId)
   }
 
@@ -358,7 +358,7 @@ export class CreatorsController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
     @Query('status') status?: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorLiveService.getAffiliateStreams(affiliateId, status as any, page || 1, limit || 20)
   }
 
@@ -389,7 +389,7 @@ export class CreatorsController {
     @Request() req,
     @Param('streamId', ParseUUIDPipe) streamId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorLiveService.getStreamAnalytics(streamId, affiliateId)
   }
 
@@ -402,7 +402,7 @@ export class CreatorsController {
     @Param('streamId', ParseUUIDPipe) streamId: string,
     @Body() updateData: any,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = req.user.affiliateId || req.user.id
     return this.creatorLiveService.updateScheduledStream(streamId, affiliateId, updateData)
   }
 }

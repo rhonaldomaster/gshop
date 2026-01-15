@@ -997,9 +997,10 @@
     },
     "rejectedView": {
       "title": "Solicitud Rechazada",
-      "message": "Lo sentimos, tu solicitud no fue aprobada en este momento. Por favor contacta a soporte para más información.",
+      "message": "Lo sentimos, tu solicitud no fue aprobada en este momento. Puedes volver a aplicar con información actualizada.",
       "icon": "❌",
-      "contactSupport": "Contactar Soporte"
+      "contactSupport": "Contactar Soporte",
+      "reapply": "Volver a Aplicar"
     },
     "earnings": "Ganancias",
     "commission": "Comisión",

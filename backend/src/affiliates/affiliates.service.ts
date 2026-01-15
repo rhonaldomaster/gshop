@@ -93,6 +93,7 @@ export class AffiliatesService {
   /**
    * Convert an existing authenticated user to an affiliate.
    * Does not require password since the user is already logged in.
+   * If user was previously rejected, allows re-application with updated data.
    */
   async convertUserToAffiliate(
     userId: string,
@@ -109,6 +110,38 @@ export class AffiliatesService {
     })
 
     if (existingAffiliate) {
+      // If rejected, allow re-application by updating existing record
+      if (existingAffiliate.status === AffiliateStatus.REJECTED) {
+        // Check username uniqueness (excluding own record)
+        const existingUsername = await this.affiliateRepository.findOne({
+          where: { username: convertDto.username }
+        })
+
+        if (existingUsername && existingUsername.id !== existingAffiliate.id) {
+          throw new ConflictException('Username already taken')
+        }
+
+        // Update existing affiliate with new data and reset to pending
+        existingAffiliate.username = convertDto.username
+        existingAffiliate.name = userName
+        existingAffiliate.phone = convertDto.phone
+        existingAffiliate.website = convertDto.website
+        existingAffiliate.socialMedia = convertDto.socialMedia
+        existingAffiliate.bio = convertDto.bio
+        existingAffiliate.categories = convertDto.categories
+        existingAffiliate.documentType = convertDto.documentType
+        existingAffiliate.documentNumber = convertDto.documentNumber
+        existingAffiliate.status = AffiliateStatus.PENDING
+        existingAffiliate.isActive = true
+
+        const updatedAffiliate = await this.affiliateRepository.save(existingAffiliate)
+
+        return {
+          affiliate: updatedAffiliate,
+        }
+      }
+
+      // For pending, approved, or suspended - block re-registration
       throw new ConflictException('User is already registered as an affiliate')
     }
 
