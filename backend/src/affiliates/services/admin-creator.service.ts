@@ -243,27 +243,33 @@ export class AdminCreatorService {
 
   async getCreatorDetails(creatorId: string): Promise<any> {
     const creator = await this.affiliateRepository.findOne({
-      where: { id: creatorId },
-      relations: ['videos', 'liveStreams', 'affiliateProducts', 'followers']
+      where: { id: creatorId }
     })
 
     if (!creator) {
       throw new NotFoundException('Creator not found')
     }
 
-    // Get additional statistics
-    const [videoStats, streamStats, productStats] = await Promise.all([
-      this.getCreatorVideoStats(creatorId),
-      this.getCreatorStreamStats(creatorId),
-      this.getCreatorProductStats(creatorId)
-    ])
+    // Get additional statistics (wrap in try-catch to prevent failures)
+    let videoStats = null
+    let streamStats = null
+    let productStats = null
+
+    try {
+      [videoStats, streamStats, productStats] = await Promise.all([
+        this.getCreatorVideoStats(creatorId),
+        this.getCreatorStreamStats(creatorId),
+        this.getCreatorProductStats(creatorId)
+      ])
+    } catch (error) {
+      console.error('Error fetching creator stats:', error)
+    }
+
+    // Remove sensitive data
+    const { passwordHash, ...creatorData } = creator
 
     return {
-      creator: {
-        ...creator,
-        // Don't expose sensitive info like passwordHash
-        passwordHash: undefined
-      },
+      creator: creatorData,
       stats: {
         videos: videoStats,
         streams: streamStats,
@@ -481,14 +487,14 @@ export class AdminCreatorService {
       .createQueryBuilder('video')
       .select([
         'COUNT(*) as total',
-        'SUM(CASE WHEN status = \'published\' THEN 1 ELSE 0 END) as published',
-        'SUM(views) as totalViews',
-        'SUM(likes) as totalLikes',
-        'SUM(comments) as totalComments',
-        'SUM(shares) as totalShares',
-        'AVG(CASE WHEN views > 0 THEN (likes + comments + shares) * 100.0 / views ELSE 0 END) as avgEngagement'
+        'SUM(CASE WHEN video.status = \'published\' THEN 1 ELSE 0 END) as published',
+        'SUM(video.views) as "totalViews"',
+        'SUM(video.likes) as "totalLikes"',
+        'SUM(video.comments) as "totalComments"',
+        'SUM(video.shares) as "totalShares"',
+        'AVG(CASE WHEN video.views > 0 THEN (video.likes + video.comments + video.shares) * 100.0 / video.views ELSE 0 END) as "avgEngagement"'
       ])
-      .where('video.affiliateId = :creatorId', { creatorId })
+      .where('video."affiliateId" = :creatorId', { creatorId })
       .getRawOne()
   }
 
@@ -497,11 +503,11 @@ export class AdminCreatorService {
       .createQueryBuilder('stream')
       .select([
         'COUNT(*) as total',
-        'SUM(peakViewers) as totalViewers',
-        'SUM(totalSales) as totalRevenue',
-        'AVG(peakViewers) as avgViewers'
+        'SUM(stream."peakViewers") as "totalViewers"',
+        'SUM(stream."totalSales") as "totalRevenue"',
+        'AVG(stream."peakViewers") as "avgViewers"'
       ])
-      .where('stream.affiliateId = :creatorId', { creatorId })
+      .where('stream."affiliateId" = :creatorId', { creatorId })
       .getRawOne()
   }
 
@@ -510,11 +516,11 @@ export class AdminCreatorService {
       .createQueryBuilder('product')
       .select([
         'COUNT(*) as total',
-        'SUM(totalSales) as totalSales',
-        'SUM(totalRevenue) as totalRevenue',
-        'SUM(totalCommissions) as totalCommissions'
+        'SUM(product."totalSales") as "totalSales"',
+        'SUM(product."totalRevenue") as "totalRevenue"',
+        'SUM(product."totalCommissions") as "totalCommissions"'
       ])
-      .where('product.affiliateId = :creatorId', { creatorId })
+      .where('product."affiliateId" = :creatorId', { creatorId })
       .getRawOne()
   }
 

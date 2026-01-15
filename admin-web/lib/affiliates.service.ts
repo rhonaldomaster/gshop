@@ -83,7 +83,8 @@ class AffiliatesService {
    * Get affiliate by ID
    */
   async getAffiliateById(id: string): Promise<Affiliate> {
-    return apiClient.get<Affiliate>(`/admin/creators/${id}`);
+    const response = await apiClient.get<any>(`/admin/creators/${id}`);
+    return response.creator || response;
   }
 
   /**
