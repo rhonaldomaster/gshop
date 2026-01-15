@@ -460,9 +460,7 @@ export default function CreatorDetailPage() {
               <CardTitle>Redes Sociales</CardTitle>
             </CardHeader>
             <CardContent>
-              <pre className="text-sm bg-gray-50 p-4 rounded-md overflow-auto">
-                {JSON.stringify(JSON.parse(creator.socialMedia), null, 2)}
-              </pre>
+              <p className="text-sm text-gray-700">{creator.socialMedia}</p>
             </CardContent>
           </Card>
         )}

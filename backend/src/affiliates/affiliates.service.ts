@@ -6,6 +6,7 @@ import { Affiliate, AffiliateStatus } from './entities/affiliate.entity'
 import { AffiliateLink } from './entities/affiliate-link.entity'
 import { AffiliateClick } from './entities/affiliate-click.entity'
 import { CreateAffiliateDto } from './dto/create-affiliate.dto'
+import { ConvertToAffiliateDto } from './dto/convert-to-affiliate.dto'
 import * as crypto from 'crypto'
 import * as bcrypt from 'bcryptjs'
 
@@ -87,6 +88,112 @@ export class AffiliatesService {
       token_type: 'Bearer',
       expires_in: '7d',
     }
+  }
+
+  /**
+   * Convert an existing authenticated user to an affiliate.
+   * Does not require password since the user is already logged in.
+   * If user was previously rejected, allows re-application with updated data.
+   */
+  async convertUserToAffiliate(
+    userId: string,
+    userEmail: string,
+    userName: string,
+    convertDto: ConvertToAffiliateDto,
+  ) {
+    // Check if user is already an affiliate
+    const existingAffiliate = await this.affiliateRepository.findOne({
+      where: [
+        { userId },
+        { email: userEmail.toLowerCase() }
+      ]
+    })
+
+    if (existingAffiliate) {
+      // If rejected, allow re-application by updating existing record
+      if (existingAffiliate.status === AffiliateStatus.REJECTED) {
+        // Check username uniqueness (excluding own record)
+        const existingUsername = await this.affiliateRepository.findOne({
+          where: { username: convertDto.username }
+        })
+
+        if (existingUsername && existingUsername.id !== existingAffiliate.id) {
+          throw new ConflictException('Username already taken')
+        }
+
+        // Update existing affiliate with new data and reset to pending
+        existingAffiliate.username = convertDto.username
+        existingAffiliate.name = userName
+        existingAffiliate.phone = convertDto.phone
+        existingAffiliate.website = convertDto.website
+        existingAffiliate.socialMedia = convertDto.socialMedia
+        existingAffiliate.bio = convertDto.bio
+        existingAffiliate.categories = convertDto.categories
+        existingAffiliate.documentType = convertDto.documentType
+        existingAffiliate.documentNumber = convertDto.documentNumber
+        existingAffiliate.status = AffiliateStatus.PENDING
+        existingAffiliate.isActive = true
+
+        const updatedAffiliate = await this.affiliateRepository.save(existingAffiliate)
+
+        return {
+          affiliate: updatedAffiliate,
+        }
+      }
+
+      // For pending, approved, or suspended - block re-registration
+      throw new ConflictException('User is already registered as an affiliate')
+    }
+
+    // Check username uniqueness
+    const existingUsername = await this.affiliateRepository.findOne({
+      where: { username: convertDto.username }
+    })
+
+    if (existingUsername) {
+      throw new ConflictException('Username already taken')
+    }
+
+    // Generate unique affiliate code
+    const affiliateCode = `AFF-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`
+
+    // Create affiliate linked to user (no password needed)
+    const affiliate = this.affiliateRepository.create({
+      userId,
+      email: userEmail.toLowerCase(),
+      passwordHash: null, // No password - uses main user authentication
+      username: convertDto.username,
+      name: userName,
+      phone: convertDto.phone,
+      website: convertDto.website,
+      socialMedia: convertDto.socialMedia,
+      bio: convertDto.bio,
+      categories: convertDto.categories,
+      documentType: convertDto.documentType,
+      documentNumber: convertDto.documentNumber,
+      affiliateCode,
+      status: AffiliateStatus.PENDING,
+      commissionRate: 5.0,
+      isActive: true,
+      isProfilePublic: false,
+    })
+
+    const savedAffiliate = await this.affiliateRepository.save(affiliate)
+
+    // Return affiliate data (no new token needed - user keeps their existing session)
+    // Message is handled by frontend i18n
+    return {
+      affiliate: savedAffiliate,
+    }
+  }
+
+  /**
+   * Get affiliate by userId (for checking if user is already an affiliate)
+   */
+  async getAffiliateByUserId(userId: string): Promise<Affiliate | null> {
+    return this.affiliateRepository.findOne({
+      where: { userId }
+    })
   }
 
   async generateAffiliateCode(): Promise<string> {

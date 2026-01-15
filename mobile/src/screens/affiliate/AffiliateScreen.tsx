@@ -44,25 +44,34 @@ export const AffiliateScreen = () => {
     try {
       setLoading(true);
 
-      // Check if user is an affiliate and load dashboard
-      const stats = await affiliatesService.getDashboardStats();
-      setDashboardStats(stats);
-      setIsAffiliate(true);
+      // First check affiliate status
+      const statusResponse = await affiliatesService.checkAffiliateStatus();
 
-      // Check affiliate status (if available in stats)
-      if ((stats as any).status) {
-        setAffiliateStatus((stats as any).status);
+      if (!statusResponse.isAffiliate) {
+        // User is not an affiliate
+        setIsAffiliate(false);
+        setAffiliateStatus(null);
+        return;
+      }
+
+      // User is an affiliate - check their status
+      setIsAffiliate(true);
+      setAffiliateStatus(statusResponse.affiliate?.status || null);
+
+      // Only load dashboard stats if approved
+      if (statusResponse.affiliate?.status === 'approved') {
+        try {
+          const stats = await affiliatesService.getDashboardStats();
+          setDashboardStats(stats);
+        } catch (dashboardError) {
+          // Dashboard might fail for various reasons, but user is still an affiliate
+          console.log('Could not load dashboard stats');
+        }
       }
     } catch (error) {
-      // Check if error indicates pending or rejected status
-      if (error.response?.data?.status) {
-        setAffiliateStatus(error.response.data.status);
-        setIsAffiliate(true); // User is affiliate but not approved yet
-      } else {
-        // User is not an affiliate yet (expected case - don't log error)
-        // 500/404 errors are expected when user hasn't registered as affiliate
-        setIsAffiliate(false);
-      }
+      // If status check fails completely, user is likely not an affiliate
+      setIsAffiliate(false);
+      setAffiliateStatus(null);
     } finally {
       setLoading(false);
     }
@@ -116,8 +125,7 @@ export const AffiliateScreen = () => {
       icon: '📹',
       description: t('affiliate.goLiveDesc'),
       onPress: () => {
-        // Navigate to live stream creation
-        console.log('Navigate to Live Stream');
+        navigation.navigate('CreateAffiliateLiveStream' as never);
       },
     },
   ];
@@ -188,12 +196,9 @@ export const AffiliateScreen = () => {
             </Text>
             <TouchableOpacity
               style={styles.joinButton}
-              onPress={() => {
-                // Navigate to support
-                console.log('Navigate to support');
-              }}
+              onPress={handleBecomeAffiliate}
             >
-              <Text style={styles.joinButtonText}>{t('affiliate.rejectedView.contactSupport')}</Text>
+              <Text style={styles.joinButtonText}>{t('affiliate.rejectedView.reapply')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -248,6 +253,29 @@ export const AffiliateScreen = () => {
 
             <Text style={styles.joinFooter}>
               {t('affiliate.alreadyAffiliate')}
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // If affiliate but not approved (fallback for any other status like 'suspended')
+  if (isAffiliate && affiliateStatus !== 'approved') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.centerContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View style={styles.joinContainer}>
+            <Text style={styles.joinIcon}>{t('affiliate.pendingView.icon')}</Text>
+            <Text style={styles.joinTitle}>{t('affiliate.pendingView.title')}</Text>
+            <Text style={styles.joinDescription}>
+              {t('affiliate.pendingView.message')}
             </Text>
           </View>
         </ScrollView>

@@ -56,7 +56,13 @@ class AffiliatesService {
    * Get all pending affiliate applications
    */
   async getPendingAffiliates(page: number = 1, limit: number = 20): Promise<PendingAffiliatesResponse> {
-    return apiClient.get<PendingAffiliatesResponse>(`/admin/creators?status=pending&page=${page}&limit=${limit}`);
+    const response = await apiClient.get<any>(`/admin/creators?status=pending&page=${page}&limit=${limit}`);
+    return {
+      affiliates: response.creators || [],
+      total: response.pagination?.total || 0,
+      page: response.pagination?.page || page,
+      limit: response.pagination?.limit || limit,
+    };
   }
 
   /**
@@ -64,14 +70,21 @@ class AffiliatesService {
    */
   async getAffiliates(status?: string, page: number = 1, limit: number = 20): Promise<PendingAffiliatesResponse> {
     const statusQuery = status ? `&status=${status}` : '';
-    return apiClient.get<PendingAffiliatesResponse>(`/admin/creators?page=${page}&limit=${limit}${statusQuery}`);
+    const response = await apiClient.get<any>(`/admin/creators?page=${page}&limit=${limit}${statusQuery}`);
+    return {
+      affiliates: response.creators || [],
+      total: response.pagination?.total || 0,
+      page: response.pagination?.page || page,
+      limit: response.pagination?.limit || limit,
+    };
   }
 
   /**
    * Get affiliate by ID
    */
   async getAffiliateById(id: string): Promise<Affiliate> {
-    return apiClient.get<Affiliate>(`/admin/creators/${id}`);
+    const response = await apiClient.get<any>(`/admin/creators/${id}`);
+    return response.creator || response;
   }
 
   /**
@@ -106,7 +119,7 @@ class AffiliatesService {
    * Update affiliate commission rate
    */
   async updateCommissionRate(id: string, commissionRate: number): Promise<Affiliate> {
-    return apiClient.put<Affiliate>(`/admin/creators/${id}/commission`, { commissionRate });
+    return apiClient.put<Affiliate>(`/admin/creators/${id}/commission-rate`, { commissionRate });
   }
 
   /**

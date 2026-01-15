@@ -243,27 +243,33 @@ export class AdminCreatorService {
 
   async getCreatorDetails(creatorId: string): Promise<any> {
     const creator = await this.affiliateRepository.findOne({
-      where: { id: creatorId },
-      relations: ['videos', 'liveStreams', 'affiliateProducts', 'followers']
+      where: { id: creatorId }
     })
 
     if (!creator) {
       throw new NotFoundException('Creator not found')
     }
 
-    // Get additional statistics
-    const [videoStats, streamStats, productStats] = await Promise.all([
-      this.getCreatorVideoStats(creatorId),
-      this.getCreatorStreamStats(creatorId),
-      this.getCreatorProductStats(creatorId)
-    ])
+    // Get additional statistics (wrap in try-catch to prevent failures)
+    let videoStats = null
+    let streamStats = null
+    let productStats = null
+
+    try {
+      [videoStats, streamStats, productStats] = await Promise.all([
+        this.getCreatorVideoStats(creatorId),
+        this.getCreatorStreamStats(creatorId),
+        this.getCreatorProductStats(creatorId)
+      ])
+    } catch (error) {
+      console.error('Error fetching creator stats:', error)
+    }
+
+    // Remove sensitive data
+    const { passwordHash, ...creatorData } = creator
 
     return {
-      creator: {
-        ...creator,
-        // Don't expose sensitive info like passwordHash
-        passwordHash: undefined
-      },
+      creator: creatorData,
       stats: {
         videos: videoStats,
         streams: streamStats,
@@ -290,9 +296,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send approval notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send approval notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Approved',
       message: 'Your creator account has been approved! You can now start earning commissions.',
@@ -316,9 +321,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send rejection notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send rejection notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Rejected',
       message: `Your creator account application was rejected. Reason: ${reason}`,
@@ -343,9 +347,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send suspension notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send suspension notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Suspended',
       message: `Your creator account has been suspended. Reason: ${reason}`,
@@ -370,9 +373,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send reactivation notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send reactivation notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Reactivated',
       message: 'Your creator account has been reactivated. Welcome back!',
@@ -401,9 +403,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send rate change notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send rate change notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Commission Rate Updated',
       message: `Your commission rate has been updated from ${oldRate}% to ${newRate}%.`,
@@ -427,9 +428,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send verification notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send verification notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Verified',
       message: 'Congratulations! Your creator account has been verified.',
@@ -464,10 +464,9 @@ export class AdminCreatorService {
     video.updatedAt = new Date()
     await this.videoRepository.save(video)
 
-    // Notify creator about moderation action
-    if (action !== 'approve') {
-      await this.createNotification({
-        recipientId: video.affiliateId,
+    // Notify creator about moderation action (only if affiliate has userId)
+    if (action !== 'approve' && video.affiliate?.userId) {
+      await this.sendNotificationSafe(video.affiliate.userId, {
         type: NotificationType.MILESTONE_REACHED,
         title: 'Content Moderated',
         message: `Your video "${video.title}" has been ${action}ed. ${reason ? `Reason: ${reason}` : ''}`,
@@ -481,14 +480,14 @@ export class AdminCreatorService {
       .createQueryBuilder('video')
       .select([
         'COUNT(*) as total',
-        'SUM(CASE WHEN status = \'published\' THEN 1 ELSE 0 END) as published',
-        'SUM(views) as totalViews',
-        'SUM(likes) as totalLikes',
-        'SUM(comments) as totalComments',
-        'SUM(shares) as totalShares',
-        'AVG(CASE WHEN views > 0 THEN (likes + comments + shares) * 100.0 / views ELSE 0 END) as avgEngagement'
+        'SUM(CASE WHEN video.status = \'published\' THEN 1 ELSE 0 END) as published',
+        'SUM(video.views) as "totalViews"',
+        'SUM(video.likes) as "totalLikes"',
+        'SUM(video.comments) as "totalComments"',
+        'SUM(video.shares) as "totalShares"',
+        'AVG(CASE WHEN video.views > 0 THEN (video.likes + video.comments + video.shares) * 100.0 / video.views ELSE 0 END) as "avgEngagement"'
       ])
-      .where('video.affiliateId = :creatorId', { creatorId })
+      .where('video."affiliateId" = :creatorId', { creatorId })
       .getRawOne()
   }
 
@@ -497,11 +496,11 @@ export class AdminCreatorService {
       .createQueryBuilder('stream')
       .select([
         'COUNT(*) as total',
-        'SUM(peakViewers) as totalViewers',
-        'SUM(totalSales) as totalRevenue',
-        'AVG(peakViewers) as avgViewers'
+        'SUM(stream."peakViewers") as "totalViewers"',
+        'SUM(stream."totalSales") as "totalRevenue"',
+        'AVG(stream."peakViewers") as "avgViewers"'
       ])
-      .where('stream.affiliateId = :creatorId', { creatorId })
+      .where('stream."affiliateId" = :creatorId', { creatorId })
       .getRawOne()
   }
 
@@ -510,16 +509,29 @@ export class AdminCreatorService {
       .createQueryBuilder('product')
       .select([
         'COUNT(*) as total',
-        'SUM(totalSales) as totalSales',
-        'SUM(totalRevenue) as totalRevenue',
-        'SUM(totalCommissions) as totalCommissions'
+        'SUM(product."totalSales") as "totalSales"',
+        'SUM(product."totalRevenue") as "totalRevenue"',
+        'SUM(product."totalCommissions") as "totalCommissions"'
       ])
-      .where('product.affiliateId = :creatorId', { creatorId })
+      .where('product."affiliateId" = :creatorId', { creatorId })
       .getRawOne()
   }
 
   private async createNotification(data: any): Promise<void> {
     const notification = this.notificationRepository.create(data)
     await this.notificationRepository.save(notification)
+  }
+
+  private async sendNotificationSafe(userId: string | null, notificationData: Omit<any, 'recipientId'>): Promise<void> {
+    if (!userId) return
+
+    try {
+      await this.createNotification({
+        recipientId: userId,
+        ...notificationData
+      })
+    } catch (error) {
+      console.error('Error sending notification:', error)
+    }
   }
 }
