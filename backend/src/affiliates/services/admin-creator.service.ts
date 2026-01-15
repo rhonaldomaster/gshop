@@ -296,9 +296,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send approval notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send approval notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Approved',
       message: 'Your creator account has been approved! You can now start earning commissions.',
@@ -322,9 +321,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send rejection notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send rejection notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Rejected',
       message: `Your creator account application was rejected. Reason: ${reason}`,
@@ -349,9 +347,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send suspension notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send suspension notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Suspended',
       message: `Your creator account has been suspended. Reason: ${reason}`,
@@ -376,9 +373,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send reactivation notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send reactivation notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Reactivated',
       message: 'Your creator account has been reactivated. Welcome back!',
@@ -407,9 +403,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send rate change notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send rate change notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Commission Rate Updated',
       message: `Your commission rate has been updated from ${oldRate}% to ${newRate}%.`,
@@ -433,9 +428,8 @@ export class AdminCreatorService {
 
     const updatedCreator = await this.affiliateRepository.save(creator)
 
-    // Send verification notification
-    await this.createNotification({
-      recipientId: creatorId,
+    // Send verification notification (only if affiliate has userId)
+    await this.sendNotificationSafe(creator.userId, {
       type: NotificationType.MILESTONE_REACHED,
       title: 'Account Verified',
       message: 'Congratulations! Your creator account has been verified.',
@@ -470,10 +464,9 @@ export class AdminCreatorService {
     video.updatedAt = new Date()
     await this.videoRepository.save(video)
 
-    // Notify creator about moderation action
-    if (action !== 'approve') {
-      await this.createNotification({
-        recipientId: video.affiliateId,
+    // Notify creator about moderation action (only if affiliate has userId)
+    if (action !== 'approve' && video.affiliate?.userId) {
+      await this.sendNotificationSafe(video.affiliate.userId, {
         type: NotificationType.MILESTONE_REACHED,
         title: 'Content Moderated',
         message: `Your video "${video.title}" has been ${action}ed. ${reason ? `Reason: ${reason}` : ''}`,
@@ -527,5 +520,18 @@ export class AdminCreatorService {
   private async createNotification(data: any): Promise<void> {
     const notification = this.notificationRepository.create(data)
     await this.notificationRepository.save(notification)
+  }
+
+  private async sendNotificationSafe(userId: string | null, notificationData: Omit<any, 'recipientId'>): Promise<void> {
+    if (!userId) return
+
+    try {
+      await this.createNotification({
+        recipientId: userId,
+        ...notificationData
+      })
+    } catch (error) {
+      console.error('Error sending notification:', error)
+    }
   }
 }

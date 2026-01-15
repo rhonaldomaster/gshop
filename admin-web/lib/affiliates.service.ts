@@ -119,7 +119,7 @@ class AffiliatesService {
    * Update affiliate commission rate
    */
   async updateCommissionRate(id: string, commissionRate: number): Promise<Affiliate> {
-    return apiClient.put<Affiliate>(`/admin/creators/${id}/commission`, { commissionRate });
+    return apiClient.put<Affiliate>(`/admin/creators/${id}/commission-rate`, { commissionRate });
   }
 
   /**
