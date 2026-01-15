@@ -116,8 +116,7 @@ export const AffiliateScreen = () => {
       icon: '📹',
       description: t('affiliate.goLiveDesc'),
       onPress: () => {
-        // Navigate to live stream creation
-        console.log('Navigate to Live Stream');
+        navigation.navigate('CreateAffiliateLiveStream' as never);
       },
     },
   ];

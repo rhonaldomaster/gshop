@@ -14,6 +14,9 @@ import PaymentMethodsScreen from '../screens/payments/PaymentMethodsScreen';
 import ProductDetailScreen from '../screens/products/ProductDetailScreen';
 import { AffiliateScreen } from '../screens/affiliate/AffiliateScreen';
 import { AffiliateRegistrationScreen } from '../screens/affiliate/AffiliateRegistrationScreen';
+import CreateAffiliateLiveStreamScreen from '../screens/live/CreateAffiliateLiveStreamScreen';
+import LiveStreamingScreen from '../screens/live/LiveStreamingScreen';
+import LiveStreamResultsScreen from '../screens/live/LiveStreamResultsScreen';
 import TransferScreen from '../screens/wallet/TransferScreen';
 import WalletScreen from '../screens/wallet/WalletScreen';
 import VerificationScreen from '../screens/wallet/VerificationScreen';
@@ -32,6 +35,9 @@ export type ProfileStackParamList = {
   ProductDetail: { productId: string };
   Affiliate: undefined;
   AffiliateRegistration: undefined;
+  CreateAffiliateLiveStream: undefined;
+  LiveStreaming: { streamId: string; rtmpUrl: string; streamKey: string };
+  LiveStreamResults: { streamId: string; stats: any; duration: number };
   Transfer: undefined;
   Wallet: undefined;
   Verification: undefined;
@@ -59,6 +65,9 @@ export default function ProfileNavigator() {
       <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
       <Stack.Screen name="Affiliate" component={AffiliateScreen} />
       <Stack.Screen name="AffiliateRegistration" component={AffiliateRegistrationScreen} />
+      <Stack.Screen name="CreateAffiliateLiveStream" component={CreateAffiliateLiveStreamScreen} />
+      <Stack.Screen name="LiveStreaming" component={LiveStreamingScreen} />
+      <Stack.Screen name="LiveStreamResults" component={LiveStreamResultsScreen} />
       <Stack.Screen name="Transfer" component={TransferScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Verification" component={VerificationScreen} />

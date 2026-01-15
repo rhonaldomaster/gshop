@@ -917,7 +917,23 @@
     "noRecommendationsDesc": "No tenemos recomendaciones personalizadas para ti en este momento. Vuelve más tarde o explora transmisiones en vivo.",
     "skip": "Saltar",
     "watch": "Ver",
-    "live": "EN VIVO"
+    "live": "EN VIVO",
+    "affiliate": {
+      "createStream": "Crear transmision de afiliado",
+      "selectSellerStep": "Vendedor",
+      "streamInfo": "Info",
+      "chooseSeller": "Elige un vendedor",
+      "chooseSellerDesc": "Selecciona el vendedor cuyos productos quieres promocionar en tu transmision",
+      "searchSellers": "Buscar vendedores...",
+      "noSellersFound": "No se encontraron vendedores",
+      "failedLoadSellers": "Error al cargar vendedores",
+      "failedLoadProducts": "Error al cargar productos",
+      "selectSeller": "Por favor selecciona un vendedor",
+      "tipsTitle": "Consejos para afiliados",
+      "tip1": "Muestra productos que ya conoces y puedes recomendar con confianza",
+      "tip2": "Interactua con tu audiencia y responde sus preguntas sobre los productos",
+      "tip3": "Destaca ofertas especiales y descuentos exclusivos durante la transmision"
+    }
   },
   "affiliate": {
     "title": "Afiliados",
