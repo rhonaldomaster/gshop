@@ -56,7 +56,13 @@ class AffiliatesService {
    * Get all pending affiliate applications
    */
   async getPendingAffiliates(page: number = 1, limit: number = 20): Promise<PendingAffiliatesResponse> {
-    return apiClient.get<PendingAffiliatesResponse>(`/admin/creators?status=pending&page=${page}&limit=${limit}`);
+    const response = await apiClient.get<any>(`/admin/creators?status=pending&page=${page}&limit=${limit}`);
+    return {
+      affiliates: response.creators || [],
+      total: response.pagination?.total || 0,
+      page: response.pagination?.page || page,
+      limit: response.pagination?.limit || limit,
+    };
   }
 
   /**
@@ -64,7 +70,13 @@ class AffiliatesService {
    */
   async getAffiliates(status?: string, page: number = 1, limit: number = 20): Promise<PendingAffiliatesResponse> {
     const statusQuery = status ? `&status=${status}` : '';
-    return apiClient.get<PendingAffiliatesResponse>(`/admin/creators?page=${page}&limit=${limit}${statusQuery}`);
+    const response = await apiClient.get<any>(`/admin/creators?page=${page}&limit=${limit}${statusQuery}`);
+    return {
+      affiliates: response.creators || [],
+      total: response.pagination?.total || 0,
+      page: response.pagination?.page || page,
+      limit: response.pagination?.limit || limit,
+    };
   }
 
   /**
