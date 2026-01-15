@@ -128,7 +128,7 @@ export const AffiliateRegistrationScreen = () => {
 
         Alert.alert(
           t('common.success'),
-          response.message || t('affiliate.registration.successMessage'),
+          t('affiliate.registration.successMessage'),
           [
             {
               text: t('common.ok'),

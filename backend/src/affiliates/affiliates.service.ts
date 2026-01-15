@@ -148,9 +148,9 @@ export class AffiliatesService {
     const savedAffiliate = await this.affiliateRepository.save(affiliate)
 
     // Return affiliate data (no new token needed - user keeps their existing session)
+    // Message is handled by frontend i18n
     return {
       affiliate: savedAffiliate,
-      message: 'Successfully registered as affiliate. Your application is pending approval.',
     }
   }
 

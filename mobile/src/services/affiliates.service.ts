@@ -439,7 +439,6 @@ class AffiliatesService {
     categories?: string[];
   }): Promise<{
     affiliate: any;
-    message: string;
   }> {
     try {
       const response = await api.post('/creators/convert', data);
