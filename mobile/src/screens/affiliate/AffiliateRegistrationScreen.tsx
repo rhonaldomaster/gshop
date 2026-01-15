@@ -122,10 +122,7 @@ export const AffiliateRegistrationScreen = () => {
 
       // Auto-login with returned token
       if (response.access_token) {
-        await login({
-          email: formData.email,
-          password: formData.password,
-        });
+        await login(formData.email, formData.password);
 
         Alert.alert(
           t('common.success'),
@@ -230,7 +227,7 @@ export const AffiliateRegistrationScreen = () => {
             {/* Document Type Picker */}
             <View style={styles.pickerContainer}>
               <GSText style={styles.label}>{t('affiliate.registration.documentType')}</GSText>
-              <View style={[styles.picker, { borderColor: theme.colors.border }]}>
+              <View style={[styles.picker, { borderColor: theme.colors.gray300 }]}>
                 <Picker
                   selectedValue={formData.documentType}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, documentType: value as DocumentType }))}
