@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -25,7 +25,7 @@ type DocumentType = 'CC' | 'CE' | 'NIT' | 'PASSPORT';
 export const AffiliateRegistrationScreen = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { t } = useTranslation('translation');
 
   const [formData, setFormData] = useState({
@@ -43,6 +43,25 @@ export const AffiliateRegistrationScreen = () => {
   });
 
   const [isLoading, setIsLoading] = useState(false);
+
+  // Pre-fill form with user data if authenticated
+  useEffect(() => {
+    if (user) {
+      const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+      const suggestedUsername = user.firstName
+        ? user.firstName.toLowerCase().replace(/[^a-z0-9]/g, '')
+        : '';
+
+      setFormData(prev => ({
+        ...prev,
+        name: fullName || prev.name,
+        username: suggestedUsername || prev.username,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        bio: user.bio || prev.bio,
+      }));
+    }
+  }, [user]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
