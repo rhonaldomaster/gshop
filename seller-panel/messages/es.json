@@ -409,6 +409,7 @@
   "live": {
     "title": "Transmisiones en Vivo",
     "manageStreams": "Gestiona tus transmisiones en vivo de compras",
+    "guide": "Guia",
     "myStreams": "Mis transmisiones",
     "createStream": "Crear Transmisión",
     "createLiveStream": "Crear Transmisión en Vivo",
@@ -735,6 +736,290 @@
     "invalidAmount": "Monto inválido",
     "insufficientBalance": "Saldo insuficiente",
     "minimumAmount": "El monto mínimo es $10.000 COP"
+  },
+  "liveGuide": {
+    "title": "Guia de Transmisiones en Vivo",
+    "subtitle": "Aprende paso a paso como crear tu primera transmision en vivo y vender tus productos",
+    "backToLive": "Volver a En Vivo",
+    "tableOfContents": "Contenido",
+    "sections": {
+      "requirements": "Que necesitas",
+      "create": "Crear transmision",
+      "obs": "Configurar OBS",
+      "products": "Agregar productos",
+      "start": "Iniciar transmision",
+      "during": "Durante la transmision",
+      "end": "Finalizar transmision",
+      "tips": "Consejos para vender mas",
+      "troubleshooting": "Solucion de problemas"
+    },
+    "requirements": {
+      "title": "Que necesitas antes de empezar",
+      "intro": "Antes de hacer tu primera transmision, asegurate de tener lo siguiente:",
+      "equipment": {
+        "title": "Equipo basico",
+        "computer": "Computadora",
+        "computerDesc": "Con conexion a internet estable (minimo 5 Mbps de subida)",
+        "camera": "Camara web",
+        "cameraDesc": "O camara de tu telefono conectada a la computadora",
+        "microphone": "Microfono",
+        "microphoneDesc": "Puede ser el del computador, pero uno externo se escucha mejor",
+        "lighting": "Buena iluminacion",
+        "lightingDesc": "Luz natural o una lampara frente a ti"
+      },
+      "software": {
+        "title": "Software",
+        "obs": "OBS Studio",
+        "obsDesc": "Programa gratuito para transmitir - Lo configuraremos en esta guia",
+        "browser": "Navegador web",
+        "browserDesc": "Para acceder al Panel de Vendedor de GSHOP"
+      },
+      "gshop": {
+        "title": "En tu tienda GSHOP",
+        "product": "Al menos 1 producto publicado que quieras mostrar",
+        "verified": "Tu cuenta de vendedor verificada y activa"
+      }
+    },
+    "create": {
+      "title": "Crear tu primera transmision",
+      "step1": {
+        "title": "Paso 1: Accede al Panel de Vendedor",
+        "item1": "Abre tu navegador y ve a la pagina del Panel de Vendedor",
+        "item2": "Inicia sesion con tu correo y contrasena",
+        "item3": "En el menu de la izquierda, haz clic en \"En Vivo\""
+      },
+      "step2": {
+        "title": "Paso 2: Crea una nueva transmision",
+        "item1": "Haz clic en el boton azul \"Crear Transmision\"",
+        "item2": "Llena el formulario con los datos de tu transmision:",
+        "item3": "Selecciona los productos que quieres mostrar (puedes agregar mas despues)",
+        "item4": "Haz clic en \"Crear Transmision\""
+      },
+      "table": {
+        "field": "Campo",
+        "description": "Que poner",
+        "example": "Ejemplo",
+        "titleField": "Titulo",
+        "titleDesc": "Un nombre llamativo para tu transmision",
+        "titleExample": "Ofertas de Viernes! 50% en Ropa",
+        "descField": "Descripcion",
+        "descDesc": "De que se trata tu transmision",
+        "descExample": "Descuentos exclusivos en coleccion de verano",
+        "scheduleField": "Programar",
+        "scheduleDesc": "(Opcional) Si quieres programarla para despues",
+        "scheduleExample": "Fecha y hora deseada"
+      }
+    },
+    "obs": {
+      "title": "Configurar OBS Studio",
+      "intro": "OBS Studio es un programa gratuito que te permite transmitir video desde tu computadora. Es muy facil de usar una vez configurado.",
+      "downloadBtn": "Descargar OBS Studio",
+      "step1": {
+        "title": "Paso 1: Descargar OBS Studio",
+        "item1": "Abre tu navegador",
+        "item2": "Ve a: https://obsproject.com/",
+        "item3": "Haz clic en el boton de descarga para tu sistema operativo (Windows, Mac o Linux)",
+        "item4": "Instala el programa siguiendo las instrucciones en pantalla"
+      },
+      "step2": {
+        "title": "Paso 2: Obtener tus datos de transmision",
+        "intro": "Antes de configurar OBS, necesitas copiar dos datos importantes de GSHOP:",
+        "item1": "En el Panel de Vendedor, ve a \"En Vivo\"",
+        "item2": "Haz clic en tu transmision recien creada",
+        "item3": "Haz clic en el boton \"Configurar OBS\"",
+        "item4": "Copia la URL RTMP y la Clave de Transmision",
+        "warning": "IMPORTANTE:",
+        "warningDesc": "La Clave de Transmision es privada. No la compartas con nadie."
+      },
+      "step3": {
+        "title": "Paso 3: Configurar OBS",
+        "item1": "Abre OBS Studio",
+        "item2": "Ve a Configuracion (boton abajo a la derecha)",
+        "item3": "En el menu izquierdo, haz clic en \"Transmision\"",
+        "item4": "Configura los campos segun la tabla de abajo y haz clic en \"Aplicar\""
+      },
+      "table": {
+        "field": "Campo",
+        "value": "Que poner",
+        "service": "Servicio",
+        "serviceValue": "Personalizado...",
+        "server": "Servidor",
+        "serverValue": "Pega la URL RTMP de GSHOP",
+        "streamKey": "Clave de transmision",
+        "streamKeyValue": "Pega la Clave de Transmision de GSHOP"
+      },
+      "step4": {
+        "title": "Paso 4: Configurar calidad de video (Recomendado)",
+        "intro": "Para que tu transmision se vea bien, configura estos valores:",
+        "output": "Configuracion > Salida",
+        "bitrate": "Bitrate de Video",
+        "encoder": "Codificador",
+        "keyframe": "Intervalo de Fotogramas",
+        "video": "Configuracion > Video",
+        "resolution": "Resolucion de Salida"
+      },
+      "step5": {
+        "title": "Paso 5: Agregar tu camara y microfono",
+        "item1": "En la pantalla principal de OBS, busca el panel de \"Fuentes\" (abajo)",
+        "item2": "Haz clic en el boton \"+\"",
+        "item3": "Selecciona \"Dispositivo de Captura de Video\"",
+        "item4": "Dale un nombre (ejemplo: \"Mi Camara\") y haz clic en OK",
+        "item5": "Selecciona tu camara en la lista y haz clic en OK",
+        "item6": "Repite para agregar tu microfono: \"+\" > \"Captura de Entrada de Audio\""
+      }
+    },
+    "products": {
+      "title": "Agregar productos a tu transmision",
+      "intro": "Puedes agregar productos antes o durante la transmision:",
+      "add": {
+        "title": "Desde el Panel de Vendedor",
+        "item1": "Abre tu transmision en el Panel de Vendedor",
+        "item2": "En la seccion \"Productos de la Transmision\", haz clic en \"Agregar Producto\"",
+        "item3": "Selecciona el producto de tu catalogo",
+        "item4": "(Opcional) Puedes agregar un precio especial solo para la transmision",
+        "item5": "Haz clic en \"Agregar\""
+      },
+      "highlight": {
+        "title": "Destacar un producto durante la transmision",
+        "intro": "Cuando estes en vivo y quieras mostrar un producto en pantalla:",
+        "item1": "Busca el producto en la lista",
+        "item2": "Haz clic en el boton \"Mostrar\" (icono de ojo)",
+        "item3": "El producto aparecera destacado para tus espectadores",
+        "item4": "Para quitarlo, haz clic en \"Ocultar\""
+      }
+    },
+    "start": {
+      "title": "Iniciar la transmision",
+      "important": "MUY IMPORTANTE: Debes seguir este orden exacto",
+      "step1": {
+        "title": "1. Primero: Inicia la transmision en OBS",
+        "item1": "En OBS, asegurate de que todo se ve bien en la vista previa",
+        "item2": "Haz clic en el boton \"Iniciar Transmision\" (abajo a la derecha)",
+        "item3": "Espera unos segundos hasta que OBS muestre que esta transmitiendo"
+      },
+      "step2": {
+        "title": "2. Segundo: Activa la transmision en GSHOP",
+        "item1": "En el Panel de Vendedor, abre tu transmision",
+        "item2": "Haz clic en el boton verde \"Transmitir\" o \"Ir en Vivo\"",
+        "item3": "Tu transmision ahora esta visible para tus clientes!"
+      }
+    },
+    "during": {
+      "title": "Durante la transmision",
+      "panel": {
+        "title": "Panel de control en vivo",
+        "intro": "Mientras transmites, veras en tiempo real:",
+        "viewers": "Espectadores actuales",
+        "viewersDesc": "Cuantas personas te estan viendo",
+        "peak": "Pico de espectadores",
+        "peakDesc": "El maximo de personas que tuviste",
+        "sales": "Ventas totales",
+        "salesDesc": "Cuanto has vendido durante la transmision",
+        "chat": "Chat",
+        "chatDesc": "Mensajes de tus espectadores"
+      },
+      "moderation": {
+        "title": "Moderacion del chat",
+        "intro": "Puedes moderar los comentarios de tus espectadores:",
+        "delete": "Eliminar mensaje",
+        "deleteDesc": "Borra un mensaje inapropiado",
+        "timeout": "Timeout",
+        "timeoutDesc": "Silencia a un usuario por 5 minutos",
+        "ban": "Banear",
+        "banDesc": "Bloquea permanentemente a un usuario del chat"
+      },
+      "highlight": {
+        "title": "Destacar productos",
+        "intro": "Durante la transmision, destaca los productos que estes mostrando:",
+        "item1": "Encuentra el producto en la lista",
+        "item2": "Haz clic en \"Mostrar\" para destacarlo",
+        "item3": "Los espectadores lo veran resaltado y podran comprarlo facilmente"
+      }
+    },
+    "end": {
+      "title": "Finalizar la transmision",
+      "intro": "Cuando termines de transmitir:",
+      "step1": {
+        "title": "1. Termina en GSHOP",
+        "item1": "En el Panel de Vendedor, haz clic en el boton rojo \"Finalizar Transmision\"",
+        "item2": "Confirma que quieres terminar"
+      },
+      "step2": {
+        "title": "2. Termina en OBS",
+        "item1": "En OBS, haz clic en \"Detener Transmision\"",
+        "item2": "Puedes cerrar OBS"
+      },
+      "results": {
+        "title": "Revisa tus resultados",
+        "intro": "Despues de terminar, podras ver:",
+        "item1": "Total de espectadores que tuviste",
+        "item2": "Pico maximo de espectadores",
+        "item3": "Ventas realizadas durante la transmision",
+        "item4": "Productos mas vendidos"
+      }
+    },
+    "tips": {
+      "title": "Consejos para vender mas",
+      "before": {
+        "title": "Antes de la transmision",
+        "item1": "Anuncia tu transmision en redes sociales con anticipacion",
+        "item2": "Prepara tus productos para mostrarlos facilmente",
+        "item3": "Prueba tu equipo (camara, microfono, internet) antes de empezar",
+        "item4": "Escoge un buen horario cuando tus clientes esten disponibles"
+      },
+      "during": {
+        "title": "Durante la transmision",
+        "item1": "Saluda a quienes llegan y menciona sus nombres",
+        "item2": "Muestra los productos de cerca y describe sus detalles",
+        "item3": "Responde preguntas del chat rapidamente",
+        "item4": "Ofrece descuentos exclusivos solo para la transmision",
+        "item5": "Crea urgencia: \"Solo quedan 3 unidades!\"",
+        "item6": "Agradece las compras en vivo"
+      },
+      "after": {
+        "title": "Despues de la transmision",
+        "item1": "Agradece a tu audiencia en redes sociales",
+        "item2": "Revisa las estadisticas para mejorar la proxima vez",
+        "item3": "Programa tu siguiente transmision y anunciala"
+      }
+    },
+    "troubleshooting": {
+      "title": "Solucion de problemas comunes",
+      "noVideo": {
+        "title": "No se ve mi video en OBS",
+        "item1": "Verifica que tu camara este conectada",
+        "item2": "En Fuentes, haz doble clic en tu camara y selecciona el dispositivo correcto",
+        "item3": "Asegurate de que otra aplicacion no este usando la camara"
+      },
+      "noConnect": {
+        "title": "OBS dice que no puede conectar",
+        "item1": "Verifica que la URL RTMP y la Clave de Transmision esten correctas",
+        "item2": "Revisa tu conexion a internet",
+        "item3": "Asegurate de que no tengas un firewall bloqueando OBS"
+      },
+      "lag": {
+        "title": "Mi transmision se ve cortada o con lag",
+        "item1": "Reduce el Bitrate de Video en Configuracion > Salida (intenta 2000 kbps)",
+        "item2": "Cierra otras aplicaciones que usen internet",
+        "item3": "Usa cable de red en lugar de WiFi si es posible"
+      },
+      "noSound": {
+        "title": "Los espectadores dicen que no hay sonido",
+        "item1": "En OBS, verifica que el medidor de audio se mueva cuando hablas",
+        "item2": "Revisa que tu microfono este seleccionado correctamente",
+        "item3": "Asegurate de que el microfono no este silenciado"
+      },
+      "cantStart": {
+        "title": "No puedo iniciar la transmision en GSHOP",
+        "item1": "Asegurate de que la transmision este en estado \"Programado\"",
+        "item2": "Primero inicia en OBS, luego en GSHOP",
+        "item3": "Refresca la pagina del Panel de Vendedor"
+      },
+      "needHelp": {
+        "title": "Necesitas ayuda?",
+        "desc": "Si tienes problemas o dudas, contacta a soporte de GSHOP desde tu Panel de Vendedor."
+      }
+    }
   },
   "affiliates": {
     "title": "Gestión de Afiliados",

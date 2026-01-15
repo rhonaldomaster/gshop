@@ -15,7 +15,8 @@ import {
   Video,
   Plus,
   Settings,
-  Share2
+  Share2,
+  HelpCircle
 } from 'lucide-react'
 
 interface LiveStream {
@@ -156,13 +157,22 @@ export default function LivePage() {
             <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
             <p className="text-gray-600">{t('manageStreams')}</p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t('createStream')}</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <Link
+              href="/dashboard/live/guia"
+              className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg border border-gray-300 hover:border-blue-600 flex items-center space-x-2 transition-colors"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span>{t('guide')}</span>
+            </Link>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>{t('createStream')}</span>
+            </button>
+          </div>
         </div>
 
       {/* Active Stream Card */}
