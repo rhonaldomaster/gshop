@@ -17,6 +17,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { rateLimitConfig } from '../common/config/rate-limit.config';
 import { ProductsService } from './products.service';
 import { CategoriesService } from './categories.service';
 import { ProductsUploadService } from './products-upload.service';
@@ -41,6 +43,7 @@ export class ProductsController {
   ) {}
 
   @Post('upload')
+  @Throttle({ default: { ttl: rateLimitConfig.endpoints.api.upload.ttl, limit: rateLimitConfig.endpoints.api.upload.limit } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth('access-token')
@@ -125,6 +128,7 @@ export class ProductsController {
   }
 
   @Post()
+  @Throttle({ default: { ttl: rateLimitConfig.endpoints.api.write.ttl, limit: rateLimitConfig.endpoints.api.write.limit } })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth('access-token')
@@ -139,6 +143,7 @@ export class ProductsController {
   }
 
   @Get()
+  @Throttle({ default: { ttl: rateLimitConfig.endpoints.api.read.ttl, limit: rateLimitConfig.endpoints.api.read.limit } })
   @ApiOperation({ summary: 'Get all products with filtering and pagination' })
   @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
   findAll(@Query() query: ProductQueryDto) {
@@ -146,6 +151,7 @@ export class ProductsController {
   }
 
   @Get('search')
+  @Throttle({ default: { ttl: rateLimitConfig.endpoints.search.default.ttl, limit: rateLimitConfig.endpoints.search.default.limit } })
   @ApiOperation({ summary: 'Search products' })
   @ApiResponse({ status: 200, description: 'Products search results' })
   searchProducts(@Query() query: ProductQueryDto) {
