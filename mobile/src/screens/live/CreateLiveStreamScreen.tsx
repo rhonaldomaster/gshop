@@ -84,7 +84,8 @@ export default function CreateLiveStreamScreen({ navigation }: any) {
         description: description.trim(),
       });
 
-      navigation.replace('NativeBroadcast', {
+      // Navigate to method selector
+      navigation.replace('GoLive', {
         streamId: stream.id,
         hostType: 'seller',
       });

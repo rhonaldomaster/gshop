@@ -137,7 +137,8 @@ export default function CreateAffiliateLiveStreamScreen({ navigation }: any) {
         sellerId: selectedSeller.id,
       });
 
-      navigation.replace('NativeBroadcast', {
+      // Navigate to method selector
+      navigation.replace('GoLive', {
         streamId: stream.id,
         hostType: 'affiliate',
       });

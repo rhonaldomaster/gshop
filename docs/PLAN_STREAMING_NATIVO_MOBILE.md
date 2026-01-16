@@ -8,7 +8,7 @@
 | FASE 2: Streaming Nativo Mobile | ✅ COMPLETADA | 2026-01-16 |
 | FASE 3: Seller Mode Mobile | ✅ COMPLETADA | 2026-01-16 |
 | FASE 4: UI Carrito TikTok Style | ✅ COMPLETADA | 2026-01-16 |
-| FASE 5: Mantener Soporte OBS | ⏳ Pendiente | - |
+| FASE 5: Mantener Soporte OBS | ✅ COMPLETADA | 2026-01-16 |
 | FASE 6: VOD/Replays | ⏳ Pendiente | - |
 
 ---
@@ -787,3 +787,75 @@ Para RTMP nativo completo, se requeriría:
 - Traducciones completas en español
 - WebSocket events documentados y probados
 - Integración tanto para viewers como hosts
+
+### FASE 5: Mantener Soporte OBS - ✅ COMPLETADA (2026-01-16)
+
+**Archivos creados:**
+- `mobile/src/components/live/StreamMethodSelector.tsx` - Selector de método de streaming:
+  - Dos opciones: streaming nativo (teléfono) y OBS/externo
+  - Cards con iconos, descripciones y lista de características
+  - Badge "Recomendado" en opción nativa
+  - Selección visual con borde y fondo destacado
+  - Haptic feedback al seleccionar
+- `mobile/src/screens/live/GoLiveScreen.tsx` - Pantalla de entrada para ir en vivo:
+  - Integra `StreamMethodSelector` para elegir método
+  - Navega a `NativeBroadcast` si elige nativo
+  - Navega a `OBSSetup` si elige OBS
+  - Header con botón de retroceso
+  - Botón "Continuar" habilitado solo con selección
+- `mobile/src/screens/live/OBSSetupScreen.tsx` - Pantalla completa de configuración OBS:
+  - Código QR con credenciales para escanear desde PC
+  - Campos de URL RTMP y Stream Key con botones de copiar
+  - Toggle para mostrar/ocultar stream key
+  - Opción de regenerar stream key con confirmación
+  - Sección de configuración recomendada (resolución, bitrate, keyframe, encoder)
+  - Instrucciones paso a paso de configuración
+  - Links de descarga para OBS Studio y Streamlabs
+  - Indicador de estado de conexión
+  - Vista de preview cuando OBS está conectado
+
+**Archivos modificados:**
+- `mobile/package.json`:
+  - Agregado `expo-haptics: ~14.1.1` para feedback táctil
+  - Agregado `react-native-qrcode-svg: ^6.3.2` para códigos QR
+  - Agregado `react-native-svg: 15.11.2` (peer dependency)
+- `mobile/src/navigation/LiveNavigator.tsx`:
+  - Nueva ruta `GoLive` con params: `streamId`, `hostType`
+  - Nueva ruta `OBSSetup` con params: `streamId`, `hostType`
+  - Imports de `GoLiveScreen` y `OBSSetupScreen`
+- `mobile/src/screens/live/CreateLiveStreamScreen.tsx`:
+  - Cambiado navegación de `NativeBroadcast` a `GoLive`
+  - El flujo ahora pasa por el selector de método
+- `mobile/src/screens/live/CreateAffiliateLiveStreamScreen.tsx`:
+  - Cambiado navegación de `NativeBroadcast` a `GoLive`
+  - El flujo ahora pasa por el selector de método
+- `mobile/src/i18n/locales/es.json` - Nuevas traducciones OBS:
+  - `live.selectStreamMethod`, `live.selectStreamMethodDescription`
+  - `live.streamFromPhone`, `live.streamFromPhoneDescription`
+  - `live.streamWithOBS`, `live.streamWithOBSDescription`
+  - Features: `live.quickSetup`, `live.noExtraEquipment`, `live.easyToUse`
+  - Features OBS: `live.professionalQuality`, `live.multipleScenes`, `live.advancedControls`
+  - OBS Setup: `live.obsSetup`, `live.scanFromPC`, `live.scanQRDescription`
+  - `live.orCopyManually`, `live.rtmpUrl`, `live.streamKey`, `live.copied`
+  - `live.showStreamKey`, `live.hideStreamKey`, `live.regenerateKey`
+  - Settings: `live.recommendedSettings`, `live.resolution`, `live.bitrate`
+  - Instructions: `live.obsStep1Title` - `live.obsStep5Description`
+  - Downloads: `live.downloadOBS`, `live.downloadStreamlabs`
+  - Status: `live.connectionStatus`, `live.waitingForConnection`, `live.connected`
+
+**Características principales:**
+- **Selector de método dual**: Los usuarios eligen entre streaming nativo o profesional
+- **QR Code para configuración rápida**: Escanear desde PC para copiar credenciales
+- **Gestión de stream keys**: Copiar, mostrar/ocultar, regenerar con confirmación
+- **Guía de configuración completa**: Instrucciones paso a paso para configurar OBS
+- **Settings recomendados**: Configuración óptima para calidad de stream
+- **Links de descarga**: Acceso directo a OBS Studio y Streamlabs
+- **Indicador de conexión**: Feedback visual del estado del stream
+- **Flujo unificado**: Tanto sellers como affiliates usan el mismo selector
+
+**Verificación:**
+- Componentes usan patrones establecidos del proyecto
+- TypeScript tipado correctamente
+- Traducciones completas en español
+- Navegación actualizada con nuevas rutas
+- QR code funcional con react-native-qrcode-svg

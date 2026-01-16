@@ -7,6 +7,8 @@ import LiveStreamingScreen from '../screens/live/LiveStreamingScreen';
 import LiveStreamResultsScreen from '../screens/live/LiveStreamResultsScreen';
 import LiveForYouFeedScreen from '../screens/live/LiveForYouFeedScreen';
 import NativeBroadcastScreen from '../screens/live/NativeBroadcastScreen';
+import GoLiveScreen from '../screens/live/GoLiveScreen';
+import OBSSetupScreen from '../screens/live/OBSSetupScreen';
 
 export type LiveStackParamList = {
   LiveMain: undefined;
@@ -15,7 +17,9 @@ export type LiveStackParamList = {
   LiveStreaming: { streamId: string; rtmpUrl: string; streamKey: string };
   LiveStreamResults: { streamId: string; stats: any; duration: number };
   LiveForYouFeed: undefined;
-  NativeBroadcast: { streamId: string; hostType: 'seller' | 'affiliate' };
+  GoLive: { streamId: string; hostType: 'seller' | 'affiliate' };
+  NativeBroadcast: { streamId: string; hostType: 'seller' | 'affiliate'; useOBS?: boolean };
+  OBSSetup: { streamId: string; hostType: 'seller' | 'affiliate' };
 };
 
 const Stack = createNativeStackNavigator<LiveStackParamList>();
@@ -46,8 +50,16 @@ export default function LiveNavigator() {
         component={LiveForYouFeedScreen}
       />
       <Stack.Screen
+        name="GoLive"
+        component={GoLiveScreen}
+      />
+      <Stack.Screen
         name="NativeBroadcast"
         component={NativeBroadcastScreen}
+      />
+      <Stack.Screen
+        name="OBSSetup"
+        component={OBSSetupScreen}
       />
     </Stack.Navigator>
   );
