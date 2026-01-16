@@ -243,11 +243,11 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 - [x] Implementar throttler global
 - [x] Agregar whitelist para servicios internos
 
-### Sprint 2: Endpoints Criticos
-- [ ] Aplicar rate limiting a auth endpoints
-- [ ] Aplicar rate limiting a payments
-- [ ] Aplicar rate limiting a orders
-- [ ] Configurar logging y audit
+### Sprint 2: Endpoints Criticos ✅ COMPLETADO
+- [x] Aplicar rate limiting a auth endpoints
+- [x] Aplicar rate limiting a payments
+- [x] Aplicar rate limiting a orders
+- [x] Configurar logging y audit (incluido en CustomThrottlerGuard)
 
 ### Sprint 3: Cobertura Completa
 - [ ] Aplicar a endpoints de productos
@@ -350,4 +350,4 @@ export class AppModule {}
 
 **Documento creado**: Enero 2026
 **Ultima actualizacion**: Enero 2026
-**Estado**: EN PROGRESO - Sprint 1 completado
+**Estado**: EN PROGRESO - Sprint 1 y 2 completados

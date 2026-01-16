@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -20,6 +21,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { SocialLoginDto } from './dto/social-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { StorageService } from '../common/storage/storage.service';
+import { rateLimitConfig } from '../common/config/rate-limit.config';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -30,31 +32,38 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @Throttle({ default: rateLimitConfig.endpoints.auth.register })
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
+  @ApiResponse({ status: 429, description: 'Too many registration attempts' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Post('login')
+  @Throttle({ default: rateLimitConfig.endpoints.auth.login })
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
   @Post('social')
+  @Throttle({ default: rateLimitConfig.endpoints.auth.login })
   @ApiOperation({ summary: 'Login or register with social provider (Google/Facebook)' })
   @ApiResponse({ status: 200, description: 'Social login successful' })
   @ApiResponse({ status: 401, description: 'Invalid social token' })
   @ApiResponse({ status: 400, description: 'Email not provided by social provider' })
+  @ApiResponse({ status: 429, description: 'Too many login attempts' })
   async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
     return this.authService.socialLogin(socialLoginDto);
   }
 
   @Get('profile')
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current user profile' })

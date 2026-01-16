@@ -15,6 +15,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { MercadoPagoService } from './mercadopago.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -25,6 +26,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../database/entities/user.entity';
+import { rateLimitConfig } from '../common/config/rate-limit.config';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -38,14 +40,17 @@ export class PaymentsController {
 
   @Public()
   @Post()
+  @Throttle({ default: rateLimitConfig.endpoints.payments.create })
   @ApiOperation({ summary: 'Create a new payment' })
   @ApiResponse({ status: 201, description: 'Payment created successfully' })
   @ApiResponse({ status: 400, description: 'Payment creation failed' })
+  @ApiResponse({ status: 429, description: 'Too many payment attempts' })
   create(@Body() createPaymentDto: CreatePaymentDto) {
     return this.paymentsService.createPayment(createPaymentDto);
   }
 
   @Post('webhooks/mercadopago')
+  @SkipThrottle()
   @ApiOperation({ summary: 'MercadoPago webhook handler' })
   @ApiResponse({ status: 200, description: 'Webhook processed successfully' })
   async handleMercadoPagoWebhook(

@@ -12,6 +12,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { OrdersService } from './orders.service';
 import { ShippingService } from './shipping.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -38,9 +39,11 @@ export class OrdersController {
 
   @Public()
   @Post()
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Create a new order' })
   @ApiResponse({ status: 201, description: 'Order created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid order data or insufficient stock' })
+  @ApiResponse({ status: 429, description: 'Too many order attempts' })
   create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
     // Prioritize authenticated user ID over guest order flag
     // If JWT token is present and valid, use that userId (even if isGuestOrder is true in request)
