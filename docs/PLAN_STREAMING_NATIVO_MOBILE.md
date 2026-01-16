@@ -7,7 +7,7 @@
 | FASE 1: Infraestructura Base | ✅ COMPLETADA | 2026-01-16 |
 | FASE 2: Streaming Nativo Mobile | ✅ COMPLETADA | 2026-01-16 |
 | FASE 3: Seller Mode Mobile | ✅ COMPLETADA | 2026-01-16 |
-| FASE 4: UI Carrito TikTok Style | ⏳ Pendiente | - |
+| FASE 4: UI Carrito TikTok Style | ✅ COMPLETADA | 2026-01-16 |
 | FASE 5: Mantener Soporte OBS | ⏳ Pendiente | - |
 | FASE 6: VOD/Replays | ⏳ Pendiente | - |
 
@@ -704,3 +704,86 @@ Para RTMP nativo completo, se requeriría:
 - Navegación condicional funciona según rol del usuario
 - Traducciones completas en español
 - Patrones consistentes con el resto del proyecto
+
+### FASE 4: UI Carrito TikTok Style - ✅ COMPLETADA (2026-01-16)
+
+**Archivos creados:**
+- `mobile/src/components/live/ProductOverlayTikTok.tsx` - Overlay de productos estilo TikTok:
+  - Producto "pinneado" con animaciones (bounce, glow, pulse)
+  - Contador de compras en tiempo real (ej: "🔥 47 vendidos durante este live")
+  - Timer de oferta especial con countdown visual
+  - Mini carousel de productos deslizable
+  - Quick-buy con haptic feedback
+  - Long-press para pin (hosts)
+  - Animaciones con Animated API de React Native
+- `mobile/src/components/live/LiveCheckoutModal.tsx` - Modal de checkout sin salir del live:
+  - 3 pasos: selección de variante → checkout → éxito
+  - Selección rápida de talla/color/variante
+  - Preview de dirección guardada
+  - Botón de compra rápida con precio total
+  - Animación de confetti en compra exitosa
+  - Slide-up modal con backdrop blur
+- `mobile/src/components/live/PurchaseNotification.tsx` - Sistema de notificaciones de compra:
+  - `PurchaseNotification` - Notificaciones toast con slide-in desde la derecha
+  - `PurchaseAnimation` - Partículas animadas (emojis flotantes)
+  - `PurchaseCelebration` - Banner celebratorio para compras grandes
+  - `usePurchaseNotifications()` hook para fácil integración
+  - Cola de notificaciones con procesamiento secuencial
+  - Haptic feedback en cada compra
+
+**Archivos modificados:**
+- `backend/src/live/live.gateway.ts` - Nuevos eventos WebSocket:
+  - `pinProduct` - Host pinnea un producto destacado
+  - `unpinProduct` - Host quita el pin de producto
+  - `purchaseMade` - Viewer realiza una compra
+  - `getStreamPurchaseStats` - Obtener estadísticas de compras
+  - `startFlashSale` - Iniciar oferta flash con timer
+  - Eventos emitidos: `productPinned`, `productUnpinned`, `newPurchase`, `flashSaleStarted`, `flashSaleEnded`, `purchaseAnimation`
+- `backend/src/live/live.service.ts` - Nuevos métodos para TikTok style:
+  - `incrementStreamPurchaseCount()` - Contador de compras por producto
+  - `getStreamPurchaseStats()` - Estadísticas totales y por producto
+  - `clearStreamPurchaseCounts()` - Limpiar contadores al terminar stream
+  - `getPinnedProduct()` - Obtener producto pinneado actual
+  - `getActiveStreamProducts()` - Obtener productos activos del stream
+  - Sistema de cache en memoria para contadores (Map<streamId, Map<productId, count>>)
+- `mobile/src/screens/live/LiveStreamScreen.tsx` - Integración para viewers:
+  - Import de nuevos componentes TikTok style
+  - Estados: `pinnedProductId`, `purchaseStats`, `timerEndTime`
+  - Hook `usePurchaseNotifications()` para notificaciones
+  - Socket listeners: `productPinned`, `productUnpinned`, `newPurchase`, `flashSaleStarted`, `flashSaleEnded`
+  - Handler `handleCheckoutSuccess` que emite `purchaseMade` al WebSocket
+  - Render de `ProductOverlayTikTok`, `PurchaseNotification`, `PurchaseCelebration`
+  - Cambio de `QuickCheckoutModal` a `LiveCheckoutModal`
+- `mobile/src/screens/live/NativeBroadcastScreen.tsx` - Integración para hosts:
+  - Import de componentes TikTok style + expo-haptics
+  - Estados TikTok: `pinnedProductId`, `purchaseStats`, `timerEndTime`
+  - Hook `usePurchaseNotifications()` para ver compras en tiempo real
+  - Socket listeners para eventos de compra y pin
+  - Handler `handlePinProduct()` para pinnear productos con haptic
+  - Handler `startFlashSale()` para iniciar ofertas flash
+  - Modal de productos actualizado con botón de pin y badge "pinned"
+  - Estadísticas de ventas por producto en el modal
+  - Render de overlay y notificaciones de compra
+- `mobile/src/i18n/locales/es.json` - Traducciones TikTok Shop:
+  - `live.pinned`, `live.soldDuringStream`, `live.buy`
+  - `live.longPressToPin`, `live.liveDeal`, `live.quantity`
+  - `live.selectAllVariants`, `live.purchaseComplete`
+  - `live.justBought`, `live.newPurchase`
+  - `live.flashSale`, `live.endsIn`, `live.hurryUp`
+
+**Características principales:**
+- **Producto destacado**: El host puede pinnear un producto que aparece con animaciones llamativas
+- **Contador en tiempo real**: Los viewers ven cuántas unidades se han vendido durante el live
+- **Timer de ofertas**: Countdown visual para ofertas flash con urgencia
+- **Checkout in-stream**: Compra sin salir del live con selección de variantes
+- **Notificaciones de compra**: Toast notifications que muestran "Juan acaba de comprar iPhone!"
+- **Celebraciones**: Confetti y animaciones para compras grandes
+- **Haptic feedback**: Retroalimentación táctil en acciones importantes
+- **Soporte host/viewer**: UI diferenciada para quien transmite vs quien ve
+
+**Verificación:**
+- Componentes siguen patrones de React Native/Animated API
+- TypeScript tipado correctamente con interfaces
+- Traducciones completas en español
+- WebSocket events documentados y probados
+- Integración tanto para viewers como hosts

@@ -1491,4 +1491,121 @@ export class LiveService {
       streamKey: newStreamKey.value,
     };
   }
+
+  // ==================== TikTok Shop Style Features ====================
+
+  // In-memory store for stream purchase counts (per product)
+  private streamPurchaseCounts = new Map<string, Map<string, number>>();
+
+  /**
+   * Increment purchase count for a product during a live stream
+   * Used for real-time "X sold" notifications
+   */
+  async incrementStreamPurchaseCount(streamId: string, productId: string): Promise<number> {
+    // Get or create stream's purchase count map
+    if (!this.streamPurchaseCounts.has(streamId)) {
+      this.streamPurchaseCounts.set(streamId, new Map<string, number>());
+    }
+
+    const streamCounts = this.streamPurchaseCounts.get(streamId)!;
+    const currentCount = streamCounts.get(productId) || 0;
+    const newCount = currentCount + 1;
+    streamCounts.set(productId, newCount);
+
+    // Also update the database for persistence
+    try {
+      const streamProduct = await this.streamProductRepository.findOne({
+        where: { streamId, productId },
+      });
+
+      if (streamProduct) {
+        streamProduct.orderCount = (streamProduct.orderCount || 0) + 1;
+        await this.streamProductRepository.save(streamProduct);
+      }
+    } catch (error) {
+      console.error(`[Live Service] Failed to update product order count: ${error.message}`);
+    }
+
+    console.log(`[Live Service] Stream ${streamId} - Product ${productId} purchase count: ${newCount}`);
+
+    return newCount;
+  }
+
+  /**
+   * Get purchase stats for all products in a stream
+   */
+  async getStreamPurchaseStats(streamId: string): Promise<{
+    totalPurchases: number;
+    productStats: Array<{ productId: string; purchaseCount: number }>;
+  }> {
+    // Get in-memory counts
+    const streamCounts = this.streamPurchaseCounts.get(streamId);
+
+    if (!streamCounts) {
+      // If no in-memory counts, try to get from database
+      const streamProducts = await this.streamProductRepository.find({
+        where: { streamId },
+        select: ['productId', 'orderCount'],
+      });
+
+      const productStats = streamProducts.map(sp => ({
+        productId: sp.productId,
+        purchaseCount: sp.orderCount || 0,
+      }));
+
+      const totalPurchases = productStats.reduce((sum, p) => sum + p.purchaseCount, 0);
+
+      return {
+        totalPurchases,
+        productStats,
+      };
+    }
+
+    // Convert in-memory counts to array
+    const productStats = Array.from(streamCounts.entries()).map(([productId, count]) => ({
+      productId,
+      purchaseCount: count,
+    }));
+
+    const totalPurchases = productStats.reduce((sum, p) => sum + p.purchaseCount, 0);
+
+    return {
+      totalPurchases,
+      productStats,
+    };
+  }
+
+  /**
+   * Clear purchase counts when stream ends
+   * Called when stream status changes to ENDED
+   */
+  clearStreamPurchaseCounts(streamId: string): void {
+    this.streamPurchaseCounts.delete(streamId);
+    console.log(`[Live Service] Cleared purchase counts for stream ${streamId}`);
+  }
+
+  /**
+   * Get the pinned product for a stream
+   */
+  async getPinnedProduct(streamId: string): Promise<LiveStreamProduct | null> {
+    // For now, we use the isHighlighted field to track pinned products
+    // In a more robust implementation, we could add a separate pinnedAt timestamp
+    const pinnedProduct = await this.streamProductRepository.findOne({
+      where: { streamId, isHighlighted: true },
+      relations: ['product'],
+    });
+
+    return pinnedProduct;
+  }
+
+  /**
+   * Get all active products for a stream (for the carousel)
+   */
+  async getActiveStreamProducts(streamId: string): Promise<LiveStreamProduct[]> {
+    return this.streamProductRepository.find({
+      where: { streamId, isActive: true },
+      relations: ['product'],
+      order: { position: 'ASC' },
+    });
+  }
 }

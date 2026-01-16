@@ -22,8 +22,11 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import io, { Socket } from 'socket.io-client';
+import * as Haptics from 'expo-haptics';
 import { API_CONFIG } from '../../config/api.config';
 import { liveService, NativeStreamCredentials, StreamProduct, StreamStats } from '../../services/live.service';
+import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
+import { PurchaseNotification, PurchaseCelebration, usePurchaseNotifications } from '../../components/live/PurchaseNotification';
 
 interface Message {
   id: string;
@@ -77,6 +80,14 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
     revenue: 0,
   });
   const [showAnalytics, setShowAnalytics] = useState(false);
+
+  // TikTok Shop style states
+  const [pinnedProductId, setPinnedProductId] = useState<string | null>(null);
+  const [purchaseStats, setPurchaseStats] = useState<Record<string, number>>({});
+  const [timerEndTime, setTimerEndTime] = useState<Date | null>(null);
+
+  // Purchase notification hook
+  const { triggerNotification, currentPurchase, dismissCelebration } = usePurchaseNotifications();
 
   // Refs
   const socketRef = useRef<Socket | null>(null);
@@ -165,7 +176,60 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
         revenue: prev.revenue + data.amount,
       }));
     });
-  }, [streamId]);
+
+    // TikTok Shop style events
+    socketRef.current.on('productPinned', (data: { productId: string; timerEndTime?: string }) => {
+      setPinnedProductId(data.productId);
+      if (data.timerEndTime) {
+        setTimerEndTime(new Date(data.timerEndTime));
+      }
+    });
+
+    socketRef.current.on('productUnpinned', () => {
+      setPinnedProductId(null);
+      setTimerEndTime(null);
+    });
+
+    socketRef.current.on('newPurchase', (data: {
+      productId: string;
+      productName: string;
+      buyerName: string;
+      quantity: number;
+      purchaseCount: number;
+    }) => {
+      // Update purchase stats
+      setPurchaseStats(prev => ({
+        ...prev,
+        [data.productId]: data.purchaseCount,
+      }));
+
+      // Trigger notification
+      triggerNotification({
+        productName: data.productName,
+        buyerName: data.buyerName,
+        quantity: data.quantity || 1,
+        timestamp: new Date(),
+      });
+
+      // Haptic feedback for host
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    });
+
+    socketRef.current.on('flashSaleStarted', (data: {
+      productId: string;
+      discountPercent: number;
+      endTime: string;
+    }) => {
+      setPinnedProductId(data.productId);
+      setTimerEndTime(new Date(data.endTime));
+    });
+
+    socketRef.current.on('flashSaleEnded', () => {
+      setTimerEndTime(null);
+    });
+  }, [streamId, triggerNotification]);
 
   const startDurationTimer = () => {
     if (streamTimerRef.current) {
@@ -287,6 +351,64 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
     }
   };
 
+  // Pin product (TikTok style)
+  const handlePinProduct = useCallback((productId: string) => {
+    if (!socketRef.current || !isStreaming) return;
+
+    if (pinnedProductId === productId) {
+      // Unpin if already pinned
+      socketRef.current.emit('unpinProduct', { streamId });
+      setPinnedProductId(null);
+      setTimerEndTime(null);
+    } else {
+      // Pin new product
+      socketRef.current.emit('pinProduct', {
+        streamId,
+        productId,
+        duration: 60, // 60 seconds by default
+      });
+      setPinnedProductId(productId);
+    }
+
+    // Haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+  }, [streamId, pinnedProductId, isStreaming]);
+
+  // Start flash sale
+  const startFlashSale = useCallback((productId: string, discountPercent: number, durationMinutes: number) => {
+    if (!socketRef.current || !isStreaming) return;
+
+    socketRef.current.emit('startFlashSale', {
+      streamId,
+      productId,
+      discountPercent,
+      durationMinutes,
+    });
+
+    // Haptic feedback
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
+  }, [streamId, isStreaming]);
+
+  // Get purchase count for pinned product
+  const getPinnedProductPurchaseCount = useCallback(() => {
+    if (!pinnedProductId) return 0;
+    return purchaseStats[pinnedProductId] || 0;
+  }, [pinnedProductId, purchaseStats]);
+
+  // Handle product quick buy from overlay (as host, this shows product detail)
+  const handleOverlayProductPress = useCallback((productId: string) => {
+    // Find the product in the products list
+    const product = products.find(p => p.product.id === productId || p.id === productId);
+    if (product) {
+      // For host, we just highlight or pin the product
+      handlePinProduct(product.product.id);
+    }
+  }, [products, handlePinProduct]);
+
   // Format helpers
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -407,6 +529,40 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
         </View>
       )}
 
+      {/* TikTok Style Product Overlay (for host) */}
+      {isStreaming && products.filter(p => p.isActive).length > 0 && (
+        <ProductOverlayTikTok
+          products={products
+            .filter(p => p.isActive)
+            .map(p => ({
+              id: p.id,
+              productId: p.product.id,
+              name: p.product.name,
+              price: p.product.price,
+              specialPrice: p.specialPrice,
+              image: p.product.images?.[0] || '',
+              isActive: p.isActive,
+            }))}
+          pinnedProductId={pinnedProductId}
+          purchaseCount={getPinnedProductPurchaseCount()}
+          onQuickBuy={handleOverlayProductPress}
+          onViewProduct={handleOverlayProductPress}
+          onExpandProducts={() => setShowProductsPanel(true)}
+          timerEndTime={timerEndTime}
+          isHost={true}
+          onPinProduct={handlePinProduct}
+        />
+      )}
+
+      {/* Purchase Notifications */}
+      <PurchaseNotification enabled={isStreaming} />
+
+      {/* Purchase Celebration for big purchases */}
+      <PurchaseCelebration
+        purchase={currentPurchase}
+        onDismiss={dismissCelebration}
+      />
+
       {/* Chat Overlay */}
       {showChatOverlay && isStreaming && messages.length > 0 && (
         <View style={styles.chatOverlay}>
@@ -523,30 +679,61 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
               products.map((item) => (
                 <View key={item.id} style={styles.productItem}>
                   <View style={styles.productInfo}>
-                    <Text style={styles.productName}>{item.product.name}</Text>
+                    <View style={styles.productHeader}>
+                      <Text style={styles.productName}>{item.product.name}</Text>
+                      {pinnedProductId === item.product.id && (
+                        <View style={styles.pinnedBadge}>
+                          <MaterialIcons name="push-pin" size={12} color="white" />
+                          <Text style={styles.pinnedBadgeText}>{t('live.pinned')}</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.productPrice}>
                       {item.specialPrice
                         ? formatCurrency(item.specialPrice)
                         : formatCurrency(item.product.price)}
                     </Text>
-                    <Text style={styles.productStock}>
-                      Stock: {item.product.stock}
-                    </Text>
+                    <View style={styles.productMeta}>
+                      <Text style={styles.productStock}>
+                        Stock: {item.product.stock}
+                      </Text>
+                      {purchaseStats[item.product.id] > 0 && (
+                        <Text style={styles.productSold}>
+                          {purchaseStats[item.product.id]} {t('live.soldDuringStream')}
+                        </Text>
+                      )}
+                    </View>
                   </View>
 
-                  <TouchableOpacity
-                    style={[
-                      styles.highlightButton,
-                      item.isHighlighted && styles.highlightButtonActive,
-                    ]}
-                    onPress={() => toggleProductHighlight(item.product.id)}
-                  >
-                    <MaterialIcons
-                      name={item.isHighlighted ? 'star' : 'star-outline'}
-                      size={20}
-                      color={item.isHighlighted ? '#fbbf24' : '#6b7280'}
-                    />
-                  </TouchableOpacity>
+                  <View style={styles.productActions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.pinButton,
+                        pinnedProductId === item.product.id && styles.pinButtonActive,
+                      ]}
+                      onPress={() => handlePinProduct(item.product.id)}
+                    >
+                      <MaterialIcons
+                        name="push-pin"
+                        size={20}
+                        color={pinnedProductId === item.product.id ? 'white' : '#6b7280'}
+                      />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.highlightButton,
+                        item.isHighlighted && styles.highlightButtonActive,
+                      ]}
+                      onPress={() => toggleProductHighlight(item.product.id)}
+                    >
+                      <MaterialIcons
+                        name={item.isHighlighted ? 'star' : 'star-outline'}
+                        size={20}
+                        color={item.isHighlighted ? '#fbbf24' : '#6b7280'}
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))
             )}
@@ -943,11 +1130,31 @@ const styles = StyleSheet.create({
   productInfo: {
     flex: 1,
   },
+  productHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   productName: {
     fontSize: 16,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
+    flex: 1,
+  },
+  pinnedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  pinnedBadgeText: {
+    fontSize: 10,
+    color: 'white',
+    fontWeight: '600',
   },
   productPrice: {
     fontSize: 14,
@@ -955,9 +1162,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 2,
   },
+  productMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   productStock: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  productSold: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '500',
+  },
+  productActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  pinButton: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  pinButtonActive: {
+    backgroundColor: '#8b5cf6',
   },
   highlightButton: {
     padding: 12,
