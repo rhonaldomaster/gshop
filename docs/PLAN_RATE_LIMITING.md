@@ -255,9 +255,9 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 - [ ] Aplicar a endpoints de analytics
 - [ ] Documentar en Swagger
 
-### Sprint 4: Produccion
-- [ ] Configurar Redis
-- [ ] Migrar de cache en memoria a Redis
+### Sprint 4: Produccion ✅ PARCIALMENTE COMPLETADO
+- [x] Configurar Redis (RedisThrottlerStorage con auto-deteccion)
+- [x] Migrar de cache en memoria a Redis (fallback automatico)
 - [ ] Tests de carga
 - [ ] Monitoreo y alertas
 
@@ -350,4 +350,4 @@ export class AppModule {}
 
 **Documento creado**: Enero 2026
 **Ultima actualizacion**: Enero 2026
-**Estado**: EN PROGRESO - Sprint 1 y 2 completados
+**Estado**: EN PROGRESO - Sprint 1, 2 y 4 (parcial) completados

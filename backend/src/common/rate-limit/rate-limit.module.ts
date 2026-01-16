@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from '../guards/custom-throttler.guard';
+import { RedisThrottlerStorage } from './redis-throttler.storage';
 import { getEnvAwareRateLimitConfig } from '../config/rate-limit.config';
+
+const logger = new Logger('RateLimitModule');
 
 /**
  * Rate Limit Module
@@ -15,12 +18,21 @@ import { getEnvAwareRateLimitConfig } from '../config/rate-limit.config';
  * - IP/API key whitelist support
  * - User-based tracking for authenticated requests
  * - Environment variable configuration
+ * - Redis storage for distributed rate limiting (production)
+ * - In-memory fallback for development
  */
 @Module({
   imports: [
     ThrottlerModule.forRootAsync({
       useFactory: () => {
         const config = getEnvAwareRateLimitConfig();
+        const storage = new RedisThrottlerStorage();
+
+        logger.log(
+          `Rate limiting initialized with ${storage.getStorageType()} storage ` +
+            `(${config.global.limit} requests per ${config.global.ttl / 1000}s)`,
+        );
+
         return {
           throttlers: [
             {
@@ -29,7 +41,7 @@ import { getEnvAwareRateLimitConfig } from '../config/rate-limit.config';
               limit: config.global.limit,
             },
           ],
-          // Error message customization
+          storage,
           errorMessage:
             'Has excedido el limite de solicitudes. Intenta de nuevo mas tarde.',
         };
@@ -41,7 +53,8 @@ import { getEnvAwareRateLimitConfig } from '../config/rate-limit.config';
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
     },
+    RedisThrottlerStorage,
   ],
-  exports: [ThrottlerModule],
+  exports: [ThrottlerModule, RedisThrottlerStorage],
 })
 export class RateLimitModule {}
