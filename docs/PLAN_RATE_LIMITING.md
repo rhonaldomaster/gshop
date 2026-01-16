@@ -261,6 +261,7 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 ### Sprint 4: Produccion ✅ PARCIALMENTE COMPLETADO
 - [x] Configurar Redis (RedisThrottlerStorage con auto-deteccion)
 - [x] Migrar de cache en memoria a Redis (fallback automatico)
+- [x] Tests unitarios (34 tests passing)
 - [ ] Tests de carga
 - [ ] Monitoreo y alertas
 
@@ -353,4 +354,4 @@ export class AppModule {}
 
 **Documento creado**: Enero 2026
 **Ultima actualizacion**: Enero 2026
-**Estado**: EN PROGRESO - Sprint 1, 2, 3 (parcial) y 4 (parcial) completados
+**Estado**: IMPLEMENTADO - Sprints 1, 2, 3 y 4 completados (tests de carga y monitoreo pendientes)
