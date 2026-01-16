@@ -6,6 +6,7 @@ import CreateLiveStreamScreen from '../screens/live/CreateLiveStreamScreen';
 import LiveStreamingScreen from '../screens/live/LiveStreamingScreen';
 import LiveStreamResultsScreen from '../screens/live/LiveStreamResultsScreen';
 import LiveForYouFeedScreen from '../screens/live/LiveForYouFeedScreen';
+import NativeBroadcastScreen from '../screens/live/NativeBroadcastScreen';
 
 export type LiveStackParamList = {
   LiveMain: undefined;
@@ -14,6 +15,7 @@ export type LiveStackParamList = {
   LiveStreaming: { streamId: string; rtmpUrl: string; streamKey: string };
   LiveStreamResults: { streamId: string; stats: any; duration: number };
   LiveForYouFeed: undefined;
+  NativeBroadcast: { streamId: string; hostType: 'seller' | 'affiliate' };
 };
 
 const Stack = createNativeStackNavigator<LiveStackParamList>();
@@ -42,6 +44,10 @@ export default function LiveNavigator() {
       <Stack.Screen
         name="LiveForYouFeed"
         component={LiveForYouFeedScreen}
+      />
+      <Stack.Screen
+        name="NativeBroadcast"
+        component={NativeBroadcastScreen}
       />
     </Stack.Navigator>
   );

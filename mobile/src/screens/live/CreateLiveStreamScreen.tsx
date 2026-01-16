@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { liveService } from '../../services/live.service';
 
 interface Product {
   id: string;
@@ -78,31 +79,15 @@ export default function CreateLiveStreamScreen({ navigation }: any) {
     setLoading(true);
 
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/live/streams`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add auth token here
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          productIds: Array.from(selectedProducts),
-          hostType: 'seller', // or 'affiliate' based on user type
-        }),
+      const stream = await liveService.createSellerStream({
+        title: title.trim(),
+        description: description.trim(),
       });
 
-      if (response.ok) {
-        const stream = await response.json();
-        // Navigate to streaming screen
-        navigation.replace('LiveStreaming', {
-          streamId: stream.id,
-          rtmpUrl: stream.rtmpUrl,
-          streamKey: stream.streamKey,
-        });
-      } else {
-        throw new Error('Failed to create stream');
-      }
+      navigation.replace('NativeBroadcast', {
+        streamId: stream.id,
+        hostType: 'seller',
+      });
     } catch (error) {
       console.error('Error creating stream:', error);
       Alert.alert(t('common.error'), t('live.failedToCreateStream'));

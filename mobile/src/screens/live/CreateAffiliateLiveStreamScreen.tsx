@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { affiliatesService, LiveStream } from '../../services/affiliates.service';
 import { api } from '../../services/api';
+import { liveService } from '../../services/live.service';
 
 interface Seller {
   id: string;
@@ -131,17 +131,15 @@ export default function CreateAffiliateLiveStreamScreen({ navigation }: any) {
     setLoading(true);
 
     try {
-      const stream = await affiliatesService.createLiveStream({
+      const stream = await liveService.createAffiliateStream({
         title: title.trim(),
         description: description.trim(),
         sellerId: selectedSeller.id,
-        productIds: Array.from(selectedProducts),
       });
 
-      navigation.replace('LiveStreaming', {
+      navigation.replace('NativeBroadcast', {
         streamId: stream.id,
-        rtmpUrl: stream.rtmpUrl,
-        streamKey: (stream as any).streamKey,
+        hostType: 'affiliate',
       });
     } catch (error) {
       console.error('Error creating stream:', error);
