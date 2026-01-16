@@ -33,6 +33,7 @@ import { InvoicingModule } from './invoicing/invoicing.module';
 import { CommissionsModule } from './admin/commissions/commissions.module';
 import { CommonModule } from './common/common.module';
 import { StorageModule } from './common/storage/storage.module';
+import { RateLimitModule } from './common/rate-limit/rate-limit.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -60,6 +61,7 @@ import { AppService } from './app.service';
     DatabaseModule,
     StorageModule,
     CommonModule,
+    RateLimitModule,
     PlatformConfigModule,
     InvoicingModule,
     CommissionsModule,

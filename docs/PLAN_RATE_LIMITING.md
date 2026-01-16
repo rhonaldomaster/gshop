@@ -237,11 +237,11 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 
 ## Cronograma Sugerido
 
-### Sprint 1: Base
-- [ ] Instalar `@nestjs/throttler`
-- [ ] Crear configuracion de rate limiting
-- [ ] Implementar throttler global
-- [ ] Agregar whitelist para servicios internos
+### Sprint 1: Base ✅ COMPLETADO
+- [x] Instalar `@nestjs/throttler`
+- [x] Crear configuracion de rate limiting
+- [x] Implementar throttler global
+- [x] Agregar whitelist para servicios internos
 
 ### Sprint 2: Endpoints Criticos
 - [ ] Aplicar rate limiting a auth endpoints
@@ -349,5 +349,5 @@ export class AppModule {}
 ---
 
 **Documento creado**: Enero 2026
-**Ultima actualizacion**: Pendiente
-**Estado**: PLANIFICADO - No implementado
+**Ultima actualizacion**: Enero 2026
+**Estado**: EN PROGRESO - Sprint 1 completado
