@@ -6,7 +6,7 @@
 |------|--------|-------|
 | FASE 1: Infraestructura Base | ✅ COMPLETADA | 2026-01-16 |
 | FASE 2: Streaming Nativo Mobile | ✅ COMPLETADA | 2026-01-16 |
-| FASE 3: Seller Mode Mobile | ⏳ Pendiente | - |
+| FASE 3: Seller Mode Mobile | ✅ COMPLETADA | 2026-01-16 |
 | FASE 4: UI Carrito TikTok Style | ⏳ Pendiente | - |
 | FASE 5: Mantener Soporte OBS | ⏳ Pendiente | - |
 | FASE 6: VOD/Replays | ⏳ Pendiente | - |
@@ -648,3 +648,59 @@ Para RTMP nativo completo, se requeriría:
 - Nuevos archivos siguen patrones existentes del proyecto
 - Navegación actualizada con nueva ruta
 - Traducciones agregadas para UI completa
+
+### FASE 3: Seller Mode Mobile - ✅ COMPLETADA (2026-01-16)
+
+**Archivos creados:**
+- `mobile/src/contexts/UserRoleContext.tsx` - Contexto para manejo de roles:
+  - Estados: `currentRole`, `availableRoles`, `isSellerVerified`, `isAffiliateActive`
+  - Métodos: `switchRole()`, `refreshRoleStatus()`
+  - Permisos derivados: `canStream`, `canManageProducts`, `canAccessSellerDashboard`, `canAccessAffiliateDashboard`
+  - Persistencia de rol seleccionado en AsyncStorage
+- `mobile/src/screens/settings/RoleSwitcherScreen.tsx` - Pantalla de cambio de rol:
+  - Visualización de roles disponibles (buyer/seller/affiliate)
+  - Opciones bloqueadas para roles no disponibles
+  - Lista de features por cada rol
+  - Opciones para convertirse en affiliate o seller
+  - Navegación a registro de affiliate
+- `mobile/src/screens/seller/SellerDashboardScreen.tsx` - Dashboard de seller simplificado:
+  - Estadísticas: ventas de hoy, ventas totales, pedidos, productos
+  - Banner "Ir en vivo" para iniciar streaming
+  - Rating y reseñas del vendedor
+  - Acciones rápidas: agregar producto, ver productos, pedidos, analytics
+  - Consejo del día para sellers
+- `mobile/src/services/seller.service.ts` - Servicio para operaciones de seller:
+  - `getStats()` - Estadísticas del dashboard
+  - `getProducts()` / `getProduct()` - Listar/obtener productos
+  - `createProduct()` / `updateProduct()` / `deleteProduct()` - CRUD de productos
+  - `uploadProductImages()` - Subida de imágenes
+  - `getOrders()` / `updateOrderStatus()` - Gestión de pedidos
+  - `addTracking()` - Agregar tracking a pedidos
+- `mobile/src/navigation/SellerNavigator.tsx` - Navegador para pantallas de seller:
+  - Rutas preparadas para: productos, agregar producto, pedidos, analytics
+
+**Archivos modificados:**
+- `mobile/App.tsx`:
+  - Import y uso de `UserRoleProvider` envolviendo la app
+- `mobile/src/navigation/AppNavigator.tsx`:
+  - Import de `useUserRole` y `SellerNavigator`
+  - Nueva tab `SellerDashboard` (condicional según `canAccessSellerDashboard`)
+  - Icono de storefront para la tab de seller
+- `mobile/src/navigation/ProfileNavigator.tsx`:
+  - Nueva ruta `RoleSwitcher` para cambio de modo
+  - Import de `RoleSwitcherScreen`
+- `mobile/src/i18n/locales/es.json`:
+  - Sección `roleSwitch`: traducciones para pantalla de cambio de rol
+  - Sección `sellerDashboard`: traducciones para dashboard de seller
+
+**Características principales:**
+- **Sistema de roles**: Los usuarios pueden cambiar entre buyer/seller/affiliate según sus permisos
+- **Tab condicional**: La tab de "Tienda" solo aparece para sellers verificados
+- **Dashboard simplificado**: Vista móvil optimizada del panel de seller
+- **Navegación unificada**: Acceso a streaming desde el dashboard de seller
+
+**Verificación:**
+- Archivos nuevos compilan sin errores de TypeScript
+- Navegación condicional funciona según rol del usuario
+- Traducciones completas en español
+- Patrones consistentes con el resto del proyecto

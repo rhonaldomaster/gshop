@@ -8,6 +8,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { CartProvider } from './src/contexts/CartContext';
 import { ProductsProvider } from './src/contexts/ProductsContext';
+import { UserRoleProvider } from './src/contexts/UserRoleContext';
 import { StripeProvider } from './src/providers/StripeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
 
@@ -29,15 +30,17 @@ export default function App() {
       <StripeProvider>
         <ThemeProvider>
           <AuthProvider>
-            <ProductsProvider>
-              <CartProvider>
-                <NavigationContainer>
-                  <StatusBar style="auto" />
-                  <RootNavigator />
-                </NavigationContainer>
-                <Toast />
-              </CartProvider>
-            </ProductsProvider>
+            <UserRoleProvider>
+              <ProductsProvider>
+                <CartProvider>
+                  <NavigationContainer>
+                    <StatusBar style="auto" />
+                    <RootNavigator />
+                  </NavigationContainer>
+                  <Toast />
+                </CartProvider>
+              </ProductsProvider>
+            </UserRoleProvider>
           </AuthProvider>
         </ThemeProvider>
       </StripeProvider>

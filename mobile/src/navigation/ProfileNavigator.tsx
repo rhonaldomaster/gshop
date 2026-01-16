@@ -20,6 +20,7 @@ import LiveStreamResultsScreen from '../screens/live/LiveStreamResultsScreen';
 import TransferScreen from '../screens/wallet/TransferScreen';
 import WalletScreen from '../screens/wallet/WalletScreen';
 import VerificationScreen from '../screens/wallet/VerificationScreen';
+import RoleSwitcherScreen from '../screens/settings/RoleSwitcherScreen';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -41,6 +42,7 @@ export type ProfileStackParamList = {
   Transfer: undefined;
   Wallet: undefined;
   Verification: undefined;
+  RoleSwitcher: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -71,6 +73,7 @@ export default function ProfileNavigator() {
       <Stack.Screen name="Transfer" component={TransferScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Verification" component={VerificationScreen} />
+      <Stack.Screen name="RoleSwitcher" component={RoleSwitcherScreen} />
     </Stack.Navigator>
   );
 }

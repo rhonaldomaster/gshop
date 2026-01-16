@@ -1808,5 +1808,69 @@
     "instantProcess": "Procesamiento instantáneo",
     "dataProtected": "Datos protegidos",
     "mercadoPagoNote": "Al realizar un pago, serás redirigido a MercadoPago para completar la transacción de forma segura."
+  },
+  "roleSwitch": {
+    "title": "Cambiar modo",
+    "currentRole": "Modo actual",
+    "selectRoleDescription": "Selecciona el modo en el que deseas usar la app",
+    "roles": {
+      "buyer": "Comprador",
+      "seller": "Vendedor",
+      "affiliate": "Afiliado"
+    },
+    "buyerDescription": "Compra productos y disfruta del contenido",
+    "affiliateDescription": "Promociona productos y gana comisiones",
+    "sellerDescription": "Gestiona tu tienda y productos",
+    "buyerFeatures": {
+      "browse": "Explorar productos",
+      "purchase": "Realizar compras",
+      "watchLive": "Ver transmisiones en vivo",
+      "reviews": "Dejar reseñas"
+    },
+    "affiliateFeatures": {
+      "promote": "Promocionar productos",
+      "goLive": "Transmitir en vivo",
+      "earnCommission": "Ganar comisiones",
+      "analytics": "Ver estadísticas"
+    },
+    "sellerFeatures": {
+      "manageProducts": "Gestionar productos",
+      "goLive": "Transmitir en vivo",
+      "viewOrders": "Ver pedidos",
+      "analytics": "Ver estadísticas"
+    },
+    "applyChanges": "Aplicar cambios",
+    "success": "Modo cambiado",
+    "successMessage": "Ahora estás en modo {{role}}",
+    "errorMessage": "No se pudo cambiar el modo",
+    "upgradeAccount": "Mejorar cuenta",
+    "becomeAffiliate": "Convertirse en afiliado",
+    "becomeAffiliateHint": "Promociona productos y gana comisiones",
+    "becomeSeller": "Convertirse en vendedor",
+    "becomeSellerHint": "Vende tus propios productos",
+    "becomeSellerMessage": "Para convertirte en vendedor necesitas completar el proceso de verificación KYC. Visita nuestro panel de vendedores para más información.",
+    "learnMore": "Más información"
+  },
+  "sellerDashboard": {
+    "title": "Mi Tienda",
+    "tabTitle": "Tienda",
+    "welcomeBack": "Hola",
+    "goLive": "Ir en vivo",
+    "goLiveHint": "Conecta con tus clientes en tiempo real",
+    "overview": "Resumen",
+    "todayRevenue": "Ventas de hoy",
+    "totalRevenue": "Ventas totales",
+    "totalOrders": "Pedidos totales",
+    "pending": "pendientes",
+    "products": "Productos",
+    "active": "activos",
+    "basedOnReviews": "Basado en {{count}} reseñas",
+    "quickActions": "Acciones rápidas",
+    "addProduct": "Agregar producto",
+    "myProducts": "Mis productos",
+    "orders": "Pedidos",
+    "analytics": "Estadísticas",
+    "tipTitle": "Consejo del día",
+    "tipDescription": "Los vendedores que transmiten en vivo venden 3x más que los que no lo hacen. ¡Intenta hacer un live!"
   }
 }
