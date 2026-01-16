@@ -1,0 +1,71 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Light load
+    - duration: 20
+      arrivalRate: 10
+      name: "Light load"
+    # Medium load
+    - duration: 30
+      arrivalRate: 30
+      name: "Medium load"
+    # Heavy load
+    - duration: 30
+      arrivalRate: 60
+      name: "Heavy load"
+    # Spike test
+    - duration: 10
+      arrivalRate: 100
+      name: "Spike test"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+    metrics-by-endpoint: {}
+
+scenarios:
+  # Mixed API traffic simulation
+  - name: "Product Browsing"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/v1/products"
+          qs:
+            page: 1
+            limit: 20
+          expect:
+            - statusCode:
+                - 200
+                - 429
+      - think: 1
+      - get:
+          url: "/api/v1/products/categories"
+          expect:
+            - statusCode:
+                - 200
+                - 429
+
+  - name: "Product Search"
+    weight: 3
+    flow:
+      - get:
+          url: "/api/v1/products/search"
+          qs:
+            query: "{{ $randomString(5) }}"
+          expect:
+            - statusCode:
+                - 200
+                - 429
+
+  - name: "Trending Products"
+    weight: 2
+    flow:
+      - get:
+          url: "/api/v1/products/trending"
+          qs:
+            limit: 10
+          expect:
+            - statusCode:
+                - 200
+                - 429

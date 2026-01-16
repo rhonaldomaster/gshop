@@ -1,0 +1,69 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Warm up phase
+    - duration: 10
+      arrivalRate: 5
+      name: "Warm up"
+    # Ramp up to test rate limits
+    - duration: 30
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp up"
+    # Sustained load to trigger rate limits
+    - duration: 30
+      arrivalRate: 50
+      name: "Sustained load"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+
+scenarios:
+  # Test login rate limit (5/min)
+  - name: "Login Rate Limit Test"
+    weight: 3
+    flow:
+      - post:
+          url: "/api/v1/auth/login"
+          json:
+            email: "test@example.com"
+            password: "wrongpassword"
+          expect:
+            - statusCode:
+                - 401
+                - 429
+
+  # Test products list (100/min)
+  - name: "Products List Rate Limit Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/v1/products"
+          expect:
+            - statusCode:
+                - 200
+                - 429
+
+  # Test product search (30/min)
+  - name: "Product Search Rate Limit Test"
+    weight: 3
+    flow:
+      - get:
+          url: "/api/v1/products/search?query=test"
+          expect:
+            - statusCode:
+                - 200
+                - 429
+
+  # Test categories (global limit 100/min)
+  - name: "Categories Rate Limit Test"
+    weight: 2
+    flow:
+      - get:
+          url: "/api/v1/products/categories"
+          expect:
+            - statusCode:
+                - 200
+                - 429

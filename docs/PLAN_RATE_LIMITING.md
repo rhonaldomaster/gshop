@@ -258,12 +258,12 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 - [x] Integracion con AuditLogService
 - [x] Estadisticas de rate limit violations
 
-### Sprint 4: Produccion ✅ PARCIALMENTE COMPLETADO
+### Sprint 4: Produccion ✅ COMPLETADO
 - [x] Configurar Redis (RedisThrottlerStorage con auto-deteccion)
 - [x] Migrar de cache en memoria a Redis (fallback automatico)
 - [x] Tests unitarios (34 tests passing)
-- [ ] Tests de carga
-- [ ] Monitoreo y alertas
+- [x] Tests de carga (Artillery: rate-limit, auth-stress, api-load)
+- [ ] Monitoreo y alertas (pendiente para produccion)
 
 ---
 
@@ -354,4 +354,34 @@ export class AppModule {}
 
 **Documento creado**: Enero 2026
 **Ultima actualizacion**: Enero 2026
-**Estado**: IMPLEMENTADO - Sprints 1, 2, 3 y 4 completados (tests de carga y monitoreo pendientes)
+**Estado**: IMPLEMENTADO - Sprints 1, 2, 3 y 4 completados (solo monitoreo y alertas pendientes)
+
+---
+
+## Tests de Carga
+
+### Comandos disponibles
+
+```bash
+# Test general de rate limiting
+npm run test:load
+
+# Test de brute force en auth
+npm run test:load:auth
+
+# Test de carga general API
+npm run test:load:api
+
+# Generar reporte HTML
+npm run test:load:report
+```
+
+### Archivos de configuracion
+
+| Archivo | Descripcion |
+|---------|-------------|
+| `test/load/rate-limit.yml` | Test de rate limiting en multiples endpoints |
+| `test/load/auth-stress.yml` | Simulacion de ataques brute force |
+| `test/load/api-load.yml` | Test de carga con trafico mixto |
+
+Ver `backend/test/load/README.md` para documentacion completa.
