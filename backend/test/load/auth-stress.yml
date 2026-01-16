@@ -1,0 +1,32 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    # Quick burst to trigger rate limit
+    - duration: 60
+      arrivalRate: 20
+      name: "Auth Stress Test"
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  plugins:
+    expect: {}
+
+scenarios:
+  # Brute force simulation on login (should trigger 429 after 5 requests/min)
+  - name: "Login Brute Force Simulation"
+    weight: 1
+    flow:
+      - loop:
+          - post:
+              url: "/api/v1/auth/login"
+              json:
+                email: "bruteforce@test.com"
+                password: "attempt{{ $loopCount }}"
+              capture:
+                - json: "$.statusCode"
+                  as: "statusCode"
+              expect:
+                - statusCode:
+                    - 401
+                    - 429
+        count: 10

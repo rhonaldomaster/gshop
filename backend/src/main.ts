@@ -56,7 +56,47 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('GSHOP API')
-    .setDescription('TikTok Shop Clone MVP API Documentation')
+    .setDescription(`TikTok Shop Clone MVP API Documentation
+
+## Rate Limiting
+
+This API implements rate limiting to protect against abuse. Limits vary by endpoint:
+
+| Category | Endpoints | Limit |
+|----------|-----------|-------|
+| **Auth** | POST /auth/login | 5 requests/minute |
+| **Auth** | POST /auth/register | 3 requests/hour |
+| **Payments** | POST /payments | 5 requests/minute |
+| **Orders** | POST /orders | 10 requests/minute |
+| **Products** | GET /products | 100 requests/minute |
+| **Products** | POST /products | 30 requests/minute |
+| **Products** | POST /products/upload | 10 requests/minute |
+| **Search** | GET /products/search | 30 requests/minute |
+| **Analytics** | All endpoints | 20 requests/minute |
+| **Global** | All other endpoints | 100 requests/minute |
+
+### Rate Limit Headers
+
+All responses include these headers:
+- \`X-RateLimit-Limit\`: Maximum requests allowed
+- \`X-RateLimit-Remaining\`: Requests remaining in current window
+- \`X-RateLimit-Reset\`: Unix timestamp when the limit resets
+
+### HTTP 429 Response
+
+When rate limit is exceeded, the API returns:
+\`\`\`json
+{
+  "statusCode": 429,
+  "message": "Has excedido el limite de solicitudes",
+  "error": "Too Many Requests",
+  "retryAfter": 45,
+  "limit": 100,
+  "remaining": 0,
+  "resetAt": "2026-01-15T10:30:00.000Z"
+}
+\`\`\`
+`)
     .setVersion('1.0')
     .addBearerAuth(
       {

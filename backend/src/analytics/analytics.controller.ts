@@ -1,12 +1,16 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from './analytics.service';
+import { ApiRateLimit } from '../common/decorators/api-rate-limit.decorator';
 import { VatReportDto } from './dto/vat-report.dto';
 import { SalesTrendsDto, TimePeriod } from './dto/sales-trends.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('analytics')
 @Controller('analytics')
+@Throttle({ default: { ttl: 60000, limit: 20 } })
+@ApiRateLimit('20 requests/minute')
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 

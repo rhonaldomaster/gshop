@@ -213,4 +213,112 @@ export class AuditLogService {
       .leftJoinAndSelect('audit_log.user', 'user')
       .getMany();
   }
+
+  /**
+   * Log rate limit exceeded event
+   */
+  async logRateLimitExceeded(
+    endpoint: string,
+    method: string,
+    userId?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    metadata?: Record<string, any>,
+  ): Promise<AuditLog> {
+    return this.log({
+      entity: 'rate_limit',
+      action: AuditAction.RATE_LIMIT_EXCEEDED,
+      performedBy: userId,
+      ipAddress,
+      userAgent,
+      metadata: {
+        endpoint,
+        method,
+        ...metadata,
+      },
+    });
+  }
+
+  /**
+   * Get rate limit violations by IP
+   */
+  async getRateLimitViolationsByIp(
+    ipAddress: string,
+    startDate?: Date,
+    endDate?: Date,
+    limit: number = 100,
+  ): Promise<AuditLog[]> {
+    const query = this.auditLogRepository
+      .createQueryBuilder('audit_log')
+      .where('audit_log.entity = :entity', { entity: 'rate_limit' })
+      .andWhere('audit_log.action = :action', {
+        action: AuditAction.RATE_LIMIT_EXCEEDED,
+      })
+      .andWhere('audit_log.ipAddress = :ipAddress', { ipAddress })
+      .orderBy('audit_log.timestamp', 'DESC')
+      .limit(limit);
+
+    if (startDate) {
+      query.andWhere('audit_log.timestamp >= :startDate', { startDate });
+    }
+
+    if (endDate) {
+      query.andWhere('audit_log.timestamp <= :endDate', { endDate });
+    }
+
+    return query.getMany();
+  }
+
+  /**
+   * Get rate limit statistics
+   */
+  async getRateLimitStats(
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<{
+    totalViolations: number;
+    uniqueIps: number;
+    uniqueUsers: number;
+    topEndpoints: Array<{ endpoint: string; count: number }>;
+  }> {
+    const query = this.auditLogRepository
+      .createQueryBuilder('audit_log')
+      .where('audit_log.entity = :entity', { entity: 'rate_limit' })
+      .andWhere('audit_log.action = :action', {
+        action: AuditAction.RATE_LIMIT_EXCEEDED,
+      });
+
+    if (startDate) {
+      query.andWhere('audit_log.timestamp >= :startDate', { startDate });
+    }
+
+    if (endDate) {
+      query.andWhere('audit_log.timestamp <= :endDate', { endDate });
+    }
+
+    const logs = await query.getMany();
+
+    const uniqueIps = new Set(logs.map((log) => log.ipAddress).filter(Boolean));
+    const uniqueUsers = new Set(
+      logs.map((log) => log.performedBy).filter(Boolean),
+    );
+
+    const endpointCounts = new Map<string, number>();
+    logs.forEach((log) => {
+      const endpoint = log.metadata?.endpoint || 'unknown';
+      endpointCounts.set(endpoint, (endpointCounts.get(endpoint) || 0) + 1);
+    });
+
+    const topEndpoints = Array.from(endpointCounts.entries())
+      .map(([endpoint, count]) => ({ endpoint, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    return {
+      totalViolations: logs.length,
+      uniqueIps: uniqueIps.size,
+      uniqueUsers: uniqueUsers.size,
+      topEndpoints,
+    };
+  }
 }

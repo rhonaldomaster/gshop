@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Script to generate independent lockfile for admin-web
-# Run this from the admin-web directory
+# Script to generate independent lockfile for backend
+# Run this from the backend directory
 #
 # Usage:
 #   ./generate-lockfile.sh           # Only generate lockfile
@@ -16,14 +16,16 @@ if [ "$1" = "--install" ]; then
   INSTALL_DEPS=true
 fi
 
-echo "🔧 Generating lockfile for admin-web..."
+echo "🔧 Generating independent lockfile for backend..."
 
 # Create temp directory
-TEMP_DIR="/tmp/admin-web-lockfile-$(date +%s)"
+TEMP_DIR="/tmp/backend-lockfile-$(date +%s)"
 mkdir -p "$TEMP_DIR"
 
-# Copy package.json and .npmrc
+# Copy package.json
 cp "$SCRIPT_DIR/package.json" "$TEMP_DIR/"
+
+# Copy .npmrc if exists
 if [ -f "$SCRIPT_DIR/.npmrc" ]; then
   cp "$SCRIPT_DIR/.npmrc" "$TEMP_DIR/"
 fi
@@ -32,7 +34,7 @@ fi
 cd "$TEMP_DIR"
 npm install --package-lock-only 2>/dev/null
 
-# Copy back to admin-web
+# Copy back to backend
 cp package-lock.json "$SCRIPT_DIR/"
 
 # Cleanup temp directory
@@ -42,13 +44,24 @@ cd "$SCRIPT_DIR"
 
 echo "✅ Lockfile generated successfully!"
 echo ""
-echo "📦 Verifying React version in lockfile..."
+echo "📦 Verifying key dependencies in lockfile..."
 
-if grep -q '"react"' package-lock.json; then
-  REACT_VERSION=$(grep -A1 '"react":' package-lock.json | grep '"version"' | head -1 | sed 's/.*"version": "\([^"]*\)".*/\1/')
-  echo "✅ React $REACT_VERSION found in lockfile"
+if grep -q '"@nestjs/throttler"' package-lock.json; then
+  echo "✅ @nestjs/throttler found"
 else
-  echo "⚠️  Warning: React not found in lockfile"
+  echo "⚠️  Warning: @nestjs/throttler not found"
+fi
+
+if grep -q '"artillery"' package-lock.json; then
+  echo "✅ artillery found"
+else
+  echo "⚠️  Warning: artillery not found"
+fi
+
+if grep -q '"ioredis"' package-lock.json; then
+  echo "✅ ioredis found"
+else
+  echo "⚠️  Warning: ioredis not found"
 fi
 
 if [ "$INSTALL_DEPS" = true ]; then
@@ -66,4 +79,4 @@ fi
 echo ""
 echo "✨ Done! To commit:"
 echo "   git add package-lock.json"
-echo "   git commit -m 'chore(admin-web): update lockfile'"
+echo "   git commit -m 'chore(backend): update lockfile'"
