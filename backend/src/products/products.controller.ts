@@ -19,6 +19,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { rateLimitConfig } from '../common/config/rate-limit.config';
+import { ApiRateLimit } from '../common/decorators/api-rate-limit.decorator';
 import { ProductsService } from './products.service';
 import { CategoriesService } from './categories.service';
 import { ProductsUploadService } from './products-upload.service';
@@ -48,6 +49,7 @@ export class ProductsController {
   @Roles(UserRole.SELLER, UserRole.ADMIN)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Upload product images (up to 10 images, max 20MB each)' })
+  @ApiRateLimit('10 requests/minute')
   @ApiConsumes('multipart/form-data')
   @ApiResponse({
     status: 201,
@@ -134,6 +136,7 @@ export class ProductsController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new product' })
   @ApiResponse({ status: 201, description: 'Product created successfully' })
+  @ApiRateLimit('30 requests/minute')
   create(@Body() createProductDto: CreateProductDto, @Request() req) {
     // If admin provides sellerId, use it; otherwise use authenticated seller's ID
     const sellerId = req.user.role === UserRole.ADMIN && createProductDto.sellerId
@@ -154,6 +157,7 @@ export class ProductsController {
   @Throttle({ default: { ttl: rateLimitConfig.endpoints.search.default.ttl, limit: rateLimitConfig.endpoints.search.default.limit } })
   @ApiOperation({ summary: 'Search products' })
   @ApiResponse({ status: 200, description: 'Products search results' })
+  @ApiRateLimit('30 requests/minute')
   searchProducts(@Query() query: ProductQueryDto) {
     return this.productsService.findAll(query);
   }

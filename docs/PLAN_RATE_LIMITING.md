@@ -253,7 +253,7 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 - [x] Aplicar a endpoints de productos (GET 100/min, POST 20/min, upload 10/min)
 - [x] Aplicar a endpoints de busqueda (30/min)
 - [x] Aplicar a endpoints de analytics (20/min - controller level)
-- [ ] Documentar en Swagger
+- [x] Documentar en Swagger (descripcion general + @ApiRateLimit decorator)
 - [x] Filtro de excepciones con respuesta HTTP 429 mejorada
 - [x] Integracion con AuditLogService
 - [x] Estadisticas de rate limit violations

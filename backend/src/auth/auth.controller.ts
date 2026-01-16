@@ -15,6 +15,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { ApiRateLimit } from '../common/decorators/api-rate-limit.decorator';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -36,7 +37,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already registered' })
-  @ApiResponse({ status: 429, description: 'Too many registration attempts' })
+  @ApiRateLimit('3 requests/hour')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -46,7 +47,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @ApiResponse({ status: 429, description: 'Too many login attempts' })
+  @ApiRateLimit('5 requests/minute')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -57,7 +58,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Social login successful' })
   @ApiResponse({ status: 401, description: 'Invalid social token' })
   @ApiResponse({ status: 400, description: 'Email not provided by social provider' })
-  @ApiResponse({ status: 429, description: 'Too many login attempts' })
+  @ApiRateLimit('5 requests/minute')
   async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
     return this.authService.socialLogin(socialLoginDto);
   }
