@@ -1,7 +1,8 @@
 import { Module, Logger } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { CustomThrottlerGuard } from '../guards/custom-throttler.guard';
+import { ThrottlerExceptionFilter } from '../filters/throttler-exception.filter';
 import { RedisThrottlerStorage } from './redis-throttler.storage';
 import { getEnvAwareRateLimitConfig } from '../config/rate-limit.config';
 
@@ -53,7 +54,12 @@ const logger = new Logger('RateLimitModule');
       provide: APP_GUARD,
       useClass: CustomThrottlerGuard,
     },
+    {
+      provide: APP_FILTER,
+      useClass: ThrottlerExceptionFilter,
+    },
     RedisThrottlerStorage,
+    ThrottlerExceptionFilter,
   ],
   exports: [ThrottlerModule, RedisThrottlerStorage],
 })

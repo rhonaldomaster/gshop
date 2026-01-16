@@ -249,11 +249,14 @@ npm run test:load -- --endpoint /api/v1/auth/login --rps 50
 - [x] Aplicar rate limiting a orders
 - [x] Configurar logging y audit (incluido en CustomThrottlerGuard)
 
-### Sprint 3: Cobertura Completa
+### Sprint 3: Cobertura Completa + Logging ✅ PARCIALMENTE COMPLETADO
 - [ ] Aplicar a endpoints de productos
 - [ ] Aplicar a endpoints de busqueda
 - [ ] Aplicar a endpoints de analytics
 - [ ] Documentar en Swagger
+- [x] Filtro de excepciones con respuesta HTTP 429 mejorada
+- [x] Integracion con AuditLogService
+- [x] Estadisticas de rate limit violations
 
 ### Sprint 4: Produccion ✅ PARCIALMENTE COMPLETADO
 - [x] Configurar Redis (RedisThrottlerStorage con auto-deteccion)
@@ -350,4 +353,4 @@ export class AppModule {}
 
 **Documento creado**: Enero 2026
 **Ultima actualizacion**: Enero 2026
-**Estado**: EN PROGRESO - Sprint 1, 2 y 4 (parcial) completados
+**Estado**: EN PROGRESO - Sprint 1, 2, 3 (parcial) y 4 (parcial) completados

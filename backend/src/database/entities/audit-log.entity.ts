@@ -13,6 +13,7 @@ export enum AuditAction {
   UPDATE = 'update',
   DELETE = 'delete',
   VIEW = 'view',
+  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
 }
 
 @Entity('audit_logs')
