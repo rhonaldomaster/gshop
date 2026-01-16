@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, IsNull, MoreThan } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType, LiveStreamReaction, ReactionType } from './live.entity';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
+import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
 import { IIvsService } from './interfaces/ivs-service.interface';
@@ -1350,6 +1350,145 @@ export class LiveService {
     return {
       streams: recommendations,
       total: recommendations.length,
+    };
+  }
+
+  // ==================== NATIVE STREAMING CREDENTIALS ====================
+
+  /**
+   * Get native streaming credentials for mobile broadcasting
+   * Returns RTMP ingest endpoint and stream key for the broadcaster
+   */
+  async getNativeStreamCredentials(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<NativeStreamCredentialsDto> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id: streamId, sellerId: hostId }
+      : { id: streamId, affiliateId: hostId };
+
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found or you do not have permission to access it');
+    }
+
+    // Only allow getting credentials for scheduled or live streams
+    if (liveStream.status === StreamStatus.ENDED || liveStream.status === StreamStatus.CANCELLED) {
+      throw new BadRequestException('Cannot get credentials for an ended or cancelled stream');
+    }
+
+    // Verify stream has IVS credentials
+    if (!liveStream.streamKey || !liveStream.rtmpUrl) {
+      throw new BadRequestException('Stream does not have valid streaming credentials. Please recreate the stream.');
+    }
+
+    return {
+      streamId: liveStream.id,
+      title: liveStream.title,
+      ingestEndpoint: liveStream.rtmpUrl,
+      streamKey: liveStream.streamKey,
+      channelArn: liveStream.ivsChannelArn,
+      playbackUrl: liveStream.hlsUrl,
+      recommendedBitrate: 2500, // 2.5 Mbps for 720p
+      recommendedResolution: '720p',
+      maxBitrate: 8500, // AWS IVS max for STANDARD channel type
+    };
+  }
+
+  /**
+   * Get OBS setup information for external streaming software
+   */
+  async getOBSSetupInfo(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<OBSSetupInfoDto> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id: streamId, sellerId: hostId }
+      : { id: streamId, affiliateId: hostId };
+
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found or you do not have permission to access it');
+    }
+
+    if (!liveStream.streamKey || !liveStream.rtmpUrl) {
+      throw new BadRequestException('Stream does not have valid streaming credentials');
+    }
+
+    return {
+      rtmpUrl: liveStream.rtmpUrl,
+      streamKey: liveStream.streamKey,
+      recommendedSettings: {
+        encoder: 'x264 or NVENC',
+        bitrate: 2500,
+        keyframeInterval: 2,
+        resolution: '1280x720',
+        fps: 30,
+      },
+    };
+  }
+
+  /**
+   * Verify stream ownership for any host type
+   */
+  async verifyStreamOwnership(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<LiveStream> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id: streamId, sellerId: hostId }
+      : { id: streamId, affiliateId: hostId };
+
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (!liveStream) {
+      throw new ForbiddenException('You do not have permission to access this stream');
+    }
+
+    return liveStream;
+  }
+
+  /**
+   * Regenerate stream key if compromised
+   */
+  async regenerateStreamKey(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<{ streamKey: string }> {
+    const liveStream = await this.verifyStreamOwnership(streamId, hostId, hostType);
+
+    if (liveStream.status === StreamStatus.LIVE) {
+      throw new BadRequestException('Cannot regenerate stream key while streaming. Please end the stream first.');
+    }
+
+    // Get new stream key from IVS
+    const newStreamKey = await this.ivsService.getStreamKey(liveStream.ivsChannelArn);
+
+    if (!newStreamKey) {
+      // If no stream key exists, we need to create one - this is handled by the mock/real IVS service
+      throw new BadRequestException('Failed to regenerate stream key. Please recreate the stream.');
+    }
+
+    // Update the stream with the new key
+    liveStream.streamKey = newStreamKey.value;
+    await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Regenerated stream key for stream ${streamId}`);
+
+    return {
+      streamKey: newStreamKey.value,
     };
   }
 }

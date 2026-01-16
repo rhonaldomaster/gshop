@@ -13,7 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LiveService } from './live.service';
 import { LiveMetricsService } from './live-metrics.service';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
+import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
 import { HostType } from './live.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -118,6 +118,102 @@ export class LiveController {
   @UseGuards(JwtAuthGuard)
   async endAffiliateLiveStream(@Request() req, @Param('id') id: string) {
     return this.liveService.endLiveStream(id, req.user.affiliateId, HostType.AFFILIATE);
+  }
+
+  // ==================== NATIVE STREAMING CREDENTIALS ====================
+
+  @Get('streams/:id/native-credentials')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get native streaming credentials for mobile broadcasting (Seller)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Native streaming credentials retrieved successfully',
+    type: NativeStreamCredentialsDto,
+  })
+  async getNativeCredentials(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<NativeStreamCredentialsDto> {
+    return this.liveService.getNativeStreamCredentials(id, req.user.sellerId, HostType.SELLER);
+  }
+
+  @Get('affiliate/streams/:id/native-credentials')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get native streaming credentials for mobile broadcasting (Affiliate)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Native streaming credentials retrieved successfully',
+    type: NativeStreamCredentialsDto,
+  })
+  async getAffiliateNativeCredentials(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<NativeStreamCredentialsDto> {
+    return this.liveService.getNativeStreamCredentials(id, req.user.affiliateId, HostType.AFFILIATE);
+  }
+
+  @Get('streams/:id/obs-setup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get OBS setup information for external streaming (Seller)' })
+  @ApiResponse({
+    status: 200,
+    description: 'OBS setup information retrieved successfully',
+    type: OBSSetupInfoDto,
+  })
+  async getOBSSetup(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<OBSSetupInfoDto> {
+    return this.liveService.getOBSSetupInfo(id, req.user.sellerId, HostType.SELLER);
+  }
+
+  @Get('affiliate/streams/:id/obs-setup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get OBS setup information for external streaming (Affiliate)' })
+  @ApiResponse({
+    status: 200,
+    description: 'OBS setup information retrieved successfully',
+    type: OBSSetupInfoDto,
+  })
+  async getAffiliateOBSSetup(
+    @Request() req,
+    @Param('id') id: string,
+  ): Promise<OBSSetupInfoDto> {
+    return this.liveService.getOBSSetupInfo(id, req.user.affiliateId, HostType.AFFILIATE);
+  }
+
+  @Post('streams/:id/regenerate-key')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Regenerate stream key if compromised (Seller)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stream key regenerated successfully',
+  })
+  async regenerateStreamKey(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.liveService.regenerateStreamKey(id, req.user.sellerId, HostType.SELLER);
+  }
+
+  @Post('affiliate/streams/:id/regenerate-key')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Regenerate stream key if compromised (Affiliate)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Stream key regenerated successfully',
+  })
+  async regenerateAffiliateStreamKey(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.liveService.regenerateStreamKey(id, req.user.affiliateId, HostType.AFFILIATE);
   }
 
   @Post('streams/:id/products')

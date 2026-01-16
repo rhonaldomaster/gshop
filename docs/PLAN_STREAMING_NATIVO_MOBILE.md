@@ -1,5 +1,18 @@
 # Plan: Streaming Nativo desde Mobile App + Soporte OBS
 
+## Progreso de Implementación
+
+| Fase | Estado | Fecha |
+|------|--------|-------|
+| FASE 1: Infraestructura Base | ✅ COMPLETADA | 2026-01-16 |
+| FASE 2: Streaming Nativo Mobile | ⏳ Pendiente | - |
+| FASE 3: Seller Mode Mobile | ⏳ Pendiente | - |
+| FASE 4: UI Carrito TikTok Style | ⏳ Pendiente | - |
+| FASE 5: Mantener Soporte OBS | ⏳ Pendiente | - |
+| FASE 6: VOD/Replays | ⏳ Pendiente | - |
+
+---
+
 ## Resumen Ejecutivo
 
 Implementar streaming nativo desde la app mobile para afiliados, manteniendo la opción de OBS para usuarios avanzados. Resolver el acceso de sellers al streaming mobile mediante una versión "Seller Mode" de la app.
@@ -547,7 +560,36 @@ seller-panel/app/dashboard/live/
 
 ## Próximos Pasos
 
-1. Definir preferencias sobre Seller Mode vs App Separada
-2. Priorizar fases según necesidades del negocio
+1. ~~Definir preferencias sobre Seller Mode vs App Separada~~ ✅
+2. ~~Priorizar fases según necesidades del negocio~~ ✅
 3. Configurar cuenta AWS IVS para producción
-4. Comenzar implementación Fase 1
+4. ~~Comenzar implementación Fase 1~~ ✅
+
+---
+
+## Registro de Implementación
+
+### FASE 1: Infraestructura Base - ✅ COMPLETADA (2026-01-16)
+
+**Archivos creados:**
+- `backend/src/live/dto/native-stream.dto.ts` - DTOs para credenciales nativas y OBS
+
+**Archivos modificados:**
+- `backend/src/live/dto/index.ts` - Export de nuevos DTOs
+- `backend/src/live/live.service.ts` - Nuevos métodos:
+  - `getNativeStreamCredentials()` - Obtener credenciales RTMP para mobile
+  - `getOBSSetupInfo()` - Obtener info de configuración OBS
+  - `verifyStreamOwnership()` - Verificar permisos
+  - `regenerateStreamKey()` - Regenerar clave comprometida
+- `backend/src/live/live.controller.ts` - Nuevos endpoints:
+  - `GET /api/v1/live/streams/:id/native-credentials` (Seller)
+  - `GET /api/v1/live/affiliate/streams/:id/native-credentials` (Affiliate)
+  - `GET /api/v1/live/streams/:id/obs-setup` (Seller)
+  - `GET /api/v1/live/affiliate/streams/:id/obs-setup` (Affiliate)
+  - `POST /api/v1/live/streams/:id/regenerate-key` (Seller)
+  - `POST /api/v1/live/affiliate/streams/:id/regenerate-key` (Affiliate)
+
+**Verificación:**
+- Backend compila sin errores
+- Servicio AWS IVS Mock funcional
+- Servicio AWS IVS Real preparado (requiere credenciales AWS)

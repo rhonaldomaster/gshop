@@ -80,3 +80,4 @@ export class JoinStreamDto {
 }
 
 export { LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './live-stats.dto';
+export { NativeStreamCredentialsDto, StreamMethodDto, OBSSetupInfoDto } from './native-stream.dto';
