@@ -11,6 +11,8 @@
 | FASE 5: Mantener Soporte OBS | ✅ COMPLETADA | 2026-01-16 |
 | FASE 6: VOD/Replays | ✅ COMPLETADA | 2026-01-19 |
 | FASE 7: Profile Actions (Notificaciones y Soporte) | ✅ COMPLETADA | 2026-01-19 |
+| FASE 8: Push Notifications para Lives | ✅ COMPLETADA | 2026-01-19 |
+| FASE 9: Picture-in-Picture Mode | ✅ COMPLETADA | 2026-01-19 |
 
 ---
 
@@ -1072,3 +1074,139 @@ Para RTMP nativo completo, se requeriría:
 - Mobile integrado con servicios de backend
 - Fallback de FAQs a traducciones si backend falla
 - Soporte para usuarios guests (sin login)
+
+### FASE 8: Push Notifications para Lives - ✅ COMPLETADA (2026-01-19)
+
+**Archivos creados (Backend):**
+- `backend/src/database/entities/streamer-follow.entity.ts` - Entidad para seguir streamers:
+  - Campos: followerId, streamerId, notificationsEnabled, createdAt
+  - Relaciones ManyToOne con User (follower y streamer)
+  - Índices únicos para evitar duplicados
+- `backend/src/live/followers.service.ts` - Servicio de seguidores:
+  - `followStreamer()` / `unfollowStreamer()` - Seguir/dejar de seguir
+  - `isFollowing()` - Verificar si sigue a un streamer
+  - `toggleNotifications()` - Activar/desactivar notificaciones
+  - `getFollowers()` / `getFollowing()` - Listas paginadas
+  - `getStats()` - Estadísticas de followers/following
+  - `getFollowerCount()` - Contador de seguidores
+  - `getFollowerDeviceTokens()` - Tokens para push notifications
+  - `getFollowerIds()` - IDs de seguidores con notificaciones activas
+- `backend/src/live/followers.controller.ts` - Endpoints REST:
+  - `POST /followers/:streamerId/follow` - Seguir streamer
+  - `DELETE /followers/:streamerId/unfollow` - Dejar de seguir
+  - `GET /followers/:streamerId/status` - Estado de seguimiento
+  - `PUT /followers/:streamerId/notifications` - Toggle notificaciones
+  - `GET /followers/my/followers` - Mis seguidores
+  - `GET /followers/my/following` - A quién sigo
+  - `GET /followers/my/stats` - Mis estadísticas
+  - `GET /followers/:streamerId/count` - Contador público
+- `backend/src/database/migrations/1769100000000-CreateStreamerFollowsTable.ts`:
+  - Crea tabla `streamer_follows` con índices optimizados
+
+**Archivos modificados (Backend):**
+- `backend/src/notifications/user-notifications.service.ts`:
+  - Nuevo método `createLiveNotificationForUsers()` - Crear notificación para múltiples usuarios
+- `backend/src/live/live.service.ts`:
+  - Nuevo método `sendLiveStartNotifications()` - Enviar push + in-app cuando inicia stream
+  - Integración con FollowersService para obtener tokens y IDs
+- `backend/src/live/live.module.ts`:
+  - Import de StreamerFollow entity
+  - Providers: FollowersService
+  - Controllers: FollowersController
+
+**Archivos creados (Mobile):**
+- `mobile/src/services/followers.service.ts` - Cliente API:
+  - `followStreamer()` / `unfollowStreamer()` - Seguir/dejar de seguir
+  - `getFollowStatus()` - Estado de seguimiento
+  - `toggleNotifications()` - Toggle notificaciones
+  - `getMyFollowers()` / `getMyFollowing()` - Listas
+  - `getMyStats()` - Estadísticas
+  - `getFollowerCount()` - Contador
+- `mobile/src/hooks/useFollowStreamer.ts` - Hook de estado:
+  - Estados: isFollowing, notificationsEnabled, followerCount, loading
+  - Acciones: toggleFollow, toggleNotifications, refresh
+  - Integración con followersService
+- `mobile/src/components/live/FollowButton.tsx` - Componente UI:
+  - Botón de seguir/dejar de seguir con animación
+  - Toggle de notificaciones (campana)
+  - Contador de seguidores
+  - Estados de loading
+- `mobile/src/components/NotificationHandler.tsx` - Handler global:
+  - Inicializa notificaciones cuando usuario se autentica
+  - Listener para notificaciones recibidas
+  - Listener para taps en notificaciones
+  - Navegación automática según tipo de notificación
+  - Soporte para: live_stream_started, order, price_drop, promotion
+- `mobile/src/hooks/useLiveNotificationHandler.ts` - Hook específico para lives:
+  - Maneja navegación a LiveStream cuando tap en notificación de live
+
+**Archivos modificados (Mobile):**
+- `mobile/App.tsx`:
+  - Import y uso de NotificationHandler envolviendo navegación
+
+**Características principales:**
+- **Sistema de followers**: Usuarios pueden seguir streamers favoritos
+- **Toggle de notificaciones**: Activar/desactivar por streamer
+- **Push notifications**: FCM cuando streamer inicia live
+- **In-app notifications**: Almacenadas en DB para historial
+- **Navegación automática**: Tap en notificación lleva al live
+- **Contador de seguidores**: Visible en perfil del streamer
+
+**Verificación:**
+- Backend compila sin errores TypeScript
+- Migración de base de datos lista
+- Mobile integrado con servicios
+- Navegación funcional desde notificaciones
+
+### FASE 9: Picture-in-Picture Mode - ✅ COMPLETADA (2026-01-19)
+
+**Archivos creados (Mobile):**
+- `mobile/src/contexts/PiPContext.tsx` - Contexto global para PiP:
+  - Estados: isActive, streamData (id, title, hlsUrl, hostType, hostName, viewerCount)
+  - Ref: socketRef para mantener conexión WebSocket
+  - Métodos: `enterPiP()` - Activar modo PiP con datos del stream
+  - Métodos: `exitPiP()` - Cerrar PiP y desconectar socket
+  - Métodos: `updateViewerCount()` - Actualizar contador de viewers
+  - Métodos: `returnToFullscreen()` - Volver a pantalla completa
+  - Hook: `usePiP()` para acceso desde componentes
+- `mobile/src/components/live/MiniPlayer.tsx` - Mini player flotante:
+  - Video player con expo-av (ResizeMode.COVER)
+  - Draggable con PanResponder
+  - Snap to edges (izquierda/derecha) al soltar
+  - Badge "LIVE" con indicador rojo
+  - Botón de expandir a fullscreen
+  - Botón de cerrar
+  - Info bar con título y viewer count
+  - Indicador de buffering
+  - Dimensiones: 160x90px + info bar
+  - z-index alto para flotar sobre todo
+
+**Archivos modificados (Mobile):**
+- `mobile/App.tsx`:
+  - Import de PiPProvider y MiniPlayer
+  - PiPProvider envolviendo NavigationContainer
+  - MiniPlayer renderizado como overlay flotante
+- `mobile/src/screens/live/LiveStreamScreen.tsx`:
+  - Import de usePiP hook
+  - Nuevo param `fromPiP` para detectar retorno desde PiP
+  - useEffect para restaurar socket desde PiP
+  - Método `minimizeToPiP()` - Transferir estado a PiP context
+  - Botón PiP en header (icono picture-in-picture-alt)
+  - No desconectar socket al salir si está en PiP
+  - Estilo `pipButton` para el botón
+
+**Características principales:**
+- **Mini player flotante**: Video continúa mientras navegas
+- **Draggable**: Arrastra el player a cualquier posición
+- **Snap to edges**: Se adhiere al borde más cercano
+- **Mantiene conexión**: WebSocket activo durante PiP
+- **Retorno seamless**: Volver a fullscreen sin reconectar
+- **Controles mínimos**: Expandir y cerrar
+- **Info visible**: Título y viewers en mini player
+
+**Verificación:**
+- Archivos compilan sin errores TypeScript
+- PiPProvider integrado en jerarquía de providers
+- MiniPlayer se renderiza sobre toda la app
+- Navegación funciona con PiP activo
+- Socket se preserva durante transiciones
