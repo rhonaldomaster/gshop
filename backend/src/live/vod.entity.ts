@@ -34,7 +34,7 @@ export class LiveStreamVod {
   @Column('uuid')
   streamId: string;
 
-  @ManyToOne(() => LiveStream, { onDelete: 'CASCADE' })
+  @ManyToOne(() => LiveStream, (stream) => stream.vods, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'streamId' })
   stream: LiveStream;
 

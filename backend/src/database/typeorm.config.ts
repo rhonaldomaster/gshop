@@ -31,6 +31,7 @@ import {
   LiveStreamReaction,
   LiveStreamMetrics
 } from '../live/live.entity';
+import { LiveStreamVod } from '../live/vod.entity';
 
 // Pixel/Analytics Entities
 import { PixelEvent } from '../pixel/entities/pixel-event.entity';
@@ -83,7 +84,7 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
     // Commission & Fee System entities
     PlatformConfig, CommissionInvoice, AuditLog,
     // Live streaming entities
-    LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, LiveStreamReaction, LiveStreamMetrics,
+    LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, LiveStreamReaction, LiveStreamMetrics, LiveStreamVod,
     // Pixel/Analytics entities
     PixelEvent,
     // Affiliates/Creator system entities
