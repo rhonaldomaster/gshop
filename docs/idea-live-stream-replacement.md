@@ -100,9 +100,12 @@ PLAN DE TRABAJO: MIGRAR DE OBS → AWS IVS
 
 ## 🚀 FUNCIONALIDADES OPCIONALES/FUTURAS
 
-### Picture-in-Picture (PiP)
-- [ ] react-native-pip
-- [ ] Continuar viendo mientras navegas
+### Picture-in-Picture (PiP) ✅ COMPLETADO
+- [x] PiPContext para estado global
+- [x] MiniPlayer flotante y draggable
+- [x] Continuar viendo mientras navegas
+- [x] Restaurar a pantalla completa
+- [x] Mantener conexion WebSocket activa
 
 ### Filtros de camara
 - [ ] Filtros de belleza

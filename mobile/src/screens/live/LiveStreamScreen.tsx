@@ -20,6 +20,7 @@ import { LiveCheckoutModal } from '../../components/live/LiveCheckoutModal';
 import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
 import { PurchaseNotification, PurchaseCelebration, usePurchaseNotifications } from '../../components/live/PurchaseNotification';
 import { API_CONFIG } from '../../config/api.config';
+import { usePiP } from '../../contexts/PiPContext';
 
 interface LiveStreamData {
   id: string;
@@ -64,7 +65,7 @@ const { width, height } = Dimensions.get('window');
 
 export default function LiveStreamScreen({ route, navigation }: any) {
   const { t } = useTranslation('translation');
-  const { streamId } = route.params;
+  const { streamId, fromPiP } = route.params;
   const [stream, setStream] = useState<LiveStreamData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -83,20 +84,59 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   // Purchase notification hook
   const { triggerNotification, currentPurchase, dismissCelebration } = usePurchaseNotifications();
 
+  // PiP context
+  const { enterPiP, isActive: isPiPActive, streamData: pipStreamData, socketRef: pipSocketRef } = usePiP();
+
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<Video>(null);
 
+  // Handle returning from PiP mode - reuse existing socket
+  useEffect(() => {
+    if (fromPiP && pipStreamData && pipStreamData.id === streamId) {
+      // Reuse socket from PiP mode
+      socketRef.current = pipSocketRef.current;
+      setViewerCount(pipStreamData.viewerCount);
+      console.log('[LiveStreamScreen] Restored from PiP mode');
+    }
+  }, [fromPiP, pipStreamData, streamId, pipSocketRef]);
+
   useEffect(() => {
     fetchStreamData();
-    initializeSocket();
+    // Only initialize socket if not coming from PiP
+    if (!fromPiP || !pipSocketRef.current) {
+      initializeSocket();
+    }
 
     return () => {
-      if (socketRef.current) {
+      // Only disconnect if not in PiP mode
+      if (socketRef.current && !isPiPActive) {
         socketRef.current.emit('leaveStream', { streamId });
         socketRef.current.disconnect();
       }
     };
   }, [streamId]);
+
+  // Minimize to PiP mode
+  const minimizeToPiP = useCallback(() => {
+    if (!stream) return;
+
+    const hostName = stream.hostType === 'seller'
+      ? stream.seller?.businessName || ''
+      : stream.affiliate?.name || '';
+
+    enterPiP({
+      id: stream.id,
+      title: stream.title,
+      hlsUrl: stream.hlsUrl,
+      hostType: stream.hostType,
+      hostName,
+      viewerCount,
+    }, socketRef.current);
+
+    // Don't disconnect socket - PiP will use it
+    socketRef.current = null;
+    navigation.goBack();
+  }, [stream, viewerCount, enterPiP, navigation]);
 
   const fetchStreamData = async () => {
     try {
@@ -351,6 +391,14 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               <MaterialIcons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
 
+            {/* PiP minimize button */}
+            <TouchableOpacity
+              style={styles.pipButton}
+              onPress={minimizeToPiP}
+            >
+              <MaterialIcons name="picture-in-picture-alt" size={20} color="white" />
+            </TouchableOpacity>
+
             <View style={styles.streamInfo}>
               <Text style={styles.streamTitle} numberOfLines={1}>
                 {stream.title}
@@ -551,7 +599,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    marginRight: 12,
+    marginRight: 8,
+  },
+  pipButton: {
+    padding: 8,
+    marginRight: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 16,
   },
   streamInfo: {
     flex: 1,
