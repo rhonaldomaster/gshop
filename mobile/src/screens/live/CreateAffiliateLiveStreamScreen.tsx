@@ -75,9 +75,10 @@ export default function CreateAffiliateLiveStreamScreen({ navigation }: any) {
   const fetchSellerProducts = async (sellerId: string) => {
     try {
       setLoadingProducts(true);
-      const response = await api.get(`/products?sellerId=${sellerId}&limit=50`);
+      const response = await api.get<{ data?: Product[]; products?: Product[] } | Product[]>(`/products/seller/${sellerId}?limit=50`);
       if (response.data) {
-        setProducts(response.data.products || response.data);
+        const data = response.data as { data?: Product[]; products?: Product[] };
+        setProducts(data.data || data.products || (response.data as Product[]));
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);

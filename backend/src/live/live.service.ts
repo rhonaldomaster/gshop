@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Inject, ForbiddenEx
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not, IsNull, MoreThan, In } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType, LiveStreamReaction, ReactionType } from './live.entity';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
+import { CreateLiveStreamDto, CreateAffiliateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
 import { StreamerFollow } from '../database/entities/streamer-follow.entity';
@@ -80,6 +80,44 @@ export class LiveService {
     const savedStream = await this.liveStreamRepository.save(liveStream);
 
     console.log(`[Live Service] Created stream ${savedStream.id} with IVS channel ${ivsChannel.channel.arn}`);
+
+    return savedStream;
+  }
+
+  async createAffiliateLiveStream(affiliateId: string, dto: CreateAffiliateLiveStreamDto): Promise<LiveStream> {
+    // Validate affiliate exists and is approved
+    const affiliate = await this.affiliateRepository.findOne({
+      where: { id: affiliateId, status: AffiliateStatus.APPROVED, isActive: true }
+    });
+    if (!affiliate) {
+      throw new BadRequestException('Affiliate not found or not approved');
+    }
+
+    // Create AWS IVS channel
+    const channelName = `affiliate-${affiliateId}-${Date.now()}`;
+    const ivsChannel = await this.ivsService.createChannel(channelName);
+
+    // Generate thumbnail URL
+    const thumbnailUrl = this.ivsService.getThumbnailUrl(ivsChannel.channel.arn);
+
+    // Create live stream entity with both affiliateId and sellerId
+    const liveStream = this.liveStreamRepository.create({
+      title: dto.title,
+      description: dto.description,
+      scheduledAt: dto.scheduledAt,
+      hostType: HostType.AFFILIATE,
+      sellerId: dto.sellerId,
+      affiliateId: affiliateId,
+      streamKey: ivsChannel.streamKey.value,
+      rtmpUrl: ivsChannel.channel.ingestEndpoint,
+      hlsUrl: ivsChannel.channel.playbackUrl,
+      ivsChannelArn: ivsChannel.channel.arn,
+      thumbnailUrl,
+    });
+
+    const savedStream = await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Created affiliate stream ${savedStream.id} for seller ${dto.sellerId}`);
 
     return savedStream;
   }

@@ -171,6 +171,40 @@ export class SellersService {
     return sellerResponse
   }
 
+  /**
+   * Get all active and verified sellers for affiliate live streams
+   */
+  async getActiveSellers() {
+    const sellers = await this.sellersRepository
+      .createQueryBuilder('seller')
+      .leftJoin('seller.products', 'product')
+      .where('seller.isActive = :isActive', { isActive: true })
+      .andWhere('seller.verificationStatus = :status', { status: VerificationStatus.APPROVED })
+      .select([
+        'seller.id',
+        'seller.businessName',
+        'seller.ownerName',
+        'seller.businessCategory',
+        'seller.city',
+        'seller.state',
+      ])
+      .addSelect('COUNT(product.id)', 'productCount')
+      .groupBy('seller.id')
+      .orderBy('seller.businessName', 'ASC')
+      .getRawMany()
+
+    return sellers.map(seller => ({
+      id: seller.seller_id,
+      businessName: seller.seller_businessName,
+      storeName: seller.seller_businessName,
+      ownerName: seller.seller_ownerName,
+      businessCategory: seller.seller_businessCategory,
+      city: seller.seller_city,
+      state: seller.seller_state,
+      productCount: parseInt(seller.productCount, 10) || 0,
+    }))
+  }
+
   async updateBalance(sellerId: string, amount: number, type: 'add' | 'subtract' = 'add') {
     const seller = await this.sellersRepository.findOne({ where: { id: sellerId } })
 

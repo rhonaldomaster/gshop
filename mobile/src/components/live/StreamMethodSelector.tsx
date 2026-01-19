@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -92,7 +93,11 @@ export function StreamMethodSelector({ onSelect, selectedMethod }: StreamMethodS
   const { t } = useTranslation('translation');
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <MaterialIcons name="live-tv" size={40} color="#8b5cf6" />
         <Text style={styles.title}>{t('live.selectStreamMethod')}</Text>
@@ -134,14 +139,17 @@ export function StreamMethodSelector({ onSelect, selectedMethod }: StreamMethodS
         <MaterialIcons name="help-outline" size={20} color="#6b7280" />
         <Text style={styles.helpText}>{t('live.notSureWhichMethod')}</Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',

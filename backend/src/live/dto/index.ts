@@ -22,6 +22,22 @@ export class CreateLiveStreamDto {
   affiliateId?: string;
 }
 
+export class CreateAffiliateLiveStreamDto {
+  @IsString()
+  title: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsDateString()
+  scheduledAt?: string;
+
+  @IsUUID()
+  sellerId: string;
+}
+
 export class UpdateLiveStreamDto {
   @IsOptional()
   @IsString()

@@ -13,7 +13,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LiveService } from './live.service';
 import { LiveMetricsService } from './live-metrics.service';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
+import { CreateLiveStreamDto, CreateAffiliateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, JoinStreamDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
 import { HostType } from './live.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -36,8 +36,8 @@ export class LiveController {
   // Affiliate endpoints
   @Post('affiliate/streams')
   @UseGuards(JwtAuthGuard)
-  async createAffiliateLiveStream(@Request() req, @Body() createLiveStreamDto: CreateLiveStreamDto) {
-    return this.liveService.createLiveStream(req.user.affiliateId, createLiveStreamDto, HostType.AFFILIATE);
+  async createAffiliateLiveStream(@Request() req, @Body() dto: CreateAffiliateLiveStreamDto) {
+    return this.liveService.createAffiliateLiveStream(req.user.affiliateId, dto);
   }
 
   @Get('streams')
