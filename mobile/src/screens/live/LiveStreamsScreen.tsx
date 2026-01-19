@@ -348,6 +348,15 @@ export default function LiveStreamsScreen({ navigation }: any) {
           </LinearGradient>
         </TouchableOpacity>
 
+        {/* VOD/Replays Button */}
+        <TouchableOpacity
+          style={styles.vodButton}
+          onPress={() => navigation.navigate('VodList')}
+        >
+          <MaterialIcons name="play-circle-filled" size={16} color="#8b5cf6" />
+          <Text style={styles.vodButtonText}>{t('vod.replays')}</Text>
+        </TouchableOpacity>
+
         <View style={styles.filterDivider} />
 
         <TouchableOpacity
@@ -738,5 +747,24 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     backgroundColor: '#ef4444',
+  },
+  vodButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#ede9fe',
+    borderWidth: 1,
+    borderColor: '#8b5cf6',
+    gap: 6,
+    height: 40,
+  },
+  vodButtonText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#8b5cf6',
+    fontWeight: '600',
   },
 });

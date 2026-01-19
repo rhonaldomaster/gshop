@@ -9,7 +9,7 @@
 | FASE 3: Seller Mode Mobile | ✅ COMPLETADA | 2026-01-16 |
 | FASE 4: UI Carrito TikTok Style | ✅ COMPLETADA | 2026-01-16 |
 | FASE 5: Mantener Soporte OBS | ✅ COMPLETADA | 2026-01-16 |
-| FASE 6: VOD/Replays | ⏳ Pendiente | - |
+| FASE 6: VOD/Replays | ✅ COMPLETADA | 2026-01-19 |
 
 ---
 
@@ -859,3 +859,112 @@ Para RTMP nativo completo, se requeriría:
 - Traducciones completas en español
 - Navegación actualizada con nuevas rutas
 - QR code funcional con react-native-qrcode-svg
+
+### FASE 6: VOD/Replays - ✅ COMPLETADA (2026-01-19)
+
+**Archivos creados (Backend):**
+- `backend/src/live/vod.entity.ts` - Entidad para almacenar VODs:
+  - Enums: `VodStatus` (processing, available, failed, deleted)
+  - Enums: `StorageProvider` (r2, s3, cloudflare_stream)
+  - Campos: streamId, videoUrl, thumbnailUrl, hlsManifestUrl, duration, fileSize
+  - Campos: viewCount, status, storageProvider, qualities, errorMessage
+  - Relación ManyToOne con LiveStream
+- `backend/src/live/vod.service.ts` - Servicio completo para VOD:
+  - `handleRecordingComplete()` - Webhook para IVS Recording
+  - `copyRecordingToR2()` - Copiar de S3 a Cloudflare R2
+  - `createMockVod()` - Crear VOD de prueba en desarrollo
+  - `createVodFromStream()` - Crear VOD manualmente desde stream terminado
+  - `findAll()` - Listar VODs con paginación y filtros
+  - `findById()` / `findByStreamId()` - Obtener VOD individual
+  - `findBySellerId()` / `findByAffiliateId()` - VODs por propietario
+  - `getTrendingVods()` / `getRecentVods()` - Listas populares
+  - `incrementViewCount()` - Conteo de vistas
+  - `deleteVod()` - Eliminar VOD (soft delete)
+- `backend/src/live/dto/vod.dto.ts` - DTOs para VOD:
+  - `VodResponseDto` - Respuesta completa con stream, host, productos
+  - `VodListResponseDto` - Lista paginada de VODs
+  - `VodQueryDto` - Parámetros de consulta (page, limit, sellerId, affiliateId, status)
+  - `CreateVodFromStreamDto` - Crear VOD desde stream
+  - `IVSRecordingWebhookDto` - Payload del webhook de AWS IVS
+  - `VodStatsDto` - Estadísticas de VOD
+- `backend/src/live/vod.controller.ts` - Endpoints REST:
+  - `GET /vod` - Listar VODs públicos
+  - `GET /vod/trending` - VODs populares
+  - `GET /vod/recent` - VODs recientes
+  - `GET /vod/:id` - Obtener VOD por ID
+  - `POST /vod/:id/view` - Incrementar vistas
+  - `GET /vod/stream/:streamId` - VOD por stream ID
+  - `GET /vod/seller/my-vods` - VODs del seller autenticado
+  - `GET /vod/affiliate/my-vods` - VODs del affiliate autenticado
+  - `DELETE /vod/seller/:id` - Eliminar VOD (seller)
+  - `DELETE /vod/affiliate/:id` - Eliminar VOD (affiliate)
+  - `POST /vod/seller/create-from-stream` - Crear VOD (seller)
+  - `POST /vod/affiliate/create-from-stream` - Crear VOD (affiliate)
+  - `POST /vod/webhook/ivs-recording` - Webhook de IVS Recording
+- `backend/src/database/migrations/1769000000000-CreateLiveStreamVodsTable.ts`:
+  - Crea tabla `live_stream_vods`
+  - Enums: `vod_status_enum`, `storage_provider_enum`
+  - Índices optimizados para queries comunes
+
+**Archivos modificados (Backend):**
+- `backend/src/live/live.module.ts`:
+  - Import de `LiveStreamVod` entity
+  - Providers: `VodService`
+  - Controllers: `VodController`
+  - Exports: `VodService`
+- `backend/src/live/live.entity.ts`:
+  - Relación OneToMany con `LiveStreamVod`
+- `backend/src/live/dto/index.ts`:
+  - Export de DTOs de VOD
+
+**Archivos creados (Mobile):**
+- `mobile/src/screens/live/VodListScreen.tsx` - Pantalla de lista de VODs:
+  - Sección de trending VODs
+  - Tabs: recientes / populares
+  - Grid de VODs con thumbnails
+  - Badges de duración y vistas
+  - Pull-to-refresh
+  - Paginación infinita
+- `mobile/src/screens/live/VodPlayerScreen.tsx` - Reproductor de VOD:
+  - Player expo-av con controles personalizados
+  - Play/pause, seek ±10 segundos
+  - Barra de progreso con thumbnail
+  - Información del VOD (título, host, vistas)
+  - Panel expandible de productos
+  - Quick checkout modal
+  - Tags del stream original
+
+**Archivos modificados (Mobile):**
+- `mobile/src/services/live.service.ts`:
+  - Interfaces: `Vod`, `VodListResponse`
+  - Métodos: `getVods()`, `getTrendingVods()`, `getRecentVods()`
+  - Métodos: `getVodById()`, `getVodByStreamId()`, `incrementVodViewCount()`
+  - Métodos: `getSellerVods()`, `getAffiliateVods()`
+  - Métodos: `deleteSellerVod()`, `deleteAffiliateVod()`
+  - Métodos: `createSellerVodFromStream()`, `createAffiliateVodFromStream()`
+- `mobile/src/navigation/LiveNavigator.tsx`:
+  - Nuevas rutas: `VodList`, `VodPlayer`
+  - Imports de nuevas pantallas
+- `mobile/src/screens/live/LiveStreamsScreen.tsx`:
+  - Botón "Repeticiones" en filtros
+  - Navegación a `VodList`
+- `mobile/src/i18n/locales/es.json`:
+  - Sección `vod`: traducciones completas para VOD
+  - 40+ nuevas claves de traducción
+
+**Características principales:**
+- **Almacenamiento híbrido**: IVS Recording → S3 → Cloudflare R2
+- **Procesamiento automático**: Webhook detecta fin de stream y crea VOD
+- **Lista de VODs**: Trending, recientes, por seller/affiliate
+- **Reproductor nativo**: Controles de video personalizados con expo-av
+- **Productos en VOD**: Los productos del stream original disponibles para compra
+- **Acceso desde Live**: Botón de "Repeticiones" en la pantalla de streams
+- **Gestión de VODs**: Sellers y affiliates pueden ver/eliminar sus VODs
+
+**Verificación:**
+- Backend compila sin errores TypeScript
+- Mobile compila sin errores TypeScript (archivos VOD)
+- Migración de base de datos creada y lista
+- Traducciones completas en español
+- Navegación actualizada con nuevas rutas
+- Patrones consistentes con el resto del proyecto

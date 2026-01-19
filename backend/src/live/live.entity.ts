@@ -101,6 +101,9 @@ export class LiveStream {
   @OneToMany(() => LiveStreamViewer, viewer => viewer.stream)
   viewers: LiveStreamViewer[];
 
+  @OneToMany('LiveStreamVod', 'stream')
+  vods: any[];
+
   @CreateDateColumn()
   createdAt: Date;
 

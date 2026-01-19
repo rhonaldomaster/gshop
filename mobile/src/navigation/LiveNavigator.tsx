@@ -9,6 +9,8 @@ import LiveForYouFeedScreen from '../screens/live/LiveForYouFeedScreen';
 import NativeBroadcastScreen from '../screens/live/NativeBroadcastScreen';
 import GoLiveScreen from '../screens/live/GoLiveScreen';
 import OBSSetupScreen from '../screens/live/OBSSetupScreen';
+import VodListScreen from '../screens/live/VodListScreen';
+import VodPlayerScreen from '../screens/live/VodPlayerScreen';
 
 export type LiveStackParamList = {
   LiveMain: undefined;
@@ -20,6 +22,8 @@ export type LiveStackParamList = {
   GoLive: { streamId: string; hostType: 'seller' | 'affiliate' };
   NativeBroadcast: { streamId: string; hostType: 'seller' | 'affiliate'; useOBS?: boolean };
   OBSSetup: { streamId: string; hostType: 'seller' | 'affiliate' };
+  VodList: undefined;
+  VodPlayer: { vodId: string };
 };
 
 const Stack = createNativeStackNavigator<LiveStackParamList>();
@@ -60,6 +64,14 @@ export default function LiveNavigator() {
       <Stack.Screen
         name="OBSSetup"
         component={OBSSetupScreen}
+      />
+      <Stack.Screen
+        name="VodList"
+        component={VodListScreen}
+      />
+      <Stack.Screen
+        name="VodPlayer"
+        component={VodPlayerScreen}
       />
     </Stack.Navigator>
   );

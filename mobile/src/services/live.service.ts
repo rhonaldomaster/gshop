@@ -269,6 +269,203 @@ class LiveService {
       throw error;
     }
   }
+
+  // ==================== VOD Methods ====================
+
+  // Get all VODs with pagination
+  async getVods(params?: {
+    page?: number;
+    limit?: number;
+    sellerId?: string;
+    affiliateId?: string;
+  }): Promise<VodListResponse> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.sellerId) queryParams.append('sellerId', params.sellerId);
+      if (params?.affiliateId) queryParams.append('affiliateId', params.affiliateId);
+
+      const response = await api.get<VodListResponse>(`/vod?${queryParams.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching VODs:', error);
+      throw error;
+    }
+  }
+
+  // Get trending VODs
+  async getTrendingVods(limit: number = 10): Promise<Vod[]> {
+    try {
+      const response = await api.get<Vod[]>(`/vod/trending?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching trending VODs:', error);
+      throw error;
+    }
+  }
+
+  // Get recent VODs
+  async getRecentVods(limit: number = 10): Promise<Vod[]> {
+    try {
+      const response = await api.get<Vod[]>(`/vod/recent?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recent VODs:', error);
+      throw error;
+    }
+  }
+
+  // Get VOD by ID
+  async getVodById(vodId: string): Promise<Vod> {
+    try {
+      const response = await api.get<Vod>(`/vod/${vodId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching VOD:', error);
+      throw error;
+    }
+  }
+
+  // Get VOD by stream ID
+  async getVodByStreamId(streamId: string): Promise<Vod | null> {
+    try {
+      const response = await api.get<Vod | null>(`/vod/stream/${streamId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching VOD by stream ID:', error);
+      throw error;
+    }
+  }
+
+  // Increment VOD view count
+  async incrementVodViewCount(vodId: string): Promise<void> {
+    try {
+      await api.post(`/vod/${vodId}/view`);
+    } catch (error) {
+      console.error('Error incrementing VOD view count:', error);
+      // Don't throw - view count is not critical
+    }
+  }
+
+  // Get seller's VODs
+  async getSellerVods(page: number = 1, limit: number = 20): Promise<VodListResponse> {
+    try {
+      const response = await api.get<VodListResponse>(
+        `/vod/seller/my-vods?page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching seller VODs:', error);
+      throw error;
+    }
+  }
+
+  // Get affiliate's VODs
+  async getAffiliateVods(page: number = 1, limit: number = 20): Promise<VodListResponse> {
+    try {
+      const response = await api.get<VodListResponse>(
+        `/vod/affiliate/my-vods?page=${page}&limit=${limit}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching affiliate VODs:', error);
+      throw error;
+    }
+  }
+
+  // Delete VOD (seller)
+  async deleteSellerVod(vodId: string): Promise<void> {
+    try {
+      await api.delete(`/vod/seller/${vodId}`);
+    } catch (error) {
+      console.error('Error deleting VOD:', error);
+      throw error;
+    }
+  }
+
+  // Delete VOD (affiliate)
+  async deleteAffiliateVod(vodId: string): Promise<void> {
+    try {
+      await api.delete(`/vod/affiliate/${vodId}`);
+    } catch (error) {
+      console.error('Error deleting VOD:', error);
+      throw error;
+    }
+  }
+
+  // Create VOD from ended stream (seller)
+  async createSellerVodFromStream(streamId: string): Promise<Vod> {
+    try {
+      const response = await api.post<Vod>('/vod/seller/create-from-stream', { streamId });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating VOD from stream:', error);
+      throw error;
+    }
+  }
+
+  // Create VOD from ended stream (affiliate)
+  async createAffiliateVodFromStream(streamId: string): Promise<Vod> {
+    try {
+      const response = await api.post<Vod>('/vod/affiliate/create-from-stream', { streamId });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating VOD from stream:', error);
+      throw error;
+    }
+  }
+}
+
+// VOD Interfaces
+export interface Vod {
+  id: string;
+  streamId: string;
+  videoUrl: string;
+  thumbnailUrl: string;
+  hlsManifestUrl: string;
+  duration: number;
+  fileSize: number;
+  viewCount: number;
+  status: 'processing' | 'available' | 'failed' | 'deleted';
+  storageProvider: 'r2' | 's3' | 'cloudflare_stream';
+  qualities: string[];
+  createdAt: string;
+  processedAt: string;
+  stream?: {
+    id: string;
+    title: string;
+    description: string;
+    hostType: 'seller' | 'affiliate';
+    sellerId: string;
+    affiliateId: string;
+    thumbnailUrl: string;
+    totalSales: number;
+    peakViewers: number;
+    category: string;
+    tags: string[];
+  };
+  host?: {
+    id: string;
+    name: string;
+    avatar: string;
+    type: 'seller' | 'affiliate';
+  };
+  products?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    specialPrice?: number;
+    imageUrl: string;
+    orderCount: number;
+  }>;
+}
+
+export interface VodListResponse {
+  vods: Vod[];
+  total: number;
+  page: number;
+  totalPages: number;
 }
 
 export const liveService = new LiveService();
