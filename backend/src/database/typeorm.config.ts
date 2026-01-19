@@ -65,6 +65,12 @@ import {
 import { UserVerification } from '../token/entities/user-verification.entity';
 import { TransferLimit } from '../token/entities/transfer-limit.entity';
 
+// Notifications Entities
+import { UserNotification } from '../notifications/user-notification.entity';
+
+// Support Entities
+import { SupportTicket, FAQ } from '../support/support.entity';
+
 export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -95,7 +101,11 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
     UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics,
     // Token/Wallet system entities
     GshopWallet, GshopTransaction, RewardCampaign, ReferralReward, TokenMetrics,
-    UserVerification, TransferLimit
+    UserVerification, TransferLimit,
+    // Notifications entities
+    UserNotification,
+    // Support entities
+    SupportTicket, FAQ
   ],
   migrations: ['dist/src/database/migrations/*.js'],
   synchronize: false, // Disabled to prevent schema conflicts with manual migrations

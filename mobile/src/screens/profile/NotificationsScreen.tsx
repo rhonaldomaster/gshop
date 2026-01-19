@@ -13,9 +13,14 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
+import {
+  userNotificationsService,
+  UserNotification,
+  UserNotificationType,
+} from '../../services/user-notifications.service';
 
-// Notification types
-export type NotificationType = 'order' | 'promotion' | 'system' | 'info';
+// Notification types (mapped from backend)
+export type NotificationType = UserNotificationType | 'info';
 
 export interface Notification {
   id: string;
@@ -25,6 +30,8 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
   data?: any;
+  imageUrl?: string;
+  actionUrl?: string;
 }
 
 interface NotificationCardProps {
@@ -50,6 +57,10 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
         return 'settings-outline';
       case 'info':
         return 'information-circle-outline';
+      case 'live':
+        return 'videocam-outline';
+      case 'price_drop':
+        return 'trending-down-outline';
       default:
         return 'notifications-outline';
     }
@@ -65,6 +76,10 @@ const NotificationCard: React.FC<NotificationCardProps> = ({
         return '#F59E0B';
       case 'info':
         return '#3B82F6';
+      case 'live':
+        return '#EF4444';
+      case 'price_drop':
+        return '#8B5CF6';
       default:
         return theme.colors.textSecondary;
     }
@@ -164,57 +179,31 @@ export default function NotificationsScreen() {
         setLoading(true);
       }
 
-      // TODO: Replace with actual API call
-      // const data = await notificationsService.getNotifications();
+      const response = await userNotificationsService.getNotifications({
+        limit: 50,
+        offset: 0,
+      });
 
-      // Mock data for now
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          type: 'order',
-          title: 'Order Shipped',
-          message: 'Your order #12345 has been shipped and is on the way!',
-          isRead: false,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '2',
-          type: 'promotion',
-          title: 'Special Offer',
-          message: '50% off on all electronics! Limited time offer.',
-          isRead: false,
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '3',
-          type: 'order',
-          title: 'Order Delivered',
-          message: 'Your order #12344 has been delivered successfully.',
-          isRead: true,
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '4',
-          type: 'system',
-          title: 'App Update Available',
-          message: 'A new version of GSHOP is available. Update now for new features!',
-          isRead: true,
-          createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: '5',
-          type: 'info',
-          title: 'New Arrivals',
-          message: 'Check out the latest products just added to our store.',
-          isRead: true,
-          createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
+      // Map backend notifications to local format
+      const mappedNotifications: Notification[] = response.notifications.map((n) => ({
+        id: n.id,
+        type: n.type as NotificationType,
+        title: n.title,
+        message: n.message,
+        isRead: n.isRead,
+        createdAt: n.createdAt,
+        data: n.data,
+        imageUrl: n.imageUrl,
+        actionUrl: n.actionUrl,
+      }));
 
-      setNotifications(mockNotifications);
-    } catch (error) {
+      setNotifications(mappedNotifications);
+    } catch (error: any) {
       console.error('Failed to load notifications:', error);
-      Alert.alert('Error', 'Failed to load notifications');
+      // Only show alert if it's not a 401 error (user not logged in)
+      if (error?.statusCode !== 401) {
+        Alert.alert('Error', 'Failed to load notifications');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -235,8 +224,7 @@ export default function NotificationsScreen() {
 
   const handleMarkAsRead = async (id: string) => {
     try {
-      // TODO: Call API to mark as read
-      // await notificationsService.markAsRead(id);
+      await userNotificationsService.markAsRead(id);
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
@@ -248,8 +236,7 @@ export default function NotificationsScreen() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      // TODO: Call API to mark all as read
-      // await notificationsService.markAllAsRead();
+      await userNotificationsService.markAllAsRead();
 
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (error) {
@@ -269,8 +256,11 @@ export default function NotificationsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // TODO: Call API to clear notifications
-              // await notificationsService.clearAll();
+              // Delete all notifications
+              const ids = notifications.map((n) => n.id);
+              if (ids.length > 0) {
+                await userNotificationsService.deleteMultiple(ids);
+              }
               setNotifications([]);
             } catch (error) {
               console.error('Failed to clear notifications:', error);

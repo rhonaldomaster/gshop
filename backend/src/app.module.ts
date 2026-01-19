@@ -27,6 +27,8 @@ import { ReturnsModule } from './returns/returns.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CartModule } from './cart/cart.module';
 import { CouponsModule } from './coupons/coupons.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { SupportModule } from './support/support.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule as PlatformConfigModule } from './config/config.module';
 import { InvoicingModule } from './invoicing/invoicing.module';
@@ -87,6 +89,8 @@ import { AppService } from './app.service';
     WishlistModule,
     CartModule,
     CouponsModule,
+    NotificationsModule,
+    SupportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
