@@ -15,8 +15,16 @@ import {
   LiveStreamReaction,
   LiveStreamMetrics
 } from './live.entity';
+import { LiveStreamVod } from './vod.entity';
+import { VodService } from './vod.service';
+import { VodController } from './vod.controller';
+import { FollowersService } from './followers.service';
+import { FollowersController } from './followers.controller';
 import { Affiliate } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
+import { User } from '../database/entities/user.entity';
+import { StreamerFollow } from '../database/entities/streamer-follow.entity';
+import { DeviceToken } from '../notifications/device-token.entity';
 import { AwsIvsMockService } from './aws-ivs-mock.service';
 import { AwsIvsService } from './aws-ivs.service';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -32,13 +40,17 @@ import { IVS_SERVICE } from './live.constants';
       LiveStreamViewer,
       LiveStreamReaction,
       LiveStreamMetrics,
+      LiveStreamVod,
       Affiliate,
-      Order
+      Order,
+      User,
+      StreamerFollow,
+      DeviceToken,
     ]),
     ScheduleModule.forRoot(),
     NotificationsModule,
   ],
-  controllers: [LiveController],
+  controllers: [LiveController, VodController, FollowersController],
   providers: [
     CacheMockService,
     {
@@ -49,7 +61,9 @@ import { IVS_SERVICE } from './live.constants';
     LiveGateway,
     LiveMetricsService,
     LiveSchedulerService,
+    VodService,
+    FollowersService,
   ],
-  exports: [LiveService, LiveGateway, LiveMetricsService, IVS_SERVICE],
+  exports: [LiveService, LiveGateway, LiveMetricsService, IVS_SERVICE, VodService, FollowersService],
 })
 export class LiveModule {}

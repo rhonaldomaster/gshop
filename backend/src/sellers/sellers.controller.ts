@@ -60,6 +60,14 @@ export class SellersController {
     return this.sellersService.changePassword(req.user.sellerId, changePasswordDto)
   }
 
+  @Get('active')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all active and verified sellers for affiliate live streams' })
+  async getActiveSellers() {
+    return this.sellersService.getActiveSellers()
+  }
+
   @Get('stats')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

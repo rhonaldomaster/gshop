@@ -6,11 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCart } from '../contexts/CartContext';
+import { useUserRole } from '../contexts/UserRoleContext';
 import HomeNavigator from './HomeNavigator';
 import CategoriesNavigator from './CategoriesNavigator';
 import CartNavigator from './CartNavigator';
 import ProfileNavigator from './ProfileNavigator';
 import LiveNavigator from './LiveNavigator';
+import SellerNavigator from './SellerNavigator';
 
 export type AppTabParamList = {
   Home: undefined;
@@ -18,6 +20,7 @@ export type AppTabParamList = {
   Categories: undefined;
   Cart: undefined;
   Profile: undefined;
+  SellerDashboard: undefined;
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -27,6 +30,7 @@ export default function AppNavigator() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { totalItems } = useCart();
+  const { currentRole, canAccessSellerDashboard } = useUserRole();
 
   return (
     <Tab.Navigator
@@ -50,6 +54,9 @@ export default function AppNavigator() {
               break;
             case 'Profile':
               iconName = focused ? 'person' : 'person-outline';
+              break;
+            case 'SellerDashboard':
+              iconName = focused ? 'storefront' : 'storefront-outline';
               break;
             default:
               iconName = 'home-outline';
@@ -113,6 +120,15 @@ export default function AppNavigator() {
         component={ProfileNavigator}
         options={{ tabBarLabel: t('profile.title') }}
       />
+      {canAccessSellerDashboard && (
+        <Tab.Screen
+          name="SellerDashboard"
+          component={SellerNavigator}
+          options={{
+            tabBarLabel: t('sellerDashboard.tabTitle'),
+          }}
+        />
+      )}
     </Tab.Navigator>
   );
 }

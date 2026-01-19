@@ -31,6 +31,7 @@ import {
   LiveStreamReaction,
   LiveStreamMetrics
 } from '../live/live.entity';
+import { LiveStreamVod } from '../live/vod.entity';
 
 // Pixel/Analytics Entities
 import { PixelEvent } from '../pixel/entities/pixel-event.entity';
@@ -64,6 +65,15 @@ import {
 import { UserVerification } from '../token/entities/user-verification.entity';
 import { TransferLimit } from '../token/entities/transfer-limit.entity';
 
+// Notifications Entities
+import { UserNotification } from '../notifications/user-notification.entity';
+
+// Support Entities
+import { SupportTicket, FAQ } from '../support/support.entity';
+
+// Streamer Follow Entity
+import { StreamerFollow } from './entities/streamer-follow.entity';
+
 export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -83,7 +93,7 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
     // Commission & Fee System entities
     PlatformConfig, CommissionInvoice, AuditLog,
     // Live streaming entities
-    LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, LiveStreamReaction, LiveStreamMetrics,
+    LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, LiveStreamReaction, LiveStreamMetrics, LiveStreamVod,
     // Pixel/Analytics entities
     PixelEvent,
     // Affiliates/Creator system entities
@@ -94,7 +104,13 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
     UserInteraction, UserPreference, SimilarityMatrix, Recommendation, ProductFeature, UserCluster, RecommendationMetrics,
     // Token/Wallet system entities
     GshopWallet, GshopTransaction, RewardCampaign, ReferralReward, TokenMetrics,
-    UserVerification, TransferLimit
+    UserVerification, TransferLimit,
+    // Notifications entities
+    UserNotification,
+    // Support entities
+    SupportTicket, FAQ,
+    // Streamer follow entity
+    StreamerFollow
   ],
   migrations: ['dist/src/database/migrations/*.js'],
   synchronize: false, // Disabled to prevent schema conflicts with manual migrations

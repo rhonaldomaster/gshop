@@ -1,15 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, IsNull, MoreThan } from 'typeorm';
+import { Repository, Not, IsNull, MoreThan, In } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType, LiveStreamReaction, ReactionType } from './live.entity';
-import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto } from './dto';
+import { CreateLiveStreamDto, CreateAffiliateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
+import { StreamerFollow } from '../database/entities/streamer-follow.entity';
 import { IIvsService } from './interfaces/ivs-service.interface';
 import { IVS_SERVICE } from './live.constants';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheMockService } from '../common/cache/cache-mock.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UserNotificationsService } from '../notifications/user-notifications.service';
 
 @Injectable()
 export class LiveService {
@@ -30,10 +32,13 @@ export class LiveService {
     private affiliateRepository: Repository<Affiliate>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    @InjectRepository(StreamerFollow)
+    private streamerFollowRepository: Repository<StreamerFollow>,
     @Inject(IVS_SERVICE)
     private ivsService: IIvsService,
     private cacheService: CacheMockService,
     private notificationsService: NotificationsService,
+    private userNotificationsService: UserNotificationsService,
   ) {}
 
   // Method to set gateway reference (called from gateway's onModuleInit)
@@ -75,6 +80,44 @@ export class LiveService {
     const savedStream = await this.liveStreamRepository.save(liveStream);
 
     console.log(`[Live Service] Created stream ${savedStream.id} with IVS channel ${ivsChannel.channel.arn}`);
+
+    return savedStream;
+  }
+
+  async createAffiliateLiveStream(affiliateId: string, dto: CreateAffiliateLiveStreamDto): Promise<LiveStream> {
+    // Validate affiliate exists and is approved
+    const affiliate = await this.affiliateRepository.findOne({
+      where: { id: affiliateId, status: AffiliateStatus.APPROVED, isActive: true }
+    });
+    if (!affiliate) {
+      throw new BadRequestException('Affiliate not found or not approved');
+    }
+
+    // Create AWS IVS channel
+    const channelName = `affiliate-${affiliateId}-${Date.now()}`;
+    const ivsChannel = await this.ivsService.createChannel(channelName);
+
+    // Generate thumbnail URL
+    const thumbnailUrl = this.ivsService.getThumbnailUrl(ivsChannel.channel.arn);
+
+    // Create live stream entity with both affiliateId and sellerId
+    const liveStream = this.liveStreamRepository.create({
+      title: dto.title,
+      description: dto.description,
+      scheduledAt: dto.scheduledAt,
+      hostType: HostType.AFFILIATE,
+      sellerId: dto.sellerId,
+      affiliateId: affiliateId,
+      streamKey: ivsChannel.streamKey.value,
+      rtmpUrl: ivsChannel.channel.ingestEndpoint,
+      hlsUrl: ivsChannel.channel.playbackUrl,
+      ivsChannelArn: ivsChannel.channel.arn,
+      thumbnailUrl,
+    });
+
+    const savedStream = await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Created affiliate stream ${savedStream.id} for seller ${dto.sellerId}`);
 
     return savedStream;
   }
@@ -177,23 +220,54 @@ export class LiveService {
 
     console.log(`[Live Service] Stream ${savedStream.id} started`);
 
-    // Send push notifications to followers
-    const sellerId = savedStream.sellerId || savedStream.affiliateId;
-    if (sellerId) {
-      try {
-        await this.notificationsService.notifyLiveStreamStarted(
-          sellerId,
-          savedStream.title,
-          savedStream.id,
-          savedStream.thumbnailUrl,
-        );
-      } catch (error) {
+    // Send notifications to followers
+    const streamerId = savedStream.sellerId || savedStream.affiliateId;
+    if (streamerId) {
+      this.sendLiveStartNotifications(streamerId, savedStream).catch((error) => {
         console.error(`[Live Service] Failed to send notifications: ${error.message}`);
-        // Don't throw - notifications are not critical
-      }
+      });
     }
 
     return savedStream;
+  }
+
+  /**
+   * Send both push and in-app notifications when a stream starts
+   */
+  private async sendLiveStartNotifications(streamerId: string, stream: LiveStream): Promise<void> {
+    try {
+      // Send push notification
+      await this.notificationsService.notifyLiveStreamStarted(
+        streamerId,
+        stream.title,
+        stream.id,
+        stream.thumbnailUrl,
+      );
+
+      // Get followers with notifications enabled
+      const followers = await this.streamerFollowRepository.find({
+        where: { streamerId, notificationsEnabled: true },
+        select: ['followerId'],
+      });
+
+      if (followers.length === 0) {
+        console.log(`[Live Service] No followers to notify for streamer ${streamerId}`);
+        return;
+      }
+
+      // Create in-app notifications for all followers
+      const followerIds = followers.map((f) => f.followerId);
+      await this.userNotificationsService.createLiveNotificationForUsers(
+        followerIds,
+        stream.title,
+        stream.id,
+        stream.thumbnailUrl,
+      );
+
+      console.log(`[Live Service] Sent notifications to ${followerIds.length} followers`);
+    } catch (error) {
+      console.error(`[Live Service] Error sending live notifications: ${error.message}`);
+    }
   }
 
   async endLiveStream(id: string, hostId: string, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
@@ -1351,5 +1425,261 @@ export class LiveService {
       streams: recommendations,
       total: recommendations.length,
     };
+  }
+
+  // ==================== NATIVE STREAMING CREDENTIALS ====================
+
+  /**
+   * Get native streaming credentials for mobile broadcasting
+   * Returns RTMP ingest endpoint and stream key for the broadcaster
+   */
+  async getNativeStreamCredentials(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<NativeStreamCredentialsDto> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id: streamId, sellerId: hostId }
+      : { id: streamId, affiliateId: hostId };
+
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found or you do not have permission to access it');
+    }
+
+    // Only allow getting credentials for scheduled or live streams
+    if (liveStream.status === StreamStatus.ENDED || liveStream.status === StreamStatus.CANCELLED) {
+      throw new BadRequestException('Cannot get credentials for an ended or cancelled stream');
+    }
+
+    // Verify stream has IVS credentials
+    if (!liveStream.streamKey || !liveStream.rtmpUrl) {
+      throw new BadRequestException('Stream does not have valid streaming credentials. Please recreate the stream.');
+    }
+
+    return {
+      streamId: liveStream.id,
+      title: liveStream.title,
+      ingestEndpoint: liveStream.rtmpUrl,
+      streamKey: liveStream.streamKey,
+      channelArn: liveStream.ivsChannelArn,
+      playbackUrl: liveStream.hlsUrl,
+      recommendedBitrate: 2500, // 2.5 Mbps for 720p
+      recommendedResolution: '720p',
+      maxBitrate: 8500, // AWS IVS max for STANDARD channel type
+    };
+  }
+
+  /**
+   * Get OBS setup information for external streaming software
+   */
+  async getOBSSetupInfo(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<OBSSetupInfoDto> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id: streamId, sellerId: hostId }
+      : { id: streamId, affiliateId: hostId };
+
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found or you do not have permission to access it');
+    }
+
+    if (!liveStream.streamKey || !liveStream.rtmpUrl) {
+      throw new BadRequestException('Stream does not have valid streaming credentials');
+    }
+
+    return {
+      rtmpUrl: liveStream.rtmpUrl,
+      streamKey: liveStream.streamKey,
+      recommendedSettings: {
+        encoder: 'x264 or NVENC',
+        bitrate: 2500,
+        keyframeInterval: 2,
+        resolution: '1280x720',
+        fps: 30,
+      },
+    };
+  }
+
+  /**
+   * Verify stream ownership for any host type
+   */
+  async verifyStreamOwnership(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<LiveStream> {
+    const whereCondition = hostType === HostType.SELLER
+      ? { id: streamId, sellerId: hostId }
+      : { id: streamId, affiliateId: hostId };
+
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: whereCondition,
+    });
+
+    if (!liveStream) {
+      throw new ForbiddenException('You do not have permission to access this stream');
+    }
+
+    return liveStream;
+  }
+
+  /**
+   * Regenerate stream key if compromised
+   */
+  async regenerateStreamKey(
+    streamId: string,
+    hostId: string,
+    hostType: HostType,
+  ): Promise<{ streamKey: string }> {
+    const liveStream = await this.verifyStreamOwnership(streamId, hostId, hostType);
+
+    if (liveStream.status === StreamStatus.LIVE) {
+      throw new BadRequestException('Cannot regenerate stream key while streaming. Please end the stream first.');
+    }
+
+    // Get new stream key from IVS
+    const newStreamKey = await this.ivsService.getStreamKey(liveStream.ivsChannelArn);
+
+    if (!newStreamKey) {
+      // If no stream key exists, we need to create one - this is handled by the mock/real IVS service
+      throw new BadRequestException('Failed to regenerate stream key. Please recreate the stream.');
+    }
+
+    // Update the stream with the new key
+    liveStream.streamKey = newStreamKey.value;
+    await this.liveStreamRepository.save(liveStream);
+
+    console.log(`[Live Service] Regenerated stream key for stream ${streamId}`);
+
+    return {
+      streamKey: newStreamKey.value,
+    };
+  }
+
+  // ==================== TikTok Shop Style Features ====================
+
+  // In-memory store for stream purchase counts (per product)
+  private streamPurchaseCounts = new Map<string, Map<string, number>>();
+
+  /**
+   * Increment purchase count for a product during a live stream
+   * Used for real-time "X sold" notifications
+   */
+  async incrementStreamPurchaseCount(streamId: string, productId: string): Promise<number> {
+    // Get or create stream's purchase count map
+    if (!this.streamPurchaseCounts.has(streamId)) {
+      this.streamPurchaseCounts.set(streamId, new Map<string, number>());
+    }
+
+    const streamCounts = this.streamPurchaseCounts.get(streamId)!;
+    const currentCount = streamCounts.get(productId) || 0;
+    const newCount = currentCount + 1;
+    streamCounts.set(productId, newCount);
+
+    // Also update the database for persistence
+    try {
+      const streamProduct = await this.streamProductRepository.findOne({
+        where: { streamId, productId },
+      });
+
+      if (streamProduct) {
+        streamProduct.orderCount = (streamProduct.orderCount || 0) + 1;
+        await this.streamProductRepository.save(streamProduct);
+      }
+    } catch (error) {
+      console.error(`[Live Service] Failed to update product order count: ${error.message}`);
+    }
+
+    console.log(`[Live Service] Stream ${streamId} - Product ${productId} purchase count: ${newCount}`);
+
+    return newCount;
+  }
+
+  /**
+   * Get purchase stats for all products in a stream
+   */
+  async getStreamPurchaseStats(streamId: string): Promise<{
+    totalPurchases: number;
+    productStats: Array<{ productId: string; purchaseCount: number }>;
+  }> {
+    // Get in-memory counts
+    const streamCounts = this.streamPurchaseCounts.get(streamId);
+
+    if (!streamCounts) {
+      // If no in-memory counts, try to get from database
+      const streamProducts = await this.streamProductRepository.find({
+        where: { streamId },
+        select: ['productId', 'orderCount'],
+      });
+
+      const productStats = streamProducts.map(sp => ({
+        productId: sp.productId,
+        purchaseCount: sp.orderCount || 0,
+      }));
+
+      const totalPurchases = productStats.reduce((sum, p) => sum + p.purchaseCount, 0);
+
+      return {
+        totalPurchases,
+        productStats,
+      };
+    }
+
+    // Convert in-memory counts to array
+    const productStats = Array.from(streamCounts.entries()).map(([productId, count]) => ({
+      productId,
+      purchaseCount: count,
+    }));
+
+    const totalPurchases = productStats.reduce((sum, p) => sum + p.purchaseCount, 0);
+
+    return {
+      totalPurchases,
+      productStats,
+    };
+  }
+
+  /**
+   * Clear purchase counts when stream ends
+   * Called when stream status changes to ENDED
+   */
+  clearStreamPurchaseCounts(streamId: string): void {
+    this.streamPurchaseCounts.delete(streamId);
+    console.log(`[Live Service] Cleared purchase counts for stream ${streamId}`);
+  }
+
+  /**
+   * Get the pinned product for a stream
+   */
+  async getPinnedProduct(streamId: string): Promise<LiveStreamProduct | null> {
+    // For now, we use the isHighlighted field to track pinned products
+    // In a more robust implementation, we could add a separate pinnedAt timestamp
+    const pinnedProduct = await this.streamProductRepository.findOne({
+      where: { streamId, isHighlighted: true },
+      relations: ['product'],
+    });
+
+    return pinnedProduct;
+  }
+
+  /**
+   * Get all active products for a stream (for the carousel)
+   */
+  async getActiveStreamProducts(streamId: string): Promise<LiveStreamProduct[]> {
+    return this.streamProductRepository.find({
+      where: { streamId, isActive: true },
+      relations: ['product'],
+      order: { position: 'ASC' },
+    });
   }
 }

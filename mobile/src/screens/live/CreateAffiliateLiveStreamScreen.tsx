@@ -13,8 +13,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { affiliatesService, LiveStream } from '../../services/affiliates.service';
 import { api } from '../../services/api';
+import { liveService } from '../../services/live.service';
 
 interface Seller {
   id: string;
@@ -75,9 +75,10 @@ export default function CreateAffiliateLiveStreamScreen({ navigation }: any) {
   const fetchSellerProducts = async (sellerId: string) => {
     try {
       setLoadingProducts(true);
-      const response = await api.get(`/products?sellerId=${sellerId}&limit=50`);
+      const response = await api.get<{ data?: Product[]; products?: Product[] } | Product[]>(`/products/seller/${sellerId}?limit=50`);
       if (response.data) {
-        setProducts(response.data.products || response.data);
+        const data = response.data as { data?: Product[]; products?: Product[] };
+        setProducts(data.data || data.products || (response.data as Product[]));
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -131,17 +132,16 @@ export default function CreateAffiliateLiveStreamScreen({ navigation }: any) {
     setLoading(true);
 
     try {
-      const stream = await affiliatesService.createLiveStream({
+      const stream = await liveService.createAffiliateStream({
         title: title.trim(),
         description: description.trim(),
         sellerId: selectedSeller.id,
-        productIds: Array.from(selectedProducts),
       });
 
-      navigation.replace('LiveStreaming', {
+      // Navigate to method selector
+      navigation.replace('GoLive', {
         streamId: stream.id,
-        rtmpUrl: stream.rtmpUrl,
-        streamKey: (stream as any).streamKey,
+        hostType: 'affiliate',
       });
     } catch (error) {
       console.error('Error creating stream:', error);

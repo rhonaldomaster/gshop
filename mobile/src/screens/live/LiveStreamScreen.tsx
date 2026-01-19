@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,8 +16,11 @@ import io, { Socket } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
 import { ProductCard } from '../../components/live/ProductCard';
 import { ChatMessage } from '../../components/live/ChatMessage';
-import { QuickCheckoutModal } from '../../components/live/QuickCheckoutModal';
+import { LiveCheckoutModal } from '../../components/live/LiveCheckoutModal';
+import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
+import { PurchaseNotification, PurchaseCelebration, usePurchaseNotifications } from '../../components/live/PurchaseNotification';
 import { API_CONFIG } from '../../config/api.config';
+import { usePiP } from '../../contexts/PiPContext';
 
 interface LiveStreamData {
   id: string;
@@ -54,11 +57,15 @@ interface Message {
   user?: any;
 }
 
+interface PurchaseStats {
+  [productId: string]: number;
+}
+
 const { width, height } = Dimensions.get('window');
 
 export default function LiveStreamScreen({ route, navigation }: any) {
   const { t } = useTranslation('translation');
-  const { streamId } = route.params;
+  const { streamId, fromPiP } = route.params;
   const [stream, setStream] = useState<LiveStreamData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -69,20 +76,67 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const [showQuickCheckout, setShowQuickCheckout] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
+  // TikTok Shop style states
+  const [pinnedProductId, setPinnedProductId] = useState<string | null>(null);
+  const [purchaseStats, setPurchaseStats] = useState<PurchaseStats>({});
+  const [timerEndTime, setTimerEndTime] = useState<Date | null>(null);
+
+  // Purchase notification hook
+  const { triggerNotification, currentPurchase, dismissCelebration } = usePurchaseNotifications();
+
+  // PiP context
+  const { enterPiP, isActive: isPiPActive, streamData: pipStreamData, socketRef: pipSocketRef } = usePiP();
+
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<Video>(null);
 
+  // Handle returning from PiP mode - reuse existing socket
+  useEffect(() => {
+    if (fromPiP && pipStreamData && pipStreamData.id === streamId) {
+      // Reuse socket from PiP mode
+      socketRef.current = pipSocketRef.current;
+      setViewerCount(pipStreamData.viewerCount);
+      console.log('[LiveStreamScreen] Restored from PiP mode');
+    }
+  }, [fromPiP, pipStreamData, streamId, pipSocketRef]);
+
   useEffect(() => {
     fetchStreamData();
-    initializeSocket();
+    // Only initialize socket if not coming from PiP
+    if (!fromPiP || !pipSocketRef.current) {
+      initializeSocket();
+    }
 
     return () => {
-      if (socketRef.current) {
+      // Only disconnect if not in PiP mode
+      if (socketRef.current && !isPiPActive) {
         socketRef.current.emit('leaveStream', { streamId });
         socketRef.current.disconnect();
       }
     };
   }, [streamId]);
+
+  // Minimize to PiP mode
+  const minimizeToPiP = useCallback(() => {
+    if (!stream) return;
+
+    const hostName = stream.hostType === 'seller'
+      ? stream.seller?.businessName || ''
+      : stream.affiliate?.name || '';
+
+    enterPiP({
+      id: stream.id,
+      title: stream.title,
+      hlsUrl: stream.hlsUrl,
+      hostType: stream.hostType,
+      hostName,
+      viewerCount,
+    }, socketRef.current);
+
+    // Don't disconnect socket - PiP will use it
+    socketRef.current = null;
+    navigation.goBack();
+  }, [stream, viewerCount, enterPiP, navigation]);
 
   const fetchStreamData = async () => {
     try {
@@ -145,6 +199,58 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     socketRef.current.on('streamProductsUpdate', (data: { products: LiveStreamData['products'] }) => {
       setStream(prev => prev ? { ...prev, products: data.products } : null);
     });
+
+    // TikTok Shop style events
+    socketRef.current.on('productPinned', (data: { productId: string; timerEndTime?: string }) => {
+      setPinnedProductId(data.productId);
+      if (data.timerEndTime) {
+        setTimerEndTime(new Date(data.timerEndTime));
+      }
+    });
+
+    socketRef.current.on('productUnpinned', () => {
+      setPinnedProductId(null);
+      setTimerEndTime(null);
+    });
+
+    socketRef.current.on('newPurchase', (data: {
+      productId: string;
+      productName: string;
+      buyerName: string;
+      quantity: number;
+      purchaseCount: number;
+    }) => {
+      // Update purchase stats
+      setPurchaseStats(prev => ({
+        ...prev,
+        [data.productId]: data.purchaseCount,
+      }));
+
+      // Trigger notification
+      triggerNotification({
+        productName: data.productName,
+        buyerName: data.buyerName,
+        quantity: data.quantity || 1,
+        timestamp: new Date(),
+      });
+    });
+
+    socketRef.current.on('flashSaleStarted', (data: {
+      productId: string;
+      discountPercent: number;
+      endTime: string;
+    }) => {
+      setPinnedProductId(data.productId);
+      setTimerEndTime(new Date(data.endTime));
+    });
+
+    socketRef.current.on('flashSaleEnded', () => {
+      setTimerEndTime(null);
+    });
+
+    socketRef.current.on('purchaseAnimation', () => {
+      // Animation is handled by PurchaseCelebration component
+    });
   };
 
   const sendMessage = () => {
@@ -186,16 +292,44 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     setShowQuickCheckout(true);
   };
 
-  const handleCheckoutSuccess = () => {
+  const handleCheckoutSuccess = useCallback((orderData: { orderId: string; productName: string }) => {
     // Notify via WebSocket that purchase was made
-    if (socketRef.current) {
-      socketRef.current.emit('streamPurchase', {
+    if (socketRef.current && selectedProduct) {
+      socketRef.current.emit('purchaseMade', {
         streamId,
-        productId: selectedProduct?.product.id,
-        amount: selectedProduct?.specialPrice || selectedProduct?.product.price,
+        productId: selectedProduct.product.id,
+        productName: orderData.productName,
+        quantity: 1,
+        amount: selectedProduct.specialPrice || selectedProduct.product.price,
       });
     }
-  };
+    setShowQuickCheckout(false);
+    setSelectedProduct(null);
+  }, [streamId, selectedProduct]);
+
+  // Handler for TikTok style overlay quick buy
+  const handleOverlayQuickBuy = useCallback((overlayProduct: any) => {
+    // Find the full product data from stream products
+    const streamProduct = stream?.products.find(
+      p => p.id === overlayProduct.id || p.product.id === overlayProduct.productId
+    );
+    if (streamProduct) {
+      setSelectedProduct(streamProduct);
+      setShowQuickCheckout(true);
+    }
+  }, [stream]);
+
+  // Handler for expanding products panel
+  const handleExpandProducts = useCallback(() => {
+    setShowProducts(true);
+    setShowChat(false);
+  }, []);
+
+  // Get total purchase count for pinned product
+  const getPinnedProductPurchaseCount = useCallback(() => {
+    if (!pinnedProductId) return 0;
+    return purchaseStats[pinnedProductId] || 0;
+  }, [pinnedProductId, purchaseStats]);
 
   const formatViewerCount = (count: number) => {
     if (count < 1000) return count.toString();
@@ -255,6 +389,14 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               onPress={() => navigation.goBack()}
             >
               <MaterialIcons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+
+            {/* PiP minimize button */}
+            <TouchableOpacity
+              style={styles.pipButton}
+              onPress={minimizeToPiP}
+            >
+              <MaterialIcons name="picture-in-picture-alt" size={20} color="white" />
             </TouchableOpacity>
 
             <View style={styles.streamInfo}>
@@ -362,9 +504,44 @@ export default function LiveStreamScreen({ route, navigation }: any) {
         </View>
       )}
 
-      {/* Quick Checkout Modal */}
+      {/* TikTok Style Product Overlay */}
+      {stream.products.filter(p => p.isActive).length > 0 && (
+        <ProductOverlayTikTok
+          products={stream.products
+            .filter(p => p.isActive)
+            .map(p => ({
+              id: p.id,
+              productId: p.product.id,
+              name: p.product.name,
+              price: p.product.price,
+              specialPrice: p.specialPrice,
+              image: p.product.images[0] || '',
+              isActive: p.isActive,
+            }))}
+          pinnedProductId={pinnedProductId}
+          purchaseCount={getPinnedProductPurchaseCount()}
+          onQuickBuy={handleOverlayQuickBuy}
+          onViewProduct={onProductPress}
+          onExpandProducts={handleExpandProducts}
+          timerEndTime={timerEndTime}
+          isHost={false}
+        />
+      )}
+
+      {/* Purchase Notifications */}
+      <PurchaseNotification
+        enabled={true}
+      />
+
+      {/* Purchase Celebration for big purchases */}
+      <PurchaseCelebration
+        purchase={currentPurchase}
+        onDismiss={dismissCelebration}
+      />
+
+      {/* Live Checkout Modal */}
       {selectedProduct && (
-        <QuickCheckoutModal
+        <LiveCheckoutModal
           visible={showQuickCheckout}
           product={{
             id: selectedProduct.product.id,
@@ -422,7 +599,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    marginRight: 12,
+    marginRight: 8,
+  },
+  pipButton: {
+    padding: 8,
+    marginRight: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 16,
   },
   streamInfo: {
     flex: 1,

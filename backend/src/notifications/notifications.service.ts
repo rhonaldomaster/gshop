@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { DeviceToken } from './device-token.entity';
+import { StreamerFollow } from '../database/entities/streamer-follow.entity';
 
 // FCM notification payload interface
 export interface NotificationPayload {
@@ -23,6 +24,8 @@ export class NotificationsService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(DeviceToken)
     private readonly deviceTokenRepository: Repository<DeviceToken>,
+    @InjectRepository(StreamerFollow)
+    private readonly streamerFollowRepository: Repository<StreamerFollow>,
   ) {
     this.initializeFirebase();
   }
@@ -325,19 +328,31 @@ export class NotificationsService {
   }
 
   /**
-   * Get all device tokens for followers of a seller
-   * Note: Requires a followers/following system to be implemented
+   * Get all device tokens for followers of a seller/streamer
+   * Uses the StreamerFollow entity to find followers with notifications enabled
    */
-  private async getFollowerTokens(sellerId: string): Promise<string[]> {
+  private async getFollowerTokens(streamerId: string): Promise<string[]> {
     try {
-      // TODO: This requires a followers table/system
-      // For now, return empty array
-      // When followers system is implemented, uncomment and modify:
-      // const followers = await this.followersRepository.find({ where: { followingId: sellerId } });
-      // const followerIds = followers.map(f => f.followerId);
-      // const tokens = await this.deviceTokenRepository.find({ where: { userId: In(followerIds), isActive: true } });
-      // return tokens.map(t => t.token);
-      return [];
+      // Get followers with notifications enabled
+      const follows = await this.streamerFollowRepository.find({
+        where: { streamerId, notificationsEnabled: true },
+        select: ['followerId'],
+      });
+
+      if (follows.length === 0) {
+        this.logger.log(`No followers with notifications enabled for streamer ${streamerId}`);
+        return [];
+      }
+
+      const followerIds = follows.map((f) => f.followerId);
+
+      // Get active device tokens for these followers
+      const tokens = await this.deviceTokenRepository.find({
+        where: { userId: In(followerIds), isActive: true },
+      });
+
+      this.logger.log(`Found ${tokens.length} device tokens for ${followerIds.length} followers`);
+      return tokens.map((t) => t.token);
     } catch (error) {
       this.logger.error(`Failed to get follower tokens: ${error.message}`);
       return [];

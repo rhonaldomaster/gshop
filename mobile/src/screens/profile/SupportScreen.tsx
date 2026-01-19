@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,6 +7,7 @@ import {
   Linking,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
+import { supportService, FAQ as FAQType, TicketCategory } from '../../services/support.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface FAQ {
   id: string;
@@ -93,14 +96,20 @@ const ContactOption: React.FC<ContactOptionProps> = ({ icon, title, description,
 export default function SupportScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
+  const [ticketCategory, setTicketCategory] = useState<TicketCategory>('other');
+  const [ticketEmail, setTicketEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [loadingFaqs, setLoadingFaqs] = useState(true);
 
-  const faqs: FAQ[] = [
+  // Fallback FAQs from translations (used if backend fails or returns empty)
+  const fallbackFaqs: FAQ[] = [
     {
       id: '1',
       question: t('support.faqs.trackOrder.question'),
@@ -143,8 +152,44 @@ export default function SupportScreen() {
     },
   ];
 
+  useEffect(() => {
+    loadFAQs();
+  }, []);
+
+  const loadFAQs = async () => {
+    try {
+      setLoadingFaqs(true);
+      const backendFaqs = await supportService.getFAQs();
+
+      if (backendFaqs && backendFaqs.length > 0) {
+        // Map backend FAQs to local format
+        const mappedFaqs: FAQ[] = backendFaqs.map((faq) => ({
+          id: faq.id,
+          question: faq.question,
+          answer: faq.answer,
+        }));
+        setFaqs(mappedFaqs);
+      } else {
+        // Use fallback FAQs if backend returns empty
+        setFaqs(fallbackFaqs);
+      }
+    } catch (error) {
+      console.error('Failed to load FAQs:', error);
+      // Use fallback FAQs on error
+      setFaqs(fallbackFaqs);
+    } finally {
+      setLoadingFaqs(false);
+    }
+  };
+
   const handleToggleFaq = (id: string) => {
-    setExpandedFaq(expandedFaq === id ? null : id);
+    const newExpandedId = expandedFaq === id ? null : id;
+    setExpandedFaq(newExpandedId);
+
+    // Track view when FAQ is expanded
+    if (newExpandedId) {
+      supportService.incrementFAQView(id);
+    }
   };
 
   const handleEmailSupport = () => {
@@ -171,14 +216,32 @@ export default function SupportScreen() {
       return;
     }
 
+    // If user is not logged in, require email
+    if (!user && !ticketEmail.trim()) {
+      Alert.alert(t('support.missingInfo'), t('support.emailRequired'));
+      return;
+    }
+
     try {
       setSubmitting(true);
 
-      // TODO: Replace with actual API call
-      // await supportService.submitTicket({ subject: ticketSubject, message: ticketMessage });
+      const ticketData = {
+        subject: ticketSubject.trim(),
+        message: ticketMessage.trim(),
+        category: ticketCategory,
+        email: ticketEmail.trim() || undefined,
+      };
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (user) {
+        // Authenticated user
+        await supportService.createTicket(ticketData);
+      } else {
+        // Guest user
+        await supportService.createGuestTicket({
+          ...ticketData,
+          email: ticketEmail.trim(),
+        });
+      }
 
       Alert.alert(
         t('support.ticketSubmitted'),
@@ -189,6 +252,8 @@ export default function SupportScreen() {
             onPress: () => {
               setTicketSubject('');
               setTicketMessage('');
+              setTicketCategory('other');
+              setTicketEmail('');
               setShowTicketForm(false);
             },
           },
@@ -239,14 +304,23 @@ export default function SupportScreen() {
             {t('support.faq')}
           </GSText>
 
-          {faqs.map((faq) => (
-            <FAQItem
-              key={faq.id}
-              faq={faq}
-              isExpanded={expandedFaq === faq.id}
-              onToggle={() => handleToggleFaq(faq.id)}
-            />
-          ))}
+          {loadingFaqs ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <GSText variant="caption" color="textSecondary" style={{ marginTop: 8 }}>
+                {t('common.loading')}
+              </GSText>
+            </View>
+          ) : (
+            faqs.map((faq) => (
+              <FAQItem
+                key={faq.id}
+                faq={faq}
+                isExpanded={expandedFaq === faq.id}
+                onToggle={() => handleToggleFaq(faq.id)}
+              />
+            ))
+          )}
         </View>
 
         {/* Submit a Ticket */}
@@ -267,6 +341,31 @@ export default function SupportScreen() {
             </TouchableOpacity>
           ) : (
             <View style={[styles.ticketForm, { backgroundColor: theme.colors.surface }]}>
+              {/* Email field for guest users */}
+              {!user && (
+                <>
+                  <GSText variant="body" weight="semiBold" style={styles.formLabel}>
+                    {t('support.email')}
+                  </GSText>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.colors.background,
+                        color: theme.colors.text,
+                        borderColor: '#E5E7EB',
+                      },
+                    ]}
+                    placeholder={t('support.emailPlaceholder')}
+                    placeholderTextColor={theme.colors.textSecondary}
+                    value={ticketEmail}
+                    onChangeText={setTicketEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </>
+              )}
+
               <GSText variant="body" weight="semiBold" style={styles.formLabel}>
                 {t('support.subject')}
               </GSText>
@@ -480,5 +579,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
   },
 });

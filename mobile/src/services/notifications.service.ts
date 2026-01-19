@@ -158,6 +158,14 @@ class NotificationsService {
    */
   async getExpoPushToken(): Promise<string | null> {
     try {
+      // Skip if EXPO_PROJECT_ID is not configured
+      if (!ENV.EXPO_PROJECT_ID) {
+        if (ENV.DEBUG_MODE) {
+          console.log('[Notifications] Push notifications disabled - EXPO_PROJECT_ID not configured');
+        }
+        return null;
+      }
+
       const token = (
         await Notifications.getExpoPushTokenAsync({
           projectId: ENV.EXPO_PROJECT_ID,

@@ -8,8 +8,12 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import { CartProvider } from './src/contexts/CartContext';
 import { ProductsProvider } from './src/contexts/ProductsContext';
+import { UserRoleProvider } from './src/contexts/UserRoleContext';
+import { PiPProvider } from './src/contexts/PiPContext';
 import { StripeProvider } from './src/providers/StripeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
+import NotificationHandler from './src/components/NotificationHandler';
+import { MiniPlayer } from './src/components/live/MiniPlayer';
 
 export default function App() {
   const [fontLoaded, setFontLoaded] = React.useState(false);
@@ -29,15 +33,23 @@ export default function App() {
       <StripeProvider>
         <ThemeProvider>
           <AuthProvider>
-            <ProductsProvider>
-              <CartProvider>
-                <NavigationContainer>
-                  <StatusBar style="auto" />
-                  <RootNavigator />
-                </NavigationContainer>
-                <Toast />
-              </CartProvider>
-            </ProductsProvider>
+            <UserRoleProvider>
+              <ProductsProvider>
+                <CartProvider>
+                  <PiPProvider>
+                    <NavigationContainer>
+                      <NotificationHandler>
+                        <StatusBar style="auto" />
+                        <RootNavigator />
+                        {/* Floating mini player for PiP mode */}
+                        <MiniPlayer />
+                      </NotificationHandler>
+                    </NavigationContainer>
+                    <Toast />
+                  </PiPProvider>
+                </CartProvider>
+              </ProductsProvider>
+            </UserRoleProvider>
           </AuthProvider>
         </ThemeProvider>
       </StripeProvider>

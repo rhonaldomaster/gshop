@@ -459,6 +459,212 @@ export class LiveGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
+  // Pin a product during live stream (TikTok Shop style)
+  @SubscribeMessage('pinProduct')
+  async handlePinProduct(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: {
+      streamId: string;
+      productId: string;
+      timerDuration?: number; // Duration in seconds for the special offer
+    },
+  ) {
+    try {
+      const { streamId, productId, timerDuration } = data;
+      const userData = client.data;
+
+      if (!userData?.userId) {
+        client.emit('error', { message: 'Authentication required' });
+        return;
+      }
+
+      // Verify user is the host (seller or affiliate)
+      const badge = await this.liveService.getUserBadge(streamId, userData.userId);
+
+      if (badge !== 'seller' && badge !== 'affiliate') {
+        client.emit('error', { message: 'Only hosts can pin products' });
+        return;
+      }
+
+      // Calculate timer end time if duration is provided
+      const timerEndTime = timerDuration
+        ? new Date(Date.now() + timerDuration * 1000)
+        : null;
+
+      // Broadcast pinned product to all viewers
+      this.server.to(streamId).emit('productPinned', {
+        productId,
+        pinnedBy: userData.userId,
+        timestamp: new Date(),
+        timerEndTime,
+      });
+
+      // Notify admin dashboard
+      this.server.to('admin-dashboard').emit('productPinnedInStream', {
+        streamId,
+        productId,
+        pinnedBy: userData.userId,
+        timestamp: new Date(),
+      });
+
+      client.emit('pinProductSuccess', { productId, timerEndTime });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to pin product', error: error.message });
+    }
+  }
+
+  // Unpin the currently pinned product
+  @SubscribeMessage('unpinProduct')
+  async handleUnpinProduct(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string },
+  ) {
+    try {
+      const { streamId } = data;
+      const userData = client.data;
+
+      if (!userData?.userId) {
+        client.emit('error', { message: 'Authentication required' });
+        return;
+      }
+
+      // Verify user is the host
+      const badge = await this.liveService.getUserBadge(streamId, userData.userId);
+
+      if (badge !== 'seller' && badge !== 'affiliate') {
+        client.emit('error', { message: 'Only hosts can unpin products' });
+        return;
+      }
+
+      // Broadcast unpin to all viewers
+      this.server.to(streamId).emit('productUnpinned', {
+        unpinnedBy: userData.userId,
+        timestamp: new Date(),
+      });
+
+      client.emit('unpinProductSuccess');
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to unpin product', error: error.message });
+    }
+  }
+
+  // Handle purchase made during live stream (for real-time notifications)
+  @SubscribeMessage('purchaseMade')
+  async handlePurchaseMade(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: {
+      streamId: string;
+      productId: string;
+      productName: string;
+      quantity: number;
+      amount: number;
+    },
+  ) {
+    try {
+      const { streamId, productId, productName, quantity, amount } = data;
+
+      // Increment purchase counter for this stream
+      const purchaseCount = await this.liveService.incrementStreamPurchaseCount(streamId, productId);
+
+      // Broadcast new purchase notification to all viewers (anonymized)
+      this.server.to(streamId).emit('newPurchase', {
+        productId,
+        productName,
+        quantity,
+        buyerName: 'Usuario***', // Anonymized buyer name
+        timestamp: new Date(),
+        purchaseCount, // Total purchases of this product during stream
+      });
+
+      // Play purchase animation for viewers
+      this.server.to(streamId).emit('purchaseAnimation', {
+        productName,
+        timestamp: new Date(),
+      });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to broadcast purchase', error: error.message });
+    }
+  }
+
+  // Get current purchase stats for a stream
+  @SubscribeMessage('getStreamPurchaseStats')
+  async handleGetStreamPurchaseStats(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string },
+  ) {
+    try {
+      const { streamId } = data;
+
+      const stats = await this.liveService.getStreamPurchaseStats(streamId);
+
+      client.emit('streamPurchaseStats', {
+        streamId,
+        stats,
+        timestamp: new Date(),
+      });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to get purchase stats', error: error.message });
+    }
+  }
+
+  // Start a flash sale/special offer timer
+  @SubscribeMessage('startFlashSale')
+  async handleStartFlashSale(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: {
+      streamId: string;
+      productId: string;
+      durationSeconds: number;
+      discountPercent: number;
+    },
+  ) {
+    try {
+      const { streamId, productId, durationSeconds, discountPercent } = data;
+      const userData = client.data;
+
+      if (!userData?.userId) {
+        client.emit('error', { message: 'Authentication required' });
+        return;
+      }
+
+      // Verify user is the host
+      const badge = await this.liveService.getUserBadge(streamId, userData.userId);
+
+      if (badge !== 'seller' && badge !== 'affiliate') {
+        client.emit('error', { message: 'Only hosts can start flash sales' });
+        return;
+      }
+
+      const endTime = new Date(Date.now() + durationSeconds * 1000);
+
+      // Broadcast flash sale to all viewers
+      this.server.to(streamId).emit('flashSaleStarted', {
+        productId,
+        discountPercent,
+        endTime,
+        startedBy: userData.userId,
+        timestamp: new Date(),
+      });
+
+      // Schedule flash sale end notification
+      setTimeout(() => {
+        this.server.to(streamId).emit('flashSaleEnded', {
+          productId,
+          endTime: new Date(),
+        });
+      }, durationSeconds * 1000);
+
+      client.emit('flashSaleStartSuccess', { productId, endTime });
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to start flash sale', error: error.message });
+    }
+  }
+
   // Method to send notifications to all viewers of a stream
   async notifyStreamViewers(streamId: string, event: string, data: any) {
     this.server.to(streamId).emit(event, data);
