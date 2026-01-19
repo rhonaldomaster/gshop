@@ -10,6 +10,7 @@
 | FASE 4: UI Carrito TikTok Style | ✅ COMPLETADA | 2026-01-16 |
 | FASE 5: Mantener Soporte OBS | ✅ COMPLETADA | 2026-01-16 |
 | FASE 6: VOD/Replays | ✅ COMPLETADA | 2026-01-19 |
+| FASE 7: Profile Actions (Notificaciones y Soporte) | ✅ COMPLETADA | 2026-01-19 |
 
 ---
 
@@ -968,3 +969,106 @@ Para RTMP nativo completo, se requeriría:
 - Traducciones completas en español
 - Navegación actualizada con nuevas rutas
 - Patrones consistentes con el resto del proyecto
+
+### FASE 7: Profile Actions (Notificaciones y Soporte) - ✅ COMPLETADA (2026-01-19)
+
+**Archivos creados (Backend):**
+- `backend/src/notifications/user-notification.entity.ts` - Entidad de notificaciones:
+  - Enum `UserNotificationType`: order, promotion, system, live, price_drop
+  - Campos: userId, title, message, type, isRead, data (JSONB), imageUrl, actionUrl
+  - Relación ManyToOne con User (cascade delete)
+- `backend/src/notifications/user-notifications.service.ts` - Servicio completo:
+  - `getNotifications()` - Lista con filtros (unreadOnly, type, paginación)
+  - `getNotificationById()` - Obtener una notificación
+  - `getUnreadCount()` - Contador de no leídas
+  - `markAsRead()` / `markAllAsRead()` - Marcar como leídas
+  - `deleteNotification()` / `deleteMultiple()` - Eliminar notificaciones
+  - Creadores especializados: `createOrderNotification()`, `createPromotionNotification()`, `createSystemNotification()`, `createLiveNotification()`, `createPriceDropNotification()`
+- `backend/src/notifications/user-notifications.controller.ts` - Endpoints REST:
+  - `GET /notifications` - Listar notificaciones del usuario
+  - `GET /notifications/unread-count` - Contador de no leídas
+  - `GET /notifications/:id` - Obtener notificación por ID
+  - `PUT /notifications/:id/read` - Marcar como leída
+  - `PUT /notifications/mark-all-read` - Marcar todas como leídas
+  - `DELETE /notifications/:id` - Eliminar notificación
+  - `DELETE /notifications/bulk` - Eliminar múltiples
+- `backend/src/support/support.entity.ts` - Entidades de soporte:
+  - `SupportTicket`: id, userId, subject, message, category, status, priority, email, orderId, adminResponse, assignedToId, resolvedAt
+  - Enums: `TicketCategory` (order, payment, shipping, return, product, account, technical, other)
+  - Enums: `TicketStatus` (open, in_progress, resolved, closed)
+  - Enums: `TicketPriority` (low, medium, high, urgent)
+  - `FAQ`: id, question, answer, category, isActive, order, viewCount, helpfulCount
+- `backend/src/support/support.service.ts` - Servicio de soporte:
+  - CRUD de tickets: `createTicket()`, `getUserTickets()`, `getTicket()`, `getAllTickets()`, `updateTicket()`
+  - CRUD de FAQs: `getFAQs()`, `getFAQCategories()`, `createFAQ()`, `updateFAQ()`
+  - Tracking: `markFAQHelpful()`, `incrementFAQView()`
+  - Seed: `seedDefaultFAQs()` - 10 FAQs predeterminadas
+- `backend/src/support/support.controller.ts` - Endpoints REST:
+  - FAQs (públicos): `GET /support/faqs`, `GET /support/faqs/categories`, `POST /support/faqs/:id/helpful`, `POST /support/faqs/:id/view`
+  - Tickets (usuario): `POST /support/tickets`, `POST /support/tickets/guest`, `GET /support/tickets`, `GET /support/tickets/:id`
+  - Admin: `GET /support/admin/tickets`, `GET /support/admin/tickets/:id`, `PUT /support/admin/tickets/:id`, `POST /support/admin/faqs`, `PUT /support/admin/faqs/:id`, `POST /support/admin/faqs/seed`
+- `backend/src/support/support.module.ts` - Módulo de soporte
+- `backend/src/database/migrations/1768850200000-AddNotificationsAndSupport.ts`:
+  - Crea tabla `user_notifications` con índices (userId+createdAt, userId+isRead)
+  - Crea tabla `support_tickets` con índices (status+createdAt, userId+status)
+  - Crea tabla `faqs` con índices (order, category+isActive)
+  - Enums: user_notifications_type_enum, support_tickets_category_enum, support_tickets_status_enum, support_tickets_priority_enum
+
+**Archivos modificados (Backend):**
+- `backend/src/notifications/notifications.module.ts`:
+  - Import de UserNotification entity
+  - Providers/Controllers: UserNotificationsService, UserNotificationsController
+- `backend/src/database/typeorm.config.ts`:
+  - Registro de entidades: UserNotification, SupportTicket, FAQ
+- `backend/src/app.module.ts`:
+  - Import de NotificationsModule y SupportModule
+
+**Archivos creados (Mobile):**
+- `mobile/src/services/user-notifications.service.ts` - Servicio de notificaciones:
+  - `getNotifications()` - Lista con filtros y paginación
+  - `getUnreadCount()` - Contador de no leídas
+  - `getNotification()` - Obtener por ID
+  - `markAsRead()` / `markAllAsRead()` - Marcar como leídas
+  - `deleteNotification()` / `deleteMultiple()` - Eliminar
+  - Tipos: `UserNotification`, `UserNotificationType`, `UserNotificationsResponse`
+- `mobile/src/services/support.service.ts` - Servicio de soporte:
+  - `getFAQs()` / `getFAQCategories()` - Obtener FAQs
+  - `markFAQHelpful()` / `incrementFAQView()` - Tracking de FAQs
+  - `createTicket()` / `createGuestTicket()` - Crear tickets
+  - `getUserTickets()` / `getTicket()` - Obtener tickets
+  - Tipos: `SupportTicket`, `FAQ`, `TicketCategory`, `TicketStatus`, `TicketPriority`
+
+**Archivos modificados (Mobile):**
+- `mobile/src/screens/profile/NotificationsScreen.tsx`:
+  - Import de userNotificationsService y useAuth
+  - Carga de notificaciones desde backend
+  - Soporte para nuevos tipos: 'live', 'price_drop'
+  - Métodos reales: loadNotifications(), handleMarkAsRead(), handleMarkAllAsRead(), handleClearAll()
+  - Manejo de error 401 (usuario no logueado)
+- `mobile/src/screens/profile/SupportScreen.tsx`:
+  - Import de supportService y useAuth
+  - Estado de FAQs dinámico con fallback a traducciones
+  - Carga de FAQs desde backend con loadFAQs()
+  - Tracking de vistas de FAQ con incrementFAQView()
+  - Campo de email para tickets de guest
+  - Categoría de ticket
+  - Envío de tickets via API (createTicket/createGuestTicket)
+  - Loading state para FAQs
+
+**Características principales:**
+- **Sistema de notificaciones in-app**: Separado de push notifications
+- **5 tipos de notificaciones**: order, promotion, system, live, price_drop
+- **Iconos y colores por tipo**: Visual distintivo para cada tipo
+- **Marcar como leídas**: Individual y masivo
+- **FAQs dinámicas**: Cargadas desde backend con fallback a traducciones
+- **Tickets de soporte**: Para usuarios logueados y guests
+- **8 categorías de ticket**: order, payment, shipping, return, product, account, technical, other
+- **Tracking de FAQs**: Conteo de vistas y "útil"
+- **Admin panel ready**: Endpoints para gestión de tickets y FAQs
+
+**Verificación:**
+- Backend compila sin errores TypeScript
+- Migración de base de datos lista para ejecutar
+- Mobile integrado con servicios de backend
+- Fallback de FAQs a traducciones si backend falla
+- Soporte para usuarios guests (sin login)
