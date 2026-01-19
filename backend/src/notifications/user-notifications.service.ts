@@ -265,4 +265,30 @@ export class UserNotificationsService {
       actionUrl: `/products/${productId}`,
     });
   }
+
+  /**
+   * Create live stream notifications for multiple followers
+   */
+  async createLiveNotificationForUsers(
+    userIds: string[],
+    streamTitle: string,
+    streamId: string,
+    thumbnailUrl?: string,
+    streamerName?: string,
+  ): Promise<void> {
+    if (userIds.length === 0) return;
+
+    const title = streamerName
+      ? `${streamerName} is now live!`
+      : 'A streamer you follow is now live!';
+
+    await this.createBulk(userIds, {
+      title,
+      message: streamTitle,
+      type: NotificationType.LIVE,
+      data: { streamId, streamerName },
+      imageUrl: thumbnailUrl,
+      actionUrl: `/live/${streamId}`,
+    });
+  }
 }

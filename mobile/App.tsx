@@ -11,6 +11,7 @@ import { ProductsProvider } from './src/contexts/ProductsContext';
 import { UserRoleProvider } from './src/contexts/UserRoleContext';
 import { StripeProvider } from './src/providers/StripeProvider';
 import RootNavigator from './src/navigation/RootNavigator';
+import NotificationHandler from './src/components/NotificationHandler';
 
 export default function App() {
   const [fontLoaded, setFontLoaded] = React.useState(false);
@@ -34,8 +35,10 @@ export default function App() {
               <ProductsProvider>
                 <CartProvider>
                   <NavigationContainer>
-                    <StatusBar style="auto" />
-                    <RootNavigator />
+                    <NotificationHandler>
+                      <StatusBar style="auto" />
+                      <RootNavigator />
+                    </NotificationHandler>
                   </NavigationContainer>
                   <Toast />
                 </CartProvider>

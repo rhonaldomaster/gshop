@@ -7,9 +7,10 @@ import { User } from '../database/entities/user.entity';
 import { UserNotification } from './user-notification.entity';
 import { UserNotificationsService } from './user-notifications.service';
 import { UserNotificationsController } from './user-notifications.controller';
+import { StreamerFollow } from '../database/entities/streamer-follow.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([DeviceToken, User, UserNotification])],
+  imports: [TypeOrmModule.forFeature([DeviceToken, User, UserNotification, StreamerFollow])],
   controllers: [NotificationsController, UserNotificationsController],
   providers: [NotificationsService, UserNotificationsService],
   exports: [NotificationsService, UserNotificationsService],

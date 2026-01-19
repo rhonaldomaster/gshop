@@ -1,15 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException, Inject, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not, IsNull, MoreThan } from 'typeorm';
+import { Repository, Not, IsNull, MoreThan, In } from 'typeorm';
 import { LiveStream, LiveStreamProduct, LiveStreamMessage, LiveStreamViewer, StreamStatus, HostType, LiveStreamReaction, ReactionType } from './live.entity';
 import { CreateLiveStreamDto, UpdateLiveStreamDto, AddProductToStreamDto, SendMessageDto, LiveDashboardStatsDto, LiveStreamAnalyticsDto, NativeStreamCredentialsDto, OBSSetupInfoDto } from './dto';
 import { Affiliate, AffiliateStatus } from '../affiliates/entities/affiliate.entity';
 import { Order } from '../database/entities/order.entity';
+import { StreamerFollow } from '../database/entities/streamer-follow.entity';
 import { IIvsService } from './interfaces/ivs-service.interface';
 import { IVS_SERVICE } from './live.constants';
 import { v4 as uuidv4 } from 'uuid';
 import { CacheMockService } from '../common/cache/cache-mock.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UserNotificationsService } from '../notifications/user-notifications.service';
 
 @Injectable()
 export class LiveService {
@@ -30,10 +32,13 @@ export class LiveService {
     private affiliateRepository: Repository<Affiliate>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    @InjectRepository(StreamerFollow)
+    private streamerFollowRepository: Repository<StreamerFollow>,
     @Inject(IVS_SERVICE)
     private ivsService: IIvsService,
     private cacheService: CacheMockService,
     private notificationsService: NotificationsService,
+    private userNotificationsService: UserNotificationsService,
   ) {}
 
   // Method to set gateway reference (called from gateway's onModuleInit)
@@ -177,23 +182,54 @@ export class LiveService {
 
     console.log(`[Live Service] Stream ${savedStream.id} started`);
 
-    // Send push notifications to followers
-    const sellerId = savedStream.sellerId || savedStream.affiliateId;
-    if (sellerId) {
-      try {
-        await this.notificationsService.notifyLiveStreamStarted(
-          sellerId,
-          savedStream.title,
-          savedStream.id,
-          savedStream.thumbnailUrl,
-        );
-      } catch (error) {
+    // Send notifications to followers
+    const streamerId = savedStream.sellerId || savedStream.affiliateId;
+    if (streamerId) {
+      this.sendLiveStartNotifications(streamerId, savedStream).catch((error) => {
         console.error(`[Live Service] Failed to send notifications: ${error.message}`);
-        // Don't throw - notifications are not critical
-      }
+      });
     }
 
     return savedStream;
+  }
+
+  /**
+   * Send both push and in-app notifications when a stream starts
+   */
+  private async sendLiveStartNotifications(streamerId: string, stream: LiveStream): Promise<void> {
+    try {
+      // Send push notification
+      await this.notificationsService.notifyLiveStreamStarted(
+        streamerId,
+        stream.title,
+        stream.id,
+        stream.thumbnailUrl,
+      );
+
+      // Get followers with notifications enabled
+      const followers = await this.streamerFollowRepository.find({
+        where: { streamerId, notificationsEnabled: true },
+        select: ['followerId'],
+      });
+
+      if (followers.length === 0) {
+        console.log(`[Live Service] No followers to notify for streamer ${streamerId}`);
+        return;
+      }
+
+      // Create in-app notifications for all followers
+      const followerIds = followers.map((f) => f.followerId);
+      await this.userNotificationsService.createLiveNotificationForUsers(
+        followerIds,
+        stream.title,
+        stream.id,
+        stream.thumbnailUrl,
+      );
+
+      console.log(`[Live Service] Sent notifications to ${followerIds.length} followers`);
+    } catch (error) {
+      console.error(`[Live Service] Error sending live notifications: ${error.message}`);
+    }
   }
 
   async endLiveStream(id: string, hostId: string, hostType: HostType = HostType.SELLER): Promise<LiveStream> {
