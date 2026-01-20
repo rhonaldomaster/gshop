@@ -1,0 +1,394 @@
+# GSHOP Mobile - Guia de Instalacion
+
+Guia paso a paso para instalar la app GSHOP en tu telefono.
+
+**Compatible con**: macOS, Windows, Linux
+
+---
+
+## Variables de Entorno (Importante)
+
+Las variables de entorno (API URL, keys, etc.) estan en archivos `.env`. Dependiendo del metodo de build, debes configurarlas diferente.
+
+### Archivos disponibles
+
+```
+mobile/
+├── .env.development    # Variables para desarrollo
+├── .env.production     # Variables para produccion (crear si no existe)
+└── .env                # Variables que EAS Build usa automaticamente
+```
+
+### Para Expo Go (Metodo 1)
+
+Las variables se cargan automaticamente desde `.env.development`. No necesitas hacer nada extra.
+
+### Para EAS Build (Metodo 2)
+
+EAS Build **NO** lee `.env.development`. Tienes 3 opciones:
+
+**Opcion A: Copiar archivo (Recomendado para desarrollo)**
+
+```bash
+cd mobile
+cp .env.development .env
+```
+
+EAS encuentra `.env` automaticamente.
+
+**Opcion B: Usar EAS Secrets (Recomendado para produccion)**
+
+```bash
+# Agregar cada variable como secreto
+eas secret:create --name API_BASE_URL --value "https://api.gshop.com"
+eas secret:create --name STRIPE_PUBLISHABLE_KEY --value "pk_live_xxx"
+
+# Ver secretos existentes
+eas secret:list
+```
+
+**Opcion C: Configurar en eas.json**
+
+Edita `mobile/eas.json` y agrega las variables:
+
+```json
+{
+  "build": {
+    "preview": {
+      "env": {
+        "API_BASE_URL": "https://api.gshop.com",
+        "ENV": "development"
+      }
+    }
+  }
+}
+```
+
+### Para Build Local (Metodo 3)
+
+Copia el archivo antes de compilar:
+
+```bash
+cd mobile
+cp .env.development .env
+npx expo prebuild --platform android
+```
+
+### Resumen rapido
+
+| Metodo | Que hacer |
+|--------|-----------|
+| Expo Go | Nada, usa `.env.development` automaticamente |
+| EAS Build (dev) | `cp .env.development .env` |
+| EAS Build (prod) | Usar `eas secret:create` |
+| Build Local | `cp .env.development .env` |
+
+---
+
+## Metodo 1: Expo Go (El mas facil - Para desarrollo)
+
+Este metodo te permite probar la app en minutos sin compilar nada.
+
+### Paso 1: Descargar Expo Go en tu telefono
+
+- **Android**: Busca "Expo Go" en Play Store e instala
+- **iPhone**: Busca "Expo Go" en App Store e instala
+
+### Paso 2: Iniciar el servidor
+
+Abre la terminal y ejecuta:
+
+**macOS/Linux:**
+```bash
+cd ~/projects/gshop/mobile
+npm start
+```
+
+**Windows (PowerShell o CMD):**
+```bash
+cd C:\ruta\a\tu\proyecto\gshop\mobile
+npm start
+```
+
+### Paso 3: Conectar tu telefono
+
+1. Aparecera un codigo QR en la terminal
+2. **Android**: Abre Expo Go y escanea el QR
+3. **iPhone**: Abre la camara y escanea el QR
+
+¡Listo! La app se abrira en tu telefono.
+
+> **Nota**: Tu telefono y tu Mac deben estar en la misma red WiFi.
+
+---
+
+## Metodo 2: APK para Android (App instalable)
+
+Este metodo genera un archivo APK que puedes instalar permanentemente.
+
+### Paso 1: Instalar EAS (solo la primera vez)
+
+```bash
+npm install -g eas-cli
+```
+
+### Paso 2: Crear cuenta en Expo (solo la primera vez)
+
+1. Ve a https://expo.dev/signup
+2. Crea una cuenta gratis
+3. En la terminal, inicia sesion:
+
+```bash
+eas login
+```
+
+Te pedira tu email y contrasena de Expo.
+
+### Paso 3: Generar el APK
+
+```bash
+cd /Users/rhonalf.martinez/projects/gshop/mobile
+eas build --platform android --profile preview
+```
+
+Esto tomara unos 10-15 minutos. Veras algo como:
+
+```
+Build details: https://expo.dev/accounts/tu-usuario/projects/gshop/builds/xxxxx
+```
+
+### Paso 4: Descargar e instalar
+
+1. Cuando termine, te dara un link para descargar el APK
+2. Abre ese link en tu telefono Android
+3. Descarga el archivo
+4. Toca el archivo descargado para instalar
+
+> **Nota**: Si te dice "instalacion bloqueada", ve a Ajustes > Seguridad > habilita "Fuentes desconocidas" o "Instalar apps desconocidas".
+
+---
+
+## Metodo 3: Build Local Android (Sin cuenta Expo)
+
+Si no quieres crear cuenta en Expo, puedes compilar localmente.
+
+### Requisitos previos
+
+Necesitas tener instalado:
+- Android Studio (https://developer.android.com/studio)
+- Java 17
+
+### Paso 1: Verificar Java
+
+```bash
+java -version
+```
+
+Debe mostrar version 17. Si no lo tienes:
+
+**macOS:**
+```bash
+brew install openjdk@17
+```
+
+**Windows:**
+1. Descarga JDK 17 de https://adoptium.net/
+2. Instala el .msi
+3. Reinicia la terminal
+
+### Paso 2: Configurar variables de entorno (Windows)
+
+1. Busca "Variables de entorno" en el menu inicio
+2. Click en "Variables de entorno..."
+3. En "Variables del sistema", agrega:
+   - `JAVA_HOME` = `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot` (ajusta la version)
+   - `ANDROID_HOME` = `C:\Users\TU_USUARIO\AppData\Local\Android\Sdk`
+4. Edita `Path` y agrega:
+   - `%ANDROID_HOME%\platform-tools`
+   - `%ANDROID_HOME%\tools`
+
+### Paso 3: Configurar Android Studio
+
+1. Abre Android Studio
+2. Ve a Settings > Languages & Frameworks > Android SDK
+3. Asegurate de tener instalado "Android SDK Build-Tools" y "Android SDK Platform 34"
+
+### Paso 4: Generar el proyecto Android
+
+```bash
+cd gshop/mobile
+npx expo prebuild --platform android
+```
+
+### Paso 5: Compilar el APK
+
+**macOS/Linux:**
+```bash
+cd android
+./gradlew assembleRelease
+```
+
+**Windows (CMD o PowerShell):**
+```bash
+cd android
+gradlew.bat assembleRelease
+```
+
+Esto tomara varios minutos la primera vez.
+
+### Paso 6: Encontrar el APK
+
+El archivo estara en:
+```
+mobile/android/app/build/outputs/apk/release/app-release.apk
+```
+
+### Paso 7: Instalar en tu telefono
+
+Puedes:
+- Enviarte el APK por email/WhatsApp/Drive y abrirlo en tu telefono
+- O conectar tu telefono por USB y ejecutar:
+  ```bash
+  adb install app-release.apk
+  ```
+
+---
+
+## Para iPhone (iOS)
+
+> **Nota**: Para compilar apps de iOS necesitas una Mac. Desde Windows solo puedes usar Expo Go o EAS Build (en la nube).
+
+### Opcion A: Expo Go (Desarrollo) - Windows/Mac/Linux
+
+Igual que el Metodo 1, pero escaneando el QR con la camara del iPhone.
+
+### Opcion B: EAS Build (Desde Windows sin Mac)
+
+Puedes generar el IPA en la nube sin necesidad de Mac:
+
+```bash
+cd gshop/mobile
+eas build --platform ios --profile preview
+```
+
+Esto genera el build en servidores de Expo. Necesitas cuenta Apple Developer ($99/ano) para instalar en dispositivos fisicos.
+
+### Opcion C: Dispositivo fisico con Xcode (Solo Mac)
+
+Necesitas:
+- Mac con Xcode instalado
+- Cable USB para conectar el iPhone
+
+```bash
+cd gshop/mobile
+npx expo prebuild --platform ios
+npx expo run:ios --device
+```
+
+Selecciona tu iPhone de la lista.
+
+### Opcion D: TestFlight (Para distribuir a otros)
+
+Necesitas una cuenta Apple Developer ($99/ano).
+
+```bash
+eas build --platform ios --profile production
+eas submit --platform ios
+```
+
+---
+
+## Resumen rapido
+
+| Quiero... | Usa este metodo |
+|-----------|-----------------|
+| Probar rapido en mi Android | Metodo 1 (Expo Go) |
+| Instalar APK en mi Android | Metodo 2 (EAS) |
+| No quiero crear cuentas | Metodo 3 (Local) |
+| Probar en iPhone | Metodo 1 (Expo Go) |
+| App para App Store | Opcion C (TestFlight) |
+
+---
+
+## Problemas comunes
+
+### "No se puede conectar al servidor"
+
+- Verifica que tu telefono y Mac esten en la misma red WiFi
+- Intenta con: `npm start -- --tunnel`
+
+### "Build failed" en EAS
+
+```bash
+# Limpia el cache e intenta de nuevo
+eas build --platform android --profile preview --clear-cache
+```
+
+### "Fuentes desconocidas" en Android
+
+1. Ajustes del telefono
+2. Busca "Instalar apps desconocidas" o "Fuentes desconocidas"
+3. Permite instalar desde Chrome/Archivos
+
+### El APK no se instala
+
+- Verifica que tu telefono tenga Android 6.0 o superior
+- Desinstala cualquier version anterior de GSHOP
+
+---
+
+## Comandos de referencia rapida
+
+### macOS/Linux
+
+```bash
+# Desarrollo con Expo Go
+cd mobile && npm start
+
+# APK con EAS (necesita cuenta Expo)
+cd mobile && eas build --platform android --profile preview
+
+# APK local (necesita Android Studio)
+cd mobile && npx expo prebuild --platform android && cd android && ./gradlew assembleRelease
+
+# iOS con Xcode (solo Mac)
+cd mobile && npx expo run:ios --device
+```
+
+### Windows
+
+```bash
+# Desarrollo con Expo Go
+cd mobile
+npm start
+
+# APK con EAS (necesita cuenta Expo)
+cd mobile
+eas build --platform android --profile preview
+
+# APK local (necesita Android Studio)
+cd mobile
+npx expo prebuild --platform android
+cd android
+gradlew.bat assembleRelease
+```
+
+---
+
+## Comparativa: Windows vs Mac
+
+| Caracteristica | Windows | Mac |
+|----------------|---------|-----|
+| Expo Go (Android) | Si | Si |
+| Expo Go (iOS) | Si | Si |
+| APK local | Si | Si |
+| EAS Build Android | Si | Si |
+| EAS Build iOS | Si | Si |
+| Build iOS local | No (necesita Xcode) | Si |
+| Simulador iOS | No | Si |
+
+**En resumen**: Desde Windows puedes hacer casi todo excepto compilar iOS localmente. Para eso usas EAS Build que compila en la nube.
+
+---
+
+¿Dudas? Preguntale a Miyu~

@@ -1,9 +1,20 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "requireCommit": false
   },
   "build": {
+    "base": {
+      "node": "22.13.0",
+      "android": {
+        "image": "latest"
+      },
+      "ios": {
+        "image": "latest"
+      }
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "env": {
@@ -17,15 +28,18 @@
       }
     },
     "preview": {
+      "extends": "base",
       "distribution": "internal",
       "env": {
         "ENV": "development"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "withoutCredentials": false
       }
     },
     "production": {
+      "extends": "base",
       "env": {
         "ENV": "production"
       },
