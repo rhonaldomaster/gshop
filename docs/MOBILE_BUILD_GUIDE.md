@@ -170,42 +170,43 @@ Build details: https://expo.dev/accounts/tu-usuario/projects/gshop/builds/xxxxx
 
 ## Metodo 3: Build Local Android (Sin cuenta Expo)
 
-Si no quieres crear cuenta en Expo, puedes compilar localmente.
+Si no quieres crear cuenta en Expo o no quieres esperar la cola de EAS, puedes compilar localmente.
 
 ### Requisitos previos
 
 Necesitas tener instalado:
 - Android Studio (https://developer.android.com/studio)
-- Java 17
+- Java 11+ (Android Studio incluye Java 21 que funciona perfectamente)
 
-### Paso 1: Verificar Java
+### Paso 1: Configurar JAVA_HOME
 
-```bash
-java -version
-```
-
-Debe mostrar version 17. Si no lo tienes:
+Android Studio incluye su propio JDK. Usaremos ese.
 
 **macOS:**
 ```bash
-brew install openjdk@17
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 ```
 
+Para hacerlo permanente, agrega esa linea a tu `~/.zshrc` o `~/.bashrc`.
+
 **Windows:**
-1. Descarga JDK 17 de https://adoptium.net/
-2. Instala el .msi
-3. Reinicia la terminal
-
-### Paso 2: Configurar variables de entorno (Windows)
-
 1. Busca "Variables de entorno" en el menu inicio
 2. Click en "Variables de entorno..."
-3. En "Variables del sistema", agrega:
-   - `JAVA_HOME` = `C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot` (ajusta la version)
+3. En "Variables del sistema", agrega o edita:
+   - `JAVA_HOME` = `C:\Program Files\Android\Android Studio\jbr`
    - `ANDROID_HOME` = `C:\Users\TU_USUARIO\AppData\Local\Android\Sdk`
 4. Edita `Path` y agrega:
    - `%ANDROID_HOME%\platform-tools`
-   - `%ANDROID_HOME%\tools`
+   - `%JAVA_HOME%\bin`
+
+### Paso 2: Verificar Java
+
+```bash
+$JAVA_HOME/bin/java -version   # macOS/Linux
+%JAVA_HOME%\bin\java -version  # Windows
+```
+
+Debe mostrar version 11 o superior.
 
 ### Paso 3: Configurar Android Studio
 
@@ -213,17 +214,31 @@ brew install openjdk@17
 2. Ve a Settings > Languages & Frameworks > Android SDK
 3. Asegurate de tener instalado "Android SDK Build-Tools" y "Android SDK Platform 34"
 
-### Paso 4: Generar el proyecto Android
+### Paso 4: Instalar dependencias (IMPORTANTE)
+
+El proyecto mobile debe instalarse **separado** del monorepo para evitar conflictos de versiones.
 
 ```bash
 cd gshop/mobile
+rm -rf node_modules package-lock.json
+npm install
+```
+
+> **Nota**: El `mobile` fue removido de los npm workspaces del proyecto raiz para evitar conflictos de Metro bundler con admin-web.
+
+### Paso 5: Generar el proyecto Android
+
+```bash
+cd gshop/mobile
+rm -rf android  # Limpia cualquier build anterior
 npx expo prebuild --platform android
 ```
 
-### Paso 5: Compilar el APK
+### Paso 6: Compilar el APK
 
 **macOS/Linux:**
 ```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 cd android
 ./gradlew assembleRelease
 ```
@@ -234,23 +249,85 @@ cd android
 gradlew.bat assembleRelease
 ```
 
-Esto tomara varios minutos la primera vez.
+Esto tomara 15-20 minutos la primera vez. Builds posteriores seran mas rapidos (~5 min).
 
-### Paso 6: Encontrar el APK
+### Paso 7: Encontrar el APK
 
 El archivo estara en:
 ```
 mobile/android/app/build/outputs/apk/release/app-release.apk
 ```
 
-### Paso 7: Instalar en tu telefono
+Tamano aproximado: ~105 MB
 
-Puedes:
-- Enviarte el APK por email/WhatsApp/Drive y abrirlo en tu telefono
-- O conectar tu telefono por USB y ejecutar:
-  ```bash
-  adb install app-release.apk
-  ```
+### Paso 8: Instalar en tu telefono
+
+**Opcion A: Con ADB (recomendado)**
+```bash
+adb install android/app/build/outputs/apk/release/app-release.apk
+```
+
+**Opcion B: Transferencia manual**
+1. Copia el APK a tu telefono (USB, Google Drive, email, etc.)
+2. Abre el archivo en tu telefono
+3. Toca "Instalar"
+
+> **Nota**: Si te dice "instalacion bloqueada", ve a Ajustes > Seguridad > habilita "Instalar apps desconocidas" para tu app de archivos o navegador.
+
+---
+
+### Problemas comunes en Build Local
+
+#### Error: "Package subpath './src/lib/TerminalReporter' is not defined"
+
+Este error indica conflicto de versiones de Metro bundler. Solucion:
+
+```bash
+cd gshop/mobile
+rm -rf node_modules package-lock.json android
+npm install
+npx expo prebuild --platform android
+```
+
+#### Error: "Missing classes detected while running R8"
+
+Faltan reglas de ProGuard. Agrega esto a `android/app/proguard-rules.pro`:
+
+```proguard
+# Stripe Push Provisioning (optional feature)
+-dontwarn com.stripe.android.pushProvisioning.**
+-keep class com.stripe.android.pushProvisioning.** { *; }
+
+# Amazon IVS Broadcast (Cronet)
+-dontwarn org.chromium.net.**
+-keep class org.chromium.net.** { *; }
+```
+
+#### Error: "Unable to resolve module expo-file-system/legacy"
+
+Cambia el import en el archivo afectado:
+```typescript
+// Antes (incorrecto para SDK 52)
+import * as FileSystem from 'expo-file-system/legacy';
+
+// Despues (correcto)
+import * as FileSystem from 'expo-file-system';
+```
+
+#### Build muy lento o se queda sin memoria
+
+Agrega mas memoria a Gradle. Edita `android/gradle.properties`:
+
+```properties
+org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m
+```
+
+#### Error: "JAVA_HOME is not set"
+
+Asegurate de exportar JAVA_HOME antes de ejecutar gradlew:
+```bash
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+```
 
 ---
 
@@ -349,7 +426,14 @@ cd mobile && npm start
 cd mobile && eas build --platform android --profile preview
 
 # APK local (necesita Android Studio)
-cd mobile && npx expo prebuild --platform android && cd android && ./gradlew assembleRelease
+cd mobile
+rm -rf android node_modules package-lock.json
+npm install
+npx expo prebuild --platform android
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+cd android && ./gradlew assembleRelease
+
+# El APK queda en: android/app/build/outputs/apk/release/app-release.apk
 
 # iOS con Xcode (solo Mac)
 cd mobile && npx expo run:ios --device
@@ -368,9 +452,14 @@ eas build --platform android --profile preview
 
 # APK local (necesita Android Studio)
 cd mobile
+rmdir /s /q android node_modules
+del package-lock.json
+npm install
 npx expo prebuild --platform android
 cd android
 gradlew.bat assembleRelease
+
+# El APK queda en: android\app\build\outputs\apk\release\app-release.apk
 ```
 
 ---
