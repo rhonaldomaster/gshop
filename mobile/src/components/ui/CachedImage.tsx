@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image, ImageProps, ActivityIndicator, View, StyleSheet } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { MaterialIcons } from '@expo/vector-icons';
 
 interface CachedImageProps extends Omit<ImageProps, 'source'> {

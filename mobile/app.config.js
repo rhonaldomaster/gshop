@@ -13,7 +13,7 @@ export default ({ config }) => {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'automatic',
-    newArchEnabled: true,
+    newArchEnabled: false,
     scheme: process.env.APP_SCHEME || 'gshop',
     splash: {
       image: './assets/splash-icon.png',
@@ -97,7 +97,7 @@ export default ({ config }) => {
     },
     extra: {
       eas: {
-        projectId: process.env.EXPO_PROJECT_ID || '',
+        projectId: '28fbae38-e89b-4701-9251-ae7b23051961',
       },
       // Expose environment variables to the app
       ENV: process.env.ENV || 'development',
