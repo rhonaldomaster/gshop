@@ -55,7 +55,18 @@ import { IVS_SERVICE } from './live.constants';
     CacheMockService,
     {
       provide: IVS_SERVICE,
-      useValue: new AwsIvsMockService(),
+      useFactory: (configService: ConfigService) => {
+        const isEnabled = configService.get('AWS_IVS_ENABLED') === 'true';
+        console.log(`[Live Module] AWS IVS enabled: ${isEnabled}`);
+        if (isEnabled) {
+          console.log('[Live Module] Using real AWS IVS service');
+          return new AwsIvsService(configService);
+        } else {
+          console.log('[Live Module] Using mock IVS service (set AWS_IVS_ENABLED=true for real AWS)');
+          return new AwsIvsMockService();
+        }
+      },
+      inject: [ConfigService],
     },
     LiveService,
     LiveGateway,
