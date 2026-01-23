@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsEnum, MinLength, IsOptional, IsDecimal, IsNotEmpty, Matches } from 'class-validator'
+import { IsEmail, IsString, IsEnum, MinLength, IsOptional, IsDecimal, IsNotEmpty, Matches, IsBoolean, Equals } from 'class-validator'
 import { SellerType, DocumentType, BankAccountType } from '../entities/seller.entity'
 
 export class CreateSellerDto {
@@ -88,4 +88,12 @@ export class CreateSellerDto {
   @IsOptional()
   @IsString()
   mercadoPagoAccountId?: string
+
+  @IsBoolean({ message: 'Debes aceptar los términos y condiciones' })
+  @Equals(true, { message: 'Debes aceptar los términos y condiciones para registrarte' })
+  acceptTerms: boolean
+
+  @IsBoolean({ message: 'Debes aceptar la política de privacidad' })
+  @Equals(true, { message: 'Debes aceptar la política de privacidad para registrarte' })
+  acceptPrivacy: boolean
 }

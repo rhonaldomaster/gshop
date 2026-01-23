@@ -108,6 +108,18 @@ export class User {
   @Column({ nullable: true })
   lastLoginAt: Date;
 
+  @ApiProperty({ description: 'Timestamp when user accepted terms and conditions' })
+  @Column({ type: 'timestamp', nullable: true })
+  termsAcceptedAt: Date;
+
+  @ApiProperty({ description: 'Timestamp when user accepted privacy policy' })
+  @Column({ type: 'timestamp', nullable: true })
+  privacyAcceptedAt: Date;
+
+  @ApiProperty({ description: 'Version of terms accepted (e.g., "2026-01")' })
+  @Column({ nullable: true })
+  acceptedTermsVersion: string;
+
   @ApiProperty()
   @CreateDateColumn()
   createdAt: Date;

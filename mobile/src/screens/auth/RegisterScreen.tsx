@@ -35,17 +35,28 @@ export default function RegisterScreen() {
     phone: '',
     password: '',
     confirmPassword: '',
+    acceptTerms: false,
+    acceptPrivacy: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [termsError, setTermsError] = useState('');
+
   const handleRegister = async () => {
+    setTermsError('');
+
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
+      return;
+    }
+
+    if (!formData.acceptTerms || !formData.acceptPrivacy) {
+      setTermsError(t('register.acceptTermsRequired'));
       return;
     }
 
@@ -57,6 +68,8 @@ export default function RegisterScreen() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
+        acceptTerms: formData.acceptTerms,
+        acceptPrivacy: formData.acceptPrivacy,
       });
     } catch (error) {
       console.error('Register error:', error);
@@ -172,25 +185,66 @@ export default function RegisterScreen() {
               leftIcon={<Ionicons name="lock-closed-outline" size={20} color={theme.colors.textSecondary} />}
             />
 
+            {/* Terms and Privacy Checkboxes */}
+            <View style={styles.termsCheckboxes}>
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setFormData(prev => ({ ...prev, acceptTerms: !prev.acceptTerms }))}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.checkbox,
+                  { borderColor: theme.colors.border },
+                  formData.acceptTerms && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                ]}>
+                  {formData.acceptTerms && (
+                    <Ionicons name="checkmark" size={14} color="white" />
+                  )}
+                </View>
+                <GSText variant="caption" color="textSecondary" style={styles.checkboxLabel}>
+                  {t('register.acceptTerms')}{' '}
+                  <GSText variant="caption" style={{ color: theme.colors.primary }}>
+                    {t('register.termsOfService')}
+                  </GSText>
+                </GSText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setFormData(prev => ({ ...prev, acceptPrivacy: !prev.acceptPrivacy }))}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.checkbox,
+                  { borderColor: theme.colors.border },
+                  formData.acceptPrivacy && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                ]}>
+                  {formData.acceptPrivacy && (
+                    <Ionicons name="checkmark" size={14} color="white" />
+                  )}
+                </View>
+                <GSText variant="caption" color="textSecondary" style={styles.checkboxLabel}>
+                  {t('register.acceptPrivacy')}{' '}
+                  <GSText variant="caption" style={{ color: theme.colors.primary }}>
+                    {t('register.privacyPolicy')}
+                  </GSText>
+                </GSText>
+              </TouchableOpacity>
+
+              {termsError ? (
+                <GSText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>
+                  {termsError}
+                </GSText>
+              ) : null}
+            </View>
+
             <GSButton
               title={t('auth.createAccount')}
               onPress={handleRegister}
               loading={isLoading}
               style={styles.registerButton}
+              disabled={!formData.acceptTerms || !formData.acceptPrivacy}
             />
-
-            <View style={styles.terms}>
-              <GSText variant="caption" color="textSecondary" style={styles.termsText}>
-                {t('register.termsAgree')}{' '}
-                <GSText variant="caption" style={{ color: theme.colors.primary }}>
-                  {t('register.termsOfService')}
-                </GSText>{' '}
-                {t('register.and')}{' '}
-                <GSText variant="caption" style={{ color: theme.colors.primary }}>
-                  {t('register.privacyPolicy')}
-                </GSText>
-              </GSText>
-            </View>
           </View>
         </ScrollView>
 
@@ -268,12 +322,31 @@ const styles = StyleSheet.create({
   registerButton: {
     marginTop: 10,
   },
-  terms: {
-    marginTop: 16,
+  termsCheckboxes: {
+    marginTop: 8,
+    gap: 12,
   },
-  termsText: {
-    textAlign: 'center',
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  checkboxLabel: {
+    flex: 1,
     lineHeight: 20,
+  },
+  errorText: {
+    marginTop: 4,
+    textAlign: 'center',
   },
   footer: {
     padding: 20,

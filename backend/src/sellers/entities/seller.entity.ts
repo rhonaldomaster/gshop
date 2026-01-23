@@ -206,6 +206,15 @@ export class Seller {
   })
   shippingFreeMinAmount?: number
 
+  @Column({ type: 'timestamp', nullable: true })
+  termsAcceptedAt: Date
+
+  @Column({ type: 'timestamp', nullable: true })
+  privacyAcceptedAt: Date
+
+  @Column({ nullable: true })
+  acceptedTermsVersion: string
+
   @CreateDateColumn()
   createdAt: Date
 

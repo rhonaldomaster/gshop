@@ -7,6 +7,8 @@ import {
   MaxLength,
   IsEnum,
   IsOptional,
+  IsBoolean,
+  Equals,
 } from 'class-validator';
 import { UserRole } from '../../database/entities/user.entity';
 
@@ -42,4 +44,20 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @ApiProperty({
+    example: true,
+    description: 'User must accept terms and conditions',
+  })
+  @IsBoolean({ message: 'Debes aceptar los términos y condiciones' })
+  @Equals(true, { message: 'Debes aceptar los términos y condiciones para registrarte' })
+  acceptTerms: boolean;
+
+  @ApiProperty({
+    example: true,
+    description: 'User must accept privacy policy',
+  })
+  @IsBoolean({ message: 'Debes aceptar la política de privacidad' })
+  @Equals(true, { message: 'Debes aceptar la política de privacidad para registrarte' })
+  acceptPrivacy: boolean;
 }

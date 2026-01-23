@@ -100,9 +100,12 @@
     "createPassword": "Crea una contraseña",
     "confirmYourPassword": "Confirma tu contraseña",
     "termsAgree": "Al crear una cuenta, aceptas nuestros",
-    "termsOfService": "Términos de servicio",
+    "termsOfService": "Términos y Condiciones",
     "and": "y",
-    "privacyPolicy": "Política de privacidad"
+    "privacyPolicy": "Política de Privacidad",
+    "acceptTerms": "Acepto los",
+    "acceptPrivacy": "Acepto la",
+    "acceptTermsRequired": "Debes aceptar los términos y la política de privacidad para continuar"
   },
   "home": {
     "title": "Inicio",

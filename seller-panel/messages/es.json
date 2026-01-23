@@ -87,6 +87,11 @@
       "errorFillFields": "Por favor completa todos los campos",
       "errorPasswordLength": "La contraseña debe tener al menos 8 caracteres",
       "errorPasswordMatch": "Las contraseñas no coinciden",
+      "errorAcceptTerms": "Debes aceptar los términos y condiciones y la política de privacidad",
+      "acceptTermsLabel": "Acepto los",
+      "acceptPrivacyLabel": "Acepto la",
+      "termsOfService": "Términos y Condiciones para Vendedores",
+      "privacyPolicy": "Política de Privacidad",
       "sellerType": "Tipo de vendedor",
       "sellerTypes": {
         "natural": "Persona Natural",
