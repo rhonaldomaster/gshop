@@ -212,14 +212,14 @@ export default function RegisterPage() {
                   />
                   <span className="text-sm text-gray-600">
                     {t('acceptTermsLabel')}{' '}
-                    <a
-                      href="/terms-and-conditions"
+                    <Link
+                      href="/legal/terms"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-500 underline"
                     >
                       {t('termsOfService')}
-                    </a>
+                    </Link>
                   </span>
                 </label>
 
@@ -232,14 +232,14 @@ export default function RegisterPage() {
                   />
                   <span className="text-sm text-gray-600">
                     {t('acceptPrivacyLabel')}{' '}
-                    <a
-                      href="/privacy-policy"
+                    <Link
+                      href="/legal/privacy"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-500 underline"
                     >
                       {t('privacyPolicy')}
-                    </a>
+                    </Link>
                   </span>
                 </label>
               </div>

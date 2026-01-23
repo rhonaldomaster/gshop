@@ -187,49 +187,59 @@ export default function RegisterScreen() {
 
             {/* Terms and Privacy Checkboxes */}
             <View style={styles.termsCheckboxes}>
-              <TouchableOpacity
-                style={styles.checkboxRow}
-                onPress={() => setFormData(prev => ({ ...prev, acceptTerms: !prev.acceptTerms }))}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.checkbox,
-                  { borderColor: theme.colors.border },
-                  formData.acceptTerms && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
-                ]}>
-                  {formData.acceptTerms && (
-                    <Ionicons name="checkmark" size={14} color="white" />
-                  )}
-                </View>
+              <View style={styles.checkboxRow}>
+                <TouchableOpacity
+                  onPress={() => setFormData(prev => ({ ...prev, acceptTerms: !prev.acceptTerms }))}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    { borderColor: theme.colors.border },
+                    formData.acceptTerms && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                  ]}>
+                    {formData.acceptTerms && (
+                      <Ionicons name="checkmark" size={14} color="white" />
+                    )}
+                  </View>
+                </TouchableOpacity>
                 <GSText variant="caption" color="textSecondary" style={styles.checkboxLabel}>
                   {t('register.acceptTerms')}{' '}
-                  <GSText variant="caption" style={{ color: theme.colors.primary }}>
+                  <GSText
+                    variant="caption"
+                    style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
+                    onPress={() => navigation.navigate('Terms')}
+                  >
                     {t('register.termsOfService')}
                   </GSText>
                 </GSText>
-              </TouchableOpacity>
+              </View>
 
-              <TouchableOpacity
-                style={styles.checkboxRow}
-                onPress={() => setFormData(prev => ({ ...prev, acceptPrivacy: !prev.acceptPrivacy }))}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.checkbox,
-                  { borderColor: theme.colors.border },
-                  formData.acceptPrivacy && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
-                ]}>
-                  {formData.acceptPrivacy && (
-                    <Ionicons name="checkmark" size={14} color="white" />
-                  )}
-                </View>
+              <View style={styles.checkboxRow}>
+                <TouchableOpacity
+                  onPress={() => setFormData(prev => ({ ...prev, acceptPrivacy: !prev.acceptPrivacy }))}
+                  activeOpacity={0.7}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    { borderColor: theme.colors.border },
+                    formData.acceptPrivacy && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                  ]}>
+                    {formData.acceptPrivacy && (
+                      <Ionicons name="checkmark" size={14} color="white" />
+                    )}
+                  </View>
+                </TouchableOpacity>
                 <GSText variant="caption" color="textSecondary" style={styles.checkboxLabel}>
                   {t('register.acceptPrivacy')}{' '}
-                  <GSText variant="caption" style={{ color: theme.colors.primary }}>
+                  <GSText
+                    variant="caption"
+                    style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
+                    onPress={() => navigation.navigate('Privacy')}
+                  >
                     {t('register.privacyPolicy')}
                   </GSText>
                 </GSText>
-              </TouchableOpacity>
+              </View>
 
               {termsError ? (
                 <GSText variant="caption" style={[styles.errorText, { color: theme.colors.error }]}>

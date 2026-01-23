@@ -1108,5 +1108,11 @@
       "invalidRate": "La comisión debe estar entre 1% y 50%",
       "notesRequired": "Debes incluir una razón para rechazar"
     }
+  },
+  "legal": {
+    "termsTitle": "Términos y Condiciones para Vendedores",
+    "privacyTitle": "Política de Privacidad",
+    "lastUpdated": "Última actualización",
+    "backToRegister": "Volver al registro"
   }
 }

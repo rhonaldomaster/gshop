@@ -2020,5 +2020,10 @@
     "analytics": "Estadísticas",
     "tipTitle": "Consejo del día",
     "tipDescription": "Los vendedores que transmiten en vivo venden 3x más que los que no lo hacen. ¡Intenta hacer un live!"
+  },
+  "legal": {
+    "termsTitle": "Términos y Condiciones",
+    "privacyTitle": "Política de Privacidad",
+    "lastUpdated": "Última actualización"
   }
 }
