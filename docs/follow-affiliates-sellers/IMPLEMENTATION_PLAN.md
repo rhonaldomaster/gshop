@@ -481,10 +481,10 @@ Usuario va a FollowingScreen (ya existe)
 4. [x] Actualizar `HomeNavigator.tsx` con nuevas rutas
 5. [x] Agregar traducciones i18n en `es.json`
 
-### Fase 6: Mobile - Integration
-1. Agregar links a perfiles desde `LiveStreamScreen`
-2. Agregar links a perfiles desde `ProductDetailsScreen`
-3. Actualizar `FollowingScreen` con navegacion
+### Fase 6: Mobile - Integration [COMPLETADO]
+1. [x] Agregar links a perfiles desde `LiveStreamScreen` - Toca nombre/badge del host para navegar
+2. [x] Agregar links a perfiles desde `ProductDetailScreen` - Seccion de vendedor con navegacion
+3. [x] Actualizar `FollowingScreen` con navegacion - Ya implementado previamente
 
 ---
 
