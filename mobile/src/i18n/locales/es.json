@@ -644,7 +644,19 @@
     "bioPlaceholder": "Cuéntanos sobre ti...",
     "phoneOptional": "Teléfono (opcional)",
     "bioOptional": "Biografía (opcional)",
-    "saveChanges": "Guardar Cambios"
+    "saveChanges": "Guardar Cambios",
+    "unfollowTitle": "Dejar de seguir",
+    "unfollowMessage": "¿Estás seguro que quieres dejar de seguir a {{name}}?",
+    "unfollow": "Dejar de seguir",
+    "failedToFollow": "No se pudo seguir",
+    "failedToUnfollow": "No se pudo dejar de seguir",
+    "failedToToggleNotifications": "No se pudo cambiar las notificaciones",
+    "noLiveStreams": "No hay transmisiones en vivo",
+    "noLiveStreamsMessage": "No hay transmisiones en vivo en este momento",
+    "noPastStreams": "No hay transmisiones pasadas",
+    "noPastStreamsMessage": "Aún no hay transmisiones pasadas",
+    "noProducts": "No hay productos",
+    "noProductsMessage": "Aún no hay productos disponibles"
   },
   "settings": {
     "title": "Configuración",

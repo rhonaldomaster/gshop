@@ -474,10 +474,12 @@ Usuario va a FollowingScreen (ya existe)
 4. [x] Crear `ProductGrid` - `mobile/src/components/profiles/ProductGrid.tsx`
 5. [x] Crear `index.ts` exports - `mobile/src/components/profiles/index.ts`
 
-### Fase 5: Mobile - Screens
-1. Crear `AffiliateProfileScreen`
-2. Crear `SellerProfileScreen`
-3. Actualizar navegacion
+### Fase 5: Mobile - Screens [COMPLETADO]
+1. [x] Crear `AffiliateProfileScreen` - `mobile/src/screens/profiles/AffiliateProfileScreen.tsx`
+2. [x] Crear `SellerProfileScreen` - `mobile/src/screens/profiles/SellerProfileScreen.tsx`
+3. [x] Crear `index.ts` exports - `mobile/src/screens/profiles/index.ts`
+4. [x] Actualizar `HomeNavigator.tsx` con nuevas rutas
+5. [x] Agregar traducciones i18n en `es.json`
 
 ### Fase 6: Mobile - Integration
 1. Agregar links a perfiles desde `LiveStreamScreen`
