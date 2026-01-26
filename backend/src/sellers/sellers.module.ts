@@ -5,9 +5,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 import { MulterModule } from '@nestjs/platform-express'
 import { SellersController } from './sellers.controller'
 import { SellerFollowController } from './controllers/seller-follow.controller'
+import { SellerPublicProfileController } from './controllers/seller-public-profile.controller'
 import { SellersService } from './sellers.service'
 import { SellersUploadService } from './sellers-upload.service'
 import { SellerFollowService } from './services/seller-follow.service'
+import { SellerPublicProfileService } from './services/seller-public-profile.service'
+import { LiveStream } from '../live/live.entity'
 import { Seller } from './entities/seller.entity'
 import { SellerLocation } from './entities/seller-location.entity'
 import { SellerFollower } from './entities/seller-follower.entity'
@@ -24,7 +27,7 @@ import * as fs from 'fs'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Seller, SellerLocation, SellerFollower, Withdrawal, Order, User, Affiliate, AffiliateProduct, Product]),
+    TypeOrmModule.forFeature([Seller, SellerLocation, SellerFollower, Withdrawal, Order, User, Affiliate, AffiliateProduct, Product, LiveStream]),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
       signOptions: { expiresIn: '7d' },
@@ -68,8 +71,8 @@ import * as fs from 'fs'
       inject: [ConfigService],
     }),
   ],
-  controllers: [SellersController, SellerFollowController],
-  providers: [SellersService, SellersUploadService, SellerFollowService],
-  exports: [SellersService, SellerFollowService],
+  controllers: [SellersController, SellerFollowController, SellerPublicProfileController],
+  providers: [SellersService, SellersUploadService, SellerFollowService, SellerPublicProfileService],
+  exports: [SellersService, SellerFollowService, SellerPublicProfileService],
 })
 export class SellersModule {}

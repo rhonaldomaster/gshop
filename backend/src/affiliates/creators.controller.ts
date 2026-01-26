@@ -105,12 +105,32 @@ export class CreatorsController {
   // ========== PROFILE MANAGEMENT ==========
 
   @Get('profile/:username')
-  @ApiOperation({ summary: 'Get public creator profile' })
+  @ApiOperation({ summary: 'Get public creator profile by username' })
   async getPublicProfile(
     @Param('username') username: string,
     @Query('viewerId') viewerId?: string,
   ) {
     return this.creatorProfileService.getPublicProfile(username, viewerId)
+  }
+
+  @Get(':creatorId/public-profile')
+  @ApiOperation({ summary: 'Get public creator profile by ID' })
+  async getPublicProfileById(
+    @Param('creatorId', ParseUUIDPipe) creatorId: string,
+    @Query('viewerId') viewerId?: string,
+  ) {
+    return this.creatorProfileService.getPublicProfileById(creatorId, viewerId)
+  }
+
+  @Get(':creatorId/streams')
+  @ApiOperation({ summary: 'Get creator streams (live and past)' })
+  async getCreatorStreams(
+    @Param('creatorId', ParseUUIDPipe) creatorId: string,
+    @Query('status') status?: 'live' | 'ended' | 'all',
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+  ) {
+    return this.creatorProfileService.getAffiliateStreams(creatorId, status, page, limit)
   }
 
   @Put('profile')

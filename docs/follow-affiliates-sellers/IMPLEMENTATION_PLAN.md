@@ -444,11 +444,20 @@ Usuario va a FollowingScreen (ya existe)
 7. [x] Registrar en `SellersModule`
 8. [x] Registrar entidad en `typeorm.config.ts`
 
-### Fase 2: Backend - Public Profiles & Streams
-1. Crear endpoint perfil publico de seller
-2. Crear endpoint streams de seller
-3. Crear endpoint perfil publico de afiliado (si no existe)
-4. Crear endpoint streams de afiliado
+### Fase 2: Backend - Public Profiles & Streams [COMPLETADO]
+1. [x] Crear `SellerPublicProfileService` - `backend/src/sellers/services/seller-public-profile.service.ts`
+2. [x] Crear `SellerPublicProfileController` - `backend/src/sellers/controllers/seller-public-profile.controller.ts`
+3. [x] Crear `OptionalJwtAuthGuard` - `backend/src/auth/guards/optional-jwt-auth.guard.ts`
+4. [x] Endpoints de seller:
+   - `GET /sellers/:sellerId/public-profile` - Perfil publico
+   - `GET /sellers/:sellerId/products/public` - Productos con paginacion
+   - `GET /sellers/:sellerId/streams` - Streams (live/ended/all)
+5. [x] Agregar metodos a `CreatorProfileService`:
+   - `getPublicProfileById()` - Perfil por ID
+   - `getAffiliateStreams()` - Streams paginados
+6. [x] Endpoints de afiliado en `CreatorsController`:
+   - `GET /creators/:creatorId/public-profile` - Perfil por ID
+   - `GET /creators/:creatorId/streams` - Streams paginados
 
 ### Fase 3: Mobile - Services & Hooks
 1. Crear `seller-follow.service.ts`
