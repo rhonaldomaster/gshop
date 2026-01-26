@@ -434,13 +434,15 @@ Usuario va a FollowingScreen (ya existe)
 
 ## Orden de Implementacion
 
-### Fase 1: Backend - Sellers Follow System
-1. Crear entidad `SellerFollower`
-2. Modificar entidad `Seller` (agregar campos)
-3. Generar y ejecutar migracion
-4. Crear `SellerFollowService`
-5. Crear `SellerFollowController` con endpoints
-6. Crear DTOs
+### Fase 1: Backend - Sellers Follow System [COMPLETADO]
+1. [x] Crear entidad `SellerFollower` - `backend/src/sellers/entities/seller-follower.entity.ts`
+2. [x] Modificar entidad `Seller` (agregar campos) - `followersCount`, `isProfilePublic`, `profileDescription`, `logoUrl`
+3. [x] Crear migracion - `backend/src/database/migrations/1769500000000-AddSellerFollowersSystem.ts`
+4. [x] Crear `SellerFollowService` - `backend/src/sellers/services/seller-follow.service.ts`
+5. [x] Crear `SellerFollowController` con endpoints - `backend/src/sellers/controllers/seller-follow.controller.ts`
+6. [x] Crear DTOs - `backend/src/sellers/dto/seller-follow.dto.ts`, `seller-public-profile.dto.ts`
+7. [x] Registrar en `SellersModule`
+8. [x] Registrar entidad en `typeorm.config.ts`
 
 ### Fase 2: Backend - Public Profiles & Streams
 1. Crear endpoint perfil publico de seller
