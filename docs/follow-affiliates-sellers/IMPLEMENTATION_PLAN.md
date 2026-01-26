@@ -467,11 +467,12 @@ Usuario va a FollowingScreen (ya existe)
 5. [x] Crear `useAffiliateProfile` hook - `mobile/src/hooks/useAffiliateProfile.ts`
 6. [x] Crear tipos en `profiles.ts` - `mobile/src/types/profiles.ts`
 
-### Fase 4: Mobile - Components
-1. Crear `ProfileHeader`
-2. Crear `ProfileTabs`
-3. Crear `StreamGrid`
-4. Crear `ProductGrid`
+### Fase 4: Mobile - Components [COMPLETADO]
+1. [x] Crear `ProfileHeader` - `mobile/src/components/profiles/ProfileHeader.tsx`
+2. [x] Crear `ProfileTabs` - `mobile/src/components/profiles/ProfileTabs.tsx`
+3. [x] Crear `StreamGrid` - `mobile/src/components/profiles/StreamGrid.tsx`
+4. [x] Crear `ProductGrid` - `mobile/src/components/profiles/ProductGrid.tsx`
+5. [x] Crear `index.ts` exports - `mobile/src/components/profiles/index.ts`
 
 ### Fase 5: Mobile - Screens
 1. Crear `AffiliateProfileScreen`
