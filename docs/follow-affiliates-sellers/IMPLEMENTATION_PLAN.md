@@ -459,12 +459,13 @@ Usuario va a FollowingScreen (ya existe)
    - `GET /creators/:creatorId/public-profile` - Perfil por ID
    - `GET /creators/:creatorId/streams` - Streams paginados
 
-### Fase 3: Mobile - Services & Hooks
-1. Crear `seller-follow.service.ts`
-2. Crear `useFollowSeller` hook
-3. Crear `useSellerProfile` hook
-4. Crear `useAffiliateProfile` hook
-5. Crear tipos en `profiles.ts`
+### Fase 3: Mobile - Services & Hooks [COMPLETADO]
+1. [x] Crear `seller-profile.service.ts` - `mobile/src/services/seller-profile.service.ts`
+2. [x] Crear `affiliate-profile.service.ts` - `mobile/src/services/affiliate-profile.service.ts`
+3. [x] Crear `useFollowSeller` hook - `mobile/src/hooks/useFollowSeller.ts`
+4. [x] Crear `useSellerProfile` hook - `mobile/src/hooks/useSellerProfile.ts`
+5. [x] Crear `useAffiliateProfile` hook - `mobile/src/hooks/useAffiliateProfile.ts`
+6. [x] Crear tipos en `profiles.ts` - `mobile/src/types/profiles.ts`
 
 ### Fase 4: Mobile - Components
 1. Crear `ProfileHeader`
