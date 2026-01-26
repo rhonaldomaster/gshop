@@ -85,6 +85,8 @@ export class SellersService {
     }
 
     const hashedPassword = await bcrypt.hash(createSellerDto.password, 10)
+    const now = new Date()
+    const termsVersion = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
     // Create user entry first (for foreign key constraints in products, orders, etc.)
     const user = this.userRepository.create({
@@ -97,6 +99,9 @@ export class SellersService {
       emailVerified: false,
       businessName: createSellerDto.businessName,
       phone: createSellerDto.phone,
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      acceptedTermsVersion: termsVersion,
     })
 
     const savedUser = await this.userRepository.save(user)
@@ -108,6 +113,9 @@ export class SellersService {
       passwordHash: hashedPassword,
       commissionRate: createSellerDto.commissionRate || 7.0,
       verificationStatus: VerificationStatus.PENDING,
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      acceptedTermsVersion: termsVersion,
     })
 
     const savedSeller = await this.sellersRepository.save(seller)

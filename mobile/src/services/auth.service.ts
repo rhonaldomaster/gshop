@@ -27,6 +27,8 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   phone?: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
 }
 
 export interface AuthResponse {

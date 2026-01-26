@@ -37,6 +37,8 @@ interface RegistrationData {
   bankAccountType: 'ahorros' | 'corriente'
   bankAccountNumber: string
   bankAccountHolder: string
+  acceptTerms: boolean
+  acceptPrivacy: boolean
 }
 
 export default function RegisterPage() {
@@ -59,6 +61,8 @@ export default function RegisterPage() {
     bankAccountType: 'ahorros',
     bankAccountNumber: '',
     bankAccountHolder: '',
+    acceptTerms: false,
+    acceptPrivacy: false,
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -80,6 +84,10 @@ export default function RegisterPage() {
       }
       if (formData.password.length < 8) {
         setError(t('errorPasswordLength'))
+        return
+      }
+      if (!formData.acceptTerms || !formData.acceptPrivacy) {
+        setError(t('errorAcceptTerms'))
         return
       }
     }
@@ -110,12 +118,14 @@ export default function RegisterPage() {
           address: formData.address,
           city: formData.city,
           state: formData.state,
-          country: 'Colombia', // Valor por defecto para Colombia
+          country: 'Colombia',
           businessCategory: formData.businessCategory,
           bankName: formData.bankName,
           bankAccountType: formData.bankAccountType,
           bankAccountNumber: formData.bankAccountNumber,
           bankAccountHolder: formData.bankAccountHolder,
+          acceptTerms: formData.acceptTerms,
+          acceptPrivacy: formData.acceptPrivacy,
         }),
       })
 
@@ -190,6 +200,49 @@ export default function RegisterPage() {
                   onChange={handleChange}
                 />
               </div>
+
+              {/* Terms and Privacy Checkboxes */}
+              <div className="space-y-3 pt-2">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.acceptTerms}
+                    onChange={(e) => setFormData({ ...formData, acceptTerms: e.target.checked })}
+                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-600">
+                    {t('acceptTermsLabel')}{' '}
+                    <Link
+                      href="/legal/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-500 underline"
+                    >
+                      {t('termsOfService')}
+                    </Link>
+                  </span>
+                </label>
+
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.acceptPrivacy}
+                    onChange={(e) => setFormData({ ...formData, acceptPrivacy: e.target.checked })}
+                    className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm text-gray-600">
+                    {t('acceptPrivacyLabel')}{' '}
+                    <Link
+                      href="/legal/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-500 underline"
+                    >
+                      {t('privacyPolicy')}
+                    </Link>
+                  </span>
+                </label>
+              </div>
             </div>
 
             {error && (
@@ -200,7 +253,8 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={handleNext}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={!formData.acceptTerms || !formData.acceptPrivacy}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t('next')}
               </button>

@@ -110,12 +110,17 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const now = new Date();
+    const termsVersion = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     const user = this.userRepository.create({
       ...registerDto,
       email: registerDto.email.toLowerCase(),
       password: hashedPassword,
       role: registerDto.role || UserRole.BUYER,
+      termsAcceptedAt: now,
+      privacyAcceptedAt: now,
+      acceptedTermsVersion: termsVersion,
     });
 
     const savedUser = await this.userRepository.save(user);
