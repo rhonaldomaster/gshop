@@ -10,10 +10,12 @@ import {
   ParseUUIDPipe,
   ParseIntPipe,
   DefaultValuePipe,
+  NotFoundException,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CreatorDashboardService } from './services/creator-dashboard.service'
+import { AffiliatesService } from './affiliates.service'
 
 @ApiTags('creator-dashboard')
 @Controller('creators/dashboard')
@@ -22,13 +24,36 @@ import { CreatorDashboardService } from './services/creator-dashboard.service'
 export class CreatorDashboardController {
   constructor(
     private dashboardService: CreatorDashboardService,
+    private affiliatesService: AffiliatesService,
   ) {}
+
+  /**
+   * Helper to get affiliateId from request.
+   * If user logged in as affiliate directly, affiliateId is in token.
+   * If user converted to affiliate, we need to look it up by userId.
+   */
+  private async getAffiliateId(req: any): Promise<string> {
+    // If affiliateId is in the JWT token, use it directly
+    if (req.user.affiliateId) {
+      return req.user.affiliateId
+    }
+
+    // Otherwise, look up affiliate by userId (for converted users)
+    const userId = req.user.sub || req.user.id
+    const affiliate = await this.affiliatesService.getAffiliateByUserId(userId)
+
+    if (!affiliate) {
+      throw new NotFoundException('Affiliate not found for this user')
+    }
+
+    return affiliate.id
+  }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get dashboard statistics' })
   @ApiResponse({ status: 200, description: 'Dashboard statistics retrieved successfully' })
   async getDashboardStats(@Request() req) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
     return this.dashboardService.getDashboardStats(affiliateId)
   }
 
@@ -39,7 +64,7 @@ export class CreatorDashboardController {
     @Request() req,
     @Query('days', new DefaultValuePipe(30), ParseIntPipe) days: number,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
     return this.dashboardService.getPerformanceMetrics(affiliateId, days)
   }
 
@@ -50,7 +75,7 @@ export class CreatorDashboardController {
     @Request() req,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
     return this.dashboardService.getTopPerformingContent(affiliateId, limit)
   }
 
@@ -62,7 +87,7 @@ export class CreatorDashboardController {
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
     return this.dashboardService.getNotifications(affiliateId, page, limit)
   }
 
@@ -73,7 +98,7 @@ export class CreatorDashboardController {
     @Request() req,
     @Param('notificationId', ParseUUIDPipe) notificationId: string,
   ) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
     await this.dashboardService.markNotificationAsRead(notificationId, affiliateId)
     return { success: true, message: 'Notification marked as read' }
   }
@@ -82,7 +107,7 @@ export class CreatorDashboardController {
   @ApiOperation({ summary: 'Mark all notifications as read' })
   @ApiResponse({ status: 200, description: 'All notifications marked as read' })
   async markAllNotificationsAsRead(@Request() req) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
     await this.dashboardService.markAllNotificationsAsRead(affiliateId)
     return { success: true, message: 'All notifications marked as read' }
   }
@@ -91,7 +116,7 @@ export class CreatorDashboardController {
   @ApiOperation({ summary: 'Get complete dashboard overview' })
   @ApiResponse({ status: 200, description: 'Dashboard overview retrieved successfully' })
   async getDashboardOverview(@Request() req) {
-    const affiliateId = req.user.affiliateId || req.user.sub
+    const affiliateId = await this.getAffiliateId(req)
 
     // Get all dashboard data in parallel
     const [stats, performance, topContent, notifications] = await Promise.all([
