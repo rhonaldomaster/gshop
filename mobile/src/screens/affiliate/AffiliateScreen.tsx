@@ -323,26 +323,26 @@ export const AffiliateScreen = () => {
           <View style={styles.statsGrid}>
             {renderStatsCard(
               t('affiliate.totalEarnings'),
-              `$${dashboardStats?.earnings.totalEarnings.toFixed(2) || '0.00'}`,
+              `$${(dashboardStats?.earnings.totalEarnings ?? 0).toFixed(2)}`,
               t('affiliate.allTime'),
               '#28a745'
             )}
             {renderStatsCard(
               t('affiliate.availableBalance'),
-              `$${dashboardStats?.earnings.availableBalance.toFixed(2) || '0.00'}`,
+              `$${(dashboardStats?.earnings.availableBalance ?? 0).toFixed(2)}`,
               t('affiliate.readyToWithdraw'),
               '#007bff'
             )}
             {renderStatsCard(
               t('affiliate.thisMonth'),
-              `$${dashboardStats?.earnings.monthlyEarnings.toFixed(2) || '0.00'}`,
+              `$${(dashboardStats?.earnings.thisMonthEarnings ?? 0).toFixed(2)}`,
               t('affiliate.currentMonthEarnings'),
               '#ffc107'
             )}
             {renderStatsCard(
               t('social.followers'),
-              dashboardStats?.profile.followersCount.toLocaleString() || '0',
-              `${(dashboardStats?.profile.engagementRate || 0).toFixed(1)}% ${t('affiliate.engagement')}`,
+              (dashboardStats?.profile.followersCount ?? 0).toLocaleString(),
+              `${(dashboardStats?.content.averageEngagement ?? 0).toFixed(1)}% ${t('affiliate.engagement')}`,
               '#dc3545'
             )}
           </View>
@@ -365,19 +365,19 @@ export const AffiliateScreen = () => {
             <View style={styles.performanceRow}>
               <Text style={styles.performanceLabel}>{t('affiliate.totalVideos')}</Text>
               <Text style={styles.performanceValue}>
-                {dashboardStats?.content.totalVideos || 0}
+                {dashboardStats?.content.totalVideos ?? 0}
               </Text>
             </View>
             <View style={styles.performanceRow}>
               <Text style={styles.performanceLabel}>{t('affiliate.totalViews')}</Text>
               <Text style={styles.performanceValue}>
-                {dashboardStats?.content.totalViews.toLocaleString() || '0'}
+                {(dashboardStats?.content.totalVideoViews ?? 0).toLocaleString()}
               </Text>
             </View>
             <View style={styles.performanceRow}>
               <Text style={styles.performanceLabel}>{t('affiliate.avgEngagement')}</Text>
               <Text style={styles.performanceValue}>
-                {(dashboardStats?.content.averageEngagement || 0).toFixed(1)}%
+                {(dashboardStats?.content.averageEngagement ?? 0).toFixed(1)}%
               </Text>
             </View>
           </View>
@@ -387,19 +387,19 @@ export const AffiliateScreen = () => {
             <View style={styles.performanceRow}>
               <Text style={styles.performanceLabel}>{t('affiliate.totalStreams')}</Text>
               <Text style={styles.performanceValue}>
-                {dashboardStats?.liveStreams.totalStreams || 0}
+                {dashboardStats?.liveStreams.totalStreams ?? 0}
               </Text>
             </View>
             <View style={styles.performanceRow}>
               <Text style={styles.performanceLabel}>{t('affiliate.totalViewers')}</Text>
               <Text style={styles.performanceValue}>
-                {dashboardStats?.liveStreams.totalViewers.toLocaleString() || '0'}
+                {(dashboardStats?.liveStreams.totalStreamViews ?? 0).toLocaleString()}
               </Text>
             </View>
             <View style={styles.performanceRow}>
               <Text style={styles.performanceLabel}>{t('affiliate.avgViewers')}</Text>
               <Text style={styles.performanceValue}>
-                {Math.round(dashboardStats?.liveStreams.averageViewers || 0)}
+                {Math.round(dashboardStats?.liveStreams.averageViewers ?? 0)}
               </Text>
             </View>
           </View>
