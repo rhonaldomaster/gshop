@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
+import { Repository, MoreThanOrEqual, Between, LessThanOrEqual } from 'typeorm'
 import { Affiliate } from '../entities/affiliate.entity'
 import { AffiliateVideo, VideoStatus } from '../entities/affiliate-video.entity'
 import { AffiliateFollower } from '../entities/affiliate-follower.entity'
@@ -121,7 +121,7 @@ export class CreatorDashboardService {
       where: {
         followingId: affiliateId,
         isActive: true,
-        createdAt: { $gte: last7Days } as any
+        createdAt: MoreThanOrEqual(last7Days)
       }
     })
 
@@ -300,7 +300,7 @@ export class CreatorDashboardService {
     const videos = await this.videoRepository.find({
       where: {
         affiliateId,
-        publishedAt: { $gte: startDate, $lte: endDate } as any
+        publishedAt: Between(startDate, endDate)
       },
       select: ['revenue']
     })
@@ -308,7 +308,7 @@ export class CreatorDashboardService {
     const streams = await this.liveStreamRepository.find({
       where: {
         affiliateId,
-        startedAt: { $gte: startDate, $lte: endDate } as any
+        startedAt: Between(startDate, endDate)
       },
       select: ['totalSales']
     })
