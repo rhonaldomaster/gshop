@@ -93,27 +93,27 @@ export class CreatorDashboardService {
     const videoStats = await this.videoRepository
       .createQueryBuilder('video')
       .select([
-        'COUNT(*) as totalVideos',
-        'SUM(CASE WHEN status = \'published\' THEN 1 ELSE 0 END) as publishedVideos',
-        'SUM(CASE WHEN status = \'draft\' THEN 1 ELSE 0 END) as draftVideos',
-        'SUM(views) as totalVideoViews',
-        'SUM(likes) as totalVideoLikes',
-        'AVG(CASE WHEN views > 0 THEN (likes + comments + shares) * 100.0 / views ELSE 0 END) as averageEngagement'
+        'COUNT(*) as "totalVideos"',
+        'SUM(CASE WHEN status = \'published\' THEN 1 ELSE 0 END) as "publishedVideos"',
+        'SUM(CASE WHEN status = \'draft\' THEN 1 ELSE 0 END) as "draftVideos"',
+        'SUM(video.views) as "totalVideoViews"',
+        'SUM(video.likes) as "totalVideoLikes"',
+        'AVG(CASE WHEN video.views > 0 THEN (video.likes + video.comments + video.shares) * 100.0 / video.views ELSE 0 END) as "averageEngagement"'
       ])
-      .where('video.affiliateId = :affiliateId', { affiliateId })
+      .where('video."affiliateId" = :affiliateId', { affiliateId })
       .getRawOne()
 
     // Live stream statistics
     const streamStats = await this.liveStreamRepository
       .createQueryBuilder('stream')
       .select([
-        'COUNT(*) as totalStreams',
-        'SUM(CASE WHEN status = \'scheduled\' THEN 1 ELSE 0 END) as scheduledStreams',
-        'SUM(peakViewers) as totalStreamViews',
-        'SUM(totalSales) as totalStreamRevenue',
-        'AVG(peakViewers) as averageViewers'
+        'COUNT(*) as "totalStreams"',
+        'SUM(CASE WHEN status = \'scheduled\' THEN 1 ELSE 0 END) as "scheduledStreams"',
+        'SUM(stream."peakViewers") as "totalStreamViews"',
+        'SUM(stream."totalSales") as "totalStreamRevenue"',
+        'AVG(stream."peakViewers") as "averageViewers"'
       ])
-      .where('stream.affiliateId = :affiliateId', { affiliateId })
+      .where('stream."affiliateId" = :affiliateId', { affiliateId })
       .getRawOne()
 
     // Recent activity (last 7 days)
@@ -129,10 +129,10 @@ export class CreatorDashboardService {
       .createQueryBuilder('video')
       .leftJoin('video.interactions', 'interaction')
       .select([
-        'SUM(CASE WHEN interaction.type = \'comment\' AND interaction.createdAt >= :last7Days THEN 1 ELSE 0 END) as newComments',
-        'SUM(CASE WHEN interaction.type = \'like\' AND interaction.createdAt >= :last7Days THEN 1 ELSE 0 END) as newLikes'
+        'SUM(CASE WHEN interaction.type = \'comment\' AND interaction."createdAt" >= :last7Days THEN 1 ELSE 0 END) as "newComments"',
+        'SUM(CASE WHEN interaction.type = \'like\' AND interaction."createdAt" >= :last7Days THEN 1 ELSE 0 END) as "newLikes"'
       ])
-      .where('video.affiliateId = :affiliateId', { affiliateId })
+      .where('video."affiliateId" = :affiliateId', { affiliateId })
       .setParameter('last7Days', last7Days)
       .getRawOne()
 
@@ -329,14 +329,14 @@ export class CreatorDashboardService {
     const result = await this.followerRepository
       .createQueryBuilder('follower')
       .select([
-        'DATE(follower.createdAt) as date',
+        'DATE(follower."createdAt") as date',
         'COUNT(*) as count'
       ])
-      .where('follower.followingId = :affiliateId', { affiliateId })
-      .andWhere('follower.isActive = :isActive', { isActive: true })
-      .andWhere('follower.createdAt >= :startDate', { startDate })
-      .andWhere('follower.createdAt <= :endDate', { endDate })
-      .groupBy('DATE(follower.createdAt)')
+      .where('follower."followingId" = :affiliateId', { affiliateId })
+      .andWhere('follower."isActive" = :isActive', { isActive: true })
+      .andWhere('follower."createdAt" >= :startDate', { startDate })
+      .andWhere('follower."createdAt" <= :endDate', { endDate })
+      .groupBy('DATE(follower."createdAt")')
       .orderBy('date', 'ASC')
       .getRawMany()
 
@@ -351,14 +351,14 @@ export class CreatorDashboardService {
       .createQueryBuilder('video')
       .leftJoin('video.interactions', 'interaction')
       .select([
-        'DATE(interaction.createdAt) as date',
+        'DATE(interaction."createdAt") as date',
         'COUNT(*) as count'
       ])
-      .where('video.affiliateId = :affiliateId', { affiliateId })
+      .where('video."affiliateId" = :affiliateId', { affiliateId })
       .andWhere('interaction.type = :type', { type: 'view' })
-      .andWhere('interaction.createdAt >= :startDate', { startDate })
-      .andWhere('interaction.createdAt <= :endDate', { endDate })
-      .groupBy('DATE(interaction.createdAt)')
+      .andWhere('interaction."createdAt" >= :startDate', { startDate })
+      .andWhere('interaction."createdAt" <= :endDate', { endDate })
+      .groupBy('DATE(interaction."createdAt")')
       .orderBy('date', 'ASC')
       .getRawMany()
 
@@ -373,13 +373,13 @@ export class CreatorDashboardService {
     const result = await this.videoRepository
       .createQueryBuilder('video')
       .select([
-        'DATE(video.publishedAt) as date',
+        'DATE(video."publishedAt") as date',
         'SUM(video.revenue) as amount'
       ])
-      .where('video.affiliateId = :affiliateId', { affiliateId })
-      .andWhere('video.publishedAt >= :startDate', { startDate })
-      .andWhere('video.publishedAt <= :endDate', { endDate })
-      .groupBy('DATE(video.publishedAt)')
+      .where('video."affiliateId" = :affiliateId', { affiliateId })
+      .andWhere('video."publishedAt" >= :startDate', { startDate })
+      .andWhere('video."publishedAt" <= :endDate', { endDate })
+      .groupBy('DATE(video."publishedAt")')
       .orderBy('date', 'ASC')
       .getRawMany()
 
@@ -394,13 +394,13 @@ export class CreatorDashboardService {
       .createQueryBuilder('video')
       .leftJoin('video.interactions', 'interaction')
       .select([
-        'DATE(interaction.createdAt) as date',
+        'DATE(interaction."createdAt") as date',
         'AVG(CASE WHEN video.views > 0 THEN (video.likes + video.comments + video.shares) * 100.0 / video.views ELSE 0 END) as rate'
       ])
-      .where('video.affiliateId = :affiliateId', { affiliateId })
-      .andWhere('interaction.createdAt >= :startDate', { startDate })
-      .andWhere('interaction.createdAt <= :endDate', { endDate })
-      .groupBy('DATE(interaction.createdAt)')
+      .where('video."affiliateId" = :affiliateId', { affiliateId })
+      .andWhere('interaction."createdAt" >= :startDate', { startDate })
+      .andWhere('interaction."createdAt" <= :endDate', { endDate })
+      .groupBy('DATE(interaction."createdAt")')
       .orderBy('date', 'ASC')
       .getRawMany()
 
