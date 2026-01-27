@@ -60,8 +60,11 @@ export default ({ config }) => {
         'expo-build-properties',
         {
           android: {
-            enableProguardInReleaseBuilds: true,
-            enableShrinkResourcesInReleaseBuilds: true,
+            enableProguardInReleaseBuilds: false,
+            enableShrinkResourcesInReleaseBuilds: false,
+            extraMavenRepos: [
+              'https://jitpack.io',
+            ],
           },
           ios: {
             deploymentTarget: '15.1',
@@ -101,9 +104,9 @@ export default ({ config }) => {
       },
       // Expose environment variables to the app
       ENV: process.env.ENV || 'development',
-      API_BASE_URL: process.env.API_BASE_URL || 'http://192.168.20.86:3000',
+      API_BASE_URL: process.env.API_BASE_URL || 'https://00de96316117.ngrok-free.app',
       API_VERSION: process.env.API_VERSION || '/api/v1',
-      WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'http://192.168.20.86:3000',
+      WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'https://00de96316117.ngrok-free.app',
       GSHOP_PIXEL_ID: process.env.GSHOP_PIXEL_ID || '',
       ANALYTICS_ENABLED: process.env.ANALYTICS_ENABLED === 'true',
       MERCAPAGO_PUBLIC_KEY: process.env.MERCAPAGO_PUBLIC_KEY || '',
