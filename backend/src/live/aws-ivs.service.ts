@@ -88,7 +88,7 @@ export class AwsIvsService implements IIvsService {
           name: channel.name,
           latencyMode: channel.latencyMode,
           type: channel.type,
-          ingestEndpoint: channel.ingestEndpoint,
+          ingestEndpoint: this.formatIngestEndpoint(channel.ingestEndpoint),
           playbackUrl: channel.playbackUrl,
         },
         streamKey: {
@@ -123,7 +123,7 @@ export class AwsIvsService implements IIvsService {
         name: channel.name,
         latencyMode: channel.latencyMode,
         type: channel.type,
-        ingestEndpoint: channel.ingestEndpoint,
+        ingestEndpoint: this.formatIngestEndpoint(channel.ingestEndpoint),
         playbackUrl: channel.playbackUrl,
       };
     } catch (error) {
@@ -185,6 +185,20 @@ export class AwsIvsService implements IIvsService {
   }
 
   /**
+   * Format ingest endpoint to full RTMPS URL
+   * AWS IVS returns just the hostname, we need to add rtmps:// and :443/app
+   */
+  private formatIngestEndpoint(endpoint: string): string {
+    if (!endpoint) return '';
+    // If already has protocol, return as-is
+    if (endpoint.startsWith('rtmps://') || endpoint.startsWith('rtmp://')) {
+      return endpoint;
+    }
+    // Add rtmps:// prefix and :443/app suffix
+    return `rtmps://${endpoint}:443/app`;
+  }
+
+  /**
    * Get thumbnail URL for stream
    */
   getThumbnailUrl(channelArn: string): string {
@@ -200,5 +214,96 @@ export class AwsIvsService implements IIvsService {
     // Extract channel ID from ARN
     const channelId = channelArn.split('/').pop();
     return `${this.cdnUrl}/recordings/${channelId}/recording.mp4`;
+  }
+
+  /**
+   * List all existing IVS channels in the AWS account
+   */
+  async listChannels(): Promise<import('./interfaces/ivs-service.interface').IVSChannel[]> {
+    try {
+      const { ListChannelsCommand } = await import('@aws-sdk/client-ivs');
+
+      const response = await this.ivsClient.send(
+        new ListChannelsCommand({})
+      );
+
+      if (!response.channels || response.channels.length === 0) {
+        console.log('[AWS IVS] No channels found');
+        return [];
+      }
+
+      console.log(`[AWS IVS] Found ${response.channels.length} existing channels`);
+
+      return response.channels.map(channel => ({
+        arn: channel.arn,
+        name: channel.name,
+        latencyMode: channel.latencyMode as 'LOW' | 'NORMAL',
+        type: channel.type as 'BASIC' | 'STANDARD',
+        ingestEndpoint: this.formatIngestEndpoint(channel.ingestEndpoint),
+        playbackUrl: channel.playbackUrl,
+      }));
+    } catch (error) {
+      console.error('[AWS IVS] Error listing channels:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get an existing channel with its stream key for reuse
+   */
+  async getExistingChannelWithKey(channelArn: string): Promise<import('./interfaces/ivs-service.interface').IVSChannelWithKey | null> {
+    try {
+      // Get channel details
+      const channel = await this.getChannel(channelArn);
+      if (!channel) {
+        console.log(`[AWS IVS] Channel not found: ${channelArn}`);
+        return null;
+      }
+
+      // Get the stream key for this channel
+      const { ListStreamKeysCommand, GetStreamKeyCommand } = await import('@aws-sdk/client-ivs');
+
+      const listResponse = await this.ivsClient.send(
+        new ListStreamKeysCommand({
+          channelArn,
+        })
+      );
+
+      if (!listResponse.streamKeys || listResponse.streamKeys.length === 0) {
+        console.log(`[AWS IVS] No stream keys found for channel: ${channelArn}`);
+        return null;
+      }
+
+      // Get the full stream key details (including the value)
+      const streamKeyArn = listResponse.streamKeys[0].arn;
+      const getKeyResponse = await this.ivsClient.send(
+        new GetStreamKeyCommand({
+          arn: streamKeyArn,
+        })
+      );
+
+      const streamKey = getKeyResponse.streamKey;
+
+      console.log(`[AWS IVS] Retrieved existing channel with stream key: ${channelArn}`);
+
+      return {
+        channel: {
+          arn: channel.arn,
+          name: channel.name,
+          latencyMode: channel.latencyMode,
+          type: channel.type,
+          ingestEndpoint: this.formatIngestEndpoint(channel.ingestEndpoint),
+          playbackUrl: channel.playbackUrl,
+        },
+        streamKey: {
+          arn: streamKey.arn,
+          value: streamKey.value,
+          channelArn: streamKey.channelArn,
+        },
+      };
+    } catch (error) {
+      console.error('[AWS IVS] Error getting existing channel with key:', error);
+      return null;
+    }
   }
 }

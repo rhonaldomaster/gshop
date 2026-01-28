@@ -53,4 +53,14 @@ export interface IIvsService {
    * Get recording URL for stream
    */
   getRecordingUrl(channelArn: string): string;
+
+  /**
+   * List all existing IVS channels
+   */
+  listChannels(): Promise<IVSChannel[]>;
+
+  /**
+   * Get an existing channel with its stream key (for reuse)
+   */
+  getExistingChannelWithKey(channelArn: string): Promise<IVSChannelWithKey | null>;
 }

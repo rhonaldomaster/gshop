@@ -172,7 +172,7 @@ export class LiveService {
    * Try to reuse any available IVS channel from ended/cancelled/old scheduled streams (fallback when quota exceeded)
    */
   private async tryReuseAnyAvailableChannel(): Promise<any> {
-    // First try ended/cancelled streams
+    // First try ended/cancelled streams from database
     let reusableStream = await this.liveStreamRepository.findOne({
       where: {
         status: In([StreamStatus.ENDED, StreamStatus.CANCELLED]),
@@ -196,31 +196,72 @@ export class LiveService {
         .getOne();
     }
 
-    if (!reusableStream) {
-      return null;
+    if (reusableStream) {
+      console.log(`[Live Service] Emergency reuse of IVS channel from stream ${reusableStream.id} (status: ${reusableStream.status})`);
+
+      // Clear the old stream's IVS credentials
+      await this.liveStreamRepository.update(reusableStream.id, {
+        ivsChannelArn: null,
+        streamKey: null,
+        rtmpUrl: null,
+        hlsUrl: null,
+        status: StreamStatus.CANCELLED,
+      });
+
+      return {
+        channel: {
+          arn: reusableStream.ivsChannelArn,
+          ingestEndpoint: reusableStream.rtmpUrl,
+          playbackUrl: reusableStream.hlsUrl,
+        },
+        streamKey: {
+          value: reusableStream.streamKey,
+        },
+      };
     }
 
-    console.log(`[Live Service] Emergency reuse of IVS channel from stream ${reusableStream.id} (status: ${reusableStream.status})`);
+    // If no reusable stream in database, try to get existing channels directly from AWS IVS
+    console.log('[Live Service] No reusable streams in database, checking AWS IVS for existing channels...');
+    return this.tryReuseChannelFromAws();
+  }
 
-    // Clear the old stream's IVS credentials
-    await this.liveStreamRepository.update(reusableStream.id, {
-      ivsChannelArn: null,
-      streamKey: null,
-      rtmpUrl: null,
-      hlsUrl: null,
-      status: StreamStatus.CANCELLED,
-    });
+  /**
+   * Try to reuse an existing channel directly from AWS IVS
+   * This is called when database has no valid channels but AWS might have existing ones
+   */
+  private async tryReuseChannelFromAws(): Promise<any> {
+    try {
+      // List existing channels from AWS
+      const existingChannels = await this.ivsService.listChannels();
 
-    return {
-      channel: {
-        arn: reusableStream.ivsChannelArn,
-        ingestEndpoint: reusableStream.rtmpUrl,
-        playbackUrl: reusableStream.hlsUrl,
-      },
-      streamKey: {
-        value: reusableStream.streamKey,
-      },
-    };
+      if (existingChannels.length === 0) {
+        console.log('[Live Service] No existing channels found in AWS IVS');
+        return null;
+      }
+
+      console.log(`[Live Service] Found ${existingChannels.length} existing channels in AWS IVS`);
+
+      // Try to get credentials for the first available channel
+      for (const channel of existingChannels) {
+        try {
+          const channelWithKey = await this.ivsService.getExistingChannelWithKey(channel.arn);
+
+          if (channelWithKey && channelWithKey.streamKey) {
+            console.log(`[Live Service] Successfully retrieved credentials for AWS channel: ${channel.arn}`);
+            return channelWithKey;
+          }
+        } catch (error) {
+          console.warn(`[Live Service] Failed to get credentials for channel ${channel.arn}: ${error.message}`);
+          continue;
+        }
+      }
+
+      console.log('[Live Service] Could not retrieve credentials for any existing AWS channel');
+      return null;
+    } catch (error) {
+      console.error('[Live Service] Error listing AWS IVS channels:', error.message);
+      return null;
+    }
   }
 
   async createAffiliateLiveStream(affiliateId: string, dto: CreateAffiliateLiveStreamDto): Promise<LiveStream> {
