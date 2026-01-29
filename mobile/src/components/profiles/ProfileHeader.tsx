@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface ProfileStat {
@@ -71,6 +72,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   onShare,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const formatNumber = (num: number | string): string => {
     if (typeof num === 'string') return num;
@@ -151,7 +153,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
               </Text>
               {totalReviews !== undefined && (
                 <Text style={[styles.reviews, { color: theme.colors.textSecondary }]}>
-                  ({totalReviews} reviews)
+                  ({t('profile.reviewCount', { count: totalReviews })})
                 </Text>
               )}
             </View>
@@ -210,7 +212,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                   { color: isFollowing ? theme.colors.primary : theme.colors.white },
                 ]}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? t('profile.following') : t('profile.follow')}
               </Text>
             </>
           )}

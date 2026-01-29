@@ -25,8 +25,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onAction,
   fullScreen = false,
 }) => {
-  // Check if icon is an emoji (more than 1 char or contains non-ASCII)
-  const isEmoji = icon.length > 1 || /[\u{1F300}-\u{1F9FF}]/u.test(icon);
+  // Check if icon is an emoji (contains emoji unicode ranges)
+  const isEmoji = /[\u{1F300}-\u{1F9FF}|\u{2600}-\u{26FF}|\u{2700}-\u{27BF}]/u.test(icon);
   const displayMessage = message || description;
 
   return (

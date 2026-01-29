@@ -26,6 +26,16 @@ export default ({ config }) => {
       bundleIdentifier: isDev ? 'com.gshop.app.dev' : 'com.gshop.app',
       buildNumber: '1',
       associatedDomains: [`applinks:${process.env.DEEP_LINK_BASE_URL || 'gshop.com'}`],
+      googleServicesFile: './ios/GSHOPDev/GoogleService-Info.plist',
+      infoPlist: {
+        CFBundleURLTypes: [
+          {
+            CFBundleURLSchemes: [
+              'com.googleusercontent.apps.847533649977-8l1cbf4kdlv00ombksm4inensl00jdjo',
+            ],
+          },
+        ],
+      },
     },
     android: {
       adaptiveIcon: {

@@ -17,9 +17,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../contexts/ThemeContext';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
+import { normalizeImageUrl } from '../../config/api.config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 2;
@@ -47,6 +49,8 @@ interface StreamGridProps {
   emptyTitle?: string;
   emptyMessage?: string;
   showLiveBadge?: boolean;
+  /** When true, renders as a simple View grid instead of FlatList (use when nested in ScrollView) */
+  nestedScrollEnabled?: boolean;
 }
 
 export const StreamGrid: React.FC<StreamGridProps> = ({
@@ -56,11 +60,13 @@ export const StreamGrid: React.FC<StreamGridProps> = ({
   hasMore = false,
   onLoadMore,
   onStreamPress,
-  emptyTitle = 'No streams',
-  emptyMessage = 'No streams available yet',
+  emptyTitle,
+  emptyMessage,
   showLiveBadge = true,
+  nestedScrollEnabled = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const formatViewerCount = (count: number): string => {
     if (count >= 1000000) {
@@ -79,20 +85,20 @@ export const StreamGrid: React.FC<StreamGridProps> = ({
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
-      return 'Today';
+      return t('common.today');
     }
     if (diffDays === 1) {
-      return 'Yesterday';
+      return t('common.yesterday');
     }
     if (diffDays < 7) {
-      return `${diffDays} days ago`;
+      return t('common.daysAgo', { count: diffDays });
     }
     if (diffDays < 30) {
       const weeks = Math.floor(diffDays / 7);
-      return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+      return t('common.weeksAgo', { count: weeks });
     }
 
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString('es-CO', {
       month: 'short',
       day: 'numeric',
     });
@@ -100,6 +106,7 @@ export const StreamGrid: React.FC<StreamGridProps> = ({
 
   const renderStreamItem = ({ item }: { item: StreamItem }) => {
     const isLive = item.status === 'live';
+    const thumbnailUrl = normalizeImageUrl(item.thumbnailUrl);
 
     return (
       <TouchableOpacity
@@ -108,9 +115,9 @@ export const StreamGrid: React.FC<StreamGridProps> = ({
         activeOpacity={0.8}
       >
         <View style={styles.thumbnailContainer}>
-          {item.thumbnailUrl ? (
+          {thumbnailUrl ? (
             <Image
-              source={{ uri: item.thumbnailUrl }}
+              source={{ uri: thumbnailUrl }}
               style={styles.thumbnail}
               resizeMode="cover"
             />
@@ -144,7 +151,7 @@ export const StreamGrid: React.FC<StreamGridProps> = ({
             {item.title}
           </Text>
           <Text style={[styles.streamDate, { color: theme.colors.textSecondary }]}>
-            {isLive ? 'Live now' : formatDate(item.endedAt || item.startedAt || item.createdAt)}
+            {isLive ? t('live.liveNow') : formatDate(item.endedAt || item.startedAt || item.createdAt)}
           </Text>
         </View>
       </TouchableOpacity>
@@ -189,9 +196,35 @@ export const StreamGrid: React.FC<StreamGridProps> = ({
     return (
       <EmptyState
         icon="videocam-off"
-        title={emptyTitle}
-        message={emptyMessage}
+        title={emptyTitle || t('profile.noLiveStreams')}
+        message={emptyMessage || t('profile.noLiveStreamsMessage')}
       />
+    );
+  }
+
+  // When nested in a ScrollView, render as simple grid to avoid VirtualizedList warning
+  if (nestedScrollEnabled) {
+    const rows: StreamItem[][] = [];
+    for (let i = 0; i < streams.length; i += GRID_COLUMNS) {
+      rows.push(streams.slice(i, i + GRID_COLUMNS));
+    }
+
+    return (
+      <View style={styles.listContent}>
+        {rows.map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.columnWrapper}>
+            {row.map((item) => (
+              <React.Fragment key={item.id}>
+                {renderStreamItem({ item })}
+              </React.Fragment>
+            ))}
+            {row.length < GRID_COLUMNS && (
+              <View style={styles.streamItem} />
+            )}
+          </View>
+        ))}
+        {renderFooter()}
+      </View>
     );
   }
 

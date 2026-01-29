@@ -27,7 +27,13 @@
     "backToHome": "Volver al inicio",
     "grantPermission": "Otorgar permiso",
     "refresh": "Actualizar",
-    "continue": "Continuar"
+    "continue": "Continuar",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "daysAgo": "Hace {{count}} día",
+    "daysAgo_plural": "Hace {{count}} días",
+    "weeksAgo": "Hace {{count}} semana",
+    "weeksAgo_plural": "Hace {{count}} semanas"
   },
   "auth": {
     "welcome": "Bienvenido",
@@ -658,7 +664,27 @@
     "noPastStreams": "No hay transmisiones pasadas",
     "noPastStreamsMessage": "Aún no hay transmisiones pasadas",
     "noProducts": "No hay productos",
-    "noProductsMessage": "Aún no hay productos disponibles"
+    "noProductsMessage": "Aún no hay productos disponibles",
+    "tabs": {
+      "products": "Productos",
+      "live": "En vivo",
+      "pastStreams": "Pasadas"
+    },
+    "stats": {
+      "followers": "Seguidores",
+      "products": "Productos",
+      "reviews": "Reseñas",
+      "views": "Vistas",
+      "videos": "Videos"
+    },
+    "outOfStock": "Agotado",
+    "follow": "Seguir",
+    "following": "Siguiendo",
+    "followingSubtitle": "Vendedores y creadores que sigues",
+    "reviewCount": "{{count}} reseña",
+    "reviewCount_plural": "{{count}} reseñas",
+    "thisCreator": "este creador",
+    "shareCreatorMessage": "¡Mira a {{name}} en GSHOP!"
   },
   "settings": {
     "title": "Configuración",
@@ -839,8 +865,8 @@
     "shareStream": "Compartir transmisión",
     "noActiveStreams": "No hay transmisiones activas",
     "upcomingStreams": "Próximas transmisiones",
-    "productCount_one": "{{count}} producto",
-    "productCount_other": "{{count}} productos",
+    "productCount": "{{count}} producto",
+    "productCount_plural": "{{count}} productos",
     "startsAt": "Comienza a las {{time}}",
     "checkBackLater": "Vuelve más tarde para ver sesiones de compra en vivo de tus vendedores favoritos.",
     "loadingStreams": "Cargando transmisiones en vivo...",
@@ -1760,6 +1786,8 @@
     "all": "Todos",
     "sellers": "Vendedores",
     "affiliates": "Afiliados",
+    "seller": "Vendedor",
+    "creator": "Creador",
     "errorLoadingProduct": "No se pudieron cargar los detalles del producto",
     "defaultShareMessage": "¡Mira este producto increíble: {{name}} por ${{price}} de {{seller}}!",
     "copied": "¡Copiado!",

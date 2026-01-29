@@ -24,6 +24,8 @@ import TransferScreen from '../screens/wallet/TransferScreen';
 import WalletScreen from '../screens/wallet/WalletScreen';
 import VerificationScreen from '../screens/wallet/VerificationScreen';
 import RoleSwitcherScreen from '../screens/settings/RoleSwitcherScreen';
+import FollowingScreen from '../screens/social/FollowingScreen';
+import { AffiliateProfileScreen, SellerProfileScreen } from '../screens/profiles';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;
@@ -49,6 +51,9 @@ export type ProfileStackParamList = {
   Wallet: undefined;
   Verification: undefined;
   RoleSwitcher: undefined;
+  Following: undefined;
+  AffiliateProfile: { affiliateId: string; username?: string };
+  SellerProfile: { sellerId: string };
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -83,6 +88,9 @@ export default function ProfileNavigator() {
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="Verification" component={VerificationScreen} />
       <Stack.Screen name="RoleSwitcher" component={RoleSwitcherScreen} />
+      <Stack.Screen name="Following" component={FollowingScreen} />
+      <Stack.Screen name="AffiliateProfile" component={AffiliateProfileScreen} />
+      <Stack.Screen name="SellerProfile" component={SellerProfileScreen} />
     </Stack.Navigator>
   );
 }

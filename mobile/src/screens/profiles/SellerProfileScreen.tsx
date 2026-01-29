@@ -34,10 +34,10 @@ type SellerProfileRouteParams = {
 
 type SellerProfileScreenRouteProp = RouteProp<SellerProfileRouteParams, 'SellerProfile'>;
 
-const TABS: ProfileTab[] = [
-  { key: 'products', label: 'Products', icon: 'cube' },
-  { key: 'live', label: 'Live', icon: 'radio' },
-  { key: 'past', label: 'Past Streams', icon: 'videocam' },
+const getTranslatedTabs = (t: (key: string) => string): ProfileTab[] => [
+  { key: 'products', label: t('profile.tabs.products'), icon: 'cube' },
+  { key: 'live', label: t('profile.tabs.live'), icon: 'radio' },
+  { key: 'past', label: t('profile.tabs.pastStreams'), icon: 'videocam' },
 ];
 
 export default function SellerProfileScreen() {
@@ -178,10 +178,13 @@ export default function SellerProfileScreen() {
 
   // Build stats array
   const stats = profile ? [
-    { label: 'Followers', value: profile.followersCount || 0 },
-    { label: 'Products', value: profile.productsCount || 0 },
-    { label: 'Reviews', value: profile.totalReviews || 0 },
+    { label: t('profile.stats.followers'), value: profile.followersCount || 0 },
+    { label: t('profile.stats.products'), value: profile.productsCount || 0 },
+    { label: t('profile.stats.reviews'), value: profile.totalReviews || 0 },
   ] : [];
+
+  // Get translated tabs
+  const TABS = getTranslatedTabs(t);
 
   // Get badge count for live tab
   const liveBadgeCount = liveStreams.filter(s => s.status === 'live').length;
@@ -263,6 +266,7 @@ export default function SellerProfileScreen() {
               onProductPress={handleProductPress}
               emptyTitle={t('profile.noProducts')}
               emptyMessage={t('profile.noProductsMessage')}
+              nestedScrollEnabled
             />
           )}
 
@@ -276,6 +280,7 @@ export default function SellerProfileScreen() {
               emptyTitle={t('profile.noLiveStreams')}
               emptyMessage={t('profile.noLiveStreamsMessage')}
               showLiveBadge={true}
+              nestedScrollEnabled
             />
           )}
 
@@ -289,6 +294,7 @@ export default function SellerProfileScreen() {
               emptyTitle={t('profile.noPastStreams')}
               emptyMessage={t('profile.noPastStreamsMessage')}
               showLiveBadge={false}
+              nestedScrollEnabled
             />
           )}
         </View>

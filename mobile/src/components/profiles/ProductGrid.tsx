@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { EmptyState } from '../ui/EmptyState';
 import { Skeleton } from '../ui/Skeleton';
+import { normalizeImageUrl } from '../../config/api.config';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 2;
@@ -45,6 +47,8 @@ interface ProductGridProps {
   emptyTitle?: string;
   emptyMessage?: string;
   currency?: string;
+  /** When true, renders as a simple View grid instead of FlatList (use when nested in ScrollView) */
+  nestedScrollEnabled?: boolean;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -54,11 +58,13 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   hasMore = false,
   onLoadMore,
   onProductPress,
-  emptyTitle = 'No products',
-  emptyMessage = 'No products available yet',
+  emptyTitle,
+  emptyMessage,
   currency = 'COP',
+  nestedScrollEnabled = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   const formatPrice = (price: number): string => {
     return new Intl.NumberFormat('es-CO', {
@@ -70,7 +76,8 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   };
 
   const renderProductItem = ({ item }: { item: ProductItem }) => {
-    const imageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
+    const rawImageUrl = item.images && item.images.length > 0 ? item.images[0] : null;
+    const imageUrl = normalizeImageUrl(rawImageUrl);
     const isOutOfStock = item.stock !== undefined && item.stock <= 0;
 
     return (
@@ -95,7 +102,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           {/* Out of Stock Badge */}
           {isOutOfStock && (
             <View style={[styles.outOfStockBadge, { backgroundColor: theme.colors.gray700 }]}>
-              <Text style={styles.outOfStockText}>Out of Stock</Text>
+              <Text style={styles.outOfStockText}>{t('profile.outOfStock')}</Text>
             </View>
           )}
         </View>
@@ -110,11 +117,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           <Text style={[styles.productPrice, { color: theme.colors.primary }]}>
             {formatPrice(item.price)}
           </Text>
-          {item.vatType && (
-            <Text style={[styles.vatLabel, { color: theme.colors.textSecondary }]}>
-              IVA {item.vatType}
-            </Text>
-          )}
         </View>
       </TouchableOpacity>
     );
@@ -158,9 +160,35 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
     return (
       <EmptyState
         icon="cube-outline"
-        title={emptyTitle}
-        message={emptyMessage}
+        title={emptyTitle || t('profile.noProducts')}
+        message={emptyMessage || t('profile.noProductsMessage')}
       />
+    );
+  }
+
+  // When nested in a ScrollView, render as simple grid to avoid VirtualizedList warning
+  if (nestedScrollEnabled) {
+    const rows: ProductItem[][] = [];
+    for (let i = 0; i < products.length; i += GRID_COLUMNS) {
+      rows.push(products.slice(i, i + GRID_COLUMNS));
+    }
+
+    return (
+      <View style={styles.listContent}>
+        {rows.map((row, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.columnWrapper}>
+            {row.map((item) => (
+              <React.Fragment key={item.id}>
+                {renderProductItem({ item })}
+              </React.Fragment>
+            ))}
+            {row.length < GRID_COLUMNS && (
+              <View style={styles.productItem} />
+            )}
+          </View>
+        ))}
+        {renderFooter()}
+      </View>
     );
   }
 
@@ -242,10 +270,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginTop: 4,
-  },
-  vatLabel: {
-    fontSize: 11,
-    marginTop: 2,
   },
   loadingMore: {
     paddingVertical: 16,

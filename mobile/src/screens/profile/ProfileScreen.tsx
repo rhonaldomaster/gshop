@@ -100,6 +100,13 @@ export default function ProfileScreen() {
       showChevron: true,
     },
     {
+      icon: 'people-outline',
+      title: t('profile.following'),
+      subtitle: t('profile.followingSubtitle'),
+      onPress: () => handleNavigation('Following'),
+      showChevron: true,
+    },
+    {
       icon: 'cash-outline',
       title: t('profile.affiliateProgram'),
       subtitle: t('profile.earnCommissions'),

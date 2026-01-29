@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsInt, Min, Max } from 'class-validator'
+import { IsBoolean, IsOptional, IsInt, Min, Max, IsIn } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { Type } from 'class-transformer'
 
@@ -23,6 +23,16 @@ export class PaginationQueryDto {
   @Min(1)
   @Max(100)
   limit?: number = 20
+}
+
+export class StreamsQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional({
+    description: 'Filter by stream status',
+    enum: ['live', 'ended', 'all']
+  })
+  @IsOptional()
+  @IsIn(['live', 'ended', 'all'])
+  status?: 'live' | 'ended' | 'all'
 }
 
 export class FollowResponseDto {

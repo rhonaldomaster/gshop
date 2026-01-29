@@ -34,9 +34,9 @@ type AffiliateProfileRouteParams = {
 
 type AffiliateProfileScreenRouteProp = RouteProp<AffiliateProfileRouteParams, 'AffiliateProfile'>;
 
-const TABS: ProfileTab[] = [
-  { key: 'live', label: 'Live', icon: 'radio' },
-  { key: 'past', label: 'Past Streams', icon: 'videocam' },
+const getTranslatedTabs = (t: (key: string) => string): ProfileTab[] => [
+  { key: 'live', label: t('profile.tabs.live'), icon: 'radio' },
+  { key: 'past', label: t('profile.tabs.pastStreams'), icon: 'videocam' },
 ];
 
 export default function AffiliateProfileScreen() {
@@ -124,13 +124,13 @@ export default function AffiliateProfileScreen() {
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `Check out ${profile?.name || 'this creator'} on GSHOP!`,
+        message: t('profile.shareCreatorMessage', { name: profile?.name || t('profile.thisCreator') }),
         url: `https://gshop.app/creators/${profile?.username || affiliateId}`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
     }
-  }, [profile, affiliateId]);
+  }, [profile, affiliateId, t]);
 
   const handleStreamPress = useCallback((stream: any) => {
     if (stream.status === 'live') {
@@ -147,10 +147,13 @@ export default function AffiliateProfileScreen() {
 
   // Build stats array
   const stats = profile ? [
-    { label: 'Followers', value: profile.stats?.followersCount || profile.followStats?.followersCount || 0 },
-    { label: 'Views', value: profile.stats?.totalViews || 0 },
-    { label: 'Videos', value: profile.stats?.videosCount || 0 },
+    { label: t('profile.stats.followers'), value: profile.stats?.followersCount || profile.followStats?.followersCount || 0 },
+    { label: t('profile.stats.views'), value: profile.stats?.totalViews || 0 },
+    { label: t('profile.stats.videos'), value: profile.stats?.videosCount || 0 },
   ] : [];
+
+  // Get translated tabs
+  const TABS = getTranslatedTabs(t);
 
   // Get badge count for live tab
   const liveBadgeCount = liveStreams.filter(s => s.status === 'live').length;
@@ -224,6 +227,7 @@ export default function AffiliateProfileScreen() {
               emptyTitle={t('profile.noLiveStreams')}
               emptyMessage={t('profile.noLiveStreamsMessage')}
               showLiveBadge={true}
+              nestedScrollEnabled
             />
           )}
 
@@ -237,6 +241,7 @@ export default function AffiliateProfileScreen() {
               emptyTitle={t('profile.noPastStreams')}
               emptyMessage={t('profile.noPastStreamsMessage')}
               showLiveBadge={false}
+              nestedScrollEnabled
             />
           )}
         </View>
