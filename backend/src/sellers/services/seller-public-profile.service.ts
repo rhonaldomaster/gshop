@@ -44,6 +44,18 @@ export interface SellerProductSummary {
   stock: number
 }
 
+export interface SellerSearchResult {
+  id: string
+  businessName: string
+  logoUrl?: string
+  profileDescription?: string
+  isVerified: boolean
+  followersCount: number
+  productsCount: number
+  city?: string
+  state?: string
+}
+
 @Injectable()
 export class SellerPublicProfileService {
   constructor(
@@ -220,6 +232,81 @@ export class SellerPublicProfileService {
 
     return {
       streams: streamSummaries,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    }
+  }
+
+  /**
+   * Search sellers by name or business name
+   */
+  async searchSellers(
+    query: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<{
+    sellers: SellerSearchResult[]
+    total: number
+    page: number
+    totalPages: number
+  }> {
+    const offset = (page - 1) * limit
+    const searchTerm = `%${query.toLowerCase()}%`
+
+    const queryBuilder = this.sellerRepository
+      .createQueryBuilder('seller')
+      .where('seller.verificationStatus = :status', { status: VerificationStatus.APPROVED })
+      .andWhere('seller.isProfilePublic = :isPublic', { isPublic: true })
+      .andWhere('seller.isActive = :isActive', { isActive: true })
+
+    if (query.trim()) {
+      queryBuilder.andWhere(
+        '(LOWER(seller.businessName) LIKE :search OR LOWER(seller.ownerName) LIKE :search)',
+        { search: searchTerm },
+      )
+    }
+
+    const [sellers, total] = await queryBuilder
+      .orderBy('seller.followersCount', 'DESC')
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount()
+
+    // Get product counts for each seller
+    const sellerIds = sellers.map((s) => s.id)
+    let productCounts: Record<string, number> = {}
+
+    if (sellerIds.length > 0) {
+      const counts = await this.productRepository
+        .createQueryBuilder('product')
+        .select('product.sellerId', 'sellerId')
+        .addSelect('COUNT(*)', 'count')
+        .where('product.sellerId IN (:...ids)', { ids: sellerIds })
+        .andWhere('product.status = :status', { status: ProductStatus.ACTIVE })
+        .groupBy('product.sellerId')
+        .getRawMany()
+
+      productCounts = counts.reduce((acc, c) => {
+        acc[c.sellerId] = parseInt(c.count, 10)
+        return acc
+      }, {} as Record<string, number>)
+    }
+
+    const results: SellerSearchResult[] = sellers.map((seller) => ({
+      id: seller.id,
+      businessName: seller.businessName,
+      logoUrl: seller.logoUrl,
+      profileDescription: seller.profileDescription,
+      isVerified: seller.verificationStatus === VerificationStatus.APPROVED,
+      followersCount: seller.followersCount,
+      productsCount: productCounts[seller.id] || 0,
+      city: seller.city,
+      state: seller.state,
+    }))
+
+    return {
+      sellers: results,
       total,
       page,
       totalPages: Math.ceil(total / limit),

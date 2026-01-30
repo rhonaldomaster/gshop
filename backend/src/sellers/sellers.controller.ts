@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request, Patch, Put, UseInterceptors, UploadedFiles, BadRequestException, Query, Res } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, UseGuards, Request, Patch, Put, UseInterceptors, UploadedFiles, BadRequestException, Query, Res, ParseIntPipe, DefaultValuePipe } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 import { FileFieldsInterceptor } from '@nestjs/platform-express'
 import { Response } from 'express'
@@ -137,6 +137,19 @@ export class SellersController {
     @Body() body: { notes: string },
   ) {
     return this.sellersService.rejectWithdrawal(id, req.user.id, body.notes)
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Search sellers by name' })
+  @ApiQuery({ name: 'q', required: false, description: 'Search query' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page' })
+  async searchSellers(
+    @Query('q') query: string = '',
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+  ) {
+    return this.sellersService.searchSellers(query, page || 1, limit || 20)
   }
 
   @Get(':id')

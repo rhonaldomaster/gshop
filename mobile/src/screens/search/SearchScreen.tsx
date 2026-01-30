@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   Modal,
   Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProducts } from '../../hooks/useProducts';
 import { useCart } from '../../hooks/useCart';
@@ -20,10 +22,17 @@ import GSInput from '../../components/ui/GSInput';
 import GSButton from '../../components/ui/GSButton';
 import { CachedImage } from '../../components/ui/CachedImage';
 import { Product, ProductSearchFilters } from '../../services/products.service';
+import {
+  searchService,
+  SellerSearchResult,
+  CreatorSearchResult,
+} from '../../services/search.service';
 import { normalizeImageUrl } from '../../config/api.config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ITEM_WIDTH = (SCREEN_WIDTH - 60) / 2; // 2 columns with margins
+const ITEM_WIDTH = (SCREEN_WIDTH - 60) / 2;
+
+type SearchTab = 'products' | 'sellers' | 'creators';
 
 // Filter Modal Component
 interface FilterModalProps {
@@ -86,7 +95,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
           renderItem={() => null}
           ListHeaderComponent={
             <View>
-              {/* Price Range */}
               <View style={styles.filterSection}>
                 <GSText variant="body" weight="semiBold" style={styles.filterTitle}>
                   {t('search.priceRange')}
@@ -116,7 +124,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 </View>
               </View>
 
-              {/* Categories */}
               <View style={styles.filterSection}>
                 <GSText variant="body" weight="semiBold" style={styles.filterTitle}>
                   {t('search.category')}
@@ -124,6 +131,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 <FlatList
                   data={categories}
                   keyExtractor={(item) => item.id}
+                  scrollEnabled={false}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={[
@@ -151,7 +159,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 />
               </View>
 
-              {/* Sort By */}
               <View style={styles.filterSection}>
                 <GSText variant="body" weight="semiBold" style={styles.filterTitle}>
                   {t('products.sortBy')}
@@ -183,7 +190,6 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 ))}
               </View>
 
-              {/* In Stock Only */}
               <View style={styles.filterSection}>
                 <TouchableOpacity
                   style={[
@@ -251,7 +257,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Product Image */}
       <View style={styles.productImageContainer}>
         {product.images && product.images.length > 0 ? (
           <CachedImage
@@ -266,7 +271,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           </View>
         )}
 
-        {/* Discount Badge */}
         {discountPercentage > 0 && (
           <View style={[styles.discountBadge, { backgroundColor: theme.colors.error }]}>
             <GSText variant="caption" color="white" weight="bold">
@@ -276,7 +280,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
         )}
       </View>
 
-      {/* Product Info */}
       <View style={styles.productInfo}>
         <GSText
           variant="body"
@@ -302,7 +305,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           )}
         </View>
 
-        {/* Stock Status */}
         <GSText
           variant="caption"
           color={inStock ? 'success' : 'error'}
@@ -311,7 +313,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
           {inStock ? t('products.inStock') : t('products.outOfStock')}
         </GSText>
 
-        {/* Add to Cart Button */}
         <TouchableOpacity
           style={[
             styles.addToCartButton,
@@ -335,6 +336,143 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onPress, onAddToCart
   );
 };
 
+// Seller Card Component
+interface SellerCardProps {
+  seller: SellerSearchResult;
+  onPress: () => void;
+}
+
+const SellerCard: React.FC<SellerCardProps> = ({ seller, onPress }) => {
+  const { theme } = useTheme();
+  const { t } = useTranslation('translation');
+  const logoUrl = normalizeImageUrl(seller.logoUrl);
+
+  return (
+    <TouchableOpacity
+      style={[styles.userCard, { backgroundColor: theme.colors.surface }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.userAvatarContainer}>
+        {logoUrl ? (
+          <Image source={{ uri: logoUrl }} style={styles.userAvatar} />
+        ) : (
+          <View style={[styles.userAvatarPlaceholder, { backgroundColor: '#10b981' }]}>
+            <GSText variant="h4" color="white" weight="bold">
+              {seller.businessName.charAt(0).toUpperCase()}
+            </GSText>
+          </View>
+        )}
+        {seller.isVerified && (
+          <View style={[styles.verifiedBadge, { backgroundColor: theme.colors.primary }]}>
+            <Ionicons name="checkmark" size={10} color="white" />
+          </View>
+        )}
+      </View>
+
+      <View style={styles.userInfo}>
+        <GSText variant="body" weight="semiBold" numberOfLines={1}>
+          {seller.businessName}
+        </GSText>
+        {seller.profileDescription && (
+          <GSText variant="caption" color="textSecondary" numberOfLines={2}>
+            {seller.profileDescription}
+          </GSText>
+        )}
+        <View style={styles.userStats}>
+          <GSText variant="caption" color="textSecondary">
+            {seller.followersCount} {t('social.followers')}
+          </GSText>
+          <GSText variant="caption" color="textSecondary"> · </GSText>
+          <GSText variant="caption" color="textSecondary">
+            {seller.productsCount} {t('search.products')}
+          </GSText>
+        </View>
+        {(seller.city || seller.state) && (
+          <View style={styles.locationRow}>
+            <Ionicons name="location-outline" size={12} color={theme.colors.textSecondary} />
+            <GSText variant="caption" color="textSecondary">
+              {[seller.city, seller.state].filter(Boolean).join(', ')}
+            </GSText>
+          </View>
+        )}
+      </View>
+
+      <View style={[styles.typeBadge, { backgroundColor: '#10b981' }]}>
+        <GSText variant="caption" color="white" weight="bold">
+          {t('social.seller')}
+        </GSText>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// Creator Card Component
+interface CreatorCardProps {
+  creator: CreatorSearchResult;
+  onPress: () => void;
+}
+
+const CreatorCard: React.FC<CreatorCardProps> = ({ creator, onPress }) => {
+  const { theme } = useTheme();
+  const { t } = useTranslation('translation');
+  const avatarUrl = normalizeImageUrl(creator.avatarUrl);
+
+  return (
+    <TouchableOpacity
+      style={[styles.userCard, { backgroundColor: theme.colors.surface }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.userAvatarContainer}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.userAvatar} />
+        ) : (
+          <View style={[styles.userAvatarPlaceholder, { backgroundColor: '#8b5cf6' }]}>
+            <GSText variant="h4" color="white" weight="bold">
+              {creator.name.charAt(0).toUpperCase()}
+            </GSText>
+          </View>
+        )}
+        {creator.isVerified && (
+          <View style={[styles.verifiedBadge, { backgroundColor: theme.colors.primary }]}>
+            <Ionicons name="checkmark" size={10} color="white" />
+          </View>
+        )}
+      </View>
+
+      <View style={styles.userInfo}>
+        <GSText variant="body" weight="semiBold" numberOfLines={1}>
+          {creator.name}
+        </GSText>
+        <GSText variant="caption" color="textSecondary">
+          @{creator.username}
+        </GSText>
+        {creator.bio && (
+          <GSText variant="caption" color="textSecondary" numberOfLines={2}>
+            {creator.bio}
+          </GSText>
+        )}
+        <View style={styles.userStats}>
+          <GSText variant="caption" color="textSecondary">
+            {creator.followersCount} {t('social.followers')}
+          </GSText>
+          <GSText variant="caption" color="textSecondary"> · </GSText>
+          <GSText variant="caption" color="textSecondary">
+            {creator.videosCount} {t('search.videos')}
+          </GSText>
+        </View>
+      </View>
+
+      <View style={[styles.typeBadge, { backgroundColor: '#8b5cf6' }]}>
+        <GSText variant="caption" color="white" weight="bold">
+          {t('social.creator')}
+        </GSText>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 // Main Search Screen Component
 export default function SearchScreen() {
   const { theme } = useTheme();
@@ -345,7 +483,7 @@ export default function SearchScreen() {
     searchQuery,
     activeFilters,
     categories,
-    isLoading,
+    isLoading: isProductsLoading,
     debouncedSearch,
     clearSearch,
     updateFilters,
@@ -354,22 +492,93 @@ export default function SearchScreen() {
   const { addToCart } = useCart();
 
   // Local state
+  const [activeTab, setActiveTab] = useState<SearchTab>('products');
   const [searchText, setSearchText] = useState(searchQuery);
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Sellers search state
+  const [sellers, setSellers] = useState<SellerSearchResult[]>([]);
+  const [isSellersLoading, setIsSellersLoading] = useState(false);
+  const [sellersTotal, setSellersTotal] = useState(0);
+
+  // Creators search state
+  const [creators, setCreators] = useState<CreatorSearchResult[]>([]);
+  const [isCreatorsLoading, setIsCreatorsLoading] = useState(false);
+  const [creatorsTotal, setCreatorsTotal] = useState(0);
+
+  // Search sellers
+  const searchSellers = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSellers([]);
+      setSellersTotal(0);
+      return;
+    }
+
+    setIsSellersLoading(true);
+    try {
+      const result = await searchService.searchSellers(query);
+      setSellers(result.sellers);
+      setSellersTotal(result.total);
+    } catch (error) {
+      console.error('Failed to search sellers:', error);
+      setSellers([]);
+      setSellersTotal(0);
+    } finally {
+      setIsSellersLoading(false);
+    }
+  }, []);
+
+  // Search creators
+  const searchCreators = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setCreators([]);
+      setCreatorsTotal(0);
+      return;
+    }
+
+    setIsCreatorsLoading(true);
+    try {
+      const result = await searchService.searchCreators(query);
+      setCreators(result.creators);
+      setCreatorsTotal(result.total);
+    } catch (error) {
+      console.error('Failed to search creators:', error);
+      setCreators([]);
+      setCreatorsTotal(0);
+    } finally {
+      setIsCreatorsLoading(false);
+    }
+  }, []);
 
   // Handle search input change
   const handleSearchTextChange = useCallback((text: string) => {
     setSearchText(text);
     if (text.trim()) {
       debouncedSearch(text.trim(), activeFilters);
+      searchSellers(text.trim());
+      searchCreators(text.trim());
     } else {
       clearSearch();
+      setSellers([]);
+      setCreators([]);
+      setSellersTotal(0);
+      setCreatorsTotal(0);
     }
-  }, [debouncedSearch, activeFilters, clearSearch]);
+  }, [debouncedSearch, activeFilters, clearSearch, searchSellers, searchCreators]);
 
   // Handle product card press
   const handleProductPress = (product: Product) => {
     (navigation as any).navigate('ProductDetail', { productId: product.id });
+  };
+
+  // Handle seller card press
+  const handleSellerPress = (seller: SellerSearchResult) => {
+    (navigation as any).navigate('SellerProfile', { sellerId: seller.id });
+  };
+
+  // Handle creator card press
+  const handleCreatorPress = (creator: CreatorSearchResult) => {
+    (navigation as any).navigate('AffiliateProfile', { affiliateId: creator.id });
   };
 
   // Handle add to cart
@@ -397,36 +606,189 @@ export default function SearchScreen() {
   };
 
   const activeFilterCount = getActiveFilterCount();
+  const isLoading = activeTab === 'products' ? isProductsLoading :
+                    activeTab === 'sellers' ? isSellersLoading : isCreatorsLoading;
+
+  const tabs: { key: SearchTab; label: string; count: number }[] = [
+    { key: 'products', label: t('search.products'), count: searchResults.length },
+    { key: 'sellers', label: t('social.sellers'), count: sellersTotal },
+    { key: 'creators', label: t('search.creators'), count: creatorsTotal },
+  ];
+
+  const renderEmptyState = () => {
+    if (!searchText.trim()) {
+      return (
+        <View style={styles.emptyStateContainer}>
+          <Ionicons name="search-outline" size={64} color={theme.colors.textSecondary} />
+          <GSText variant="h3" weight="bold" color="textSecondary" style={{ marginTop: 16 }}>
+            {t('search.searchForProducts')}
+          </GSText>
+          <GSText variant="body" color="textSecondary" style={styles.emptyStateText}>
+            {t('search.enterSearchTerm')}
+          </GSText>
+        </View>
+      );
+    }
+
+    const noResultsText = activeTab === 'products' ? t('search.noProductsFound') :
+                          activeTab === 'sellers' ? t('search.noSellersFound') :
+                          t('search.noCreatorsFound');
+
+    return (
+      <View style={styles.noResultsContainer}>
+        <Ionicons name="search-outline" size={64} color={theme.colors.textSecondary} />
+        <GSText variant="h3" weight="bold" color="textSecondary" style={{ marginTop: 16 }}>
+          {noResultsText}
+        </GSText>
+        <GSText variant="body" color="textSecondary" style={styles.noResultsText}>
+          {t('search.tryAdjusting')}
+        </GSText>
+      </View>
+    );
+  };
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <GSText variant="body" style={styles.loadingText}>{t('search.searching')}</GSText>
+        </View>
+      );
+    }
+
+    if (activeTab === 'products') {
+      if (searchResults.length === 0) return renderEmptyState();
+      return (
+        <>
+          <GSText variant="body" color="textSecondary" style={styles.resultsCount}>
+            {t('search.resultsFound', { count: searchResults.length })}
+          </GSText>
+          <FlatList
+            key="products-grid"
+            data={searchResults}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.productsList}
+            renderItem={({ item }) => (
+              <ProductCard
+                product={item}
+                onPress={() => handleProductPress(item)}
+                onAddToCart={() => handleAddToCart(item)}
+              />
+            )}
+          />
+        </>
+      );
+    }
+
+    if (activeTab === 'sellers') {
+      if (sellers.length === 0) return renderEmptyState();
+      return (
+        <>
+          <GSText variant="body" color="textSecondary" style={styles.resultsCount}>
+            {t('search.resultsFound', { count: sellersTotal })}
+          </GSText>
+          <FlatList
+            key="sellers-list"
+            data={sellers}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.usersList}
+            renderItem={({ item }) => (
+              <SellerCard seller={item} onPress={() => handleSellerPress(item)} />
+            )}
+          />
+        </>
+      );
+    }
+
+    if (activeTab === 'creators') {
+      if (creators.length === 0) return renderEmptyState();
+      return (
+        <>
+          <GSText variant="body" color="textSecondary" style={styles.resultsCount}>
+            {t('search.resultsFound', { count: creatorsTotal })}
+          </GSText>
+          <FlatList
+            key="creators-list"
+            data={creators}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.usersList}
+            renderItem={({ item }) => (
+              <CreatorCard creator={item} onPress={() => handleCreatorPress(item)} />
+            )}
+          />
+        </>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Search Header */}
       <View style={styles.searchHeader}>
         <GSInput
-          placeholder={t('home.searchProducts')}
+          placeholder={t('search.searchAll')}
           value={searchText}
           onChangeText={handleSearchTextChange}
           containerStyle={styles.searchInput}
           inputStyle={{ color: '#1A1A1A' }}
           autoFocus={true}
         />
-        <TouchableOpacity
-          style={[styles.filterButton, { borderColor: theme.colors.gray300 }]}
-          onPress={() => setIsFilterModalVisible(true)}
-        >
-          <GSText variant="body">{t('search.filters')}</GSText>
-          {activeFilterCount > 0 && (
-            <View style={[styles.filterBadge, { backgroundColor: theme.colors.primary }]}>
-              <GSText variant="caption" color="white" weight="bold">
-                {activeFilterCount}
-              </GSText>
-            </View>
-          )}
-        </TouchableOpacity>
+        {activeTab === 'products' && (
+          <TouchableOpacity
+            style={[styles.filterButton, { borderColor: theme.colors.gray300 }]}
+            onPress={() => setIsFilterModalVisible(true)}
+          >
+            <Ionicons name="options-outline" size={20} color={theme.colors.text} />
+            {activeFilterCount > 0 && (
+              <View style={[styles.filterBadge, { backgroundColor: theme.colors.primary }]}>
+                <GSText variant="caption" color="white" weight="bold">
+                  {activeFilterCount}
+                </GSText>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Active Filters */}
-      {activeFilterCount > 0 && (
+      {/* Tabs */}
+      <View style={styles.tabsContainer}>
+        {tabs.map((tab) => (
+          <TouchableOpacity
+            key={tab.key}
+            style={[
+              styles.tab,
+              activeTab === tab.key && { borderBottomColor: theme.colors.primary, borderBottomWidth: 2 },
+            ]}
+            onPress={() => setActiveTab(tab.key)}
+          >
+            <GSText
+              variant="body"
+              weight={activeTab === tab.key ? 'bold' : 'normal'}
+              color={activeTab === tab.key ? 'primary' : 'textSecondary'}
+            >
+              {tab.label}
+            </GSText>
+            {searchText.trim() && tab.count > 0 && (
+              <View style={[styles.tabBadge, { backgroundColor: activeTab === tab.key ? theme.colors.primary : theme.colors.gray300 }]}>
+                <GSText variant="caption" color={activeTab === tab.key ? 'white' : 'textSecondary'} weight="bold">
+                  {tab.count > 99 ? '99+' : tab.count}
+                </GSText>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Active Filters (only for products) */}
+      {activeTab === 'products' && activeFilterCount > 0 && (
         <View style={styles.activeFilters}>
           <TouchableOpacity
             style={styles.clearFiltersButton}
@@ -439,51 +801,7 @@ export default function SearchScreen() {
 
       {/* Search Results */}
       <View style={styles.resultsContainer}>
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <GSText variant="body" style={styles.loadingText}>{t('search.searching')}</GSText>
-          </View>
-        ) : searchResults.length > 0 ? (
-          <>
-            <GSText variant="body" color="textSecondary" style={styles.resultsCount}>
-              {t('search.resultsFound', { count: searchResults.length })}
-            </GSText>
-            <FlatList
-              data={searchResults}
-              keyExtractor={(item) => item.id}
-              numColumns={2}
-              columnWrapperStyle={styles.row}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.productsList}
-              renderItem={({ item }) => (
-                <ProductCard
-                  product={item}
-                  onPress={() => handleProductPress(item)}
-                  onAddToCart={() => handleAddToCart(item)}
-                />
-              )}
-            />
-          </>
-        ) : searchText.trim() ? (
-          <View style={styles.noResultsContainer}>
-            <GSText variant="h3" weight="bold" color="textSecondary">
-              {t('search.noProductsFound')}
-            </GSText>
-            <GSText variant="body" color="textSecondary" style={styles.noResultsText}>
-              {t('search.tryAdjusting')}
-            </GSText>
-          </View>
-        ) : (
-          <View style={styles.emptyStateContainer}>
-            <GSText variant="h3" weight="bold" color="textSecondary">
-              {t('search.searchForProducts')}
-            </GSText>
-            <GSText variant="body" color="textSecondary" style={styles.emptyStateText}>
-              {t('search.enterProductName')}
-            </GSText>
-          </View>
-        )}
+        {renderContent()}
       </View>
 
       {/* Filter Modal */}
@@ -505,6 +823,7 @@ const styles = StyleSheet.create({
   searchHeader: {
     flexDirection: 'row',
     padding: 16,
+    paddingBottom: 8,
     gap: 12,
     alignItems: 'center',
   },
@@ -513,8 +832,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 12,
     borderWidth: 1,
     borderRadius: 8,
     position: 'relative',
@@ -529,9 +847,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  tabsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 6,
+  },
+  tabBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 20,
+    alignItems: 'center',
+  },
   activeFilters: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    paddingVertical: 8,
   },
   clearFiltersButton: {
     alignSelf: 'flex-start',
@@ -541,7 +880,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   resultsCount: {
-    marginBottom: 12,
+    marginVertical: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -572,6 +911,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   productsList: {
+    paddingBottom: 20,
+  },
+  usersList: {
     paddingBottom: 20,
   },
   row: {
@@ -618,7 +960,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   productName: {
-    minHeight: 40, // 2 lines minimum
+    minHeight: 40,
   },
   priceContainer: {
     flexDirection: 'row',
@@ -637,7 +979,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-
+  // User cards (sellers & creators)
+  userCard: {
+    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userAvatarContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  userAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  userAvatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  userInfo: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: 2,
+  },
+  userStats: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  typeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
   // Filter Modal Styles
   filterModal: {
     flex: 1,

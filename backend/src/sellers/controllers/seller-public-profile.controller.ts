@@ -13,11 +13,10 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger'
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard'
 import { OptionalJwtAuthGuard } from '../../auth/guards/optional-jwt-auth.guard'
 import { SellerPublicProfileService } from '../services/seller-public-profile.service'
 import { PaginationQueryDto, StreamsQueryDto } from '../dto/seller-follow.dto'
-import { SellerPublicProfileDto, SellerPublicProfileResponseDto } from '../dto/seller-public-profile.dto'
+import { SellerPublicProfileResponseDto } from '../dto/seller-public-profile.dto'
 
 @ApiTags('Seller Public Profile')
 @Controller('sellers')

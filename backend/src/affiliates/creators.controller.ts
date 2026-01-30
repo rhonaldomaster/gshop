@@ -102,6 +102,19 @@ export class CreatorsController {
     }
   }
 
+  // ========== SEARCH (must be before :creatorId routes) ==========
+
+  @Get('search')
+  @ApiOperation({ summary: 'Search creators' })
+  async searchCreators(
+    @Query('q') query: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+    @Query('category') category?: string,
+  ) {
+    return this.creatorProfileService.searchCreators(query, category, page || 1, limit || 20)
+  }
+
   // ========== PROFILE MANAGEMENT ==========
 
   @Get('profile/:username')
@@ -186,17 +199,6 @@ export class CreatorsController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
   ) {
     return this.creatorProfileService.getFollowing(creatorId, page || 1, limit || 20)
-  }
-
-  @Get('search')
-  @ApiOperation({ summary: 'Search creators' })
-  async searchCreators(
-    @Query('q') query: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
-    @Query('category') category?: string,
-  ) {
-    return this.creatorProfileService.searchCreators(query, category, page || 1, limit || 20)
   }
 
   // ========== CONTENT MANAGEMENT ==========
