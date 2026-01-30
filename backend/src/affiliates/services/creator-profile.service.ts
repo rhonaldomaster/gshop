@@ -478,4 +478,31 @@ export class CreatorProfileService {
       }
     }
   }
+
+  /**
+   * Get popular/featured creators ordered by followers and activity
+   */
+  async getPopularCreators(limit: number = 10): Promise<any[]> {
+    const creators = await this.affiliateRepository
+      .createQueryBuilder('affiliate')
+      .where('affiliate.isProfilePublic = :isPublic', { isPublic: true })
+      .andWhere('affiliate.isActive = :isActive', { isActive: true })
+      .andWhere('affiliate.status = :status', { status: 'approved' })
+      .orderBy('affiliate.followersCount', 'DESC')
+      .addOrderBy('affiliate.totalViews', 'DESC')
+      .take(limit)
+      .getMany()
+
+    return creators.map(creator => ({
+      id: creator.id,
+      username: creator.username,
+      name: creator.name,
+      bio: creator.bio,
+      avatarUrl: creator.avatarUrl,
+      location: creator.location,
+      isVerified: creator.isVerified,
+      followersCount: creator.followersCount || 0,
+      videosCount: creator.videosCount || 0,
+    }))
+  }
 }

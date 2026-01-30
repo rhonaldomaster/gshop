@@ -68,6 +68,20 @@ class SearchService {
       totalPages: data.pagination?.totalPages ?? data.totalPages ?? 1,
     };
   }
+
+  async getPopularSellers(limit: number = 10): Promise<SellerSearchResult[]> {
+    const response = await api.get<SellerSearchResult[]>('/sellers/popular', {
+      params: { limit },
+    });
+    return response.data;
+  }
+
+  async getPopularCreators(limit: number = 10): Promise<CreatorSearchResult[]> {
+    const response = await api.get<CreatorSearchResult[]>('/creators/popular', {
+      params: { limit },
+    });
+    return response.data;
+  }
 }
 
 export const searchService = new SearchService();

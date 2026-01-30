@@ -134,7 +134,9 @@
     "featuredProducts": "Productos destacados",
     "noProducts": "No hay productos disponibles",
     "quickActions": "Acciones rápidas",
-    "payments": "Pagos"
+    "payments": "Pagos",
+    "popularSellers": "Vendedores populares",
+    "popularCreators": "Creadores destacados"
   },
   "products": {
     "title": "Productos",

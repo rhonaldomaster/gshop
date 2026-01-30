@@ -102,7 +102,7 @@ export class CreatorsController {
     }
   }
 
-  // ========== SEARCH (must be before :creatorId routes) ==========
+  // ========== SEARCH & POPULAR (must be before :creatorId routes) ==========
 
   @Get('search')
   @ApiOperation({ summary: 'Search creators' })
@@ -113,6 +113,14 @@ export class CreatorsController {
     @Query('category') category?: string,
   ) {
     return this.creatorProfileService.searchCreators(query, category, page || 1, limit || 20)
+  }
+
+  @Get('popular')
+  @ApiOperation({ summary: 'Get popular creators' })
+  async getPopularCreators(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
+  ) {
+    return this.creatorProfileService.getPopularCreators(limit || 10)
   }
 
   // ========== PROFILE MANAGEMENT ==========

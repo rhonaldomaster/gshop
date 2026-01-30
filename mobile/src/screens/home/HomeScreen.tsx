@@ -22,6 +22,7 @@ import GSButton from '../../components/ui/GSButton';
 import { Ionicons } from '@expo/vector-icons';
 import { HomeStackParamList } from '../../navigation/HomeNavigator';
 import { Product, Category } from '../../services/products.service';
+import { searchService, SellerSearchResult, CreatorSearchResult } from '../../services/search.service';
 import { normalizeImageUrl } from '../../config/api.config';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
@@ -57,6 +58,8 @@ export default function HomeScreen() {
 
   // Local state
   const [refreshing, setRefreshing] = useState(false);
+  const [popularSellers, setPopularSellers] = useState<SellerSearchResult[]>([]);
+  const [popularCreators, setPopularCreators] = useState<CreatorSearchResult[]>([]);
 
   // Load data on mount
   useEffect(() => {
@@ -67,7 +70,27 @@ export default function HomeScreen() {
     await Promise.all([
       loadTrendingProducts(true),
       loadCategories(true),
+      loadPopularSellers(),
+      loadPopularCreators(),
     ]);
+  };
+
+  const loadPopularSellers = async () => {
+    try {
+      const sellers = await searchService.getPopularSellers(6);
+      setPopularSellers(sellers);
+    } catch (error) {
+      console.error('Failed to load popular sellers:', error);
+    }
+  };
+
+  const loadPopularCreators = async () => {
+    try {
+      const creators = await searchService.getPopularCreators(6);
+      setPopularCreators(creators);
+    } catch (error) {
+      console.error('Failed to load popular creators:', error);
+    }
   };
 
   const onRefresh = async () => {
@@ -268,6 +291,120 @@ export default function HomeScreen() {
             }
           />
         </View>
+
+        {/* Popular Sellers */}
+        {popularSellers.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <GSText variant="h4" weight="bold">
+                {t('home.popularSellers')}
+              </GSText>
+              <TouchableOpacity onPress={() => navigation.navigate('Search', { initialTab: 'sellers' } as any)}>
+                <GSText variant="body" style={{ color: theme.colors.primary }}>
+                  {t('common.viewAll')}
+                </GSText>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={popularSellers}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.productsContainer}
+              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.userCard}
+                  onPress={() => (navigation as any).navigate('SellerProfile', { sellerId: item.id })}
+                >
+                  <View style={styles.userAvatarContainer}>
+                    {item.logoUrl ? (
+                      <Image
+                        source={{ uri: normalizeImageUrl(item.logoUrl) || '' }}
+                        style={styles.userAvatar}
+                      />
+                    ) : (
+                      <View style={[styles.userAvatarPlaceholder, { backgroundColor: '#10b981' }]}>
+                        <GSText variant="h4" color="white" weight="bold">
+                          {item.businessName.charAt(0).toUpperCase()}
+                        </GSText>
+                      </View>
+                    )}
+                    {item.isVerified && (
+                      <View style={[styles.verifiedBadge, { backgroundColor: theme.colors.primary }]}>
+                        <Ionicons name="checkmark" size={8} color="white" />
+                      </View>
+                    )}
+                  </View>
+                  <GSText variant="caption" weight="semiBold" numberOfLines={1} style={styles.userName}>
+                    {item.businessName}
+                  </GSText>
+                  <GSText variant="caption" color="textSecondary">
+                    {item.followersCount} {t('social.followers')}
+                  </GSText>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
+
+        {/* Popular Creators */}
+        {popularCreators.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <GSText variant="h4" weight="bold">
+                {t('home.popularCreators')}
+              </GSText>
+              <TouchableOpacity onPress={() => navigation.navigate('Search', { initialTab: 'creators' } as any)}>
+                <GSText variant="body" style={{ color: theme.colors.primary }}>
+                  {t('common.viewAll')}
+                </GSText>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={popularCreators}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.productsContainer}
+              ItemSeparatorComponent={() => <View style={{ width: 12 }} />}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.userCard}
+                  onPress={() => (navigation as any).navigate('AffiliateProfile', { affiliateId: item.id })}
+                >
+                  <View style={styles.userAvatarContainer}>
+                    {item.avatarUrl ? (
+                      <Image
+                        source={{ uri: normalizeImageUrl(item.avatarUrl) || '' }}
+                        style={styles.userAvatar}
+                      />
+                    ) : (
+                      <View style={[styles.userAvatarPlaceholder, { backgroundColor: '#8b5cf6' }]}>
+                        <GSText variant="h4" color="white" weight="bold">
+                          {item.name.charAt(0).toUpperCase()}
+                        </GSText>
+                      </View>
+                    )}
+                    {item.isVerified && (
+                      <View style={[styles.verifiedBadge, { backgroundColor: theme.colors.primary }]}>
+                        <Ionicons name="checkmark" size={8} color="white" />
+                      </View>
+                    )}
+                  </View>
+                  <GSText variant="caption" weight="semiBold" numberOfLines={1} style={styles.userName}>
+                    {item.name}
+                  </GSText>
+                  <GSText variant="caption" color="textSecondary">
+                    @{item.username}
+                  </GSText>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        )}
 
         {/* Quick Actions */}
         <View style={[styles.section, styles.lastSection]}>
@@ -480,6 +617,45 @@ const styles = StyleSheet.create({
   emptyContainer: {
     padding: 40,
     alignItems: 'center',
+  },
+  userCard: {
+    width: 100,
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 12,
+    borderRadius: 12,
+  },
+  userAvatarContainer: {
+    position: 'relative',
+    marginBottom: 8,
+  },
+  userAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  userAvatarPlaceholder: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  userName: {
+    textAlign: 'center',
+    maxWidth: 80,
   },
   floatingWalletButton: {
     position: 'absolute',

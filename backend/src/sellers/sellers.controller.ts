@@ -152,6 +152,15 @@ export class SellersController {
     return this.sellersService.searchSellers(query, page || 1, limit || 20)
   }
 
+  @Get('popular')
+  @ApiOperation({ summary: 'Get popular sellers' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of sellers to return' })
+  async getPopularSellers(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
+  ) {
+    return this.sellersService.getPopularSellers(limit || 10)
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get seller by ID' })
   async findOne(@Param('id') id: string) {
