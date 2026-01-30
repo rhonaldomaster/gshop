@@ -290,4 +290,6 @@ storybook-static
 .abacus.*
 .vercel
 
-.claude
+# Claude Code - ignore settings but keep skills
+.claude/*
+!.claude/skills/
