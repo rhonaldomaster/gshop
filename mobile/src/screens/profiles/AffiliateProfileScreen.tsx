@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useAffiliateProfile, useAffiliateStreams, useFollowAffiliate } from '../../hooks/useAffiliateProfile';
 import { ProfileHeader, ProfileTabs, ProfileTab, StreamGrid } from '../../components/profiles';
 import { ProfileHeaderSkeleton } from '../../components/ui/Skeleton';
@@ -42,6 +43,7 @@ const getTranslatedTabs = (t: (key: string) => string): ProfileTab[] => [
 export default function AffiliateProfileScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const route = useRoute<AffiliateProfileScreenRouteProp>();
   const { affiliateId } = route.params;
@@ -55,7 +57,7 @@ export default function AffiliateProfileScreen() {
     isLoading: isProfileLoading,
     error: profileError,
     refresh: refreshProfile,
-  } = useAffiliateProfile(affiliateId);
+  } = useAffiliateProfile(affiliateId, user?.id);
 
   const {
     streams: liveStreams,
@@ -95,10 +97,17 @@ export default function AffiliateProfileScreen() {
   const handleFollow = useCallback(async () => {
     try {
       await follow();
-    } catch (error) {
-      Alert.alert(t('common.error'), t('profile.failedToFollow'));
+      // Refresh profile to get updated follow status
+      await refreshProfile();
+    } catch (error: any) {
+      // Handle "already following" case gracefully
+      if (error?.response?.status === 409) {
+        await refreshProfile();
+      } else {
+        Alert.alert(t('common.error'), t('profile.failedToFollow'));
+      }
     }
-  }, [follow, t]);
+  }, [follow, refreshProfile, t]);
 
   const handleUnfollow = useCallback(async () => {
     Alert.alert(
@@ -112,6 +121,8 @@ export default function AffiliateProfileScreen() {
           onPress: async () => {
             try {
               await unfollow();
+              // Refresh profile to get updated follow status
+              await refreshProfile();
             } catch (error) {
               Alert.alert(t('common.error'), t('profile.failedToUnfollow'));
             }
@@ -119,7 +130,7 @@ export default function AffiliateProfileScreen() {
         },
       ]
     );
-  }, [unfollow, profile, t]);
+  }, [unfollow, refreshProfile, profile, t]);
 
   const handleShare = useCallback(async () => {
     try {
