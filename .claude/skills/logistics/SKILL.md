@@ -1,3 +1,8 @@
+---
+name: logistics
+description: Shipping, returns, guest checkout
+---
+
 # Logistics & Shipping System
 
 Seller-managed shipping with configurable rates and manual tracking.
@@ -97,8 +102,8 @@ POST /orders/guest                   - Guest order
 
 ```typescript
 type DocumentType = 'CC' | 'CE' | 'PA' | 'TI';
-// CC = Cédula de Ciudadanía
-// CE = Cédula de Extranjería
+// CC = Cedula de Ciudadania
+// CE = Cedula de Extranjeria
 // PA = Pasaporte
 // TI = Tarjeta de Identidad
 ```

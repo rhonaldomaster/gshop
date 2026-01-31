@@ -1,3 +1,8 @@
+---
+name: api-docs
+description: Complete API endpoints reference for GSHOP backend
+---
+
 # GSHOP API Endpoints Reference
 
 Base URL: `http://localhost:3000/api/v1`

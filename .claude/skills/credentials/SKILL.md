@@ -1,3 +1,8 @@
+---
+name: credentials
+description: Test login credentials for development environment
+---
+
 # Test Credentials
 
 After running `npm run db:seed` from the backend directory:

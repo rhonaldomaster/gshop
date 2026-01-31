@@ -1,3 +1,8 @@
+---
+name: vat
+description: Colombian VAT (IVA) system - tax categories, calculation, compliance
+---
+
 # Colombian VAT (IVA) System
 
 Complete implementation of Colombian tax legislation (DIAN) for VAT management in e-commerce. Unlike international systems where tax is added at checkout, Colombian law requires VAT to be **ALWAYS included** in the displayed price.

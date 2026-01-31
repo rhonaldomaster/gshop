@@ -1,3 +1,8 @@
+---
+name: live
+description: Live shopping - streaming, WebSocket, affiliate attribution
+---
+
 # Live Shopping System
 
 Live streaming infrastructure with WebSocket support for sellers and affiliates.

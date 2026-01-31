@@ -1,3 +1,8 @@
+---
+name: phase3
+description: Marketplace, Payments V2, AI recommendations
+---
+
 # Phase 3 Features
 
 ## Marketplace Global System

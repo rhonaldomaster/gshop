@@ -1,3 +1,8 @@
+---
+name: migrations
+description: Database migration guide for TypeORM
+---
+
 # Database Migrations Guide
 
 **ALWAYS create a migration when modifying database entities or schema.**

@@ -1,3 +1,8 @@
+---
+name: storage
+description: File upload strategy - R2/local storage, Multer config
+---
+
 # File Upload & Storage System
 
 GSHOP uses a **dual-provider storage system** with automatic detection.
@@ -12,8 +17,8 @@ MulterModule.register({
 })
 
 // StorageService auto-selects provider
-if (R2_ACCESS_KEY_ID exists) → Cloudflare R2 (Production)
-else → Local Storage (Development)
+if (R2_ACCESS_KEY_ID exists) -> Cloudflare R2 (Production)
+else -> Local Storage (Development)
 ```
 
 ## Storage Providers
