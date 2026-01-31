@@ -29,7 +29,9 @@ interface LiveStreamData {
   status: string;
   hlsUrl: string;
   hostType: 'seller' | 'affiliate';
+  sellerId?: string;
   seller?: {
+    id: string;
     businessName: string;
   };
   affiliate?: {
@@ -399,7 +401,17 @@ export default function LiveStreamScreen({ route, navigation }: any) {
               <MaterialIcons name="picture-in-picture-alt" size={20} color="white" />
             </TouchableOpacity>
 
-            <View style={styles.streamInfo}>
+            <TouchableOpacity
+              style={styles.streamInfo}
+              onPress={() => {
+                if (stream.hostType === 'seller' && (stream.seller?.id || stream.sellerId)) {
+                  navigation.navigate('SellerProfile' as any, { sellerId: stream.seller?.id || stream.sellerId });
+                } else if (stream.hostType === 'affiliate' && stream.affiliate?.id) {
+                  navigation.navigate('AffiliateProfile' as any, { affiliateId: stream.affiliate.id });
+                }
+              }}
+              activeOpacity={0.7}
+            >
               <Text style={styles.streamTitle} numberOfLines={1}>
                 {stream.title}
               </Text>
@@ -414,8 +426,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
                     {stream.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
                   </Text>
                 </View>
+                <MaterialIcons name="chevron-right" size={16} color="rgba(255, 255, 255, 0.6)" />
               </View>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.viewerInfo}>
               <MaterialIcons name="visibility" size={16} color="white" />

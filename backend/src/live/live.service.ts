@@ -57,9 +57,31 @@ export class LiveService {
       }
     }
 
-    // Create AWS IVS channel (automatically uses mock or real based on config)
-    const channelName = `${hostType}-${hostId}-${Date.now()}`;
-    const ivsChannel = await this.ivsService.createChannel(channelName);
+    // Try to reuse an existing IVS channel from ended streams first
+    let ivsChannel = await this.tryReuseExistingChannel(hostId, hostType);
+
+    // If no reusable channel found, try to create a new one
+    if (!ivsChannel) {
+      try {
+        const channelName = `${hostType}-${hostId}-${Date.now()}`;
+        ivsChannel = await this.ivsService.createChannel(channelName);
+      } catch (error) {
+        // If quota exceeded, try harder to find a reusable channel
+        if (error.message?.includes('quota') || error.Code === 'ServiceQuotaExceededException') {
+          console.log('[Live Service] AWS IVS quota exceeded, attempting to reuse any available channel...');
+          ivsChannel = await this.tryReuseAnyAvailableChannel();
+
+          if (!ivsChannel) {
+            throw new BadRequestException(
+              'AWS IVS stream quota exceeded and no reusable channels available. ' +
+              'Please delete some old streams or contact support to increase your quota.'
+            );
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Generate thumbnail URL
     const thumbnailUrl = this.ivsService.getThumbnailUrl(ivsChannel.channel.arn);
@@ -84,6 +106,164 @@ export class LiveService {
     return savedStream;
   }
 
+  /**
+   * Try to reuse an IVS channel from ended/cancelled/old scheduled streams belonging to the same host
+   */
+  private async tryReuseExistingChannel(hostId: string, hostType: HostType): Promise<any> {
+    // First try ended/cancelled streams
+    const whereConditionEnded = hostType === HostType.SELLER
+      ? { sellerId: hostId, status: In([StreamStatus.ENDED, StreamStatus.CANCELLED]) }
+      : { affiliateId: hostId, status: In([StreamStatus.ENDED, StreamStatus.CANCELLED]) };
+
+    let reusableStream = await this.liveStreamRepository.findOne({
+      where: {
+        ...whereConditionEnded,
+        ivsChannelArn: Not(IsNull()),
+        streamKey: Not(IsNull()),
+      },
+      order: { updatedAt: 'DESC' },
+    });
+
+    // If no ended stream, try old scheduled streams (older than 24 hours)
+    if (!reusableStream) {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const whereConditionScheduled = hostType === HostType.SELLER
+        ? { sellerId: hostId, status: StreamStatus.SCHEDULED }
+        : { affiliateId: hostId, status: StreamStatus.SCHEDULED };
+
+      reusableStream = await this.liveStreamRepository
+        .createQueryBuilder('stream')
+        .where(whereConditionScheduled)
+        .andWhere('stream."ivsChannelArn" IS NOT NULL')
+        .andWhere('stream."streamKey" IS NOT NULL')
+        .andWhere('stream."createdAt" < :oneDayAgo', { oneDayAgo })
+        .orderBy('stream."createdAt"', 'ASC')
+        .getOne();
+    }
+
+    if (!reusableStream) {
+      return null;
+    }
+
+    console.log(`[Live Service] Reusing IVS channel from stream ${reusableStream.id} (status: ${reusableStream.status})`);
+
+    // Clear the old stream's IVS credentials so it can't be reused again
+    await this.liveStreamRepository.update(reusableStream.id, {
+      ivsChannelArn: null,
+      streamKey: null,
+      rtmpUrl: null,
+      hlsUrl: null,
+      status: StreamStatus.CANCELLED, // Mark as cancelled if it was scheduled
+    });
+
+    return {
+      channel: {
+        arn: reusableStream.ivsChannelArn,
+        ingestEndpoint: reusableStream.rtmpUrl,
+        playbackUrl: reusableStream.hlsUrl,
+      },
+      streamKey: {
+        value: reusableStream.streamKey,
+      },
+    };
+  }
+
+  /**
+   * Try to reuse any available IVS channel from ended/cancelled/old scheduled streams (fallback when quota exceeded)
+   */
+  private async tryReuseAnyAvailableChannel(): Promise<any> {
+    // First try ended/cancelled streams from database
+    let reusableStream = await this.liveStreamRepository.findOne({
+      where: {
+        status: In([StreamStatus.ENDED, StreamStatus.CANCELLED]),
+        ivsChannelArn: Not(IsNull()),
+        streamKey: Not(IsNull()),
+      },
+      order: { updatedAt: 'DESC' },
+    });
+
+    // If no ended stream, try old scheduled streams (older than 1 hour for emergency fallback)
+    if (!reusableStream) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+      reusableStream = await this.liveStreamRepository
+        .createQueryBuilder('stream')
+        .where('stream.status = :status', { status: StreamStatus.SCHEDULED })
+        .andWhere('stream."ivsChannelArn" IS NOT NULL')
+        .andWhere('stream."streamKey" IS NOT NULL')
+        .andWhere('stream."createdAt" < :oneHourAgo', { oneHourAgo })
+        .orderBy('stream."createdAt"', 'ASC')
+        .getOne();
+    }
+
+    if (reusableStream) {
+      console.log(`[Live Service] Emergency reuse of IVS channel from stream ${reusableStream.id} (status: ${reusableStream.status})`);
+
+      // Clear the old stream's IVS credentials
+      await this.liveStreamRepository.update(reusableStream.id, {
+        ivsChannelArn: null,
+        streamKey: null,
+        rtmpUrl: null,
+        hlsUrl: null,
+        status: StreamStatus.CANCELLED,
+      });
+
+      return {
+        channel: {
+          arn: reusableStream.ivsChannelArn,
+          ingestEndpoint: reusableStream.rtmpUrl,
+          playbackUrl: reusableStream.hlsUrl,
+        },
+        streamKey: {
+          value: reusableStream.streamKey,
+        },
+      };
+    }
+
+    // If no reusable stream in database, try to get existing channels directly from AWS IVS
+    console.log('[Live Service] No reusable streams in database, checking AWS IVS for existing channels...');
+    return this.tryReuseChannelFromAws();
+  }
+
+  /**
+   * Try to reuse an existing channel directly from AWS IVS
+   * This is called when database has no valid channels but AWS might have existing ones
+   */
+  private async tryReuseChannelFromAws(): Promise<any> {
+    try {
+      // List existing channels from AWS
+      const existingChannels = await this.ivsService.listChannels();
+
+      if (existingChannels.length === 0) {
+        console.log('[Live Service] No existing channels found in AWS IVS');
+        return null;
+      }
+
+      console.log(`[Live Service] Found ${existingChannels.length} existing channels in AWS IVS`);
+
+      // Try to get credentials for the first available channel
+      for (const channel of existingChannels) {
+        try {
+          const channelWithKey = await this.ivsService.getExistingChannelWithKey(channel.arn);
+
+          if (channelWithKey && channelWithKey.streamKey) {
+            console.log(`[Live Service] Successfully retrieved credentials for AWS channel: ${channel.arn}`);
+            return channelWithKey;
+          }
+        } catch (error) {
+          console.warn(`[Live Service] Failed to get credentials for channel ${channel.arn}: ${error.message}`);
+          continue;
+        }
+      }
+
+      console.log('[Live Service] Could not retrieve credentials for any existing AWS channel');
+      return null;
+    } catch (error) {
+      console.error('[Live Service] Error listing AWS IVS channels:', error.message);
+      return null;
+    }
+  }
+
   async createAffiliateLiveStream(affiliateId: string, dto: CreateAffiliateLiveStreamDto): Promise<LiveStream> {
     // Validate affiliate exists and is approved
     const affiliate = await this.affiliateRepository.findOne({
@@ -93,9 +273,31 @@ export class LiveService {
       throw new BadRequestException('Affiliate not found or not approved');
     }
 
-    // Create AWS IVS channel
-    const channelName = `affiliate-${affiliateId}-${Date.now()}`;
-    const ivsChannel = await this.ivsService.createChannel(channelName);
+    // Try to reuse an existing IVS channel from ended streams first
+    let ivsChannel = await this.tryReuseExistingChannel(affiliateId, HostType.AFFILIATE);
+
+    // If no reusable channel found, try to create a new one
+    if (!ivsChannel) {
+      try {
+        const channelName = `affiliate-${affiliateId}-${Date.now()}`;
+        ivsChannel = await this.ivsService.createChannel(channelName);
+      } catch (error) {
+        // If quota exceeded, try harder to find a reusable channel
+        if (error.message?.includes('quota') || error.Code === 'ServiceQuotaExceededException') {
+          console.log('[Live Service] AWS IVS quota exceeded, attempting to reuse any available channel...');
+          ivsChannel = await this.tryReuseAnyAvailableChannel();
+
+          if (!ivsChannel) {
+            throw new BadRequestException(
+              'AWS IVS stream quota exceeded and no reusable channels available. ' +
+              'Please delete some old streams or contact support to increase your quota.'
+            );
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
 
     // Generate thumbnail URL
     const thumbnailUrl = this.ivsService.getThumbnailUrl(ivsChannel.channel.arn);

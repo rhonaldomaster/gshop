@@ -14,37 +14,26 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { api } from '../../services/api';
+import { normalizeImageUrl } from '../../config/api.config';
 
-interface Following {
+type FollowedUserType = 'seller' | 'affiliate' | 'unknown';
+
+interface FollowingItem {
   id: string;
-  type: 'seller' | 'affiliate';
-  seller?: {
-    id: string;
-    businessName: string;
-    profileImage?: string;
-    productCount: number;
-    rating: number;
-    isLiveNow?: boolean;
-  };
-  affiliate?: {
-    id: string;
-    name: string;
-    profileImage?: string;
-    followerCount: number;
-    commissionRate: number;
-    isLiveNow?: boolean;
-  };
+  name: string;
+  avatar?: string;
   followedAt: string;
-  notifications: boolean;
+  type: FollowedUserType;
+  profileId?: string;
 }
 
 export default function FollowingScreen({ navigation }: any) {
   const { t } = useTranslation('translation');
-  const [following, setFollowing] = useState<Following[]>([]);
+  const [following, setFollowing] = useState<FollowingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'sellers' | 'affiliates'>('all');
 
   useEffect(() => {
     fetchFollowing();
@@ -52,10 +41,9 @@ export default function FollowingScreen({ navigation }: any) {
 
   const fetchFollowing = async () => {
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/users/following`);
-      if (response.ok) {
-        const data = await response.json();
-        setFollowing(data);
+      const response = await api.get<{ following: FollowingItem[]; total: number }>('/followers/following');
+      if (response.data?.following) {
+        setFollowing(response.data.following);
       }
     } catch (error) {
       console.error('Failed to fetch following:', error);
@@ -70,7 +58,7 @@ export default function FollowingScreen({ navigation }: any) {
     fetchFollowing();
   };
 
-  const unfollowUser = async (followingId: string, name: string) => {
+  const unfollowUser = async (streamerId: string, name: string) => {
     Alert.alert(
       t('social.unfollow'),
       t('social.unfollowConfirm', { name }),
@@ -82,18 +70,9 @@ export default function FollowingScreen({ navigation }: any) {
           onPress: async () => {
             try {
               // Optimistically update UI
-              setFollowing(prev => prev.filter(item => item.id !== followingId));
+              setFollowing(prev => prev.filter(item => item.id !== streamerId));
 
-              const response = await fetch(
-                `${process.env.API_BASE_URL}/users/following/${followingId}`,
-                { method: 'DELETE' }
-              );
-
-              if (!response.ok) {
-                // If API fails, revert the change
-                fetchFollowing();
-                Alert.alert(t('common.error'), t('social.unfollowError'));
-              }
+              await api.delete(`/followers/${streamerId}/follow`);
             } catch (error) {
               console.error('Failed to unfollow:', error);
               fetchFollowing();
@@ -105,87 +84,28 @@ export default function FollowingScreen({ navigation }: any) {
     );
   };
 
-  const toggleNotifications = async (followingId: string, currentState: boolean) => {
-    try {
-      setFollowing(prev => prev.map(item =>
-        item.id === followingId
-          ? { ...item, notifications: !currentState }
-          : item
-      ));
-
-      const response = await fetch(
-        `${process.env.API_BASE_URL}/users/following/${followingId}/notifications`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notifications: !currentState }),
-        }
-      );
-
-      if (!response.ok) {
-        // Revert on failure
-        setFollowing(prev => prev.map(item =>
-          item.id === followingId
-            ? { ...item, notifications: currentState }
-            : item
-        ));
-        Alert.alert(t('common.error'), t('social.notificationError'));
-      }
-    } catch (error) {
-      console.error('Failed to toggle notifications:', error);
-    }
-  };
-
-  const navigateToProfile = (item: Following) => {
-    if (item.type === 'seller') {
-      navigation.navigate('SellerProfile', { sellerId: item.seller?.id });
+  const navigateToProfile = (item: FollowingItem) => {
+    if (item.type === 'affiliate') {
+      navigation.navigate('AffiliateProfile', { affiliateId: item.profileId || item.id });
     } else {
-      navigation.navigate('AffiliateProfile', { affiliateId: item.affiliate?.id });
+      navigation.navigate('SellerProfile', { sellerId: item.profileId || item.id });
     }
   };
 
   const getFilteredData = () => {
     let filtered = following;
 
-    // Filter by tab
-    if (activeTab !== 'all') {
-      filtered = filtered.filter(item => item.type === activeTab.slice(0, -1));
-    }
-
     // Filter by search
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(item => {
-        const name = item.type === 'seller'
-          ? item.seller?.businessName.toLowerCase()
-          : item.affiliate?.name.toLowerCase();
-        return name?.includes(query);
-      });
+      filtered = filtered.filter(item => item.name.toLowerCase().includes(query));
     }
 
     return filtered;
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <View style={styles.starsContainer}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <MaterialIcons
-            key={star}
-            name={star <= rating ? "star" : "star-border"}
-            size={12}
-            color={star <= rating ? "#fbbf24" : "#d1d5db"}
-          />
-        ))}
-      </View>
-    );
-  };
-
-  const renderFollowingItem = ({ item }: { item: Following }) => {
-    const isSeller = item.type === 'seller';
-    const profile = isSeller ? item.seller! : item.affiliate!;
-    const name = isSeller ? profile.businessName || profile.name : (profile as any).name;
-    const isLive = isSeller ? item.seller?.isLiveNow : item.affiliate?.isLiveNow;
+  const renderFollowingItem = ({ item }: { item: FollowingItem }) => {
+    const avatarUrl = normalizeImageUrl(item.avatar);
 
     return (
       <TouchableOpacity
@@ -195,19 +115,13 @@ export default function FollowingScreen({ navigation }: any) {
       >
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
-            {profile.profileImage ? (
-              <Image source={{ uri: profile.profileImage }} style={styles.profileImage} />
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.profileImage} />
             ) : (
               <View style={styles.profilePlaceholder}>
                 <Text style={styles.profileInitial}>
-                  {name.charAt(0).toUpperCase()}
+                  {item.name.charAt(0).toUpperCase()}
                 </Text>
-              </View>
-            )}
-
-            {isLive && (
-              <View style={styles.liveIndicator}>
-                <Text style={styles.liveText}>LIVE</Text>
               </View>
             )}
           </View>
@@ -215,70 +129,30 @@ export default function FollowingScreen({ navigation }: any) {
           <View style={styles.profileInfo}>
             <View style={styles.nameRow}>
               <Text style={styles.profileName} numberOfLines={1}>
-                {name}
+                {item.name}
               </Text>
-              <View style={[styles.typeBadge, {
-                backgroundColor: isSeller ? '#3b82f6' : '#f59e0b'
-              }]}>
+              <View style={[
+                styles.typeBadge,
+                { backgroundColor: item.type === 'affiliate' ? '#8b5cf6' : '#10b981' }
+              ]}>
                 <Text style={styles.typeText}>
-                  {isSeller ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
+                  {item.type === 'affiliate' ? t('social.creator') : t('social.seller')}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.statsRow}>
-              {isSeller ? (
-                <>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{item.seller?.productCount}</Text>
-                    <Text style={styles.statLabel}>{t('social.products')}</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    {renderStars(item.seller?.rating || 0)}
-                    <Text style={styles.statLabel}>{t('social.rating')}</Text>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{item.affiliate?.followerCount}</Text>
-                    <Text style={styles.statLabel}>{t('social.followers')}</Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.stat}>
-                    <Text style={styles.statValue}>{item.affiliate?.commissionRate}%</Text>
-                    <Text style={styles.statLabel}>{t('social.commission')}</Text>
-                  </View>
-                </>
-              )}
-            </View>
-
             <Text style={styles.followedDate}>
-              {t('social.followingSince', { date: new Date(item.followedAt).toLocaleDateString() })}
+              {t('social.followingSince', { date: new Date(item.followedAt).toLocaleDateString('es-CO') })}
             </Text>
           </View>
         </View>
 
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={[styles.notificationButton, item.notifications && styles.notificationActive]}
-            onPress={() => toggleNotifications(item.id, item.notifications)}
-          >
-            <MaterialIcons
-              name={item.notifications ? "notifications" : "notifications-off"}
-              size={20}
-              color={item.notifications ? "#8b5cf6" : "#9ca3af"}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.unfollowButton}
-            onPress={() => unfollowUser(item.id, name)}
-          >
-            <MaterialIcons name="person-remove" size={20} color="#ef4444" />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.unfollowButton}
+          onPress={() => unfollowUser(item.id, item.name)}
+        >
+          <MaterialIcons name="person-remove" size={20} color="#ef4444" />
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -290,32 +164,6 @@ export default function FollowingScreen({ navigation }: any) {
       <Text style={styles.emptySubtitle}>
         {t('social.discoverAndFollow')}
       </Text>
-      <TouchableOpacity
-        style={styles.exploreButton}
-        onPress={() => navigation.navigate('Discover')}
-      >
-        <Text style={styles.exploreButtonText}>{t('social.exploreUsers')}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderTabs = () => (
-    <View style={styles.tabContainer}>
-      {[
-        { key: 'all', label: t('social.all'), count: following.length },
-        { key: 'sellers', label: t('social.sellers'), count: following.filter(f => f.type === 'seller').length },
-        { key: 'affiliates', label: t('social.affiliates'), count: following.filter(f => f.type === 'affiliate').length },
-      ].map((tab) => (
-        <TouchableOpacity
-          key={tab.key}
-          style={[styles.tab, activeTab === tab.key && styles.activeTab]}
-          onPress={() => setActiveTab(tab.key as any)}
-        >
-          <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
-            {tab.label} ({tab.count})
-          </Text>
-        </TouchableOpacity>
-      ))}
     </View>
   );
 
@@ -359,9 +207,6 @@ export default function FollowingScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
       </View>
-
-      {/* Tabs */}
-      {renderTabs()}
 
       <FlatList
         data={filteredData}

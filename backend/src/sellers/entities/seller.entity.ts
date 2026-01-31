@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm'
 import { Product } from '../../products/entities/product.entity'
 import { SellerLocation } from './seller-location.entity'
+import { SellerFollower } from './seller-follower.entity'
 
 export enum ShippingType {
   LOCAL = 'local',
@@ -226,4 +227,20 @@ export class Seller {
 
   @OneToMany(() => SellerLocation, location => location.seller)
   locations: SellerLocation[]
+
+  // Social/Follow fields
+  @Column({ type: 'int', default: 0 })
+  followersCount: number
+
+  @Column({ default: true })
+  isProfilePublic: boolean
+
+  @Column({ type: 'text', nullable: true })
+  profileDescription: string
+
+  @Column({ nullable: true })
+  logoUrl: string
+
+  @OneToMany(() => SellerFollower, follower => follower.seller)
+  followers: SellerFollower[]
 }

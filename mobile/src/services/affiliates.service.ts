@@ -45,24 +45,41 @@ export interface CreatorProfile {
 export interface DashboardStats {
   profile: {
     followersCount: number;
+    followingCount: number;
     totalViews: number;
-    engagementRate: number;
+    videosCount: number;
+    liveStreamsCount: number;
+    totalSales: number;
+    productsPromoted: number;
   };
   earnings: {
     totalEarnings: number;
     availableBalance: number;
-    pendingEarnings: number;
-    monthlyEarnings: number;
+    pendingBalance: number;
+    commissionRate: number;
+    thisMonthEarnings: number;
+    lastMonthEarnings: number;
   };
   content: {
     totalVideos: number;
-    totalViews: number;
+    publishedVideos: number;
+    draftVideos: number;
+    totalVideoViews: number;
+    totalVideoLikes: number;
     averageEngagement: number;
   };
   liveStreams: {
     totalStreams: number;
-    totalViewers: number;
+    scheduledStreams: number;
+    totalStreamViews: number;
+    totalStreamRevenue: number;
     averageViewers: number;
+  };
+  recent: {
+    newFollowers: number;
+    newComments: number;
+    newLikes: number;
+    unreadNotifications: number;
   };
 }
 

@@ -39,6 +39,7 @@ import { PixelEvent } from '../pixel/entities/pixel-event.entity';
 // Seller Entities
 import { Seller } from '../sellers/entities/seller.entity';
 import { SellerLocation } from '../sellers/entities/seller-location.entity';
+import { SellerFollower } from '../sellers/entities/seller-follower.entity';
 
 // Settings Entity
 import { Setting } from '../settings/entities/setting.entity';
@@ -85,7 +86,7 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
     // Core entities
     User, Product, Category, Order, OrderItem, Payment, Commission, WishlistItem, Cart, CartItem,
     // Seller entities
-    Seller, SellerLocation,
+    Seller, SellerLocation, SellerFollower,
     // Settings entity
     Setting,
     // Payment V2 entities

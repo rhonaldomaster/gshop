@@ -105,6 +105,34 @@ export class AwsIvsMockService implements IIvsService {
   }
 
   /**
+   * List all existing mock channels
+   */
+  async listChannels(): Promise<IVSChannel[]> {
+    console.log(`[AWS IVS MOCK] Listing ${this.channels.size} mock channels`);
+    return Array.from(this.channels.values());
+  }
+
+  /**
+   * Get an existing mock channel with its stream key
+   */
+  async getExistingChannelWithKey(channelArn: string): Promise<IVSChannelWithKey | null> {
+    const channel = this.channels.get(channelArn);
+    if (!channel) {
+      return null;
+    }
+
+    const streamKey = await this.getStreamKey(channelArn);
+    if (!streamKey) {
+      return null;
+    }
+
+    return {
+      channel,
+      streamKey,
+    };
+  }
+
+  /**
    * Simulate webhook callback when stream goes live
    * In production, this would be triggered by AWS IVS
    */

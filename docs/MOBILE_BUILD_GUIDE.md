@@ -19,6 +19,30 @@ mobile/
 └── .env                # Variables que EAS Build usa automaticamente
 ```
 
+### Configurar API URL para el APK (MUY IMPORTANTE)
+
+Las variables de `.env` no siempre se cargan correctamente durante el build. Para asegurarte de que el APK use la URL correcta de tu backend, **debes modificar directamente `app.config.js`**.
+
+**Archivo:** `mobile/app.config.js` (lineas 107 y 109)
+
+```javascript
+extra: {
+  // ...
+  API_BASE_URL: process.env.API_BASE_URL || 'https://TU-URL-AQUI.ngrok-free.app',
+  // ...
+  WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'https://TU-URL-AQUI.ngrok-free.app',
+  // ...
+}
+```
+
+**Ejemplo con ngrok:**
+```javascript
+API_BASE_URL: process.env.API_BASE_URL || 'https://00de96316117.ngrok-free.app',
+WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'https://00de96316117.ngrok-free.app',
+```
+
+> **Nota**: Cada vez que reinicies ngrok, la URL cambia. Debes actualizar `app.config.js` y regenerar el APK.
+
 ### Para Expo Go (Metodo 1)
 
 Las variables se cargan automaticamente desde `.env.development`. No necesitas hacer nada extra.

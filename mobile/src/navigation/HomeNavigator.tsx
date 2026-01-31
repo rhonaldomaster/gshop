@@ -13,6 +13,7 @@ import LiveStreamScreen from '../screens/live/LiveStreamScreen';
 import CreateLiveStreamScreen from '../screens/live/CreateLiveStreamScreen';
 import LiveStreamingScreen from '../screens/live/LiveStreamingScreen';
 import LiveStreamResultsScreen from '../screens/live/LiveStreamResultsScreen';
+import { AffiliateProfileScreen, SellerProfileScreen } from '../screens/profiles';
 
 export type HomeStackParamList = {
   HomeMain: undefined;
@@ -27,6 +28,8 @@ export type HomeStackParamList = {
   CreateLiveStream: undefined;
   LiveStreaming: { streamId: string; rtmpUrl: string; streamKey: string };
   LiveStreamResults: { streamId: string; stats: any; duration: number };
+  AffiliateProfile: { affiliateId: string; username?: string };
+  SellerProfile: { sellerId: string };
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -60,6 +63,16 @@ export default function HomeNavigator() {
       <Stack.Screen
         name="LiveStreamResults"
         component={LiveStreamResultsScreen}
+      />
+
+      {/* Profile Screens */}
+      <Stack.Screen
+        name="AffiliateProfile"
+        component={AffiliateProfileScreen}
+      />
+      <Stack.Screen
+        name="SellerProfile"
+        component={SellerProfileScreen}
       />
     </Stack.Navigator>
   );

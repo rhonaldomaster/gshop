@@ -53,6 +53,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'live' | 'scheduled'>('all');
+  const [hostTypeFilter, setHostTypeFilter] = useState<'all' | 'seller' | 'affiliate'>('all');
   const [sortBy, setSortBy] = useState<'viewers' | 'recent' | 'trending'>('viewers');
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
 
   useEffect(() => {
     filterAndSortStreams();
-  }, [streams, searchQuery, selectedFilter, sortBy]);
+  }, [streams, searchQuery, selectedFilter, hostTypeFilter, sortBy]);
 
   const fetchLiveStreams = async () => {
     try {
@@ -107,6 +108,11 @@ export default function LiveStreamsScreen({ navigation }: any) {
     // Apply status filter
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(stream => stream.status === selectedFilter);
+    }
+
+    // Apply host type filter
+    if (hostTypeFilter !== 'all') {
+      filtered = filtered.filter(stream => stream.hostType === hostTypeFilter);
     }
 
     // Apply sorting
@@ -385,6 +391,39 @@ export default function LiveStreamsScreen({ navigation }: any) {
           <MaterialIcons name="schedule" size={16} color={selectedFilter === 'scheduled' ? '#8b5cf6' : '#6b7280'} />
           <Text style={[styles.filterText, selectedFilter === 'scheduled' && styles.filterTextActive]}>
             {t('live.scheduled')}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.filterDivider} />
+
+        {/* Host Type Filters */}
+        <TouchableOpacity
+          style={[styles.filterChip, hostTypeFilter === 'all' && styles.filterChipActive]}
+          onPress={() => setHostTypeFilter('all')}
+        >
+          <MaterialIcons name="groups" size={16} color={hostTypeFilter === 'all' ? '#8b5cf6' : '#6b7280'} />
+          <Text style={[styles.filterText, hostTypeFilter === 'all' && styles.filterTextActive]}>
+            {t('live.allHosts')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, hostTypeFilter === 'seller' && styles.filterChipActive]}
+          onPress={() => setHostTypeFilter('seller')}
+        >
+          <MaterialIcons name="store" size={16} color={hostTypeFilter === 'seller' ? '#10b981' : '#6b7280'} />
+          <Text style={[styles.filterText, hostTypeFilter === 'seller' && styles.filterTextActive, hostTypeFilter === 'seller' && { color: '#10b981' }]}>
+            {t('live.sellers')}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.filterChip, hostTypeFilter === 'affiliate' && styles.filterChipActive]}
+          onPress={() => setHostTypeFilter('affiliate')}
+        >
+          <MaterialIcons name="person" size={16} color={hostTypeFilter === 'affiliate' ? '#8b5cf6' : '#6b7280'} />
+          <Text style={[styles.filterText, hostTypeFilter === 'affiliate' && styles.filterTextActive]}>
+            {t('live.creators')}
           </Text>
         </TouchableOpacity>
 

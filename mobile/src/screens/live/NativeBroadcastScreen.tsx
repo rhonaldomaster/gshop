@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -18,11 +19,14 @@ import {
   StateStatusUnion,
   type IIVSBroadcastCameraView,
   type TransmissionStatistics,
+  type IBroadcastSessionError,
 } from 'amazon-ivs-react-native-broadcast';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import io, { Socket } from 'socket.io-client';
 import * as Haptics from 'expo-haptics';
+import { Camera } from 'expo-camera';
+import { Audio } from 'expo-av';
 import { API_CONFIG } from '../../config/api.config';
 import { liveService, NativeStreamCredentials, StreamProduct, StreamStats } from '../../services/live.service';
 import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
@@ -43,6 +47,10 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
 
   // Broadcast ref
   const broadcastRef = useRef<IIVSBroadcastCameraView>(null);
+
+  // Permissions
+  const [hasPermissions, setHasPermissions] = useState<boolean | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   // Stream credentials
   const [credentials, setCredentials] = useState<NativeStreamCredentials | null>(null);
@@ -93,15 +101,53 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
   const socketRef = useRef<Socket | null>(null);
   const streamTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch credentials on mount
+  // Request permissions on mount
   useEffect(() => {
-    fetchCredentials();
-    fetchStreamProducts();
+    requestPermissions();
+  }, []);
+
+  // Fetch credentials after permissions are granted
+  useEffect(() => {
+    if (hasPermissions) {
+      fetchCredentials();
+      fetchStreamProducts();
+    }
 
     return () => {
       cleanup();
     };
-  }, []);
+  }, [hasPermissions]);
+
+  const requestPermissions = async () => {
+    try {
+      // Request camera permission
+      const cameraStatus = await Camera.requestCameraPermissionsAsync();
+      if (cameraStatus.status !== 'granted') {
+        setPermissionError(t('live.cameraPermissionRequired'));
+        setHasPermissions(false);
+        return;
+      }
+
+      // Request microphone permission
+      const audioStatus = await Audio.requestPermissionsAsync();
+      if (audioStatus.status !== 'granted') {
+        setPermissionError(t('live.microphonePermissionRequired'));
+        setHasPermissions(false);
+        return;
+      }
+
+      setHasPermissions(true);
+      setPermissionError(null);
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      setPermissionError(t('live.permissionError'));
+      setHasPermissions(false);
+    }
+  };
+
+  const openAppSettings = () => {
+    Linking.openSettings();
+  };
 
   const cleanup = () => {
     if (socketRef.current) {
@@ -115,18 +161,28 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
   const fetchCredentials = async () => {
     try {
       setLoadingCredentials(true);
+      console.log('[NativeBroadcast] ========== FETCHING CREDENTIALS ==========');
+      console.log('[NativeBroadcast] streamId:', streamId);
+      console.log('[NativeBroadcast] hostType:', hostType);
       const creds = hostType === 'seller'
         ? await liveService.getNativeCredentials(streamId)
         : await liveService.getAffiliateNativeCredentials(streamId);
+      console.log('[NativeBroadcast] ========== CREDENTIALS RECEIVED ==========');
+      console.log('[NativeBroadcast] ingestEndpoint:', creds.ingestEndpoint);
+      console.log('[NativeBroadcast] streamKey:', creds.streamKey?.substring(0, 20) + '...');
+      console.log('[NativeBroadcast] channelArn:', creds.channelArn);
+      console.log('[NativeBroadcast] playbackUrl:', creds.playbackUrl);
       setCredentials(creds);
-    } catch (error) {
-      console.error('Failed to fetch credentials:', error);
+    } catch (error: any) {
+      console.error('[NativeBroadcast] ========== FAILED TO FETCH CREDENTIALS ==========');
+      console.error('[NativeBroadcast] Error:', error?.message || error);
       Alert.alert(
         t('common.error'),
         t('live.failedToFetchCredentials'),
         [{ text: t('common.ok'), onPress: () => navigation.goBack() }]
       );
     } finally {
+      console.log('[NativeBroadcast] Setting loadingCredentials to false');
       setLoadingCredentials(false);
     }
   };
@@ -242,7 +298,7 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
 
   // Handle broadcast state changes
   const handleBroadcastStateChanged = (state: StateStatusUnion) => {
-    console.log('Broadcast state changed:', state);
+    console.log('[NativeBroadcast] handleBroadcastStateChanged called with:', state);
     setBroadcastState(state);
 
     if (state === 'CONNECTED') {
@@ -258,7 +314,7 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
 
   // Handle broadcast ready state
   const handleIsBroadcastReady = (ready: boolean) => {
-    console.log('Broadcast ready:', ready);
+    console.log('[NativeBroadcast] handleIsBroadcastReady called with:', ready);
     setIsBroadcastReady(ready);
   };
 
@@ -268,23 +324,84 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
   };
 
   // Handle broadcast errors
-  const handleBroadcastError = (error: string) => {
-    console.error('Broadcast error:', error);
-    Alert.alert(t('common.error'), error);
+  const handleBroadcastError = (error: IBroadcastSessionError) => {
+    console.error('[NativeBroadcast] Broadcast error callback:', JSON.stringify(error, null, 2));
+    const errorMessage = error?.detail || error?.type || 'Unknown broadcast error';
+    const errorType = error?.type || '';
+
+    // Ignore non-fatal state errors (like "already streaming")
+    if (!error?.isFatal && (
+      errorType === 'ERROR_INVALID_STATE' ||
+      errorMessage.toLowerCase().includes('already streaming') ||
+      errorMessage.toLowerCase().includes('initialization') ||
+      errorMessage.toLowerCase().includes('network test')
+    )) {
+      console.log('[NativeBroadcast] Ignoring non-fatal error:', errorType);
+      return;
+    }
+
+    // Show alert for fatal errors
+    if (error?.isFatal) {
+      Alert.alert(t('common.error'), errorMessage);
+    }
   };
 
   // Start broadcasting
   const startBroadcast = async () => {
-    if (!isBroadcastReady || !credentials) {
+    console.log('[NativeBroadcast] startBroadcast called');
+    console.log('[NativeBroadcast] isBroadcastReady:', isBroadcastReady);
+    console.log('[NativeBroadcast] broadcastState:', broadcastState);
+    console.log('[NativeBroadcast] isStreaming:', isStreaming);
+    console.log('[NativeBroadcast] credentials:', credentials ? {
+      ingestEndpoint: credentials.ingestEndpoint,
+      streamKey: credentials.streamKey?.substring(0, 20) + '...',
+      hasChannelArn: !!credentials.channelArn,
+    } : null);
+    console.log('[NativeBroadcast] broadcastRef.current:', !!broadcastRef.current);
+
+    // If already streaming or connecting, don't try again
+    if (isStreaming || broadcastState === 'CONNECTING' || broadcastState === 'CONNECTED') {
+      console.log('[NativeBroadcast] Already streaming or connecting, skipping start');
+      return;
+    }
+
+    if (!isBroadcastReady) {
+      console.log('[NativeBroadcast] Broadcast not ready');
       Alert.alert(t('common.error'), t('live.broadcastNotReady'));
       return;
     }
 
+    if (!credentials) {
+      console.log('[NativeBroadcast] No credentials');
+      Alert.alert(t('common.error'), t('live.failedToFetchCredentials'));
+      return;
+    }
+
+    if (!credentials.ingestEndpoint || !credentials.streamKey) {
+      console.log('[NativeBroadcast] Invalid credentials - missing ingestEndpoint or streamKey');
+      Alert.alert(t('common.error'), 'Invalid streaming credentials');
+      return;
+    }
+
+    if (!broadcastRef.current) {
+      console.log('[NativeBroadcast] No broadcast ref');
+      Alert.alert(t('common.error'), 'Broadcast view not initialized');
+      return;
+    }
+
     try {
-      broadcastRef.current?.start();
-    } catch (error) {
-      console.error('Error starting broadcast:', error);
-      Alert.alert(t('common.error'), t('live.failedToStartStream'));
+      console.log('[NativeBroadcast] Calling broadcastRef.current.start()');
+      // The SDK already has the credentials from the component props
+      // Just call start() without parameters
+      broadcastRef.current.start();
+      console.log('[NativeBroadcast] start() called successfully');
+    } catch (error: any) {
+      console.error('[NativeBroadcast] Error starting broadcast:', error);
+      console.error('[NativeBroadcast] Error details:', JSON.stringify(error, null, 2));
+      Alert.alert(
+        t('common.error'),
+        error?.message || t('live.failedToStartStream')
+      );
     }
   };
 
@@ -425,8 +542,47 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
     return `${(bps / 1000).toFixed(0)} kbps`;
   };
 
+  // Permission check state
+  if (hasPermissions === null) {
+    console.log('[NativeBroadcast] RENDER: Checking permissions...');
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#8b5cf6" />
+        <Text style={styles.loadingText}>{t('live.checkingPermissions')}</Text>
+      </View>
+    );
+  }
+
+  // Permission denied state
+  if (hasPermissions === false) {
+    console.log('[NativeBroadcast] RENDER: Permissions denied');
+    return (
+      <View style={styles.loadingContainer}>
+        <MaterialIcons name="videocam-off" size={64} color="#ef4444" />
+        <Text style={styles.errorText}>
+          {permissionError || t('live.permissionsRequired')}
+        </Text>
+        <Text style={styles.permissionHint}>
+          {t('live.permissionsHint')}
+        </Text>
+        <View style={styles.permissionButtons}>
+          <TouchableOpacity style={styles.retryButton} onPress={requestPermissions}>
+            <Text style={styles.retryButtonText}>{t('common.retry')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingsButton} onPress={openAppSettings}>
+            <Text style={styles.settingsButtonText}>{t('live.openSettings')}</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   // Loading state
   if (loadingCredentials) {
+    console.log('[NativeBroadcast] RENDER: Loading credentials...');
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#8b5cf6" />
@@ -436,6 +592,7 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
   }
 
   if (!credentials) {
+    console.log('[NativeBroadcast] RENDER: No credentials available');
     return (
       <View style={styles.loadingContainer}>
         <MaterialIcons name="error-outline" size={64} color="#ef4444" />
@@ -446,6 +603,16 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       </View>
     );
   }
+
+  // Log when about to render IVSBroadcastCameraView
+  console.log('[NativeBroadcast] Rendering IVSBroadcastCameraView with:', {
+    rtmpsUrl: credentials.ingestEndpoint,
+    streamKey: credentials.streamKey?.substring(0, 20) + '...',
+    cameraPosition,
+    isMuted,
+    isBroadcastReady,
+    broadcastState,
+  });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -627,7 +794,10 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
           {!isStreaming ? (
             <TouchableOpacity
               style={[styles.goLiveButton, !isBroadcastReady && styles.buttonDisabled]}
-              onPress={startBroadcast}
+              onPress={() => {
+                console.log('[NativeBroadcast] GO LIVE BUTTON PRESSED! isBroadcastReady:', isBroadcastReady);
+                startBroadcast();
+              }}
               disabled={!isBroadcastReady}
             >
               <MaterialIcons name="videocam" size={32} color="white" />
@@ -857,6 +1027,38 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  permissionHint: {
+    color: '#9ca3af',
+    marginTop: 12,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  permissionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  settingsButton: {
+    backgroundColor: '#374151',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  settingsButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    marginTop: 16,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+  },
+  cancelButtonText: {
+    color: '#9ca3af',
+    fontSize: 14,
   },
   broadcastView: {
     flex: 1,

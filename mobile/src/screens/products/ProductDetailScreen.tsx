@@ -346,6 +346,30 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
             {product.description}
           </GSText>
 
+          {/* Seller Info */}
+          {product.sellerId && (
+            <TouchableOpacity
+              style={styles.sellerSection}
+              onPress={() => navigation.navigate('SellerProfile' as any, { sellerId: product.sellerId })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.sellerInfo}>
+                <View style={[styles.sellerAvatar, { backgroundColor: theme.colors.gray200 }]}>
+                  <MaterialIcons name="store" size={20} color={theme.colors.gray500} />
+                </View>
+                <View style={styles.sellerDetails}>
+                  <GSText variant="body" weight="semiBold">
+                    {product.sellerName || t('products.viewSeller')}
+                  </GSText>
+                  <GSText variant="caption" color="textSecondary">
+                    {t('products.tapToViewStore')}
+                  </GSText>
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={theme.colors.gray400} />
+            </TouchableOpacity>
+          )}
+
           {/* Quantity Selector */}
           {inStock && (
             <View style={styles.quantityContainer}>
@@ -514,7 +538,33 @@ const styles = StyleSheet.create({
   },
   description: {
     lineHeight: 24,
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  sellerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  sellerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  sellerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  sellerDetails: {
+    flex: 1,
   },
   quantityContainer: {
     flexDirection: 'row',

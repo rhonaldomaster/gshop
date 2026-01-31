@@ -2,19 +2,28 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StreamerFollow } from '../database/entities/streamer-follow.entity';
-import { User } from '../database/entities/user.entity';
+import { User, UserRole } from '../database/entities/user.entity';
 import { DeviceToken } from '../notifications/device-token.entity';
+import { Seller } from '../sellers/entities/seller.entity';
+import { Affiliate } from '../affiliates/entities/affiliate.entity';
 
 export interface FollowerStats {
   followersCount: number;
   followingCount: number;
 }
 
+export type FollowedUserType = 'seller' | 'affiliate' | 'unknown';
+
 export interface FollowerInfo {
   id: string;
   name: string;
   avatar?: string;
   followedAt: Date;
+}
+
+export interface FollowingInfo extends FollowerInfo {
+  type: FollowedUserType;
+  profileId?: string;
 }
 
 @Injectable()
@@ -26,6 +35,10 @@ export class FollowersService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(DeviceToken)
     private readonly deviceTokenRepository: Repository<DeviceToken>,
+    @InjectRepository(Seller)
+    private readonly sellerRepository: Repository<Seller>,
+    @InjectRepository(Affiliate)
+    private readonly affiliateRepository: Repository<Affiliate>,
   ) {}
 
   /**
@@ -132,13 +145,13 @@ export class FollowersService {
   }
 
   /**
-   * Get streamers a user is following
+   * Get streamers a user is following with type information
    */
   async getFollowing(
     followerId: string,
     limit = 50,
     offset = 0,
-  ): Promise<{ following: FollowerInfo[]; total: number }> {
+  ): Promise<{ following: FollowingInfo[]; total: number }> {
     const [follows, total] = await this.followRepository.findAndCount({
       where: { followerId },
       relations: ['streamer'],
@@ -147,12 +160,53 @@ export class FollowersService {
       skip: offset,
     });
 
-    const following: FollowerInfo[] = follows.map((f) => ({
-      id: f.streamer.id,
-      name: `${f.streamer.firstName} ${f.streamer.lastName}`.trim() || f.streamer.email.split('@')[0],
-      avatar: f.streamer.avatar,
-      followedAt: f.createdAt,
-    }));
+    // Return early if no follows
+    if (follows.length === 0) {
+      return { following: [], total };
+    }
+
+    // Get all streamer IDs and emails to batch query sellers and affiliates
+    const streamerIds = follows.map((f) => f.streamer.id);
+    const streamerEmails = follows.map((f) => f.streamer.email);
+
+    // Batch query for affiliates (linked by userId)
+    const affiliates = await this.affiliateRepository
+      .createQueryBuilder('affiliate')
+      .where('affiliate.userId IN (:...ids)', { ids: streamerIds })
+      .getMany();
+    const affiliateByUserId = new Map(affiliates.map((a) => [a.userId, a]));
+
+    // Batch query for sellers (linked by email)
+    const sellers = await this.sellerRepository
+      .createQueryBuilder('seller')
+      .where('seller.email IN (:...emails)', { emails: streamerEmails })
+      .getMany();
+    const sellerByEmail = new Map(sellers.map((s) => [s.email, s]));
+
+    const following: FollowingInfo[] = follows.map((f) => {
+      const affiliate = affiliateByUserId.get(f.streamer.id);
+      const seller = sellerByEmail.get(f.streamer.email);
+
+      let type: FollowedUserType = 'unknown';
+      let profileId: string | undefined;
+
+      if (affiliate) {
+        type = 'affiliate';
+        profileId = affiliate.id;
+      } else if (seller || f.streamer.role === UserRole.SELLER) {
+        type = 'seller';
+        profileId = seller?.id;
+      }
+
+      return {
+        id: f.streamer.id,
+        name: `${f.streamer.firstName} ${f.streamer.lastName}`.trim() || f.streamer.email.split('@')[0],
+        avatar: f.streamer.avatar,
+        followedAt: f.createdAt,
+        type,
+        profileId,
+      };
+    });
 
     return { following, total };
   }
