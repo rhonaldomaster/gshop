@@ -204,7 +204,7 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
 
     socketRef.current.on('connect', () => {
       console.log('Socket connected');
-      socketRef.current?.emit('hostJoinStream', { streamId, hostId: route.params.hostId });
+      socketRef.current?.emit('hostJoinStream', { streamId });
     });
 
     // Listen for recent messages when joining
@@ -738,23 +738,22 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       {/* Chat Overlay */}
       {showChatOverlay && isStreaming && (
         <View style={styles.chatOverlay}>
-          {messages.length > 0 ? (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              ref={(ref) => ref?.scrollToEnd({ animated: true })}
-            >
-              {messages.slice(-5).map((msg, index) => (
-                <View key={`${msg.id}-${index}`} style={styles.chatMessage}>
-                  <Text style={styles.chatUsername}>{msg.username}:</Text>
-                  <Text style={styles.chatText}>{msg.message}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={styles.chatMessage}>
-              <Text style={styles.chatEmptyText}>{t('live.waitingForMessages')}</Text>
-            </View>
-          )}
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            ref={(ref) => ref?.scrollToEnd({ animated: true })}
+          >
+            {messages.length === 0 && (
+              <View style={styles.chatMessage}>
+                <Text style={styles.chatEmptyText}>Esperando mensajes...</Text>
+              </View>
+            )}
+            {messages.slice(-5).map((msg, index) => (
+              <View key={`${msg.id}-${index}`} style={styles.chatMessage}>
+                <Text style={styles.chatUsername}>{msg.username}:</Text>
+                <Text style={styles.chatText}>{msg.message}</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       )}
 
