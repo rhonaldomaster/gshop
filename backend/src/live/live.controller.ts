@@ -367,6 +367,13 @@ export class LiveController {
     return this.liveService.getHighlightedProducts(streamId);
   }
 
+  @Get('streams/:streamId/products')
+  @ApiOperation({ summary: 'Get all products for a stream' })
+  @ApiResponse({ status: 200, description: 'Stream products retrieved successfully' })
+  async getStreamProducts(@Param('streamId') streamId: string) {
+    return this.liveService.getActiveStreamProducts(streamId);
+  }
+
   // ==================== METRICS ENDPOINTS ====================
 
   @Get('streams/:streamId/metrics/history')

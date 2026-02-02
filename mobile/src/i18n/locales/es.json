@@ -923,6 +923,7 @@
     "productsClicked": "Productos clickeados",
     "purchases": "Compras",
     "revenue": "Ingresos",
+    "anonymous": "Anónimo",
     "endStreamConfirmation": "¿Estás seguro de que quieres finalizar esta transmisión?",
     "endNow": "Finalizar ahora",
     "failedToStartStream": "Error al iniciar la transmisión",

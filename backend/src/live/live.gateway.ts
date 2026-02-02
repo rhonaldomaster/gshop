@@ -122,6 +122,59 @@ export class LiveGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
+  @SubscribeMessage('hostJoinStream')
+  async handleHostJoinStream(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { streamId: string; hostId?: string },
+  ) {
+    try {
+      const { streamId, hostId } = data;
+
+      // Store host data in socket
+      client.data = { userId: hostId, isHost: true };
+
+      // Join socket room
+      await client.join(streamId);
+
+      // Add to active viewers (host counts as viewer for room purposes)
+      if (!this.activeViewers.has(streamId)) {
+        this.activeViewers.set(streamId, new Set());
+      }
+      this.activeViewers.get(streamId)?.add(client.id);
+
+      // Get current stream info
+      const stream = await this.liveService.findLiveStreamById(streamId);
+
+      // Get current viewer count
+      const viewerCount = this.activeViewers.get(streamId)?.size || 0;
+
+      // Send stream info to host
+      client.emit('streamInfo', {
+        stream: {
+          id: stream.id,
+          title: stream.title,
+          description: stream.description,
+          status: stream.status,
+          hlsUrl: stream.hlsUrl,
+          seller: stream.seller,
+          affiliate: stream.affiliate,
+          products: stream.products,
+        },
+        viewerCount,
+        isHost: true,
+      });
+
+      // Send recent messages to host
+      const recentMessages = await this.liveService.getStreamMessages(streamId, 50);
+      client.emit('recentMessages', recentMessages.reverse());
+
+      console.log(`Host joined stream ${streamId}`);
+
+    } catch (error) {
+      client.emit('error', { message: 'Failed to join stream as host', error: error.message });
+    }
+  }
+
   @SubscribeMessage('leaveStream')
   async handleLeaveStream(
     @ConnectedSocket() client: Socket,

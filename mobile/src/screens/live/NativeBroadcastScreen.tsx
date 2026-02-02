@@ -204,7 +204,12 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
 
     socketRef.current.on('connect', () => {
       console.log('Socket connected');
-      socketRef.current?.emit('hostJoinStream', { streamId });
+      socketRef.current?.emit('hostJoinStream', { streamId, hostId: route.params.hostId });
+    });
+
+    // Listen for recent messages when joining
+    socketRef.current.on('recentMessages', (recentMessages: Message[]) => {
+      setMessages(recentMessages);
     });
 
     socketRef.current.on('viewerCountUpdate', (data: { count: number }) => {

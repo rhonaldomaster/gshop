@@ -21,6 +21,7 @@ import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok
 import { PurchaseNotification, PurchaseCelebration, usePurchaseNotifications } from '../../components/live/PurchaseNotification';
 import { API_CONFIG } from '../../config/api.config';
 import { usePiP } from '../../contexts/PiPContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LiveStreamData {
   id: string;
@@ -68,6 +69,7 @@ const { width, height } = Dimensions.get('window');
 export default function LiveStreamScreen({ route, navigation }: any) {
   const { t } = useTranslation('translation');
   const { streamId, fromPiP } = route.params;
+  const { user, isAuthenticated } = useAuth();
   const [stream, setStream] = useState<LiveStreamData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -170,6 +172,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     socketRef.current.on('connect', () => {
       socketRef.current?.emit('joinStream', {
         streamId,
+        userId: user?.id,
         sessionId: `mobile_${Date.now()}`,
       });
     });
@@ -258,9 +261,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
 
+    const displayName = user?.name || user?.email?.split('@')[0] || t('live.anonymous');
+
     socketRef.current.emit('sendMessage', {
       streamId,
-      username: 'Anonymous', // In a real app, get from user context
+      userId: user?.id,
+      username: displayName,
       message: newMessage.trim(),
     });
 
