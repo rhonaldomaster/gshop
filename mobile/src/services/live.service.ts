@@ -202,6 +202,31 @@ class LiveService {
     }
   }
 
+  // Add product to stream
+  async addProductToStream(streamId: string, productId: string, specialPrice?: number): Promise<void> {
+    try {
+      await api.post(`/live/streams/${streamId}/products`, {
+        productId,
+        specialPrice,
+      });
+    } catch (error) {
+      console.error('Error adding product to stream:', error);
+      throw error;
+    }
+  }
+
+  // Add multiple products to stream
+  async addProductsToStream(streamId: string, productIds: string[]): Promise<void> {
+    try {
+      await Promise.all(
+        productIds.map(productId => this.addProductToStream(streamId, productId))
+      );
+    } catch (error) {
+      console.error('Error adding products to stream:', error);
+      throw error;
+    }
+  }
+
   // Toggle product visibility
   async toggleProductVisibility(streamId: string, productId: string): Promise<StreamProduct> {
     try {

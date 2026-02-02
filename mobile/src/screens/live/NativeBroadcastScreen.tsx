@@ -736,19 +736,25 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       />
 
       {/* Chat Overlay */}
-      {showChatOverlay && isStreaming && messages.length > 0 && (
+      {showChatOverlay && isStreaming && (
         <View style={styles.chatOverlay}>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            ref={(ref) => ref?.scrollToEnd({ animated: true })}
-          >
-            {messages.slice(-5).map((msg, index) => (
-              <View key={`${msg.id}-${index}`} style={styles.chatMessage}>
-                <Text style={styles.chatUsername}>{msg.username}:</Text>
-                <Text style={styles.chatText}>{msg.message}</Text>
-              </View>
-            ))}
-          </ScrollView>
+          {messages.length > 0 ? (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              ref={(ref) => ref?.scrollToEnd({ animated: true })}
+            >
+              {messages.slice(-5).map((msg, index) => (
+                <View key={`${msg.id}-${index}`} style={styles.chatMessage}>
+                  <Text style={styles.chatUsername}>{msg.username}:</Text>
+                  <Text style={styles.chatText}>{msg.message}</Text>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={styles.chatMessage}>
+              <Text style={styles.chatEmptyText}>{t('live.waitingForMessages')}</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -1188,6 +1194,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     marginTop: 2,
+  },
+  chatEmptyText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   controlPanel: {
     position: 'absolute',

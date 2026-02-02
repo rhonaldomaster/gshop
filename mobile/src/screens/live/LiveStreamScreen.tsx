@@ -261,7 +261,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const sendMessage = () => {
     if (!newMessage.trim() || !socketRef.current) return;
 
-    const displayName = user?.name || user?.email?.split('@')[0] || t('live.anonymous');
+    const displayName = user?.firstName || user?.email?.split('@')[0] || t('live.anonymous');
 
     socketRef.current.emit('sendMessage', {
       streamId,

@@ -138,6 +138,10 @@ export default function CreateAffiliateLiveStreamScreen({ navigation }: any) {
         sellerId: selectedSeller.id,
       });
 
+      // Add selected products to the stream
+      const productIds = Array.from(selectedProducts);
+      await liveService.addProductsToStream(stream.id, productIds);
+
       // Navigate to method selector
       navigation.replace('GoLive', {
         streamId: stream.id,
