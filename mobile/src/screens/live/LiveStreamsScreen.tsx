@@ -17,6 +17,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { buildApiUrl, API_CONFIG, normalizeImageUrl } from '../../config/api.config';
+import { affiliatesService } from '../../services/affiliates.service';
 
 interface LiveStream {
   id: string;
@@ -55,10 +56,21 @@ export default function LiveStreamsScreen({ navigation }: any) {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'live' | 'scheduled'>('all');
   const [hostTypeFilter, setHostTypeFilter] = useState<'all' | 'seller' | 'affiliate'>('all');
   const [sortBy, setSortBy] = useState<'viewers' | 'recent' | 'trending'>('viewers');
+  const [isApprovedAffiliate, setIsApprovedAffiliate] = useState(false);
 
   useEffect(() => {
     fetchLiveStreams();
+    checkAffiliateStatus();
   }, []);
+
+  const checkAffiliateStatus = async () => {
+    try {
+      const res = await affiliatesService.checkAffiliateStatus();
+      setIsApprovedAffiliate(res.isAffiliate && res.affiliate?.status === 'approved');
+    } catch {
+      setIsApprovedAffiliate(false);
+    }
+  };
 
   useEffect(() => {
     filterAndSortStreams();
@@ -466,7 +478,8 @@ export default function LiveStreamsScreen({ navigation }: any) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContent,
-          filteredStreams.length === 0 && { paddingTop: 0, flexGrow: 0 }
+          filteredStreams.length === 0 && { paddingTop: 0, flexGrow: 0 },
+          isApprovedAffiliate && { paddingBottom: 80 }
         ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -474,6 +487,24 @@ export default function LiveStreamsScreen({ navigation }: any) {
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
       />
+
+      {isApprovedAffiliate && (
+        <TouchableOpacity
+          style={styles.goLiveFab}
+          onPress={() => navigation.navigate('Profile', { screen: 'CreateAffiliateLiveStream' })}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#ef4444', '#ec4899']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.goLiveGradient}
+          >
+            <MaterialIcons name="videocam" size={20} color="#fff" />
+            <Text style={styles.goLiveText}>{t('live.goLive')}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
     </SafeAreaView>
   );
 }
@@ -805,5 +836,30 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#8b5cf6',
     fontWeight: '600',
+  },
+  goLiveFab: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    borderRadius: 28,
+    overflow: 'hidden',
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  goLiveGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  goLiveText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
