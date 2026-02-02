@@ -136,7 +136,12 @@
     "quickActions": "Acciones rápidas",
     "payments": "Pagos",
     "popularSellers": "Vendedores populares",
-    "popularCreators": "Creadores destacados"
+    "popularCreators": "Creadores destacados",
+    "affiliatePromo": {
+      "title": "¡Empieza a transmitir!",
+      "subtitle": "Promociona productos en vivo y gana comisiones",
+      "button": "Ir a Lives"
+    }
   },
   "products": {
     "title": "Productos",

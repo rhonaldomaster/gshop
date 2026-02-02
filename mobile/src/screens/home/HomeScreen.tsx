@@ -14,16 +14,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useProducts } from '../../hooks/useProducts';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { HomeStackParamList } from '../../navigation/HomeNavigator';
 import { Product, Category } from '../../services/products.service';
 import { searchService, SellerSearchResult, CreatorSearchResult } from '../../services/search.service';
+import { affiliatesService } from '../../services/affiliates.service';
 import { normalizeImageUrl } from '../../config/api.config';
+
+const AFFILIATE_PROMO_DISMISSED_KEY = '@gshop:affiliate_promo_dismissed';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>;
 
@@ -60,11 +65,47 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [popularSellers, setPopularSellers] = useState<SellerSearchResult[]>([]);
   const [popularCreators, setPopularCreators] = useState<CreatorSearchResult[]>([]);
+  const [isApprovedAffiliate, setIsApprovedAffiliate] = useState(false);
+  const [showAffiliatePromo, setShowAffiliatePromo] = useState(false);
 
   // Load data on mount
   useEffect(() => {
     loadHomeData();
+    checkAffiliateStatus();
   }, []);
+
+  const checkAffiliateStatus = async () => {
+    try {
+      const res = await affiliatesService.checkAffiliateStatus();
+      const approved = res.isAffiliate && res.affiliate?.status === 'approved';
+      setIsApprovedAffiliate(approved);
+      if (approved) {
+        checkAffiliatePromoVisibility();
+      }
+    } catch {
+      setIsApprovedAffiliate(false);
+    }
+  };
+
+  const checkAffiliatePromoVisibility = async () => {
+    try {
+      const dismissed = await AsyncStorage.getItem(AFFILIATE_PROMO_DISMISSED_KEY);
+      if (dismissed !== 'true') {
+        setShowAffiliatePromo(true);
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const dismissAffiliatePromo = async () => {
+    try {
+      await AsyncStorage.setItem(AFFILIATE_PROMO_DISMISSED_KEY, 'true');
+      setShowAffiliatePromo(false);
+    } catch {
+      setShowAffiliatePromo(false);
+    }
+  };
 
   const loadHomeData = async () => {
     await Promise.all([
@@ -180,6 +221,48 @@ export default function HomeScreen() {
             <GSText style={styles.heroEmoji}>🛍️</GSText>
           </View>
         </View>
+
+        {/* Affiliate Promo Card */}
+        {showAffiliatePromo && isApprovedAffiliate && (
+          <View style={styles.affiliatePromoContainer}>
+            <LinearGradient
+              colors={['#f3e8ff', '#fce7f3']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.affiliatePromoCard}
+            >
+              <TouchableOpacity
+                style={styles.affiliatePromoClose}
+                onPress={dismissAffiliatePromo}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="close" size={20} color="#6b7280" />
+              </TouchableOpacity>
+              <View style={styles.affiliatePromoContent}>
+                <View style={styles.affiliatePromoIcon}>
+                  <Ionicons name="videocam" size={28} color="#8b5cf6" />
+                </View>
+                <View style={styles.affiliatePromoText}>
+                  <GSText variant="h5" weight="bold" style={styles.affiliatePromoTitle}>
+                    {t('home.affiliatePromo.title')}
+                  </GSText>
+                  <GSText variant="caption" color="textSecondary">
+                    {t('home.affiliatePromo.subtitle')}
+                  </GSText>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.affiliatePromoButton}
+                onPress={() => (navigation as any).navigate('Live')}
+              >
+                <GSText variant="body" weight="semiBold" color="white">
+                  {t('home.affiliatePromo.button')}
+                </GSText>
+                <Ionicons name="arrow-forward" size={16} color="white" />
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        )}
 
         {/* Categories */}
         <View style={styles.section}>
@@ -673,5 +756,53 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  affiliatePromoContainer: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  affiliatePromoCard: {
+    borderRadius: 12,
+    padding: 16,
+    position: 'relative',
+  },
+  affiliatePromoClose: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 1,
+    padding: 4,
+  },
+  affiliatePromoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  affiliatePromoIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  affiliatePromoText: {
+    flex: 1,
+    paddingRight: 24,
+  },
+  affiliatePromoTitle: {
+    marginBottom: 2,
+    color: '#374151',
+  },
+  affiliatePromoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#8b5cf6',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 6,
   },
 });
