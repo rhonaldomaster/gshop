@@ -84,9 +84,14 @@ export default function CreateLiveStreamScreen({ navigation }: any) {
         description: description.trim(),
       });
 
-      // Add selected products to the stream
-      const productIds = Array.from(selectedProducts);
-      await liveService.addProductsToStream(stream.id, productIds);
+      // Try to add selected products to the stream (non-blocking)
+      try {
+        const productIds = Array.from(selectedProducts);
+        await liveService.addProductsToStream(stream.id, productIds);
+      } catch (productError) {
+        console.warn('Could not add products to stream:', productError);
+        // Continue anyway - products can be managed during the stream
+      }
 
       // Navigate to method selector
       navigation.replace('GoLive', {

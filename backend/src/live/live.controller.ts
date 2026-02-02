@@ -226,6 +226,16 @@ export class LiveController {
     return this.liveService.addProductToStream(streamId, req.user.sellerId, addProductDto);
   }
 
+  @Post('affiliate/streams/:id/products')
+  @UseGuards(JwtAuthGuard)
+  async addProductToAffiliateStream(
+    @Request() req,
+    @Param('id') streamId: string,
+    @Body() addProductDto: AddProductToStreamDto,
+  ) {
+    return this.liveService.addProductToAffiliateStream(streamId, req.user.affiliateId, addProductDto);
+  }
+
   @Delete('streams/:id/products/:productId')
   @UseGuards(JwtAuthGuard)
   async removeProductFromStream(

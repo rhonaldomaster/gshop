@@ -543,6 +543,23 @@ export class LiveService {
     return this.streamProductRepository.save(streamProduct);
   }
 
+  async addProductToAffiliateStream(streamId: string, affiliateId: string, addProductDto: AddProductToStreamDto): Promise<LiveStreamProduct> {
+    const liveStream = await this.liveStreamRepository.findOne({
+      where: { id: streamId, affiliateId },
+    });
+
+    if (!liveStream) {
+      throw new NotFoundException('Live stream not found');
+    }
+
+    const streamProduct = this.streamProductRepository.create({
+      streamId,
+      ...addProductDto,
+    });
+
+    return this.streamProductRepository.save(streamProduct);
+  }
+
   async removeProductFromStream(streamId: string, productId: string, sellerId: string): Promise<void> {
     const liveStream = await this.liveStreamRepository.findOne({
       where: { id: streamId, sellerId },
