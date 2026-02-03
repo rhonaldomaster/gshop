@@ -317,11 +317,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   // Handler for TikTok style overlay quick buy
   const handleOverlayQuickBuy = useCallback((overlayProduct: any) => {
+    if (!overlayProduct) return;
     // Find the full product data from stream products
     const streamProduct = stream?.products.find(
-      p => p.id === overlayProduct.id || p.product.id === overlayProduct.productId
+      p => p.id === overlayProduct.id || p.product?.id === overlayProduct.productId
     );
-    if (streamProduct) {
+    if (streamProduct?.product) {
       setSelectedProduct(streamProduct);
       setShowQuickCheckout(true);
     }
@@ -349,15 +350,18 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     <ChatMessage message={item} />
   );
 
-  const renderProduct = ({ item }: any) => (
-    <ProductCard
-      product={item}
-      onPress={() => onProductPress(item.product.id)}
-      onQuickBuy={() => quickBuyProduct(item)}
-      showSpecialPrice={true}
-      liveMode={true}
-    />
-  );
+  const renderProduct = ({ item }: any) => {
+    if (!item?.product?.id) return null;
+    return (
+      <ProductCard
+        product={item}
+        onPress={() => onProductPress(item.product.id)}
+        onQuickBuy={() => quickBuyProduct(item)}
+        showSpecialPrice={true}
+        liveMode={true}
+      />
+    );
+  };
 
   if (loading) {
     return (
@@ -473,9 +477,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={stream.products.filter(p => p.isActive)}
+            data={stream.products.filter(p => p.isActive && p.product)}
             renderItem={renderProduct}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item?.id || `product-${Math.random()}`}
             horizontal={true}
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.productsList}
@@ -524,17 +528,17 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       )}
 
       {/* TikTok Style Product Overlay */}
-      {stream.products.filter(p => p.isActive).length > 0 && (
+      {stream.products.filter(p => p.isActive && p.product).length > 0 && (
         <ProductOverlayTikTok
           products={stream.products
-            .filter(p => p.isActive)
+            .filter(p => p.isActive && p.product)
             .map(p => ({
               id: p.id,
-              productId: p.product.id,
-              name: p.product.name,
-              price: p.product.price,
+              productId: p.product?.id || '',
+              name: p.product?.name || '',
+              price: p.product?.price || 0,
               specialPrice: p.specialPrice,
-              image: p.product.images[0] || '',
+              image: p.product?.images?.[0] || '',
               isActive: p.isActive,
             }))}
           pinnedProductId={pinnedProductId}

@@ -28,22 +28,29 @@ export function ProductCard({
   showSpecialPrice = false,
   liveMode = false
 }: ProductCardProps) {
-  const hasDiscount = product.specialPrice && product.specialPrice < product.product.price;
-  const displayPrice = product.specialPrice || product.product.price;
+  // Guard against null/undefined product data
+  if (!product?.product) {
+    return null;
+  }
+
+  const productData = product.product;
+  const hasDiscount = product.specialPrice && product.specialPrice < productData.price;
+  const displayPrice = product.specialPrice || productData.price || 0;
+  const originalPrice = productData.price || 0;
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: normalizeImageUrl(product.product.images[0]) || 'https://via.placeholder.com/150x150'
+            uri: normalizeImageUrl(productData.images?.[0]) || 'https://via.placeholder.com/150x150'
           }}
           style={styles.productImage}
         />
-        {hasDiscount && (
+        {hasDiscount && originalPrice > 0 && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>
-              {Math.round(((product.product.price - displayPrice) / product.product.price) * 100)}% OFF
+              {Math.round(((originalPrice - displayPrice) / originalPrice) * 100)}% OFF
             </Text>
           </View>
         )}
@@ -51,13 +58,13 @@ export function ProductCard({
 
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>
-          {product.product.name}
+          {productData.name || ''}
         </Text>
 
         <View style={styles.priceContainer}>
           <Text style={styles.currentPrice}>${displayPrice.toFixed(2)}</Text>
           {hasDiscount && (
-            <Text style={styles.originalPrice}>${product.product.price.toFixed(2)}</Text>
+            <Text style={styles.originalPrice}>${originalPrice.toFixed(2)}</Text>
           )}
         </View>
 
