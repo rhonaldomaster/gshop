@@ -14,6 +14,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import io, { Socket } from 'socket.io-client';
+import { useKeepAwake } from 'expo-keep-awake';
 
 interface StreamProduct {
   id: string;
@@ -50,6 +51,9 @@ const { width, height } = Dimensions.get('window');
 export default function LiveStreamingScreen({ route, navigation }: any) {
   const { t } = useTranslation('translation');
   const { streamId, rtmpUrl, streamKey } = route.params;
+
+  // Keep screen awake while streaming
+  useKeepAwake();
 
   // Camera permissions
   const [permission, requestPermission] = useCameraPermissions();
