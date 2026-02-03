@@ -384,7 +384,7 @@ export function ProductOverlayTikTok({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 160,
     left: 0,
     right: 0,
     paddingHorizontal: 12,

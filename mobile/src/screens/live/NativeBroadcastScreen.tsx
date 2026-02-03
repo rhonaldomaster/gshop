@@ -1170,9 +1170,9 @@ const styles = StyleSheet.create({
   chatOverlay: {
     position: 'absolute',
     left: 16,
-    bottom: 140,
-    maxWidth: width * 0.7,
-    maxHeight: 200,
+    bottom: 320,
+    maxWidth: width * 0.6,
+    maxHeight: 150,
   },
   chatMessage: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
