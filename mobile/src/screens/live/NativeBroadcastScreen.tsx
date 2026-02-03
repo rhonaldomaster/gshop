@@ -706,22 +706,12 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       )}
 
       {/* TikTok Style Product Overlay (for host) */}
-      {isStreaming && products.filter(p => p.isActive).length > 0 && (
+      {isStreaming && products.filter(p => p && p.isActive && p.product).length > 0 && (
         <ProductOverlayTikTok
-          products={products
-            .filter(p => p.isActive)
-            .map(p => ({
-              id: p.id,
-              productId: p.product.id,
-              name: p.product.name,
-              price: p.product.price,
-              specialPrice: p.specialPrice,
-              image: p.product.images?.[0] || '',
-              isActive: p.isActive,
-            }))}
+          products={products.filter(p => p && p.isActive && p.product)}
           pinnedProductId={pinnedProductId}
           purchaseCount={getPinnedProductPurchaseCount()}
-          onQuickBuy={handleOverlayProductPress}
+          onQuickBuy={(product) => product?.product?.id && handleOverlayProductPress(product.product.id)}
           onViewProduct={handleOverlayProductPress}
           onExpandProducts={() => setShowProductsPanel(true)}
           timerEndTime={timerEndTime}
