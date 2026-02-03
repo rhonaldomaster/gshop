@@ -207,6 +207,13 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       socketRef.current?.emit('hostJoinStream', { streamId });
     });
 
+    // Listen for recent messages when joining
+    socketRef.current.on('recentMessages', (recentMessages: Message[]) => {
+      if (Array.isArray(recentMessages)) {
+        setMessages(recentMessages.filter(msg => msg && typeof msg === 'object'));
+      }
+    });
+
     socketRef.current.on('viewerCountUpdate', (data: { count: number }) => {
       setViewerCount(data.count);
       setStats(prev => ({
@@ -217,8 +224,10 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
     });
 
     socketRef.current.on('newMessage', (message: Message) => {
-      setMessages(prev => [...prev.slice(-50), message]);
-      setStats(prev => ({ ...prev, messagesCount: prev.messagesCount + 1 }));
+      if (message && typeof message === 'object') {
+        setMessages(prev => [...prev.slice(-50), message]);
+        setStats(prev => ({ ...prev, messagesCount: prev.messagesCount + 1 }));
+      }
     });
 
     socketRef.current.on('productClick', () => {
@@ -697,22 +706,12 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       )}
 
       {/* TikTok Style Product Overlay (for host) */}
-      {isStreaming && products.filter(p => p.isActive).length > 0 && (
+      {isStreaming && products.filter(p => p && p.isActive && p.product).length > 0 && (
         <ProductOverlayTikTok
-          products={products
-            .filter(p => p.isActive)
-            .map(p => ({
-              id: p.id,
-              productId: p.product.id,
-              name: p.product.name,
-              price: p.product.price,
-              specialPrice: p.specialPrice,
-              image: p.product.images?.[0] || '',
-              isActive: p.isActive,
-            }))}
+          products={products.filter(p => p && p.isActive && p.product)}
           pinnedProductId={pinnedProductId}
           purchaseCount={getPinnedProductPurchaseCount()}
-          onQuickBuy={handleOverlayProductPress}
+          onQuickBuy={(product) => product?.product?.id && handleOverlayProductPress(product.product.id)}
           onViewProduct={handleOverlayProductPress}
           onExpandProducts={() => setShowProductsPanel(true)}
           timerEndTime={timerEndTime}
@@ -731,17 +730,24 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
       />
 
       {/* Chat Overlay */}
-      {showChatOverlay && isStreaming && messages.length > 0 && (
+      {showChatOverlay && isStreaming && (
         <View style={styles.chatOverlay}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             ref={(ref) => ref?.scrollToEnd({ animated: true })}
           >
-            {messages.slice(-5).map((msg, index) => (
-              <View key={`${msg.id}-${index}`} style={styles.chatMessage}>
-                <Text style={styles.chatUsername}>{msg.username}:</Text>
-                <Text style={styles.chatText}>{msg.message}</Text>
+            {messages.length === 0 && (
+              <View style={styles.chatMessage}>
+                <Text style={styles.chatEmptyText}>Esperando mensajes...</Text>
               </View>
+            )}
+            {messages.slice(-5).map((msg, index) => (
+              msg && (
+                <View key={`${msg.id || index}-${index}`} style={styles.chatMessage}>
+                  <Text style={styles.chatUsername}>{msg.username || 'Usuario'}:</Text>
+                  <Text style={styles.chatText}>{msg.message || ''}</Text>
+                </View>
+              )
             ))}
           </ScrollView>
         </View>
@@ -1164,9 +1170,9 @@ const styles = StyleSheet.create({
   chatOverlay: {
     position: 'absolute',
     left: 16,
-    bottom: 140,
-    maxWidth: width * 0.7,
-    maxHeight: 200,
+    bottom: 320,
+    maxWidth: width * 0.6,
+    maxHeight: 150,
   },
   chatMessage: {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -1183,6 +1189,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     marginTop: 2,
+  },
+  chatEmptyText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   controlPanel: {
     position: 'absolute',

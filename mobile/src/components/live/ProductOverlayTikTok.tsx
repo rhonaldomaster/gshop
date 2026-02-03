@@ -57,8 +57,8 @@ export function ProductOverlayTikTok({
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
   const [showAllProducts, setShowAllProducts] = useState(false);
 
-  const pinnedProduct = products.find(p => p.product.id === pinnedProductId);
-  const activeProducts = products.filter(p => p.isActive);
+  const pinnedProduct = products.find(p => p?.product?.id === pinnedProductId);
+  const activeProducts = products.filter(p => p?.isActive && p?.product);
 
   // Animations
   const bounceAnim = useRef(new Animated.Value(1)).current;
@@ -206,7 +206,7 @@ export function ProductOverlayTikTok({
   };
 
   const renderPinnedProduct = () => {
-    if (!pinnedProduct) return null;
+    if (!pinnedProduct?.product) return null;
 
     const hasDiscount = pinnedProduct.specialPrice && pinnedProduct.specialPrice < pinnedProduct.product.price;
     const displayPrice = pinnedProduct.specialPrice || pinnedProduct.product.price;
@@ -245,7 +245,7 @@ export function ProductOverlayTikTok({
         >
           <Image
             source={{
-              uri: normalizeImageUrl(pinnedProduct.product.images[0]) || 'https://via.placeholder.com/80x80',
+              uri: normalizeImageUrl(pinnedProduct.product.images?.[0]) || 'https://via.placeholder.com/80x80',
             }}
             style={styles.pinnedProductImage}
           />
@@ -300,7 +300,7 @@ export function ProductOverlayTikTok({
   };
 
   const renderMiniProduct = ({ item, index }: { item: StreamProduct; index: number }) => {
-    if (item.product.id === pinnedProductId) return null;
+    if (!item?.product?.id || item.product.id === pinnedProductId) return null;
 
     const hasDiscount = item.specialPrice && item.specialPrice < item.product.price;
     const displayPrice = item.specialPrice || item.product.price;
@@ -314,7 +314,7 @@ export function ProductOverlayTikTok({
       >
         <Image
           source={{
-            uri: normalizeImageUrl(item.product.images[0]) || 'https://via.placeholder.com/50x50',
+            uri: normalizeImageUrl(item.product.images?.[0]) || 'https://via.placeholder.com/50x50',
           }}
           style={styles.miniProductImage}
         />
@@ -362,7 +362,7 @@ export function ProductOverlayTikTok({
           <FlatList
             data={activeProducts}
             renderItem={renderMiniProduct}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => item?.id || `product-${index}`}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.carouselContent}
@@ -384,7 +384,7 @@ export function ProductOverlayTikTok({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 160,
     left: 0,
     right: 0,
     paddingHorizontal: 12,

@@ -226,6 +226,16 @@ export class LiveController {
     return this.liveService.addProductToStream(streamId, req.user.sellerId, addProductDto);
   }
 
+  @Post('affiliate/streams/:id/products')
+  @UseGuards(JwtAuthGuard)
+  async addProductToAffiliateStream(
+    @Request() req,
+    @Param('id') streamId: string,
+    @Body() addProductDto: AddProductToStreamDto,
+  ) {
+    return this.liveService.addProductToAffiliateStream(streamId, req.user.affiliateId, addProductDto);
+  }
+
   @Delete('streams/:id/products/:productId')
   @UseGuards(JwtAuthGuard)
   async removeProductFromStream(
@@ -365,6 +375,13 @@ export class LiveController {
   @ApiResponse({ status: 200, description: 'Highlighted products retrieved successfully' })
   async getHighlightedProducts(@Param('streamId') streamId: string) {
     return this.liveService.getHighlightedProducts(streamId);
+  }
+
+  @Get('streams/:streamId/products')
+  @ApiOperation({ summary: 'Get all products for a stream' })
+  @ApiResponse({ status: 200, description: 'Stream products retrieved successfully' })
+  async getStreamProducts(@Param('streamId') streamId: string) {
+    return this.liveService.getActiveStreamProducts(streamId);
   }
 
   // ==================== METRICS ENDPOINTS ====================

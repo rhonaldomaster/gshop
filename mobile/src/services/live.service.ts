@@ -202,6 +202,56 @@ class LiveService {
     }
   }
 
+  // Add product to stream (seller)
+  async addProductToStream(streamId: string, productId: string, specialPrice?: number): Promise<void> {
+    try {
+      await api.post(`/live/streams/${streamId}/products`, {
+        productId,
+        specialPrice,
+      });
+    } catch (error) {
+      console.error('Error adding product to stream:', error);
+      throw error;
+    }
+  }
+
+  // Add product to affiliate stream
+  async addProductToAffiliateStream(streamId: string, productId: string, specialPrice?: number): Promise<void> {
+    try {
+      await api.post(`/live/affiliate/streams/${streamId}/products`, {
+        productId,
+        specialPrice,
+      });
+    } catch (error) {
+      console.error('Error adding product to affiliate stream:', error);
+      throw error;
+    }
+  }
+
+  // Add multiple products to stream (seller)
+  async addProductsToStream(streamId: string, productIds: string[]): Promise<void> {
+    try {
+      await Promise.all(
+        productIds.map(productId => this.addProductToStream(streamId, productId))
+      );
+    } catch (error) {
+      console.error('Error adding products to stream:', error);
+      throw error;
+    }
+  }
+
+  // Add multiple products to affiliate stream
+  async addProductsToAffiliateStream(streamId: string, productIds: string[]): Promise<void> {
+    try {
+      await Promise.all(
+        productIds.map(productId => this.addProductToAffiliateStream(streamId, productId))
+      );
+    } catch (error) {
+      console.error('Error adding products to affiliate stream:', error);
+      throw error;
+    }
+  }
+
   // Toggle product visibility
   async toggleProductVisibility(streamId: string, productId: string): Promise<StreamProduct> {
     try {
