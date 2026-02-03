@@ -293,3 +293,4 @@ storybook-static
 # Claude Code - ignore settings but keep skills
 .claude/*
 !.claude/skills/
+!.claude/skills/build/

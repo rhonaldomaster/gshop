@@ -20,6 +20,7 @@ Use these slash commands to load detailed documentation when needed:
 
 | Command | Description |
 |---------|-------------|
+| `/build` | Mobile build guide - APK generation, iOS builds, EAS, local builds |
 | `/vat` | Colombian VAT (IVA) system - tax categories, calculation, compliance |
 | `/storage` | File upload strategy - R2/local storage, Multer config |
 | `/api-docs` | Complete API endpoints reference |
