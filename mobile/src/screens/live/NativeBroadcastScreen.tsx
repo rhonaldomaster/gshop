@@ -209,7 +209,9 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
 
     // Listen for recent messages when joining
     socketRef.current.on('recentMessages', (recentMessages: Message[]) => {
-      setMessages(recentMessages);
+      if (Array.isArray(recentMessages)) {
+        setMessages(recentMessages.filter(msg => msg && typeof msg === 'object'));
+      }
     });
 
     socketRef.current.on('viewerCountUpdate', (data: { count: number }) => {
@@ -222,8 +224,10 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
     });
 
     socketRef.current.on('newMessage', (message: Message) => {
-      setMessages(prev => [...prev.slice(-50), message]);
-      setStats(prev => ({ ...prev, messagesCount: prev.messagesCount + 1 }));
+      if (message && typeof message === 'object') {
+        setMessages(prev => [...prev.slice(-50), message]);
+        setStats(prev => ({ ...prev, messagesCount: prev.messagesCount + 1 }));
+      }
     });
 
     socketRef.current.on('productClick', () => {
@@ -748,10 +752,12 @@ export default function NativeBroadcastScreen({ route, navigation }: any) {
               </View>
             )}
             {messages.slice(-5).map((msg, index) => (
-              <View key={`${msg.id}-${index}`} style={styles.chatMessage}>
-                <Text style={styles.chatUsername}>{msg.username}:</Text>
-                <Text style={styles.chatText}>{msg.message}</Text>
-              </View>
+              msg && (
+                <View key={`${msg.id || index}-${index}`} style={styles.chatMessage}>
+                  <Text style={styles.chatUsername}>{msg.username || 'Usuario'}:</Text>
+                  <Text style={styles.chatText}>{msg.message || ''}</Text>
+                </View>
+              )
             ))}
           </ScrollView>
         </View>
