@@ -277,6 +277,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const toggleProducts = () => {
+    console.log('[LiveStreamScreen] toggleProducts called');
+    console.log('[LiveStreamScreen] stream:', stream ? 'exists' : 'null');
+    console.log('[LiveStreamScreen] stream.products:', stream?.products ? `array of ${stream.products.length}` : 'null/undefined');
+    if (stream?.products) {
+      console.log('[LiveStreamScreen] products sample:', JSON.stringify(stream.products.slice(0, 2), null, 2));
+    }
     setShowProducts(!showProducts);
     setShowChat(false);
   };
@@ -317,11 +323,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   // Handler for TikTok style overlay quick buy
   const handleOverlayQuickBuy = useCallback((overlayProduct: any) => {
+    if (!overlayProduct || !stream?.products) return;
     // Find the full product data from stream products
-    const streamProduct = stream?.products.find(
-      p => p.id === overlayProduct.id || p.product.id === overlayProduct.productId
+    const streamProduct = stream.products.find(
+      p => p?.id === overlayProduct.id || p?.product?.id === overlayProduct.productId
     );
-    if (streamProduct) {
+    if (streamProduct?.product) {
       setSelectedProduct(streamProduct);
       setShowQuickCheckout(true);
     }
@@ -349,15 +356,32 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     <ChatMessage message={item} />
   );
 
-  const renderProduct = ({ item }: any) => (
-    <ProductCard
-      product={item}
-      onPress={() => onProductPress(item.product.id)}
-      onQuickBuy={() => quickBuyProduct(item)}
-      showSpecialPrice={true}
-      liveMode={true}
-    />
-  );
+  const renderProduct = ({ item, index }: any) => {
+    console.log(`[LiveStreamScreen] renderProduct called for index ${index}`);
+    console.log(`[LiveStreamScreen] item:`, item ? 'exists' : 'null');
+    console.log(`[LiveStreamScreen] item.product:`, item?.product ? 'exists' : 'null');
+    console.log(`[LiveStreamScreen] item.product.id:`, item?.product?.id || 'missing');
+
+    if (!item?.product?.id) {
+      console.log(`[LiveStreamScreen] Skipping product at index ${index} - missing product.id`);
+      return null;
+    }
+
+    try {
+      return (
+        <ProductCard
+          product={item}
+          onPress={() => onProductPress(item.product.id)}
+          onQuickBuy={() => quickBuyProduct(item)}
+          showSpecialPrice={true}
+          liveMode={true}
+        />
+      );
+    } catch (error) {
+      console.error(`[LiveStreamScreen] Error rendering product at index ${index}:`, error);
+      return null;
+    }
+  };
 
   if (loading) {
     return (
@@ -464,24 +488,34 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       </View>
 
       {/* Products Panel */}
-      {showProducts && (
-        <View style={styles.productsPanel}>
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>{t('live.featuredProducts')}</Text>
-            <TouchableOpacity onPress={() => setShowProducts(false)}>
-              <MaterialIcons name="close" size={24} color="#374151" />
-            </TouchableOpacity>
+      {showProducts && (() => {
+        console.log('[LiveStreamScreen] Rendering Products Panel');
+        const productsData = (stream?.products || []).filter(p => {
+          const isValid = p?.isActive && p?.product;
+          console.log(`[LiveStreamScreen] Filter product: isActive=${p?.isActive}, hasProduct=${!!p?.product}, isValid=${isValid}`);
+          return isValid;
+        });
+        console.log(`[LiveStreamScreen] Filtered products count: ${productsData.length}`);
+
+        return (
+          <View style={styles.productsPanel}>
+            <View style={styles.panelHeader}>
+              <Text style={styles.panelTitle}>{t('live.featuredProducts')}</Text>
+              <TouchableOpacity onPress={() => setShowProducts(false)}>
+                <MaterialIcons name="close" size={24} color="#374151" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={productsData}
+              renderItem={renderProduct}
+              keyExtractor={(item, index) => item?.id || `product-${index}`}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.productsList}
+            />
           </View>
-          <FlatList
-            data={stream.products.filter(p => p.isActive)}
-            renderItem={renderProduct}
-            keyExtractor={(item) => item.id}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.productsList}
-          />
-        </View>
-      )}
+        );
+      })()}
 
       {/* Chat Panel */}
       {showChat && (
@@ -524,17 +558,17 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       )}
 
       {/* TikTok Style Product Overlay */}
-      {stream.products.filter(p => p.isActive).length > 0 && (
+      {(stream.products || []).filter(p => p?.isActive && p?.product).length > 0 && (
         <ProductOverlayTikTok
-          products={stream.products
-            .filter(p => p.isActive)
+          products={(stream.products || [])
+            .filter(p => p?.isActive && p?.product)
             .map(p => ({
-              id: p.id,
-              productId: p.product.id,
-              name: p.product.name,
-              price: p.product.price,
+              id: p.id || '',
+              productId: p.product?.id || '',
+              name: p.product?.name || '',
+              price: p.product?.price || 0,
               specialPrice: p.specialPrice,
-              image: p.product.images[0] || '',
+              image: p.product?.images?.[0] || '',
               isActive: p.isActive,
             }))}
           pinnedProductId={pinnedProductId}
@@ -559,14 +593,14 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       />
 
       {/* Live Checkout Modal */}
-      {selectedProduct && (
+      {selectedProduct?.product && (
         <LiveCheckoutModal
           visible={showQuickCheckout}
           product={{
-            id: selectedProduct.product.id,
-            name: selectedProduct.product.name,
-            price: selectedProduct.product.price,
-            images: selectedProduct.product.images,
+            id: selectedProduct.product.id || '',
+            name: selectedProduct.product.name || '',
+            price: selectedProduct.product.price || 0,
+            images: selectedProduct.product.images || [],
             specialPrice: selectedProduct.specialPrice,
           }}
           liveSessionId={streamId}

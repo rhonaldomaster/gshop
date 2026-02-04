@@ -27,6 +27,7 @@ import io, { Socket } from 'socket.io-client';
 import * as Haptics from 'expo-haptics';
 import { Camera } from 'expo-camera';
 import { Audio } from 'expo-av';
+import { useKeepAwake } from 'expo-keep-awake';
 import { API_CONFIG } from '../../config/api.config';
 import { liveService, NativeStreamCredentials, StreamProduct, StreamStats } from '../../services/live.service';
 import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
@@ -44,6 +45,9 @@ const { width, height } = Dimensions.get('window');
 export default function NativeBroadcastScreen({ route, navigation }: any) {
   const { t } = useTranslation('translation');
   const { streamId, hostType = 'affiliate' } = route.params;
+
+  // Keep screen awake while broadcasting
+  useKeepAwake();
 
   // Broadcast ref
   const broadcastRef = useRef<IIVSBroadcastCameraView>(null);

@@ -28,22 +28,41 @@ export function ProductCard({
   showSpecialPrice = false,
   liveMode = false
 }: ProductCardProps) {
-  const hasDiscount = product.specialPrice && product.specialPrice < product.product.price;
-  const displayPrice = product.specialPrice || product.product.price;
+  console.log('[ProductCard] Rendering with product:', product ? 'exists' : 'null');
+
+  // Guard against null/undefined product data
+  if (!product?.product) {
+    console.log('[ProductCard] Early return - product.product is null/undefined');
+    return null;
+  }
+
+  const productData = product.product;
+  console.log('[ProductCard] productData:', {
+    id: productData.id,
+    name: productData.name,
+    price: productData.price,
+    imagesCount: productData.images?.length || 0,
+  });
+
+  // Ensure prices are valid numbers
+  const originalPrice = typeof productData.price === 'number' ? productData.price : 0;
+  const specialPrice = typeof product.specialPrice === 'number' ? product.specialPrice : null;
+  const displayPrice = specialPrice !== null ? specialPrice : originalPrice;
+  const hasDiscount = specialPrice !== null && specialPrice < originalPrice;
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.imageContainer}>
         <Image
           source={{
-            uri: normalizeImageUrl(product.product.images[0]) || 'https://via.placeholder.com/150x150'
+            uri: normalizeImageUrl(productData.images?.[0]) || 'https://via.placeholder.com/150x150'
           }}
           style={styles.productImage}
         />
-        {hasDiscount && (
+        {hasDiscount && originalPrice > 0 && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>
-              {Math.round(((product.product.price - displayPrice) / product.product.price) * 100)}% OFF
+              {Math.round(((originalPrice - displayPrice) / originalPrice) * 100)}% OFF
             </Text>
           </View>
         )}
@@ -51,13 +70,13 @@ export function ProductCard({
 
       <View style={styles.productInfo}>
         <Text style={styles.productName} numberOfLines={2}>
-          {product.product.name}
+          {productData.name || ''}
         </Text>
 
         <View style={styles.priceContainer}>
-          <Text style={styles.currentPrice}>${displayPrice.toFixed(2)}</Text>
+          <Text style={styles.currentPrice}>${Number(displayPrice).toFixed(2)}</Text>
           {hasDiscount && (
-            <Text style={styles.originalPrice}>${product.product.price.toFixed(2)}</Text>
+            <Text style={styles.originalPrice}>${Number(originalPrice).toFixed(2)}</Text>
           )}
         </View>
 
