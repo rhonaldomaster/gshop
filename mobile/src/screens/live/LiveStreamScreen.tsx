@@ -8,17 +8,23 @@ import {
   FlatList,
   Alert,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
 import io, { Socket } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
+import Toast from 'react-native-toast-message';
 import { ProductCard } from '../../components/live/ProductCard';
 import { ChatMessage } from '../../components/live/ChatMessage';
 import { LiveCheckoutModal } from '../../components/live/LiveCheckoutModal';
-import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
+import { ProductOverlayTikTok, StreamProduct } from '../../components/live/ProductOverlayTikTok';
 import { PurchaseNotification, PurchaseCelebration, usePurchaseNotifications } from '../../components/live/PurchaseNotification';
+import { LiveCartBadge } from '../../components/live/LiveCartBadge';
+import { LiveCartModal } from '../../components/live/LiveCartModal';
+import { LiveCartItemData } from '../../components/live/LiveCartItem';
 import { API_CONFIG } from '../../config/api.config';
 import { usePiP } from '../../contexts/PiPContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -84,6 +90,10 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const [pinnedProductId, setPinnedProductId] = useState<string | null>(null);
   const [purchaseStats, setPurchaseStats] = useState<PurchaseStats>({});
   const [timerEndTime, setTimerEndTime] = useState<Date | null>(null);
+
+  // Live cart states
+  const [liveCart, setLiveCart] = useState<LiveCartItemData[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Purchase notification hook
   const { triggerNotification, currentPurchase, dismissCelebration } = usePurchaseNotifications();
@@ -321,6 +331,98 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     setSelectedProduct(null);
   }, [streamId, selectedProduct]);
 
+  // Live Cart Functions
+  const addToLiveCart = useCallback((streamProduct: StreamProduct | any) => {
+    // Handle different product shapes from overlay vs panel
+    const hasNestedProduct = !!streamProduct.product;
+    const productId = hasNestedProduct
+      ? streamProduct.product.id
+      : (streamProduct.productId || streamProduct.id);
+    const productData = hasNestedProduct
+      ? streamProduct.product
+      : {
+          id: productId,
+          name: streamProduct.name || '',
+          price: streamProduct.price || 0,
+          images: streamProduct.image ? [streamProduct.image] : [],
+          stock: streamProduct.stock,
+        };
+    const specialPrice = streamProduct.specialPrice;
+
+    setLiveCart(prev => {
+      const existingIndex = prev.findIndex(item => item.productId === productId);
+
+      if (existingIndex >= 0) {
+        // Update quantity if already exists
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: updated[existingIndex].quantity + 1,
+        };
+        return updated;
+      }
+
+      // Add new item
+      return [...prev, {
+        productId,
+        product: productData,
+        quantity: 1,
+        specialPrice,
+        addedAt: new Date(),
+      }];
+    });
+
+    // Feedback
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    Toast.show({
+      type: 'success',
+      text1: t('live.liveCart.addedToCart'),
+      text2: productData.name,
+      visibilityTime: 2000,
+    });
+  }, [t]);
+
+  const updateCartQuantity = useCallback((productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    setLiveCart(prev =>
+      prev.map(item =>
+        item.productId === productId
+          ? { ...item, quantity }
+          : item
+      )
+    );
+  }, []);
+
+  const removeFromCart = useCallback((productId: string) => {
+    setLiveCart(prev => prev.filter(item => item.productId !== productId));
+    Toast.show({
+      type: 'info',
+      text1: t('live.liveCart.itemRemoved'),
+      visibilityTime: 1500,
+    });
+  }, [t]);
+
+  const isInCart = useCallback((productId: string) => {
+    return liveCart.some(item => item.productId === productId);
+  }, [liveCart]);
+
+  const liveCartTotalItems = liveCart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCartCheckout = useCallback(() => {
+    setIsCartOpen(false);
+    navigation.navigate('LiveCartCheckout', {
+      items: liveCart,
+      streamId,
+      affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined,
+    });
+  }, [liveCart, streamId, stream?.hostType, stream?.affiliate?.id, navigation]);
+
   // Handler for TikTok style overlay quick buy
   const handleOverlayQuickBuy = useCallback((overlayProduct: any) => {
     if (!overlayProduct || !stream?.products) return;
@@ -373,6 +475,8 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           product={item}
           onPress={() => onProductPress(item.product.id)}
           onQuickBuy={() => quickBuyProduct(item)}
+          onAddToCart={() => addToLiveCart(item)}
+          isInCart={isInCart(item.product.id)}
           showSpecialPrice={true}
           liveMode={true}
         />
@@ -574,12 +678,30 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           pinnedProductId={pinnedProductId}
           purchaseCount={getPinnedProductPurchaseCount()}
           onQuickBuy={handleOverlayQuickBuy}
+          onAddToCart={addToLiveCart}
           onViewProduct={onProductPress}
           onExpandProducts={handleExpandProducts}
           timerEndTime={timerEndTime}
           isHost={false}
+          isInCart={isInCart}
         />
       )}
+
+      {/* Live Cart Badge */}
+      <LiveCartBadge
+        count={liveCartTotalItems}
+        onPress={() => setIsCartOpen(true)}
+      />
+
+      {/* Live Cart Modal */}
+      <LiveCartModal
+        visible={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={liveCart}
+        onUpdateQuantity={updateCartQuantity}
+        onRemoveItem={removeFromCart}
+        onCheckout={handleCartCheckout}
+      />
 
       {/* Purchase Notifications */}
       <PurchaseNotification

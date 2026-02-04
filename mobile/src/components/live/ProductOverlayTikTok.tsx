@@ -17,9 +17,13 @@ import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-interface StreamProduct {
+export interface StreamProduct {
   id: string;
-  product: {
+  productId?: string;
+  name?: string;
+  price?: number;
+  image?: string;
+  product?: {
     id: string;
     name: string;
     price: number;
