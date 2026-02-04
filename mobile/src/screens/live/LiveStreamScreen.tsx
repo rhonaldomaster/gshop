@@ -28,6 +28,7 @@ import { LiveCartItemData } from '../../components/live/LiveCartItem';
 import { API_CONFIG } from '../../config/api.config';
 import { usePiP } from '../../contexts/PiPContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLiveCart } from '../../hooks/useLiveCart';
 
 interface LiveStreamData {
   id: string;
@@ -91,8 +92,18 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const [purchaseStats, setPurchaseStats] = useState<PurchaseStats>({});
   const [timerEndTime, setTimerEndTime] = useState<Date | null>(null);
 
-  // Live cart states
-  const [liveCart, setLiveCart] = useState<LiveCartItemData[]>([]);
+  // Live cart with persistence
+  const {
+    cart: liveCart,
+    setCart: setLiveCart,
+    isLoading: isCartLoading,
+    addItem: addCartItem,
+    updateQuantity: updateCartItemQuantity,
+    removeItem: removeCartItem,
+    isInCart: checkIsInCart,
+    clearCart,
+    getSummary: getCartSummary,
+  } = useLiveCart(streamId);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Purchase notification hook
@@ -349,27 +360,12 @@ export default function LiveStreamScreen({ route, navigation }: any) {
         };
     const specialPrice = streamProduct.specialPrice;
 
-    setLiveCart(prev => {
-      const existingIndex = prev.findIndex(item => item.productId === productId);
-
-      if (existingIndex >= 0) {
-        // Update quantity if already exists
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + 1,
-        };
-        return updated;
-      }
-
-      // Add new item
-      return [...prev, {
-        productId,
-        product: productData,
-        quantity: 1,
-        specialPrice,
-        addedAt: new Date(),
-      }];
+    // Use the hook's addItem function with persistence
+    addCartItem({
+      productId,
+      product: productData,
+      quantity: 1,
+      specialPrice,
     });
 
     // Feedback
@@ -382,37 +378,26 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       text2: productData.name,
       visibilityTime: 2000,
     });
-  }, [t]);
+  }, [t, addCartItem]);
 
   const updateCartQuantity = useCallback((productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-
-    setLiveCart(prev =>
-      prev.map(item =>
-        item.productId === productId
-          ? { ...item, quantity }
-          : item
-      )
-    );
-  }, []);
+    updateCartItemQuantity(productId, quantity);
+  }, [updateCartItemQuantity]);
 
   const removeFromCart = useCallback((productId: string) => {
-    setLiveCart(prev => prev.filter(item => item.productId !== productId));
+    removeCartItem(productId);
     Toast.show({
       type: 'info',
       text1: t('live.liveCart.itemRemoved'),
       visibilityTime: 1500,
     });
-  }, [t]);
+  }, [t, removeCartItem]);
 
   const isInCart = useCallback((productId: string) => {
-    return liveCart.some(item => item.productId === productId);
-  }, [liveCart]);
+    return checkIsInCart(productId);
+  }, [checkIsInCart]);
 
-  const liveCartTotalItems = liveCart.reduce((sum, item) => sum + item.quantity, 0);
+  const { totalItems: liveCartTotalItems } = getCartSummary();
 
   const handleCartCheckout = useCallback(() => {
     setIsCartOpen(false);
