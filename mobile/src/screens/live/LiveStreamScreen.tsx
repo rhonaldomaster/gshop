@@ -361,12 +361,14 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     const specialPrice = streamProduct.specialPrice;
 
     // Use the hook's addItem function with persistence
+    console.log('[LiveStreamScreen] Adding to cart:', { productId, productName: productData.name });
     addCartItem({
       productId,
       product: productData,
       quantity: 1,
       specialPrice,
     });
+    console.log('[LiveStreamScreen] Cart after add:', liveCart.length + 1, 'items');
 
     // Feedback
     if (Platform.OS !== 'web') {
@@ -397,7 +399,8 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     return checkIsInCart(productId);
   }, [checkIsInCart]);
 
-  const { totalItems: liveCartTotalItems } = getCartSummary();
+  // Calculate total items reactively from liveCart
+  const liveCartTotalItems = liveCart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleCartCheckout = useCallback(() => {
     setIsCartOpen(false);

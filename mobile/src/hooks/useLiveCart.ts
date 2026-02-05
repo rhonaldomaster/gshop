@@ -19,10 +19,13 @@ export function useLiveCart(streamId: string) {
   // Load cart on mount
   useEffect(() => {
     const loadCart = async () => {
+      console.log('[useLiveCart] Loading cart for stream:', streamId);
       try {
         const stored = await AsyncStorage.getItem(storageKey);
+        console.log('[useLiveCart] Stored data:', stored ? 'found' : 'empty');
         if (stored) {
           const { items, savedAt }: StoredCart = JSON.parse(stored);
+          console.log('[useLiveCart] Parsed items:', items.length, 'savedAt:', new Date(savedAt).toISOString());
 
           // Check if cart has expired
           if (Date.now() - savedAt < CART_EXPIRY_MS) {
@@ -31,9 +34,11 @@ export function useLiveCart(streamId: string) {
               ...item,
               addedAt: new Date(item.addedAt),
             }));
+            console.log('[useLiveCart] Restored', restoredItems.length, 'items from storage');
             setCart(restoredItems);
           } else {
             // Cart expired, remove it
+            console.log('[useLiveCart] Cart expired, removing');
             await AsyncStorage.removeItem(storageKey);
           }
         }
@@ -45,81 +50,99 @@ export function useLiveCart(streamId: string) {
     };
 
     loadCart();
+  }, [storageKey, streamId]);
+
+  // Remove item from cart - saves immediately to prevent loss on navigation
+  const removeItem = useCallback((productId: string, variantId?: string) => {
+    setCart(prev => {
+      const newCart = prev.filter(item =>
+        !(item.productId === productId && item.variantId === variantId)
+      );
+
+      // Save immediately to AsyncStorage
+      if (newCart.length > 0) {
+        const dataToStore: StoredCart = {
+          items: newCart,
+          savedAt: Date.now(),
+        };
+        AsyncStorage.setItem(storageKey, JSON.stringify(dataToStore))
+          .then(() => console.log('[useLiveCart] Cart saved after remove, items:', newCart.length))
+          .catch(err => console.error('[useLiveCart] Error saving cart:', err));
+      } else {
+        AsyncStorage.removeItem(storageKey)
+          .then(() => console.log('[useLiveCart] Cart cleared from storage'))
+          .catch(err => console.error('[useLiveCart] Error clearing cart:', err));
+      }
+
+      return newCart;
+    });
   }, [storageKey]);
 
-  // Save cart when it changes
-  useEffect(() => {
-    const saveCart = async () => {
-      try {
-        if (cart.length > 0) {
-          const dataToStore: StoredCart = {
-            items: cart,
-            savedAt: Date.now(),
-          };
-          await AsyncStorage.setItem(storageKey, JSON.stringify(dataToStore));
-        } else {
-          await AsyncStorage.removeItem(storageKey);
-        }
-      } catch (error) {
-        console.error('[useLiveCart] Error saving cart:', error);
-      }
-    };
-
-    // Don't save during initial load
-    if (!isLoading) {
-      saveCart();
-    }
-  }, [cart, storageKey, isLoading]);
-
-  // Add item to cart
+  // Add item to cart - saves immediately to prevent loss on navigation
   const addItem = useCallback((item: Omit<LiveCartItemData, 'addedAt'>) => {
+    console.log('[useLiveCart] Adding item:', item.productId);
     setCart(prev => {
       const existingIndex = prev.findIndex(
         existing => existing.productId === item.productId && existing.variantId === item.variantId
       );
 
+      let newCart: LiveCartItemData[];
       if (existingIndex >= 0) {
         // Update quantity if already exists
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + (item.quantity || 1),
+        newCart = [...prev];
+        newCart[existingIndex] = {
+          ...newCart[existingIndex],
+          quantity: newCart[existingIndex].quantity + (item.quantity || 1),
         };
-        return updated;
+        console.log('[useLiveCart] Updated existing item quantity');
+      } else {
+        // Add new item
+        newCart = [...prev, {
+          ...item,
+          addedAt: new Date(),
+        }];
+        console.log('[useLiveCart] Added new item to cart');
       }
 
-      // Add new item
-      return [...prev, {
-        ...item,
-        addedAt: new Date(),
-      }];
-    });
-  }, []);
+      // Save immediately to AsyncStorage (fire and forget but ensures persistence)
+      const dataToStore: StoredCart = {
+        items: newCart,
+        savedAt: Date.now(),
+      };
+      AsyncStorage.setItem(storageKey, JSON.stringify(dataToStore))
+        .then(() => console.log('[useLiveCart] Cart saved immediately, total items:', newCart.length))
+        .catch(err => console.error('[useLiveCart] Error saving cart:', err));
 
-  // Update item quantity
+      return newCart;
+    });
+  }, [storageKey]);
+
+  // Update item quantity - saves immediately to prevent loss on navigation
   const updateQuantity = useCallback((productId: string, quantity: number, variantId?: string) => {
     if (quantity <= 0) {
       removeItem(productId, variantId);
       return;
     }
 
-    setCart(prev =>
-      prev.map(item =>
+    setCart(prev => {
+      const newCart = prev.map(item =>
         item.productId === productId && item.variantId === variantId
           ? { ...item, quantity }
           : item
-      )
-    );
-  }, []);
+      );
 
-  // Remove item from cart
-  const removeItem = useCallback((productId: string, variantId?: string) => {
-    setCart(prev =>
-      prev.filter(item =>
-        !(item.productId === productId && item.variantId === variantId)
-      )
-    );
-  }, []);
+      // Save immediately to AsyncStorage
+      const dataToStore: StoredCart = {
+        items: newCart,
+        savedAt: Date.now(),
+      };
+      AsyncStorage.setItem(storageKey, JSON.stringify(dataToStore))
+        .then(() => console.log('[useLiveCart] Cart saved after quantity update'))
+        .catch(err => console.error('[useLiveCart] Error saving cart:', err));
+
+      return newCart;
+    });
+  }, [storageKey, removeItem]);
 
   // Check if product is in cart
   const isInCart = useCallback((productId: string, variantId?: string) => {
@@ -137,9 +160,11 @@ export function useLiveCart(streamId: string) {
 
   // Clear entire cart
   const clearCart = useCallback(async () => {
+    console.log('[useLiveCart] Clearing cart');
     setCart([]);
     try {
       await AsyncStorage.removeItem(storageKey);
+      console.log('[useLiveCart] Cart cleared from storage');
     } catch (error) {
       console.error('[useLiveCart] Error clearing cart:', error);
     }
