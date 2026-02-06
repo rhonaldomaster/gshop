@@ -86,6 +86,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const [showChat, setShowChat] = useState(true);
   const [showQuickCheckout, setShowQuickCheckout] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [streamEnded, setStreamEnded] = useState(false);
 
   // TikTok Shop style states
   const [pinnedProductId, setPinnedProductId] = useState<string | null>(null);
@@ -217,8 +218,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
     socketRef.current.on('streamStatusUpdate', (data: { status: string }) => {
       if (data.status === 'ended') {
-        Alert.alert(t('live.streamEnded'), t('live.streamHasEnded'));
-        navigation.goBack();
+        setStreamEnded(true);
       }
     });
 
@@ -737,6 +737,23 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           onSuccess={handleCheckoutSuccess}
         />
       )}
+
+      {/* Stream Ended Overlay */}
+      {streamEnded && (
+        <View style={styles.streamEndedOverlay}>
+          <View style={styles.streamEndedContent}>
+            <MaterialIcons name="videocam-off" size={48} color="rgba(255, 255, 255, 0.8)" />
+            <Text style={styles.streamEndedTitle}>{t('live.streamEnded')}</Text>
+            <Text style={styles.streamEndedMessage}>{t('live.streamEndedMessage')}</Text>
+            <TouchableOpacity
+              style={styles.streamEndedButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.streamEndedButtonText}>{t('common.back')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -912,5 +929,42 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#d1d5db',
+  },
+  streamEndedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  streamEndedContent: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  streamEndedTitle: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  streamEndedMessage: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  streamEndedButton: {
+    marginTop: 24,
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  streamEndedButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
