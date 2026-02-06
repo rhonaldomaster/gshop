@@ -314,7 +314,25 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const onProductPress = (productId: string) => {
-    // Pass live stream context for attribution
+    // Minimize to PiP so viewer keeps watching while browsing the product
+    if (stream) {
+      const hostName = stream.hostType === 'seller'
+        ? stream.seller?.businessName || ''
+        : stream.affiliate?.name || '';
+
+      enterPiP({
+        id: stream.id,
+        title: stream.title,
+        hlsUrl: stream.hlsUrl,
+        hostType: stream.hostType,
+        hostName,
+        viewerCount,
+      }, socketRef.current);
+
+      socketRef.current = null;
+    }
+
+    // Navigate to product detail with live context for attribution
     navigation.navigate('ProductDetail', {
       productId,
       liveSessionId: streamId,
