@@ -862,7 +862,7 @@
     "buyNow": "Comprar ahora",
     "addToCart": "Agregar al carrito",
     "seller": "Vendedor",
-    "affiliate": "Afiliado",
+    "affiliateLabel": "Afiliado",
     "streamEnded": "Transmisión finalizada",
     "streamEndedMessage": "Esta transmisión en vivo ha finalizado. ¡Revisa las repeticiones o próximas transmisiones!",
     "streamHasEnded": "Esta transmisión en vivo ha finalizado.",

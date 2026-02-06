@@ -545,7 +545,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
                   backgroundColor: stream.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
                 }]}>
                   <Text style={styles.hostTypeText}>
-                    {stream.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
+                    {stream.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliateLabel').toUpperCase()}
                   </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={16} color="rgba(255, 255, 255, 0.6)" />
