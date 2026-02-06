@@ -19,14 +19,14 @@ This document compares TikTok Shop's live commerce features with GSHOP's current
 | Flash sales | ✅ | ✅ | Discount + timer events |
 | Live chat | ✅ | ✅ | Real-time WebSocket |
 | Viewer count | ✅ | ✅ | Real-time updates |
-| PiP minimize button | ✅ | ⚠️ | Button exists, not system PiP |
+| PiP mini player | ✅ | ✅ | Draggable mini player, auto-PiP on product tap |
+| Cart during live | ✅ | ✅ | Persistent cart with useLiveCart hook |
 
 ### Missing Features
 
 | Feature | TikTok Shop | GSHOP | Priority | Difficulty |
 |---------|:-----------:|:-----:|:--------:|:----------:|
 | Sticky floating product | ✅ | ❌ | High | Low |
-| Cart during live | ✅ | ❌ | High | Medium |
 | Purchases in chat | ✅ | ❌ | Medium | Low |
 | Live-exclusive coupons | ✅ | ❌ | Medium | Medium |
 | "X viewing this product" | ✅ | ❌ | Low | Low |
@@ -36,7 +36,7 @@ This document compares TikTok Shop's live commerce features with GSHOP's current
 | Dramatic flash sale UI | ✅ | ⚠️ | Medium | Low |
 | Double-tap likes | ✅ | ❌ | Low | Low |
 | Swipe gestures | ✅ | ❌ | Low | Medium |
-| System PiP | ✅ | ❌ | Low | High |
+| System PiP (OS-level) | ✅ | ❌ | Low | High |
 | Background music | ✅ | ❌ | Low | Medium |
 
 ---
@@ -75,38 +75,9 @@ This document compares TikTok Shop's live commerce features with GSHOP's current
 
 ---
 
-### 2. Cart During Live (High Priority)
+### ~~2. Cart During Live~~ ✅ Implemented
 
-**What TikTok Does:**
-- Users can add multiple products to cart
-- Continue watching while building cart
-- Single checkout for all items
-- Cart icon shows item count
-
-**Current GSHOP Behavior:**
-- Quick buy is single-product only
-- Each purchase is separate transaction
-- No cart accumulation during live
-
-**Implementation Suggestion:**
-```typescript
-// New state in LiveStreamScreen
-const [liveCart, setLiveCart] = useState<CartItem[]>([]);
-
-// Add to cart function
-const addToLiveCart = (product, variant, quantity) => {
-  setLiveCart(prev => [...prev, { product, variant, quantity }]);
-  showAddedToCartAnimation();
-};
-
-// Cart badge on products tab
-<CartBadge count={liveCart.length} onPress={openCartModal} />
-```
-
-**Files to Modify:**
-- `LiveStreamScreen.tsx` - Add cart state
-- Create `LiveCartModal.tsx` component
-- Modify `ProductCard.tsx` - Add "Add to Cart" option
+Implemented via `useLiveCart` hook with AsyncStorage persistence, `LiveCartModal`, `LiveCartBadge`, and `LiveCartCheckoutScreen`.
 
 ---
 
@@ -276,19 +247,20 @@ socket.on('productViewers', ({ productId, count }) => {
 2. Purchases visible in chat
 3. Enhanced flash sale animations
 
-### Phase 2 - High Impact, Medium Effort
-4. Cart during live session
-5. Live-exclusive coupons
+### ~~Phase 2 - High Impact, Medium Effort~~ ✅ Done
+- ~~Cart during live session~~ ✅ Implemented (persistent with useLiveCart)
+- ~~In-app PiP mini player~~ ✅ Implemented (draggable + auto-PiP on product tap)
 
-### Phase 3 - Medium Impact
-6. Product viewer count
-7. Double-tap likes
-8. Swipe gestures
+### Phase 2 - Medium Impact
+4. Live-exclusive coupons
+5. Product viewer count
+6. Double-tap likes
+7. Swipe gestures
 
-### Phase 4 - Complex Features
-9. Lucky draws / Giveaways
-10. System Picture-in-Picture
-11. Background music integration
+### Phase 3 - Complex Features
+8. Lucky draws / Giveaways
+9. System PiP (OS-level)
+10. Background music integration
 
 ---
 
