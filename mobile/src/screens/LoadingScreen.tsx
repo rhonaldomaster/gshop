@@ -11,7 +11,7 @@ export default function LoadingScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.content}>
         <Image
-          source={require('../../assets/adaptive-icon.png')}
+          source={require('../../assets/adaptive-icon-white.png')}
           style={styles.logo}
           resizeMode="contain"
         />

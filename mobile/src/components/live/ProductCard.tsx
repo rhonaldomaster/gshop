@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { normalizeImageUrl } from '../../config/api.config';
 
 interface ProductCardProps {
@@ -17,6 +18,8 @@ interface ProductCardProps {
   };
   onPress: () => void;
   onQuickBuy?: () => void;
+  onAddToCart?: () => void;
+  isInCart?: boolean;
   showSpecialPrice?: boolean;
   liveMode?: boolean;
 }
@@ -25,9 +28,12 @@ export function ProductCard({
   product,
   onPress,
   onQuickBuy,
+  onAddToCart,
+  isInCart = false,
   showSpecialPrice = false,
   liveMode = false
 }: ProductCardProps) {
+  const { t } = useTranslation('translation');
   console.log('[ProductCard] Rendering with product:', product ? 'exists' : 'null');
 
   // Guard against null/undefined product data
@@ -80,20 +86,35 @@ export function ProductCard({
           )}
         </View>
 
-        {liveMode && onQuickBuy ? (
+        {liveMode ? (
           <View style={styles.liveButtonContainer}>
-            <TouchableOpacity style={styles.quickBuyButton} onPress={onQuickBuy}>
-              <MaterialIcons name="flash-on" size={16} color="white" />
-              <Text style={styles.quickBuyText}>Quick Buy</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.viewDetailsButton} onPress={onPress}>
-              <MaterialIcons name="visibility" size={16} color="#8b5cf6" />
-            </TouchableOpacity>
+            {onAddToCart && (
+              <TouchableOpacity
+                style={[styles.addToCartLiveButton, isInCart && styles.inCartButton]}
+                onPress={onAddToCart}
+                disabled={isInCart}
+              >
+                <MaterialIcons
+                  name={isInCart ? 'check' : 'add-shopping-cart'}
+                  size={14}
+                  color="white"
+                />
+                <Text style={styles.addToCartLiveText}>
+                  {isInCart ? t('live.liveCart.inCart') : t('live.liveCart.addToCart')}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {onQuickBuy && (
+              <TouchableOpacity style={styles.quickBuyButton} onPress={onQuickBuy}>
+                <MaterialIcons name="flash-on" size={14} color="white" />
+                <Text style={styles.quickBuyText}>{t('live.quickBuy')}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <TouchableOpacity style={styles.addToCartButton} onPress={onPress}>
             <MaterialIcons name="add-shopping-cart" size={16} color="white" />
-            <Text style={styles.addToCartText}>Add to Cart</Text>
+            <Text style={styles.addToCartText}>{t('products.addToCart')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -182,6 +203,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
+  addToCartLiveButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#8b5cf6',
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
+  },
+  addToCartLiveText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  inCartButton: {
+    backgroundColor: '#22c55e',
+  },
   quickBuyButton: {
     flex: 1,
     flexDirection: 'row',
@@ -194,7 +233,7 @@ const styles = StyleSheet.create({
   },
   quickBuyText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
   },
   viewDetailsButton: {

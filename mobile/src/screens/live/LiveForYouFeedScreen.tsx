@@ -338,7 +338,7 @@ export default function LiveForYouFeedScreen({ navigation }: any) {
                     color="#fff"
                   />
                   <Text style={styles.hostTypeText}>
-                    {item.stream.hostType === 'seller' ? t('live.seller') : t('live.affiliate')}
+                    {item.stream.hostType === 'seller' ? t('live.seller') : t('live.affiliateLabel')}
                   </Text>
                 </View>
               </View>

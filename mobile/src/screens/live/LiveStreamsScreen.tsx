@@ -272,7 +272,7 @@ export default function LiveStreamsScreen({ navigation }: any) {
                 backgroundColor: item.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
               }]}>
                 <Text style={styles.hostTypeText}>
-                  {item.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
+                  {item.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliateLabel').toUpperCase()}
                 </Text>
               </View>
             </View>

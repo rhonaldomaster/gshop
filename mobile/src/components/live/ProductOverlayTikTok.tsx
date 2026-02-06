@@ -17,9 +17,13 @@ import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-interface StreamProduct {
+export interface StreamProduct {
   id: string;
-  product: {
+  productId?: string;
+  name?: string;
+  price?: number;
+  image?: string;
+  product?: {
     id: string;
     name: string;
     price: number;
@@ -35,11 +39,13 @@ interface ProductOverlayTikTokProps {
   pinnedProductId: string | null;
   purchaseCount: number;
   onQuickBuy: (product: StreamProduct) => void;
+  onAddToCart?: (product: StreamProduct) => void;
   onViewProduct: (productId: string) => void;
   onExpandProducts: () => void;
   timerEndTime?: Date | null;
   isHost?: boolean;
   onPinProduct?: (productId: string) => void;
+  isInCart?: (productId: string) => boolean;
 }
 
 export function ProductOverlayTikTok({
@@ -47,11 +53,13 @@ export function ProductOverlayTikTok({
   pinnedProductId,
   purchaseCount,
   onQuickBuy,
+  onAddToCart,
   onViewProduct,
   onExpandProducts,
   timerEndTime,
   isHost = false,
   onPinProduct,
+  isInCart,
 }: ProductOverlayTikTokProps) {
   const { t } = useTranslation('translation');
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
@@ -181,6 +189,15 @@ export function ProductOverlayTikTok({
     onQuickBuy(product);
   };
 
+  const handleAddToCart = (product: StreamProduct) => {
+    if (onAddToCart) {
+      if (Platform.OS !== 'web') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      onAddToCart(product);
+    }
+  };
+
   const handlePinProduct = (productId: string) => {
     if (onPinProduct) {
       if (Platform.OS !== 'web') {
@@ -287,13 +304,31 @@ export function ProductOverlayTikTok({
             )}
           </View>
 
-          <TouchableOpacity
-            style={styles.quickBuyButton}
-            onPress={() => handleQuickBuy(pinnedProduct)}
-          >
-            <MaterialIcons name="flash-on" size={18} color="white" />
-            <Text style={styles.quickBuyText}>{t('live.buy')}</Text>
-          </TouchableOpacity>
+          <View style={styles.pinnedActions}>
+            {onAddToCart && (
+              <TouchableOpacity
+                style={[
+                  styles.addToCartPinnedButton,
+                  isInCart?.(pinnedProduct.product.id) && styles.inCartPinnedButton,
+                ]}
+                onPress={() => handleAddToCart(pinnedProduct)}
+                disabled={isInCart?.(pinnedProduct.product.id)}
+              >
+                <MaterialIcons
+                  name={isInCart?.(pinnedProduct.product.id) ? 'check' : 'add-shopping-cart'}
+                  size={16}
+                  color="white"
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.quickBuyButton}
+              onPress={() => handleQuickBuy(pinnedProduct)}
+            >
+              <MaterialIcons name="flash-on" size={18} color="white" />
+              <Text style={styles.quickBuyText}>{t('live.buy')}</Text>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -329,12 +364,20 @@ export function ProductOverlayTikTok({
           <Text style={styles.miniPrice}>{formatPrice(displayPrice)}</Text>
         </View>
 
-        {/* Quick add button */}
+        {/* Quick add to cart button */}
         <TouchableOpacity
-          style={styles.miniAddButton}
-          onPress={() => handleQuickBuy(item)}
+          style={[
+            styles.miniAddButton,
+            isInCart?.(item.product.id) && styles.miniInCartButton,
+          ]}
+          onPress={() => onAddToCart ? handleAddToCart(item) : handleQuickBuy(item)}
+          disabled={isInCart?.(item.product.id)}
         >
-          <MaterialIcons name="add-shopping-cart" size={14} color="white" />
+          <MaterialIcons
+            name={isInCart?.(item.product.id) ? 'check' : 'add-shopping-cart'}
+            size={14}
+            color="white"
+          />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -495,6 +538,23 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     fontWeight: '500',
   },
+  pinnedActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 8,
+  },
+  addToCartPinnedButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inCartPinnedButton: {
+    backgroundColor: '#22c55e',
+  },
   quickBuyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -503,7 +563,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     gap: 4,
-    marginLeft: 8,
   },
   quickBuyText: {
     fontSize: 14,
@@ -583,6 +642,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  miniInCartButton: {
+    backgroundColor: '#22c55e',
   },
   hostHint: {
     flexDirection: 'row',

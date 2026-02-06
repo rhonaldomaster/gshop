@@ -17,6 +17,8 @@ import {
 } from 'react-native';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 import { usePiP } from '../../contexts/PiPContext';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 
@@ -32,6 +34,7 @@ interface MiniPlayerProps {
 }
 
 export const MiniPlayer: React.FC<MiniPlayerProps> = ({ onExpand }) => {
+  const { t } = useTranslation('translation');
   const { isActive, streamData, exitPiP, returnToFullscreen, socketRef } = usePiP();
   const navigation = useNavigation();
   const videoRef = useRef<Video>(null);
@@ -91,7 +94,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ onExpand }) => {
     })
   ).current;
 
-  // Listen for viewer count updates via socket
+  // Listen for viewer count updates and stream status via socket
   useEffect(() => {
     if (socketRef.current && streamData) {
       const socket = socketRef.current;
@@ -100,11 +103,24 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ onExpand }) => {
         // Update handled in context
       });
 
+      socket.on('streamStatusUpdate', (data: { status: string }) => {
+        if (data.status === 'ended') {
+          Toast.show({
+            type: 'info',
+            text1: t('live.streamEnded'),
+            text2: t('live.streamEndedMessage'),
+            visibilityTime: 4000,
+          });
+          exitPiP();
+        }
+      });
+
       return () => {
         socket.off('viewerCountUpdate');
+        socket.off('streamStatusUpdate');
       };
     }
-  }, [socketRef, streamData]);
+  }, [socketRef, streamData, exitPiP, t]);
 
   // Handle playback status updates
   const handlePlaybackStatus = (status: AVPlaybackStatus) => {

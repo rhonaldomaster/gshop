@@ -40,7 +40,7 @@ export default ({ config }) => {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#000000',
       },
       package: isDev ? 'com.gshop.app.dev' : 'com.gshop.app',
       versionCode: 1,
