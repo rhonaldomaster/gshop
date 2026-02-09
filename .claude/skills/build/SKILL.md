@@ -22,9 +22,16 @@ mobile/
 
 ### Configuring API URL for APK (VERY IMPORTANT)
 
-`.env` variables don't always load correctly during build. To ensure the APK uses the correct backend URL, **modify `app.config.js` directly**.
+For local builds with `gradlew`, `Constants.expoConfig?.extra` does NOT embed environment variables into the JS bundle. The app falls back to hardcoded defaults in `env.config.ts`. You MUST update **both** files:
 
-**File:** `mobile/app.config.js` (lines 107 and 109)
+**1. `mobile/src/config/env.config.ts`** (lines ~99-101) - THIS IS THE CRITICAL ONE for local builds:
+
+```typescript
+API_BASE_URL: getEnvVar('API_BASE_URL', 'https://YOUR-URL-HERE.ngrok-free.app'),
+WEBSOCKET_URL: getEnvVar('WEBSOCKET_URL', 'https://YOUR-URL-HERE.ngrok-free.app'),
+```
+
+**2. `mobile/app.config.js`** (extra section) - for EAS builds:
 
 ```javascript
 extra: {
@@ -33,16 +40,24 @@ extra: {
 }
 ```
 
-> **Note**: ngrok URLs change on restart. Update `app.config.js` and regenerate the APK.
+**3. `mobile/.env.development` and `mobile/.env`** - update both with the same URL.
+
+> **Note**: ngrok URLs change on restart. Update all three locations and regenerate the APK.
+> To verify the URL is correctly embedded, after building run:
+> `grep -ac 'YOUR-NGROK-SUBDOMAIN' mobile/android/app/build/generated/assets/createBundleReleaseJsAndAssets/index.android.bundle`
+
+### ngrok Header Requirement
+
+The API client (`mobile/src/services/api.ts`) includes the `ngrok-skip-browser-warning: true` header globally for all axios requests. For any `fetch()` calls outside of axios, you must add this header manually or ngrok will return an HTML warning page instead of JSON.
 
 ### Quick Reference
 
 | Method | What to do |
 |--------|-----------|
 | Expo Go | Nothing, uses `.env.development` automatically |
-| EAS Build (dev) | `cp .env.development .env` |
+| EAS Build (dev) | `cp .env.development .env` + update `app.config.js` |
 | EAS Build (prod) | Use `eas secret:create` |
-| Local Build | `cp .env.development .env` |
+| Local Build | Update `env.config.ts` fallback + `app.config.js` + `.env`/`.env.development` |
 
 ---
 
@@ -231,6 +246,17 @@ Export before running gradlew:
 
 ```bash
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+```
+
+### "Cannot run program 'node'" during gradlew build
+
+Gradle daemon doesn't inherit nvm's PATH. Fix by exporting node's path and stopping the old daemon:
+
+```bash
+export PATH="$HOME/.nvm/versions/node/$(node -v)/bin:$PATH"
+cd mobile/android
+./gradlew --stop
+./gradlew assembleRelease
 ```
 
 ### "Unknown sources" installation blocked

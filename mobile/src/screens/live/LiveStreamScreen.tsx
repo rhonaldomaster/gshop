@@ -168,7 +168,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     try {
       const url = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}/live/streams/${streamId}`;
       console.log('Fetching stream from:', url);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+      });
       if (response.ok) {
         const data = await response.json();
         setStream(data);
