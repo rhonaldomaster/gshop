@@ -219,6 +219,25 @@ export function useLiveCart(streamId: string) {
     };
   }, [storageKey]);
 
+  // Reload cart from AsyncStorage (useful when returning from another screen)
+  const reload = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(storageKey);
+      if (stored) {
+        const { items, savedAt }: StoredCart = JSON.parse(stored);
+        if (Date.now() - savedAt < CART_EXPIRY_MS) {
+          const restoredItems = items.map(item => ({
+            ...item,
+            addedAt: new Date(item.addedAt),
+          }));
+          setCart(restoredItems);
+        }
+      }
+    } catch (error) {
+      console.error('[useLiveCart] Error reloading cart:', error);
+    }
+  }, [storageKey]);
+
   return {
     cart,
     setCart,
@@ -231,7 +250,49 @@ export function useLiveCart(streamId: string) {
     clearCart,
     getSummary,
     getExpiryInfo,
+    reload,
   };
+}
+
+/**
+ * Standalone utility to add an item to a live cart from outside the hook.
+ * Reads current cart from AsyncStorage, adds/updates the item, and saves back.
+ */
+export async function addToLiveCartStorage(
+  streamId: string,
+  item: { productId: string; product: { id: string; name: string; price: number; images: string[]; stock?: number }; quantity: number; specialPrice?: number }
+) {
+  const storageKey = `${LIVE_CART_KEY_PREFIX}${streamId}`;
+  try {
+    let items: LiveCartItemData[] = [];
+    const stored = await AsyncStorage.getItem(storageKey);
+    if (stored) {
+      const parsed: StoredCart = JSON.parse(stored);
+      if (Date.now() - parsed.savedAt < CART_EXPIRY_MS) {
+        items = parsed.items;
+      }
+    }
+
+    const existingIndex = items.findIndex(
+      existing => existing.productId === item.productId
+    );
+
+    if (existingIndex >= 0) {
+      items[existingIndex] = {
+        ...items[existingIndex],
+        quantity: items[existingIndex].quantity + (item.quantity || 1),
+      };
+    } else {
+      items.push({
+        ...item,
+        addedAt: new Date(),
+      });
+    }
+
+    await AsyncStorage.setItem(storageKey, JSON.stringify({ items, savedAt: Date.now() }));
+  } catch (error) {
+    console.error('[addToLiveCartStorage] Error:', error);
+  }
 }
 
 // Utility to clean up expired carts

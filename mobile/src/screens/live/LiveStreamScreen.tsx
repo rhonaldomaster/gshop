@@ -28,6 +28,7 @@ import { LiveCartItemData } from '../../components/live/LiveCartItem';
 import { API_CONFIG } from '../../config/api.config';
 import { usePiP } from '../../contexts/PiPContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLiveCart } from '../../hooks/useLiveCart';
 
 interface LiveStreamData {
@@ -104,8 +105,16 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     isInCart: checkIsInCart,
     clearCart,
     getSummary: getCartSummary,
+    reload: reloadLiveCart,
   } = useLiveCart(streamId);
   const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Reload live cart when screen regains focus (e.g. returning from ProductDetail)
+  useFocusEffect(
+    useCallback(() => {
+      reloadLiveCart();
+    }, [reloadLiveCart])
+  );
 
   // Purchase notification hook
   const { triggerNotification, currentPurchase, dismissCelebration } = usePurchaseNotifications();
