@@ -72,8 +72,9 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({ onExpand }) => {
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gesture) =>
+        Math.abs(gesture.dx) > 5 || Math.abs(gesture.dy) > 5,
       onPanResponderGrant: () => {
         pan.setOffset({
           x: (pan.x as any)._value,
