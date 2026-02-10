@@ -115,6 +115,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<Video>(null);
+  const wasPlayingRef = useRef(false);
 
   // Handle returning from PiP mode - reuse existing socket
   useEffect(() => {
@@ -456,6 +457,23 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     return purchaseStats[pinnedProductId] || 0;
   }, [pinnedProductId, purchaseStats]);
 
+  // Detect stream end via video player (fallback if socket event doesn't arrive)
+  const handlePlaybackStatusUpdate = useCallback((status: any) => {
+    if (!status.isLoaded) return;
+
+    if (status.isPlaying) {
+      wasPlayingRef.current = true;
+    }
+
+    // Stream ended: was playing, now stopped, not buffering, and not already marked
+    if (wasPlayingRef.current && !status.isPlaying && !status.isBuffering && !streamEnded) {
+      // didJustFinish for HLS means the stream genuinely ended
+      if (status.didJustFinish) {
+        setStreamEnded(true);
+      }
+    }
+  }, [streamEnded]);
+
   const formatViewerCount = (count: number) => {
     if (count < 1000) return count.toString();
     if (count < 1000000) return `${(count / 1000).toFixed(1)}K`;
@@ -523,6 +541,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           resizeMode={ResizeMode.CONTAIN}
           shouldPlay={true}
           isLooping={false}
+          onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
         />
 
         {/* Stream Info Overlay */}

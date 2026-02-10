@@ -13,6 +13,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { normalizeImageUrl } from '../../config/api.config';
+import { apiClient } from '../../services/api';
 
 interface Product {
   id: string;
@@ -77,32 +78,33 @@ export function QuickCheckoutModal({
     setLoading(true);
     try {
       // Fetch saved addresses
-      const addressResponse = await fetch(`${process.env.API_BASE_URL}/users/addresses`, {
-        headers: {
-          // Add auth token
-        },
-      });
-      if (addressResponse.ok) {
-        const addressData = await addressResponse.json();
-        setAddresses(addressData);
-        if (addressData.length > 0) {
-          // Select default address or first one
-          setSelectedAddress(addressData.find((a: Address & { isDefault: boolean }) => a.isDefault) || addressData[0]);
+      try {
+        const addressResult = await apiClient.get<Address[]>('/users/addresses');
+        const addressData = addressResult.data;
+        if (Array.isArray(addressData)) {
+          setAddresses(addressData);
+          if (addressData.length > 0) {
+            setSelectedAddress(
+              addressData.find((a: any) => a.isDefault) || addressData[0]
+            );
+          }
         }
+      } catch (err) {
+        console.log('No addresses available');
       }
 
       // Fetch saved payment methods
-      const paymentResponse = await fetch(`${process.env.API_BASE_URL}/users/payment-methods`, {
-        headers: {
-          // Add auth token
-        },
-      });
-      if (paymentResponse.ok) {
-        const paymentData = await paymentResponse.json();
-        setPaymentMethods(paymentData);
-        if (paymentData.length > 0) {
-          setSelectedPaymentMethod(paymentData[0]);
+      try {
+        const paymentResult = await apiClient.get<PaymentMethod[]>('/users/payment-methods');
+        const paymentData = paymentResult.data;
+        if (Array.isArray(paymentData)) {
+          setPaymentMethods(paymentData);
+          if (paymentData.length > 0) {
+            setSelectedPaymentMethod(paymentData[0]);
+          }
         }
+      } catch (err) {
+        console.log('No payment methods available');
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
@@ -125,44 +127,36 @@ export function QuickCheckoutModal({
     setSubmitting(true);
 
     try {
-      const response = await fetch(`${process.env.API_BASE_URL}/orders/quick-checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add auth token
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1,
-          addressId: selectedAddress.id,
-          paymentMethodId: selectedPaymentMethod.id,
-          liveSessionId,
-          affiliateId,
-          specialPrice: product.specialPrice,
-        }),
+      const result = await apiClient.post('/orders/quick-checkout', {
+        productId: product.id,
+        quantity: 1,
+        addressId: selectedAddress.id,
+        paymentMethodId: selectedPaymentMethod.id,
+        liveSessionId,
+        affiliateId,
+        specialPrice: product.specialPrice,
       });
 
-      if (response.ok) {
-        const order = await response.json();
-        Alert.alert(
-          t('common.success'),
-          t('live.purchaseSuccess'),
-          [
-            {
-              text: t('common.ok'),
-              onPress: () => {
-                onSuccess();
-                onClose();
-              },
+      Alert.alert(
+        t('common.success'),
+        t('live.purchaseSuccess'),
+        [
+          {
+            text: t('common.ok'),
+            onPress: () => {
+              onSuccess();
+              onClose();
             },
-          ]
-        );
-      } else {
-        throw new Error('Failed to create order');
-      }
-    } catch (error) {
+          },
+        ]
+      );
+    } catch (error: any) {
       console.error('Error creating order:', error);
-      Alert.alert(t('common.error'), t('live.purchaseFailed'));
+      if (error.statusCode === 401) {
+        Alert.alert(t('auth.sessionExpired'), t('auth.loginAgainToAddCart'));
+      } else {
+        Alert.alert(t('common.error'), t('live.purchaseFailed'));
+      }
     } finally {
       setSubmitting(false);
     }

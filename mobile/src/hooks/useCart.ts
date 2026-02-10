@@ -110,7 +110,14 @@ export function useCart(): UseCartReturn {
       } catch (error: any) {
         console.error('useCart: Add to cart failed', error);
         if (showAlert) {
-          Alert.alert(t('common.error'), error.message || t('cart.failedToAddItem'));
+          if (error.statusCode === 401) {
+            Alert.alert(
+              t('auth.sessionExpired'),
+              t('auth.loginAgainToAddCart'),
+            );
+          } else {
+            Alert.alert(t('common.error'), error.message || t('cart.failedToAddItem'));
+          }
         }
         return false;
       }

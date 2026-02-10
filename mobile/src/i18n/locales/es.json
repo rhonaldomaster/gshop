@@ -73,7 +73,9 @@
     "loginToPurchase": "Por favor inicia sesión para realizar una compra",
     "socialLoginError": "Error de inicio de sesión",
     "socialLoginErrorMessage": "No se pudo completar el inicio de sesión. Por favor intenta nuevamente.",
-    "socialLoginCancelled": "Inicio de sesión cancelado"
+    "socialLoginCancelled": "Inicio de sesión cancelado",
+    "sessionExpired": "Sesión expirada",
+    "loginAgainToAddCart": "Tu sesión ha expirado. Por favor inicia sesión nuevamente para agregar al carrito."
   },
   "welcome": {
     "tagline": "Tu experiencia de compra social",

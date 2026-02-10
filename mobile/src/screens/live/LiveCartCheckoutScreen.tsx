@@ -20,6 +20,7 @@ import Toast from 'react-native-toast-message';
 import { normalizeImageUrl, API_CONFIG } from '../../config/api.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LiveCartItemData } from '../../components/live/LiveCartItem';
+import { apiClient } from '../../services/api';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -168,18 +169,8 @@ export default function LiveCartCheckoutScreen() {
         affiliateId,
       };
 
-      // TODO: Replace with actual API call
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add auth header
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      // Simulated success for now
-      const orderId = `ORD-${Date.now()}`;
+      const result = await apiClient.post<{ id: string }>('/orders', orderData);
+      const orderId = result.data?.id || `ORD-${Date.now()}`;
 
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -199,9 +190,13 @@ export default function LiveCartCheckoutScreen() {
           { name: 'LiveMain' },
         ],
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Order creation failed:', error);
-      Alert.alert(t('common.error'), t('live.liveCheckout.orderFailed'));
+      if (error.statusCode === 401) {
+        Alert.alert(t('auth.sessionExpired'), t('auth.loginAgainToAddCart'));
+      } else {
+        Alert.alert(t('common.error'), t('live.liveCheckout.orderFailed'));
+      }
     } finally {
       setSubmitting(false);
     }
