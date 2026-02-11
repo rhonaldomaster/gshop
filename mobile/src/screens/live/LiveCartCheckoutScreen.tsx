@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,61 +8,80 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  Dimensions,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
-import { normalizeImageUrl, API_CONFIG } from '../../config/api.config';
+import { normalizeImageUrl } from '../../config/api.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LiveCartItemData } from '../../components/live/LiveCartItem';
-import { apiClient } from '../../services/api';
+import { addressesService, Address } from '../../services/addresses.service';
+import { ordersService, CreateOrderRequest, ShippingAddress } from '../../services/orders.service';
+import { paymentsService, PaymentMethod } from '../../services/payments.service';
+import { api } from '../../services/api';
+import { useApi } from '../../hooks/useApi';
+import { LiveStackParamList } from '../../navigation/LiveNavigator';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-interface SavedAddress {
+interface PaymentProvider {
   id: string;
   name: string;
-  street: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  isDefault: boolean;
+  description: string;
+  icon: string;
+  enabled: boolean;
 }
 
-interface SavedPaymentMethod {
-  id: string;
-  type: 'card' | 'mercadopago';
-  last4?: string;
-  brand?: string;
-  isDefault: boolean;
+interface WalletInfo {
+  balance: number;
+  canPay: boolean;
+  shortfall: number;
+  isLoading: boolean;
 }
 
-type LiveCartCheckoutParams = {
-  LiveCartCheckout: {
-    items: LiveCartItemData[];
-    streamId: string;
-    affiliateId?: string;
-  };
-};
+type LiveCartCheckoutNavigationProp = NativeStackNavigationProp<LiveStackParamList, 'LiveCartCheckout'>;
 
 export default function LiveCartCheckoutScreen() {
   const { t } = useTranslation('translation');
-  const navigation = useNavigation<any>();
-  const route = useRoute<RouteProp<LiveCartCheckoutParams, 'LiveCartCheckout'>>();
-  const { items, streamId, affiliateId } = route.params;
+  const navigation = useNavigation<LiveCartCheckoutNavigationProp>();
+  const route = useRoute<RouteProp<LiveStackParamList, 'LiveCartCheckout'>>();
+  const { items, streamId, affiliateId, sellerId } = route.params;
   const { user, isAuthenticated } = useAuth();
 
-  const [loading, setLoading] = useState(true);
+  // Address state
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [loadingAddress, setLoadingAddress] = useState(true);
+
+  // Payment state
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [providers, setProviders] = useState<PaymentProvider[]>([]);
+  const [loadingProviders, setLoadingProviders] = useState(true);
+  const [walletInfo, setWalletInfo] = useState<WalletInfo>({
+    balance: 0, canPay: false, shortfall: 0, isLoading: true,
+  });
+
+  // Shipping state
+  const [shippingInfo, setShippingInfo] = useState<{
+    shippingType: 'local' | 'national';
+    shippingCost: number;
+    isFree: boolean;
+    message: string;
+  } | null>(null);
+  const [calculatingShipping, setCalculatingShipping] = useState(false);
+
+  // Platform fee
+  const [platformFeeRate, setPlatformFeeRate] = useState(0);
+  const [loadingFeeRate, setLoadingFeeRate] = useState(true);
+
   const [submitting, setSubmitting] = useState(false);
-  const [addresses, setAddresses] = useState<SavedAddress[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<SavedAddress | null>(null);
-  const [paymentMethods, setPaymentMethods] = useState<SavedPaymentMethod[]>([]);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<SavedPaymentMethod | null>(null);
+
+  // API hooks
+  const createOrderApi = useApi(ordersService.createOrder);
+  const createPaymentApi = useApi(paymentsService.createPayment);
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => {
@@ -75,69 +94,200 @@ export default function LiveCartCheckoutScreen() {
   const discount = originalTotal - subtotal;
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Shipping calculation (simplified)
-  const shippingCost = subtotal >= 100000 ? 0 : 8000;
-  const total = subtotal + shippingCost;
+  const shippingCost = shippingInfo?.shippingCost ?? 0;
+  const platformFee = Number(((subtotal * platformFeeRate) / 100).toFixed(2));
+  const total = Number((subtotal + shippingCost + platformFee).toFixed(2));
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
-  const fetchUserData = async () => {
-    setLoading(true);
-    try {
-      // TODO: Replace with actual API calls
-      setAddresses([
-        {
-          id: '1',
-          name: 'Casa',
-          street: 'Calle 123 #45-67',
-          city: 'Bogota',
-          state: 'Cundinamarca',
-          postalCode: '110111',
-          isDefault: true,
-        },
-      ]);
-      setSelectedAddress({
-        id: '1',
-        name: 'Casa',
-        street: 'Calle 123 #45-67',
-        city: 'Bogota',
-        state: 'Cundinamarca',
-        postalCode: '110111',
-        isDefault: true,
-      });
-
-      setPaymentMethods([
-        {
-          id: '1',
-          type: 'card',
-          last4: '4242',
-          brand: 'Visa',
-          isDefault: true,
-        },
-        {
-          id: '2',
-          type: 'mercadopago',
-          isDefault: false,
-        },
-      ]);
-      setSelectedPaymentMethod({
-        id: '1',
-        type: 'card',
-        last4: '4242',
-        brand: 'Visa',
-        isDefault: true,
-      });
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = loadingAddress;
 
   const formatPrice = (value: number) => {
-    return `$${value.toLocaleString('es-CO')}`;
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const getProviderName = (providerId: string): string => {
+    return t(`checkout.payment.providers.${providerId}.name`) || providerId;
+  };
+
+  // Map Address to ShippingAddress (same as CheckoutScreen)
+  const mapAddressToShipping = (address: Address): ShippingAddress => {
+    const [firstName, ...lastNameParts] = address.fullName.split(' ');
+    return {
+      firstName: firstName || '',
+      lastName: lastNameParts.join(' ') || '',
+      address: address.address,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      phone: address.phoneNumber,
+      document: address.documentNumber || '',
+      documentType: address.documentType || 'CC',
+    };
+  };
+
+  // Effect 1: Load addresses
+  useEffect(() => {
+    const loadAddresses = async () => {
+      if (!isAuthenticated) {
+        setLoadingAddress(false);
+        return;
+      }
+      try {
+        setLoadingAddress(true);
+        const userAddresses = await addressesService.getAddresses();
+        setAddresses(userAddresses);
+
+        const defaultAddr = userAddresses.find(a => a.isDefault) || userAddresses[0] || null;
+        setSelectedAddress(defaultAddr);
+      } catch (error) {
+        console.error('Failed to load addresses:', error);
+      } finally {
+        setLoadingAddress(false);
+      }
+    };
+    loadAddresses();
+  }, [isAuthenticated]);
+
+  // Effect 2: Load payment providers
+  useEffect(() => {
+    const fetchProviders = async () => {
+      try {
+        setLoadingProviders(true);
+        const response = await paymentsService.getAvailableProviders();
+
+        if (response.providers && Array.isArray(response.providers)) {
+          setProviders(response.providers);
+
+          // Auto-select first provider if none selected
+          if (!selectedPaymentMethod && response.providers.length > 0) {
+            const firstProvider = response.providers[0];
+            const method: PaymentMethod = {
+              id: firstProvider.id,
+              type: firstProvider.id === 'stripe' ? 'card' : 'mercadopago',
+              provider: getProviderName(firstProvider.id),
+              details: {},
+              isDefault: false,
+              createdAt: new Date().toISOString(),
+            };
+            setSelectedPaymentMethod(method);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch payment providers:', error);
+        setProviders([
+          { id: 'mercadopago', name: 'MercadoPago', description: 'PSE, cash payments, and cards', icon: '💵', enabled: true },
+        ]);
+      } finally {
+        setLoadingProviders(false);
+      }
+    };
+    fetchProviders();
+  }, []);
+
+  // Effect 3: Load wallet balance
+  useEffect(() => {
+    const fetchWalletBalance = async () => {
+      if (!user) {
+        setWalletInfo({ balance: 0, canPay: false, shortfall: subtotal, isLoading: false });
+        return;
+      }
+      try {
+        const walletData = await paymentsService.getWalletBalance();
+        const balance = walletData.tokenBalance || 0;
+        const canPay = balance >= subtotal;
+        const shortfall = canPay ? 0 : subtotal - balance;
+        setWalletInfo({ balance, canPay, shortfall, isLoading: false });
+      } catch (error) {
+        console.error('Failed to fetch wallet balance:', error);
+        setWalletInfo({ balance: 0, canPay: false, shortfall: subtotal, isLoading: false });
+      }
+    };
+    fetchWalletBalance();
+  }, [user, subtotal]);
+
+  // Effect 4: Load platform fee rate
+  useEffect(() => {
+    const fetchFeeRate = async () => {
+      try {
+        const response = await api.get<{ rate: number }>('/config/buyer-platform-fee-rate');
+        setPlatformFeeRate(response.data?.rate || 0);
+      } catch (error) {
+        console.error('Error fetching platform fee rate:', error);
+        setPlatformFeeRate(0);
+      } finally {
+        setLoadingFeeRate(false);
+      }
+    };
+    fetchFeeRate();
+  }, []);
+
+  // Effect 5: Calculate shipping when address changes
+  useEffect(() => {
+    if (!selectedAddress || !sellerId) return;
+
+    const calculateShipping = async () => {
+      try {
+        setCalculatingShipping(true);
+        const response = await api.post<{
+          shippingType: 'local' | 'national';
+          shippingCost: number;
+          isFree: boolean;
+          message: string;
+        }>('/orders/calculate-shipping', {
+          sellerId,
+          buyerCity: selectedAddress.city,
+          buyerState: selectedAddress.state,
+          orderTotal: subtotal,
+        });
+
+        if (response.success && response.data) {
+          setShippingInfo(response.data);
+        }
+      } catch (error) {
+        console.error('Shipping calculation error:', error);
+        setShippingInfo(null);
+      } finally {
+        setCalculatingShipping(false);
+      }
+    };
+    calculateShipping();
+  }, [selectedAddress, sellerId, subtotal]);
+
+  const handleProviderSelect = (provider: PaymentProvider) => {
+    const method: PaymentMethod = {
+      id: provider.id,
+      type: provider.id === 'stripe' ? 'card' : 'mercadopago',
+      provider: getProviderName(provider.id),
+      details: {},
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    };
+    setSelectedPaymentMethod(method);
+  };
+
+  const handleWalletSelect = () => {
+    if (!walletInfo.canPay) {
+      Alert.alert(
+        t('wallet.insufficientBalance'),
+        t('checkout.payment.providers.wallet.insufficientDescription', {
+          shortfall: formatPrice(walletInfo.shortfall),
+        })
+      );
+      return;
+    }
+    const method: PaymentMethod = {
+      id: 'wallet',
+      type: 'wallet',
+      provider: t('checkout.payment.providers.wallet.name'),
+      details: { tokenBalance: walletInfo.balance },
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+    };
+    setSelectedPaymentMethod(method);
   };
 
   const handlePlaceOrder = async () => {
@@ -149,6 +299,10 @@ export default function LiveCartCheckoutScreen() {
       Alert.alert(t('common.error'), t('live.liveCheckout.selectPayment'));
       return;
     }
+    if (!shippingInfo) {
+      Alert.alert(t('common.error'), t('checkout.errors.shippingNotCalculated'));
+      return;
+    }
 
     setSubmitting(true);
     if (Platform.OS !== 'web') {
@@ -156,46 +310,94 @@ export default function LiveCartCheckoutScreen() {
     }
 
     try {
-      const orderData = {
+      // Step 1: Map address to ShippingAddress
+      const shippingAddress = mapAddressToShipping(selectedAddress);
+
+      // Step 2: Create order
+      const orderRequest: CreateOrderRequest = {
         items: items.map(item => ({
           productId: item.productId,
-          variantId: item.variantId,
           quantity: item.quantity,
-          price: item.specialPrice ?? item.product.price,
         })),
-        shippingAddressId: selectedAddress.id,
-        paymentMethodId: selectedPaymentMethod.id,
+        shippingAddress,
+        shippingAmount: shippingInfo.shippingCost,
         liveSessionId: streamId,
         affiliateId,
+        notes: '',
       };
 
-      const result = await apiClient.post<{ id: string }>('/orders', orderData);
-      const orderId = result.data?.id || `ORD-${Date.now()}`;
+      const order = await createOrderApi.execute(orderRequest);
+      if (!order) throw new Error('Failed to create order');
 
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Step 3: Map payment method to backend enum
+      const paymentMethodMap: Record<string, string> = {
+        'mercadopago': 'mercadopago',
+        'card': 'stripe_card',
+        'crypto': 'usdc_polygon',
+        'gshop_tokens': 'gshop_tokens',
+        'wallet': 'wallet_balance',
+      };
+      const backendPaymentMethod = paymentMethodMap[selectedPaymentMethod.type] || 'mercadopago';
+
+      // Step 4: Create payment record
+      const payment = await createPaymentApi.execute({
+        orderId: order.id,
+        userId: user?.id || order.userId,
+        paymentMethod: backendPaymentMethod,
+        amount: total,
+        currency: 'COP',
+      });
+      if (!payment) throw new Error('Failed to create payment');
+
+      // Step 5: Route based on payment method
+      if (selectedPaymentMethod.type === 'wallet') {
+        const walletResult = await paymentsService.processWalletPayment(payment.id!);
+        if (walletResult.success) {
+          if (Platform.OS !== 'web') {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          }
+          Toast.show({
+            type: 'success',
+            text1: t('live.liveCheckout.orderSuccess'),
+            text2: t('live.liveCheckout.orderSuccessMessage', { orderNumber: order.orderNumber }),
+            visibilityTime: 3000,
+          });
+          navigation.reset({ index: 0, routes: [{ name: 'LiveMain' }] });
+        } else {
+          Alert.alert(t('common.error'), walletResult.error || t('live.liveCheckout.orderFailed'));
+        }
+      } else if (selectedPaymentMethod.type === 'card') {
+        navigation.navigate('LiveStripeCard', {
+          orderId: order.id!,
+          paymentId: payment.id!,
+          amount: total,
+        });
+      } else {
+        // MercadoPago
+        const paymentUrl = payment.paymentMetadata?.mercadopago_init_point || payment.paymentUrl;
+        if (paymentUrl && typeof paymentUrl === 'string') {
+          navigation.navigate('LivePaymentWebView', {
+            paymentUrl,
+            orderId: order.id!,
+            paymentId: payment.id!,
+          });
+        } else {
+          // Fallback
+          Toast.show({
+            type: 'success',
+            text1: t('live.liveCheckout.orderSuccess'),
+            text2: t('live.liveCheckout.orderSuccessMessage', { orderNumber: order.orderNumber }),
+            visibilityTime: 3000,
+          });
+          navigation.reset({ index: 0, routes: [{ name: 'LiveMain' }] });
+        }
       }
-
-      Toast.show({
-        type: 'success',
-        text1: t('live.liveCheckout.orderSuccess'),
-        text2: t('live.liveCheckout.orderSuccessMessage', { orderNumber: orderId }),
-        visibilityTime: 3000,
-      });
-
-      // Navigate to success screen or back to stream
-      navigation.reset({
-        index: 0,
-        routes: [
-          { name: 'LiveMain' },
-        ],
-      });
     } catch (error: any) {
       console.error('Order creation failed:', error);
       if (error.statusCode === 401) {
         Alert.alert(t('auth.sessionExpired'), t('auth.loginAgainToAddCart'));
       } else {
-        Alert.alert(t('common.error'), t('live.liveCheckout.orderFailed'));
+        Alert.alert(t('common.error'), error.message || t('live.liveCheckout.orderFailed'));
       }
     } finally {
       setSubmitting(false);
@@ -249,6 +451,8 @@ export default function LiveCartCheckoutScreen() {
     );
   }
 
+  const isWalletSelected = selectedPaymentMethod?.type === 'wallet';
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -285,69 +489,130 @@ export default function LiveCartCheckoutScreen() {
         {/* Shipping Address */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('live.liveCheckout.shippingAddress')}</Text>
-          {addresses.map((address) => (
-            <TouchableOpacity
-              key={address.id}
-              style={[
-                styles.addressCard,
-                selectedAddress?.id === address.id && styles.selectedCard,
-              ]}
-              onPress={() => setSelectedAddress(address)}
-            >
-              <View style={styles.radioOuter}>
-                {selectedAddress?.id === address.id && (
-                  <View style={styles.radioInner} />
+          {addresses.length === 0 ? (
+            <Text style={styles.emptyText}>{t('live.liveCheckout.noAddresses')}</Text>
+          ) : (
+            addresses.map((address) => (
+              <TouchableOpacity
+                key={address.id}
+                style={[
+                  styles.addressCard,
+                  selectedAddress?.id === address.id && styles.selectedCard,
+                ]}
+                onPress={() => setSelectedAddress(address)}
+              >
+                <View style={styles.radioOuter}>
+                  {selectedAddress?.id === address.id && (
+                    <View style={styles.radioInner} />
+                  )}
+                </View>
+                <View style={styles.addressInfo}>
+                  <Text style={styles.addressName}>{address.fullName}</Text>
+                  <Text style={styles.addressStreet}>{address.address}</Text>
+                  <Text style={styles.addressCity}>
+                    {address.city}, {address.state} {address.postalCode}
+                  </Text>
+                  {address.phoneNumber && (
+                    <Text style={styles.addressPhone}>{address.phoneNumber}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
+        {/* Shipping Info */}
+        {selectedAddress && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('live.liveCheckout.shipping')}</Text>
+            {calculatingShipping ? (
+              <View style={styles.shippingLoading}>
+                <ActivityIndicator size="small" color="#8b5cf6" />
+                <Text style={styles.shippingLoadingText}>{t('checkout.calculatingShipping')}</Text>
+              </View>
+            ) : shippingInfo ? (
+              <View style={[styles.shippingCard, shippingInfo.isFree && styles.freeShippingCard]}>
+                <View style={styles.shippingCardHeader}>
+                  <Text style={styles.shippingType}>
+                    {t(`checkout.shippingType.${shippingInfo.shippingType}`)}
+                  </Text>
+                  <Text style={[styles.shippingPrice, shippingInfo.isFree && styles.freeShippingText]}>
+                    {shippingInfo.isFree ? t('checkout.free').toUpperCase() : formatPrice(shippingInfo.shippingCost)}
+                  </Text>
+                </View>
+                {shippingInfo.message && (
+                  <Text style={styles.shippingMessage}>{shippingInfo.message}</Text>
                 )}
               </View>
-              <View style={styles.addressInfo}>
-                <Text style={styles.addressName}>{address.name}</Text>
-                <Text style={styles.addressStreet}>{address.street}</Text>
-                <Text style={styles.addressCity}>
-                  {address.city}, {address.state} {address.postalCode}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.addButton}>
-            <MaterialIcons name="add" size={20} color="#8b5cf6" />
-            <Text style={styles.addButtonText}>{t('live.liveCheckout.addAddress')}</Text>
-          </TouchableOpacity>
-        </View>
+            ) : null}
+          </View>
+        )}
 
         {/* Payment Method */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('live.liveCheckout.paymentMethod')}</Text>
-          {paymentMethods.map((method) => (
-            <TouchableOpacity
-              key={method.id}
-              style={[
-                styles.paymentCard,
-                selectedPaymentMethod?.id === method.id && styles.selectedCard,
-              ]}
-              onPress={() => setSelectedPaymentMethod(method)}
-            >
-              <View style={styles.radioOuter}>
-                {selectedPaymentMethod?.id === method.id && (
-                  <View style={styles.radioInner} />
-                )}
-              </View>
-              <View style={styles.paymentInfo}>
-                {method.type === 'card' ? (
-                  <>
-                    <MaterialIcons name="credit-card" size={20} color="#374151" />
-                    <Text style={styles.paymentText}>
-                      {method.brand} •••• {method.last4}
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <MaterialIcons name="account-balance-wallet" size={20} color="#00bcff" />
-                    <Text style={styles.paymentText}>MercadoPago</Text>
-                  </>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+          {loadingProviders || walletInfo.isLoading ? (
+            <View style={styles.shippingLoading}>
+              <ActivityIndicator size="small" color="#8b5cf6" />
+              <Text style={styles.shippingLoadingText}>{t('checkout.payment.loadingMethods')}</Text>
+            </View>
+          ) : (
+            <>
+              {/* Wallet Option */}
+              {user && (
+                <TouchableOpacity
+                  style={[
+                    styles.paymentCard,
+                    isWalletSelected && styles.selectedCard,
+                    !walletInfo.canPay && styles.disabledCard,
+                  ]}
+                  onPress={handleWalletSelect}
+                  disabled={!walletInfo.canPay}
+                >
+                  <View style={styles.radioOuter}>
+                    {isWalletSelected && <View style={styles.radioInner} />}
+                  </View>
+                  <View style={styles.paymentInfo}>
+                    <MaterialIcons name="account-balance-wallet" size={20} color={walletInfo.canPay ? '#8b5cf6' : '#9ca3af'} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.paymentText}>
+                        {t('checkout.payment.providers.wallet.name')}
+                      </Text>
+                      <Text style={[styles.walletBalance, { color: walletInfo.canPay ? '#16a34a' : '#ef4444' }]}>
+                        {formatPrice(walletInfo.balance)}
+                        {!walletInfo.canPay && ` - ${t('checkout.payment.providers.wallet.insufficient')}`}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Payment Providers */}
+              {providers.map((provider) => {
+                const isSelected = selectedPaymentMethod?.id === provider.id;
+                return (
+                  <TouchableOpacity
+                    key={provider.id}
+                    style={[
+                      styles.paymentCard,
+                      isSelected && styles.selectedCard,
+                    ]}
+                    onPress={() => handleProviderSelect(provider)}
+                  >
+                    <View style={styles.radioOuter}>
+                      {isSelected && <View style={styles.radioInner} />}
+                    </View>
+                    <View style={styles.paymentInfo}>
+                      <Text style={styles.providerIcon}>{provider.icon}</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.paymentText}>{getProviderName(provider.id)}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
         </View>
 
         {/* Order Totals */}
@@ -364,10 +629,22 @@ export default function LiveCartCheckoutScreen() {
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>{t('live.liveCheckout.shipping')}</Text>
-            <Text style={shippingCost === 0 ? styles.freeShipping : styles.totalValue}>
-              {shippingCost === 0 ? t('checkout.free') : formatPrice(shippingCost)}
-            </Text>
+            {calculatingShipping ? (
+              <ActivityIndicator size="small" color="#8b5cf6" />
+            ) : (
+              <Text style={shippingCost === 0 ? styles.freeShippingText : styles.totalValue}>
+                {shippingCost === 0 ? t('checkout.free') : formatPrice(shippingCost)}
+              </Text>
+            )}
           </View>
+          {!loadingFeeRate && platformFee > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>
+                {t('checkout.platformFee', { rate: platformFeeRate })}
+              </Text>
+              <Text style={styles.totalValue}>{formatPrice(platformFee)}</Text>
+            </View>
+          )}
           <View style={styles.divider} />
           <View style={styles.totalRow}>
             <Text style={styles.grandTotalLabel}>{t('live.liveCheckout.total')}</Text>
@@ -379,9 +656,9 @@ export default function LiveCartCheckoutScreen() {
       {/* Place Order Button */}
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.placeOrderButton, submitting && styles.disabledButton]}
+          style={[styles.placeOrderButton, (submitting || calculatingShipping) && styles.disabledButton]}
           onPress={handlePlaceOrder}
-          disabled={submitting}
+          disabled={submitting || calculatingShipping}
         >
           {submitting ? (
             <ActivityIndicator color="#fff" />
@@ -389,7 +666,7 @@ export default function LiveCartCheckoutScreen() {
             <>
               <MaterialIcons name="lock" size={20} color="#fff" />
               <Text style={styles.placeOrderText}>
-                {t('live.liveCheckout.placeOrder')} - {formatPrice(total)}
+                {t('live.liveCheckout.placeOrder')} {formatPrice(total)}
               </Text>
             </>
           )}
@@ -447,6 +724,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    paddingVertical: 20,
   },
   itemsContainer: {
     gap: 12,
@@ -536,6 +819,9 @@ const styles = StyleSheet.create({
     borderColor: '#8b5cf6',
     backgroundColor: '#faf5ff',
   },
+  disabledCard: {
+    opacity: 0.5,
+  },
   radioOuter: {
     width: 20,
     height: 20,
@@ -570,21 +856,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6b7280',
   },
-  addButton: {
+  addressPhone: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
+  shippingLoading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  shippingLoadingText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  shippingCard: {
     padding: 12,
     borderWidth: 1,
-    borderColor: '#8b5cf6',
-    borderStyle: 'dashed',
+    borderColor: '#e5e7eb',
     borderRadius: 12,
-    gap: 6,
   },
-  addButtonText: {
+  freeShippingCard: {
+    borderColor: '#16a34a',
+    backgroundColor: '#f0fdf4',
+  },
+  shippingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shippingType: {
     fontSize: 14,
-    color: '#8b5cf6',
-    fontWeight: '500',
+    fontWeight: '600',
+    color: '#111827',
+  },
+  shippingPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  shippingMessage: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
   },
   paymentCard: {
     flexDirection: 'row',
@@ -599,10 +915,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
   },
   paymentText: {
     fontSize: 14,
     color: '#374151',
+    fontWeight: '500',
+  },
+  providerIcon: {
+    fontSize: 20,
+  },
+  walletBalance: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  freeShippingText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#16a34a',
   },
   totalRow: {
     flexDirection: 'row',
@@ -623,11 +953,6 @@ const styles = StyleSheet.create({
     color: '#16a34a',
   },
   discountValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#16a34a',
-  },
-  freeShipping: {
     fontSize: 14,
     fontWeight: '500',
     color: '#16a34a',

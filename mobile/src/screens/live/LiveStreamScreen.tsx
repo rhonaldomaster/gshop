@@ -438,8 +438,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
       items: liveCart,
       streamId,
       affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined,
+      sellerId: stream?.seller?.id || stream?.sellerId || '',
     });
-  }, [liveCart, streamId, stream?.hostType, stream?.affiliate?.id, navigation]);
+  }, [liveCart, streamId, stream?.hostType, stream?.affiliate?.id, stream?.seller?.id, stream?.sellerId, navigation]);
 
   // Handler for TikTok style overlay quick buy
   const handleOverlayQuickBuy = useCallback((overlayProduct: any) => {

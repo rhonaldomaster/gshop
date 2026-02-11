@@ -306,6 +306,7 @@
     "estimatedDelivery": "Entrega estimada",
     "selectShippingMethod": "Selecciona método de envío",
     "selectPaymentMethod": "Selecciona método de pago",
+    "calculatingShipping": "Calculando costo de envío...",
     "selectDocumentType": "Selecciona tipo de documento",
     "creditCard": "Tarjeta de crédito",
     "debitCard": "Tarjeta de débito",
@@ -1182,7 +1183,8 @@
       "orderFailed": "Error al crear el pedido",
       "viewOrder": "Ver pedido",
       "backToStream": "Volver a la transmisión",
-      "affiliateAttribution": "Compra atribuida a {{affiliateName}}"
+      "affiliateAttribution": "Compra atribuida a {{affiliateName}}",
+      "noAddresses": "No tienes direcciones guardadas"
     }
   },
   "vod": {
