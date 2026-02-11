@@ -8,20 +8,28 @@ import {
   FlatList,
   Alert,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Video, ResizeMode } from 'expo-av';
 import io, { Socket } from 'socket.io-client';
 import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
+import Toast from 'react-native-toast-message';
 import { ProductCard } from '../../components/live/ProductCard';
 import { ChatMessage } from '../../components/live/ChatMessage';
 import { LiveCheckoutModal } from '../../components/live/LiveCheckoutModal';
-import { ProductOverlayTikTok } from '../../components/live/ProductOverlayTikTok';
+import { ProductOverlayTikTok, StreamProduct } from '../../components/live/ProductOverlayTikTok';
 import { PurchaseNotification, PurchaseCelebration, usePurchaseNotifications } from '../../components/live/PurchaseNotification';
+import { LiveCartBadge } from '../../components/live/LiveCartBadge';
+import { LiveCartModal } from '../../components/live/LiveCartModal';
+import { LiveCartItemData } from '../../components/live/LiveCartItem';
 import { API_CONFIG } from '../../config/api.config';
 import { usePiP } from '../../contexts/PiPContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { useLiveCart } from '../../hooks/useLiveCart';
 
 interface LiveStreamData {
   id: string;
@@ -79,11 +87,34 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   const [showChat, setShowChat] = useState(true);
   const [showQuickCheckout, setShowQuickCheckout] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [streamEnded, setStreamEnded] = useState(false);
 
   // TikTok Shop style states
   const [pinnedProductId, setPinnedProductId] = useState<string | null>(null);
   const [purchaseStats, setPurchaseStats] = useState<PurchaseStats>({});
   const [timerEndTime, setTimerEndTime] = useState<Date | null>(null);
+
+  // Live cart with persistence
+  const {
+    cart: liveCart,
+    setCart: setLiveCart,
+    isLoading: isCartLoading,
+    addItem: addCartItem,
+    updateQuantity: updateCartItemQuantity,
+    removeItem: removeCartItem,
+    isInCart: checkIsInCart,
+    clearCart,
+    getSummary: getCartSummary,
+    reload: reloadLiveCart,
+  } = useLiveCart(streamId);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Reload live cart when screen regains focus (e.g. returning from ProductDetail)
+  useFocusEffect(
+    useCallback(() => {
+      reloadLiveCart();
+    }, [reloadLiveCart])
+  );
 
   // Purchase notification hook
   const { triggerNotification, currentPurchase, dismissCelebration } = usePurchaseNotifications();
@@ -93,6 +124,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
   const socketRef = useRef<Socket | null>(null);
   const videoRef = useRef<Video>(null);
+  const wasPlayingRef = useRef(false);
 
   // Handle returning from PiP mode - reuse existing socket
   useEffect(() => {
@@ -146,7 +178,9 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     try {
       const url = `${API_CONFIG.BASE_URL}${API_CONFIG.API_VERSION}/live/streams/${streamId}`;
       console.log('Fetching stream from:', url);
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+      });
       if (response.ok) {
         const data = await response.json();
         setStream(data);
@@ -196,8 +230,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
 
     socketRef.current.on('streamStatusUpdate', (data: { status: string }) => {
       if (data.status === 'ended') {
-        Alert.alert(t('live.streamEnded'), t('live.streamHasEnded'));
-        navigation.goBack();
+        setStreamEnded(true);
       }
     });
 
@@ -293,7 +326,25 @@ export default function LiveStreamScreen({ route, navigation }: any) {
   };
 
   const onProductPress = (productId: string) => {
-    // Pass live stream context for attribution
+    // Minimize to PiP so viewer keeps watching while browsing the product
+    if (stream) {
+      const hostName = stream.hostType === 'seller'
+        ? stream.seller?.businessName || ''
+        : stream.affiliate?.name || '';
+
+      enterPiP({
+        id: stream.id,
+        title: stream.title,
+        hlsUrl: stream.hlsUrl,
+        hostType: stream.hostType,
+        hostName,
+        viewerCount,
+      }, socketRef.current);
+
+      socketRef.current = null;
+    }
+
+    // Navigate to product detail with live context for attribution
     navigation.navigate('ProductDetail', {
       productId,
       liveSessionId: streamId,
@@ -321,6 +372,76 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     setSelectedProduct(null);
   }, [streamId, selectedProduct]);
 
+  // Live Cart Functions
+  const addToLiveCart = useCallback((streamProduct: StreamProduct | any) => {
+    // Handle different product shapes from overlay vs panel
+    const hasNestedProduct = !!streamProduct.product;
+    const productId = hasNestedProduct
+      ? streamProduct.product.id
+      : (streamProduct.productId || streamProduct.id);
+    const productData = hasNestedProduct
+      ? streamProduct.product
+      : {
+          id: productId,
+          name: streamProduct.name || '',
+          price: streamProduct.price || 0,
+          images: streamProduct.image ? [streamProduct.image] : [],
+          stock: streamProduct.stock,
+        };
+    const specialPrice = streamProduct.specialPrice;
+
+    // Use the hook's addItem function with persistence
+    console.log('[LiveStreamScreen] Adding to cart:', { productId, productName: productData.name });
+    addCartItem({
+      productId,
+      product: productData,
+      quantity: 1,
+      specialPrice,
+    });
+    console.log('[LiveStreamScreen] Cart after add:', liveCart.length + 1, 'items');
+
+    // Feedback
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    Toast.show({
+      type: 'success',
+      text1: t('live.liveCart.addedToCart'),
+      text2: productData.name,
+      visibilityTime: 2000,
+    });
+  }, [t, addCartItem]);
+
+  const updateCartQuantity = useCallback((productId: string, quantity: number) => {
+    updateCartItemQuantity(productId, quantity);
+  }, [updateCartItemQuantity]);
+
+  const removeFromCart = useCallback((productId: string) => {
+    removeCartItem(productId);
+    Toast.show({
+      type: 'info',
+      text1: t('live.liveCart.itemRemoved'),
+      visibilityTime: 1500,
+    });
+  }, [t, removeCartItem]);
+
+  const isInCart = useCallback((productId: string) => {
+    return checkIsInCart(productId);
+  }, [checkIsInCart]);
+
+  // Calculate total items reactively from liveCart
+  const liveCartTotalItems = liveCart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCartCheckout = useCallback(() => {
+    setIsCartOpen(false);
+    navigation.navigate('LiveCartCheckout', {
+      items: liveCart,
+      streamId,
+      affiliateId: stream?.hostType === 'affiliate' ? stream.affiliate?.id : undefined,
+      sellerId: stream?.seller?.id || stream?.sellerId || '',
+    });
+  }, [liveCart, streamId, stream?.hostType, stream?.affiliate?.id, stream?.seller?.id, stream?.sellerId, navigation]);
+
   // Handler for TikTok style overlay quick buy
   const handleOverlayQuickBuy = useCallback((overlayProduct: any) => {
     if (!overlayProduct || !stream?.products) return;
@@ -345,6 +466,23 @@ export default function LiveStreamScreen({ route, navigation }: any) {
     if (!pinnedProductId) return 0;
     return purchaseStats[pinnedProductId] || 0;
   }, [pinnedProductId, purchaseStats]);
+
+  // Detect stream end via video player (fallback if socket event doesn't arrive)
+  const handlePlaybackStatusUpdate = useCallback((status: any) => {
+    if (!status.isLoaded) return;
+
+    if (status.isPlaying) {
+      wasPlayingRef.current = true;
+    }
+
+    // Stream ended: was playing, now stopped, not buffering, and not already marked
+    if (wasPlayingRef.current && !status.isPlaying && !status.isBuffering && !streamEnded) {
+      // didJustFinish for HLS means the stream genuinely ended
+      if (status.didJustFinish) {
+        setStreamEnded(true);
+      }
+    }
+  }, [streamEnded]);
 
   const formatViewerCount = (count: number) => {
     if (count < 1000) return count.toString();
@@ -373,6 +511,8 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           product={item}
           onPress={() => onProductPress(item.product.id)}
           onQuickBuy={() => quickBuyProduct(item)}
+          onAddToCart={() => addToLiveCart(item)}
+          isInCart={isInCart(item.product.id)}
           showSpecialPrice={true}
           liveMode={true}
         />
@@ -411,6 +551,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           resizeMode={ResizeMode.CONTAIN}
           shouldPlay={true}
           isLooping={false}
+          onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
         />
 
         {/* Stream Info Overlay */}
@@ -453,7 +594,7 @@ export default function LiveStreamScreen({ route, navigation }: any) {
                   backgroundColor: stream.hostType === 'seller' ? '#3b82f6' : '#f59e0b'
                 }]}>
                   <Text style={styles.hostTypeText}>
-                    {stream.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliate').toUpperCase()}
+                    {stream.hostType === 'seller' ? t('live.seller').toUpperCase() : t('live.affiliateLabel').toUpperCase()}
                   </Text>
                 </View>
                 <MaterialIcons name="chevron-right" size={16} color="rgba(255, 255, 255, 0.6)" />
@@ -574,12 +715,30 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           pinnedProductId={pinnedProductId}
           purchaseCount={getPinnedProductPurchaseCount()}
           onQuickBuy={handleOverlayQuickBuy}
+          onAddToCart={addToLiveCart}
           onViewProduct={onProductPress}
           onExpandProducts={handleExpandProducts}
           timerEndTime={timerEndTime}
           isHost={false}
+          isInCart={isInCart}
         />
       )}
+
+      {/* Live Cart Badge */}
+      <LiveCartBadge
+        count={liveCartTotalItems}
+        onPress={() => setIsCartOpen(true)}
+      />
+
+      {/* Live Cart Modal */}
+      <LiveCartModal
+        visible={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={liveCart}
+        onUpdateQuantity={updateCartQuantity}
+        onRemoveItem={removeFromCart}
+        onCheckout={handleCartCheckout}
+      />
 
       {/* Purchase Notifications */}
       <PurchaseNotification
@@ -608,6 +767,23 @@ export default function LiveStreamScreen({ route, navigation }: any) {
           onClose={() => setShowQuickCheckout(false)}
           onSuccess={handleCheckoutSuccess}
         />
+      )}
+
+      {/* Stream Ended Overlay */}
+      {streamEnded && (
+        <View style={styles.streamEndedOverlay}>
+          <View style={styles.streamEndedContent}>
+            <MaterialIcons name="videocam-off" size={48} color="rgba(255, 255, 255, 0.8)" />
+            <Text style={styles.streamEndedTitle}>{t('live.streamEnded')}</Text>
+            <Text style={styles.streamEndedMessage}>{t('live.streamEndedMessage')}</Text>
+            <TouchableOpacity
+              style={styles.streamEndedButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={styles.streamEndedButtonText}>{t('common.back')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -784,5 +960,42 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#d1d5db',
+  },
+  streamEndedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  streamEndedContent: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  streamEndedTitle: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  streamEndedMessage: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  streamEndedButton: {
+    marginTop: 24,
+    backgroundColor: '#8b5cf6',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  streamEndedButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -11,10 +11,14 @@ import GoLiveScreen from '../screens/live/GoLiveScreen';
 import OBSSetupScreen from '../screens/live/OBSSetupScreen';
 import VodListScreen from '../screens/live/VodListScreen';
 import VodPlayerScreen from '../screens/live/VodPlayerScreen';
+import LiveCartCheckoutScreen from '../screens/live/LiveCartCheckoutScreen';
+import LivePaymentWebViewScreen from '../screens/live/LivePaymentWebViewScreen';
+import LiveStripeCardScreen from '../screens/live/LiveStripeCardScreen';
+import { LiveCartItemData } from '../components/live/LiveCartItem';
 
 export type LiveStackParamList = {
   LiveMain: undefined;
-  LiveStream: { streamId: string };
+  LiveStream: { streamId: string; fromPiP?: boolean };
   CreateLiveStream: undefined;
   LiveStreaming: { streamId: string; rtmpUrl: string; streamKey: string };
   LiveStreamResults: { streamId: string; stats: any; duration: number };
@@ -24,6 +28,9 @@ export type LiveStackParamList = {
   OBSSetup: { streamId: string; hostType: 'seller' | 'affiliate' };
   VodList: undefined;
   VodPlayer: { vodId: string };
+  LiveCartCheckout: { items: LiveCartItemData[]; streamId: string; affiliateId?: string; sellerId: string };
+  LivePaymentWebView: { paymentUrl: string; orderId: string; paymentId: string };
+  LiveStripeCard: { orderId: string; paymentId: string; amount: number };
 };
 
 const Stack = createNativeStackNavigator<LiveStackParamList>();
@@ -72,6 +79,21 @@ export default function LiveNavigator() {
       <Stack.Screen
         name="VodPlayer"
         component={VodPlayerScreen}
+      />
+      <Stack.Screen
+        name="LiveCartCheckout"
+        component={LiveCartCheckoutScreen}
+        options={{
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen
+        name="LivePaymentWebView"
+        component={LivePaymentWebViewScreen}
+      />
+      <Stack.Screen
+        name="LiveStripeCard"
+        component={LiveStripeCardScreen}
       />
     </Stack.Navigator>
   );

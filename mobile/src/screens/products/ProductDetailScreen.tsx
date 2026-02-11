@@ -24,12 +24,13 @@ import { Product } from '../../services/products.service';
 import { wishlistService } from '../../services/wishlist.service';
 import { MaterialIcons } from '@expo/vector-icons';
 import { normalizeImageUrl } from '../../config/api.config';
+import { addToLiveCartStorage } from '../../hooks/useLiveCart';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Navigation types
 type ProductStackParamList = {
-  ProductDetail: { productId: string };
+  ProductDetail: { productId: string; liveSessionId?: string; affiliateId?: string };
 };
 
 type ProductDetailScreenRouteProp = RouteProp<ProductStackParamList, 'ProductDetail'>;
@@ -41,7 +42,7 @@ interface Props {
 }
 
 export default function ProductDetailScreen({ route, navigation }: Props) {
-  const { productId } = route.params;
+  const { productId, liveSessionId } = route.params as any;
   const { t } = useTranslation('translation');
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
@@ -151,6 +152,21 @@ export default function ProductDetailScreen({ route, navigation }: Props) {
       const success = await addToCart(product, quantity);
 
       if (success) {
+        // Also add to live cart if coming from a live stream
+        if (liveSessionId) {
+          addToLiveCartStorage(liveSessionId, {
+            productId: product.id,
+            product: {
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              images: product.images || [],
+              stock: product.quantity ?? product.stock,
+            },
+            quantity,
+          });
+        }
+
         // Update quantity to show current cart amount
         const newCartQuantity = getItemQuantity(product.id);
         if (newCartQuantity > 0) {
