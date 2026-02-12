@@ -24,7 +24,10 @@ class AddressesService {
       const response = await apiClient.get<Address[]>('/users/me/addresses');
 
       if (response.success && response.data) {
-        return response.data;
+        // Filter out incomplete/old-format addresses
+        return response.data.filter(addr =>
+          addr.id && addr.fullName && addr.documentType && addr.documentNumber
+        );
       }
 
       return [];
