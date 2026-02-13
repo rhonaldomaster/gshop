@@ -781,7 +781,7 @@ function OBSInstructionsModal({
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
               {t('obsStep1Title')}
             </h4>
-            <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: t('obsStep1Desc') }} />
+            <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: t.raw('obsStep1Desc') }} />
             <a
               href="https://obsproject.com/"
               target="_blank"
@@ -800,7 +800,7 @@ function OBSInstructionsModal({
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
               {t('obsStep2Title')}
             </h4>
-            <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: t('obsStep2Desc') }} />
+            <p className="text-gray-600" dangerouslySetInnerHTML={{ __html: t.raw('obsStep2Desc') }} />
           </div>
 
           {/* Step 3 */}
@@ -855,16 +855,16 @@ function OBSInstructionsModal({
             <h4 className="font-semibold text-lg text-gray-900 mb-2">
               {t('obsStep4Title')}
             </h4>
-            <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: t('obsStep4Output') }} />
+            <p className="text-gray-600 mb-2" dangerouslySetInnerHTML={{ __html: t.raw('obsStep4Output') }} />
             <ul className="list-disc list-inside space-y-1 text-gray-600">
-              <li dangerouslySetInnerHTML={{ __html: t('videoBitrate') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('encoder') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('keyframeInterval') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('videoBitrate') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('encoder') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('keyframeInterval') }} />
             </ul>
-            <p className="text-gray-600 mt-2" dangerouslySetInnerHTML={{ __html: t('obsStep4Video') }} />
+            <p className="text-gray-600 mt-2" dangerouslySetInnerHTML={{ __html: t.raw('obsStep4Video') }} />
             <ul className="list-disc list-inside space-y-1 text-gray-600">
-              <li dangerouslySetInnerHTML={{ __html: t('outputResolution') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('fps') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('outputResolution') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('fps') }} />
             </ul>
           </div>
 
@@ -874,12 +874,12 @@ function OBSInstructionsModal({
               {t('obsStep5Title')}
             </h4>
             <ol className="list-decimal list-inside space-y-2 text-gray-600">
-              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item1') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item2') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item3') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item4') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item5') }} />
-              <li dangerouslySetInnerHTML={{ __html: t('obsStep5Item6') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('obsStep5Item1') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('obsStep5Item2') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('obsStep5Item3') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('obsStep5Item4') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('obsStep5Item5') }} />
+              <li dangerouslySetInnerHTML={{ __html: t.raw('obsStep5Item6') }} />
             </ol>
           </div>
 

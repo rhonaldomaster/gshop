@@ -412,6 +412,7 @@
     "errorFetchingOrders": "Error al cargar los pedidos"
   },
   "live": {
+    "back": "Volver a transmisiones",
     "title": "Transmisiones en Vivo",
     "manageStreams": "Gestiona tus transmisiones en vivo de compras",
     "guide": "Guia",
