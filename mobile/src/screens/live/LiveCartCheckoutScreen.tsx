@@ -26,6 +26,7 @@ import { paymentsService, PaymentMethod } from '../../services/payments.service'
 import { api } from '../../services/api';
 import { useApi } from '../../hooks/useApi';
 import { LiveStackParamList } from '../../navigation/LiveNavigator';
+import AddressFormModal from '../../components/address/AddressFormModal';
 
 interface PaymentProvider {
   id: string;
@@ -78,6 +79,7 @@ export default function LiveCartCheckoutScreen() {
   const [loadingFeeRate, setLoadingFeeRate] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   // API hooks
   const createOrderApi = useApi(ordersService.createOrder);
@@ -490,7 +492,17 @@ export default function LiveCartCheckoutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('live.liveCheckout.shippingAddress')}</Text>
           {addresses.length === 0 ? (
-            <Text style={styles.emptyText}>{t('live.liveCheckout.noAddresses')}</Text>
+            <View style={styles.noAddressState}>
+              <MaterialIcons name="location-off" size={32} color="#9ca3af" />
+              <Text style={styles.emptyText}>{t('live.liveCheckout.noAddresses')}</Text>
+              <TouchableOpacity
+                style={styles.addAddressButton}
+                onPress={() => setShowAddressModal(true)}
+              >
+                <MaterialIcons name="add-location-alt" size={20} color="#8b5cf6" />
+                <Text style={styles.addAddressText}>{t('checkout.createAddress')}</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             addresses.map((address) => (
               <TouchableOpacity
@@ -672,6 +684,17 @@ export default function LiveCartCheckoutScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      <AddressFormModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onAddressCreated={(newAddress) => {
+          setAddresses(prev => [...prev, newAddress]);
+          setSelectedAddress(newAddress);
+          setShowAddressModal(false);
+        }}
+        setAsDefault={true}
+      />
     </SafeAreaView>
   );
 }
@@ -729,7 +752,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
+    marginTop: 8,
+  },
+  noAddressState: {
+    alignItems: 'center',
     paddingVertical: 20,
+    gap: 4,
+  },
+  addAddressButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderWidth: 1.5,
+    borderColor: '#8b5cf6',
+    borderStyle: 'dashed',
+    borderRadius: 10,
+  },
+  addAddressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8b5cf6',
   },
   itemsContainer: {
     gap: 12,

@@ -14,6 +14,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { normalizeImageUrl } from '../../config/api.config';
 import { apiClient } from '../../services/api';
+import { Address as CanonicalAddress } from '../../services/addresses.service';
+import AddressFormModal from '../address/AddressFormModal';
 
 interface Product {
   id: string;
@@ -64,6 +66,7 @@ export function QuickCheckoutModal({
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   const finalPrice = product.specialPrice || product.price;
   const discount = product.specialPrice ? product.price - product.specialPrice : 0;
@@ -209,6 +212,7 @@ export function QuickCheckoutModal({
   );
 
   return (
+    <>
     <Modal
       visible={visible}
       animationType="slide"
@@ -266,7 +270,10 @@ export function QuickCheckoutModal({
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('checkout.shippingAddress')}</Text>
               {addresses.length === 0 ? (
-                <TouchableOpacity style={styles.addButton}>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => setShowAddressModal(true)}
+                >
                   <MaterialIcons name="add" size={20} color="#8b5cf6" />
                   <Text style={styles.addButtonText}>{t('checkout.addAddress')}</Text>
                 </TouchableOpacity>
@@ -340,6 +347,25 @@ export function QuickCheckoutModal({
         </View>
       </View>
     </Modal>
+
+    <AddressFormModal
+      visible={showAddressModal}
+      onClose={() => setShowAddressModal(false)}
+      onAddressCreated={(newAddress: CanonicalAddress) => {
+        const mapped: Address = {
+          id: newAddress.id,
+          street: newAddress.address,
+          city: newAddress.city,
+          state: newAddress.state,
+          postalCode: newAddress.postalCode,
+        };
+        setAddresses(prev => [...prev, mapped]);
+        setSelectedAddress(mapped);
+        setShowAddressModal(false);
+      }}
+      setAsDefault={true}
+    />
+    </>
   );
 }
 

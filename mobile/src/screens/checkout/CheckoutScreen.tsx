@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../contexts/AuthContext';
@@ -24,6 +25,7 @@ import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
 import GSInput from '../../components/ui/GSInput';
 import PaymentMethodSelection from '../../components/checkout/PaymentMethodSelection';
+import AddressFormModal from '../../components/address/AddressFormModal';
 import { CartStackParamList } from '../../navigation/CartNavigator';
 
 type CheckoutScreenNavigationProp = NativeStackNavigationProp<CartStackParamList, 'Checkout'>;
@@ -511,6 +513,8 @@ export default function CheckoutScreen() {
   } | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [loadingAddress, setLoadingAddress] = useState(true);
+  const [hasNoAddress, setHasNoAddress] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [calculatingShipping, setCalculatingShipping] = useState(false);
   const [platformFeeRate, setPlatformFeeRate] = useState(0);
   const [loadingFeeRate, setLoadingFeeRate] = useState(true);
@@ -550,9 +554,13 @@ export default function CheckoutScreen() {
         if (defaultAddress) {
           const shippingAddr = mapAddressToShipping(defaultAddress);
           setShippingAddress(shippingAddr);
+          setHasNoAddress(false);
+        } else {
+          setHasNoAddress(true);
         }
       } catch (error) {
         console.error('Failed to load default address:', error);
+        setHasNoAddress(true);
       } finally {
         setLoadingAddress(false);
       }
@@ -864,6 +872,22 @@ export default function CheckoutScreen() {
                 {t('checkout.loadingAddress')}
               </GSText>
             </View>
+          ) : hasNoAddress ? (
+            <View style={styles.noAddressContainer}>
+              <Ionicons name="location-outline" size={48} color={theme.colors.textSecondary} />
+              <GSText variant="h4" weight="semiBold" style={styles.noAddressTitle}>
+                {t('checkout.noSavedAddress')}
+              </GSText>
+              <GSText variant="body" color="textSecondary" style={styles.noAddressSubtitle}>
+                {t('checkout.addAddressToCheckout')}
+              </GSText>
+              <GSButton
+                title={t('checkout.createAddress')}
+                onPress={() => setShowAddressModal(true)}
+                leftIcon={<Ionicons name="add" size={20} color="white" />}
+                style={styles.addAddressButton}
+              />
+            </View>
           ) : (
             <ShippingForm
               address={shippingAddress}
@@ -911,6 +935,18 @@ export default function CheckoutScreen() {
           />
         )}
       </ScrollView>
+
+      <AddressFormModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onAddressCreated={(newAddress) => {
+          const shippingAddr = mapAddressToShipping(newAddress);
+          setShippingAddress(shippingAddr);
+          setHasNoAddress(false);
+          setShowAddressModal(false);
+        }}
+        setAsDefault={true}
+      />
     </SafeAreaView>
   );
 }
@@ -1126,5 +1162,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     marginVertical: 8,
+  },
+  noAddressContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+    gap: 12,
+  },
+  noAddressTitle: {
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  noAddressSubtitle: {
+    textAlign: 'center',
+  },
+  addAddressButton: {
+    marginTop: 8,
+    paddingHorizontal: 32,
   },
 });

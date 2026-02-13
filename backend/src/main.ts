@@ -39,7 +39,7 @@ async function bootstrap() {
       'http://localhost:3002', // Seller panel
       'http://localhost:19006', // Expo dev server
       /^http:\/\/192\.168\.\d+\.\d+:\d+$/, // Mobile app on local network (any IP)
-      /^https:\/\/[a-z0-9]+\.ngrok-free\.app$/, // ngrok URLs
+      /^https:\/\/[a-z0-9-]+\.ngrok-free\.app$/, // ngrok URLs
     ],
     credentials: true,
   });

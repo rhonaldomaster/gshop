@@ -114,9 +114,9 @@ export default ({ config }) => {
       },
       // Expose environment variables to the app
       ENV: process.env.ENV || 'development',
-      API_BASE_URL: process.env.API_BASE_URL || 'https://fba0-2800-484-1785-2b00-252a-aa4e-2ebf-8708.ngrok-free.app',
+      API_BASE_URL: process.env.API_BASE_URL || 'https://5ff0-2800-484-1785-2b00-c549-934f-a4e3-ddad.ngrok-free.app',
       API_VERSION: process.env.API_VERSION || '/api/v1',
-      WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'https://fba0-2800-484-1785-2b00-252a-aa4e-2ebf-8708.ngrok-free.app',
+      WEBSOCKET_URL: process.env.WEBSOCKET_URL || 'https://5ff0-2800-484-1785-2b00-c549-934f-a4e3-ddad.ngrok-free.app',
       GSHOP_PIXEL_ID: process.env.GSHOP_PIXEL_ID || '',
       ANALYTICS_ENABLED: process.env.ANALYTICS_ENABLED === 'true',
       MERCAPAGO_PUBLIC_KEY: process.env.MERCAPAGO_PUBLIC_KEY || '',
