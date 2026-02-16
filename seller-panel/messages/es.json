@@ -578,7 +578,13 @@
     "moderationActions": "Acciones de Moderación:",
     "moderationDelete": "Eliminar: Remover un mensaje específico",
     "moderationTimeout": "Timeout (5min): Silenciar temporalmente a un usuario",
-    "moderationBan": "Banear: Remover permanentemente a un usuario del chat"
+    "moderationBan": "Banear: Remover permanentemente a un usuario del chat",
+    "purchaseActivity": "Actividad de Compras",
+    "noPurchasesYet": "Sin compras aún",
+    "purchasesWillAppear": "Las compras aparecerán aquí en tiempo real",
+    "connected": "Conectado",
+    "disconnected": "Desconectado",
+    "totalPurchases": "compras"
   },
   "analytics": {
     "title": "Analíticas",

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { io, Socket } from 'socket.io-client'
 import { useSession } from 'next-auth/react'
 import { useParams, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -23,7 +24,10 @@ import {
   Edit,
   Check,
   ExternalLink,
-  Video
+  Video,
+  ShoppingCart,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
 
 interface LiveStream {
@@ -77,6 +81,16 @@ interface Product {
   quantity: number
 }
 
+interface PurchaseEvent {
+  id: string
+  productId: string
+  productName: string
+  buyerName: string
+  quantity: number
+  purchaseCount: number
+  timestamp: string
+}
+
 export default function LiveStreamDetailPage() {
   const t = useTranslations('live')
   const { id } = useParams()
@@ -89,6 +103,9 @@ export default function LiveStreamDetailPage() {
   const [showOBSInstructions, setShowOBSInstructions] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showChatModeration, setShowChatModeration] = useState(false)
+  const [purchaseLog, setPurchaseLog] = useState<PurchaseEvent[]>([])
+  const [socketConnected, setSocketConnected] = useState(false)
+  const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
     if (id && session?.accessToken) {
@@ -97,16 +114,104 @@ export default function LiveStreamDetailPage() {
     }
   }, [id, session])
 
-  // Auto-refresh stream when live
+  // Auto-refresh stream when live (slower when WebSocket is connected)
   useEffect(() => {
     if (stream?.status === 'live') {
       const interval = setInterval(() => {
         fetchStream()
-      }, 30000) // Refresh every 30 seconds
+      }, socketConnected ? 60000 : 30000)
 
       return () => clearInterval(interval)
     }
-  }, [stream?.status, id])
+  }, [stream?.status, id, socketConnected])
+
+  // WebSocket connection for real-time updates
+  useEffect(() => {
+    if (stream?.status !== 'live' || !session?.accessToken || !id) return
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'
+    const wsBaseUrl = apiUrl.replace(/\/api\/v1\/?$/, '')
+
+    const socket = io(`${wsBaseUrl}/live`, {
+      extraHeaders: {
+        'ngrok-skip-browser-warning': 'true',
+      },
+      transports: ['websocket', 'polling'],
+    })
+
+    socketRef.current = socket
+
+    socket.on('connect', () => {
+      setSocketConnected(true)
+      socket.emit('hostJoinStream', {
+        streamId: id,
+        hostId: (session as any).seller?.id || session.user?.id,
+      })
+    })
+
+    socket.on('disconnect', () => {
+      setSocketConnected(false)
+    })
+
+    socket.on('newPurchase', (data: {
+      productId: string
+      productName: string
+      quantity: number
+      buyerName: string
+      timestamp: string
+      purchaseCount: number
+    }) => {
+      const event: PurchaseEvent = {
+        id: `${data.productId}-${Date.now()}-${Math.random()}`,
+        ...data,
+      }
+      setPurchaseLog(prev => [event, ...prev].slice(0, 50))
+
+      setStream(prev => {
+        if (!prev) return prev
+        const matchedProduct = prev.products.find(p => p.productId === data.productId)
+        const price = matchedProduct
+          ? (matchedProduct.specialPrice || matchedProduct.product.price)
+          : 0
+        const updatedProducts = prev.products.map(p => {
+          if (p.productId === data.productId) {
+            return {
+              ...p,
+              orderCount: p.orderCount + data.quantity,
+              revenue: p.revenue + (price * data.quantity),
+            }
+          }
+          return p
+        })
+        return {
+          ...prev,
+          products: updatedProducts,
+          totalSales: prev.totalSales + (price * data.quantity),
+        }
+      })
+    })
+
+    socket.on('viewerCountUpdate', (data: { count: number }) => {
+      setStream(prev => prev ? { ...prev, viewerCount: data.count } : prev)
+    })
+
+    socket.on('newMessage', (msg: LiveStreamMessage) => {
+      setStream(prev => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          messages: [...(prev.messages || []), msg],
+        }
+      })
+    })
+
+    return () => {
+      socket.emit('leaveStream', { streamId: id })
+      socket.disconnect()
+      socketRef.current = null
+      setSocketConnected(false)
+    }
+  }, [stream?.status, id, session?.accessToken])
 
   const fetchStream = async () => {
     try {
@@ -349,7 +454,12 @@ export default function LiveStreamDetailPage() {
               <Eye className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-blue-600">{t('currentViewers')}</p>
-                <p className="text-2xl font-bold text-blue-900">{stream.viewerCount}</p>
+                <p className="text-2xl font-bold text-blue-900">
+                  {stream.viewerCount}
+                  {stream.status === 'live' && (
+                    <span className={`inline-block w-2 h-2 rounded-full ml-2 ${socketConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  )}
+                </p>
               </div>
             </div>
           </div>
@@ -435,6 +545,72 @@ export default function LiveStreamDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Purchase Activity Feed - Only shown during live streams */}
+      {stream.status === 'live' && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <ShoppingCart className="h-5 w-5 text-green-600" />
+              <h3 className="text-lg font-semibold text-gray-900">{t('purchaseActivity')}</h3>
+              <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full animate-pulse">
+                {t('liveLabel')}
+              </span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1">
+                {socketConnected ? (
+                  <Wifi className="h-4 w-4 text-green-500" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-red-500" />
+                )}
+                <span className={`text-xs ${socketConnected ? 'text-green-600' : 'text-red-600'}`}>
+                  {socketConnected ? t('connected') : t('disconnected')}
+                </span>
+              </div>
+              <span className="px-2 py-1 text-sm font-medium bg-green-50 text-green-700 rounded-full">
+                {purchaseLog.length} {t('totalPurchases')}
+              </span>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {purchaseLog.length > 0 ? (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {purchaseLog.map((purchase) => (
+                  <div
+                    key={purchase.id}
+                    className="flex items-center justify-between bg-green-50 border border-green-100 rounded-lg p-3 animate-fade-in"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-green-100 rounded-full p-2">
+                        <ShoppingCart className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {purchase.buyerName} - {purchase.quantity}x {purchase.productName}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(purchase.timestamp).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                      #{purchase.purchaseCount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <ShoppingCart className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500">{t('noPurchasesYet')}</p>
+                <p className="text-sm text-gray-400 mt-1">{t('purchasesWillAppear')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Products Section */}
       <div className="bg-white rounded-lg shadow">
