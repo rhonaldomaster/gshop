@@ -1614,7 +1614,7 @@
       "maxPerTransaction": "Max por transaccion",
       "quickAmounts": "Montos rapidos",
       "maxButton": "MAX",
-      "currency": "COP (Pesos Colombianos)",
+      "currency": "USD (Dolares)",
       "userNotFound": "No se encontro un usuario con esos datos",
       "searchError": "Error al buscar usuario",
       "previewError": "No se pudo obtener el preview",

@@ -28,7 +28,7 @@ import { PaymentsV2Module } from '../payments/payments-v2.module';
       TransferLimit,
       User, // For searching users by email/phone
     ]),
-    forwardRef(() => PaymentsV2Module), // For CurrencyService (COP → USD conversion)
+    forwardRef(() => PaymentsV2Module), // For CurrencyService
   ],
   controllers: [TokenController, VerificationController],
   providers: [TokenService, VerificationService],

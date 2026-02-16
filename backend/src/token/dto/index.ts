@@ -33,7 +33,7 @@ export class TransferPreviewDto {
   toUserId: string;
 
   @IsNumber()
-  @Min(100) // Minimum $100 COP
+  @Min(0.50) // Minimum $0.50 USD
   amount: number;
 }
 
@@ -52,7 +52,7 @@ export class ExecuteTransferDto {
   toUserId: string;
 
   @IsNumber()
-  @Min(100) // Minimum $100 COP
+  @Min(0.50) // Minimum $0.50 USD
   amount: number;
 
   @IsOptional()
@@ -106,17 +106,15 @@ export class TransferLimitsResponseDto {
 
 export class CreateStripeTopupDto {
   @IsNumber()
-  @Min(1000) // Minimum $1,000 COP
-  amount: number; // Amount in COP
+  @Min(0.50) // Minimum $0.50 USD
+  amount: number; // Amount in USD
 }
 
 export class StripeTopupResponseDto {
   topupId: string;
   clientSecret: string;
   publishableKey: string;
-  amountCOP: number;
   amountUSD: number;
-  exchangeRate: number;
   expiresAt: Date;
 }
 

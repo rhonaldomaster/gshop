@@ -183,7 +183,7 @@ export default function PaymentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-green-600">
-                ${stats?.availableBalance?.toLocaleString('es-CO') || '0'}
+                ${stats?.availableBalance?.toLocaleString('en-US') || '0'}
               </div>
               <p className="text-xs text-gray-500 mt-1">{t('availableForWithdrawal')}</p>
             </CardContent>
@@ -198,7 +198,7 @@ export default function PaymentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-yellow-600">
-                ${stats?.pendingBalance?.toLocaleString('es-CO') || '0'}
+                ${stats?.pendingBalance?.toLocaleString('en-US') || '0'}
               </div>
               <p className="text-xs text-gray-500 mt-1">{t('pendingApproval')}</p>
             </CardContent>
@@ -213,7 +213,7 @@ export default function PaymentsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-blue-600">
-                ${stats?.totalEarnings?.toLocaleString('es-CO') || '0'}
+                ${stats?.totalEarnings?.toLocaleString('en-US') || '0'}
               </div>
               <p className="text-xs text-gray-500 mt-1">{t('allTimeEarnings')}</p>
             </CardContent>
@@ -243,7 +243,7 @@ export default function PaymentsPage() {
                     step="1000"
                   />
                 </div>
-                <p className="text-sm text-gray-500">{t('minimumWithdrawal')}: $10.000 COP</p>
+                <p className="text-sm text-gray-500">{t('minimumWithdrawal')}: $10.00 USD</p>
               </div>
               <div className="flex items-center">
                 <Button
@@ -353,7 +353,7 @@ export default function PaymentsPage() {
                           })}
                         </td>
                         <td className="py-3 px-4 font-semibold">
-                          ${withdrawal.amount.toLocaleString('es-CO')}
+                          ${withdrawal.amount.toLocaleString('en-US')}
                         </td>
                         <td className="py-3 px-4">{getStatusBadge(withdrawal.status)}</td>
                         <td className="py-3 px-4 text-sm text-gray-600">

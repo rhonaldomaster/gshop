@@ -2,7 +2,7 @@
  * Transfer Limits Configuration
  *
  * Defines transaction limits based on user verification level (KYC).
- * All amounts are in COP (Colombian Pesos).
+ * All amounts are in USD.
  */
 
 export enum VerificationLevel {
@@ -20,22 +20,22 @@ export interface TransferLimitConfig {
 
 export const TRANSFER_LIMITS: Record<VerificationLevel, TransferLimitConfig> = {
   [VerificationLevel.NONE]: {
-    minPerTransaction: 100,           // $100 COP minimum
-    maxPerTransaction: 1_000_000,     // $1M COP per transaction
-    dailyLimit: 1_200_000,            // $1.2M COP daily
-    monthlyLimit: 4_000_000,          // $4M COP monthly
+    minPerTransaction: 0.50,          // $0.50 USD minimum
+    maxPerTransaction: 250,           // $250 USD per transaction
+    dailyLimit: 300,                  // $300 USD daily
+    monthlyLimit: 1_000,             // $1,000 USD monthly
   },
   [VerificationLevel.LEVEL_1]: {
-    minPerTransaction: 100,
-    maxPerTransaction: 5_000_000,     // $5M COP per transaction
-    dailyLimit: 8_000_000,            // $8M COP daily
-    monthlyLimit: 40_000_000,         // $40M COP monthly
+    minPerTransaction: 0.50,
+    maxPerTransaction: 1_250,         // $1,250 USD per transaction
+    dailyLimit: 2_000,               // $2,000 USD daily
+    monthlyLimit: 10_000,            // $10,000 USD monthly
   },
   [VerificationLevel.LEVEL_2]: {
-    minPerTransaction: 100,
-    maxPerTransaction: 20_000_000,    // $20M COP per transaction
-    dailyLimit: 40_000_000,           // $40M COP daily
-    monthlyLimit: 200_000_000,        // $200M COP monthly
+    minPerTransaction: 0.50,
+    maxPerTransaction: 5_000,         // $5,000 USD per transaction
+    dailyLimit: 10_000,              // $10,000 USD daily
+    monthlyLimit: 50_000,            // $50,000 USD monthly
   },
 };
 
@@ -49,7 +49,7 @@ export const PLATFORM_FEE_RATE = 0.002;
  * Minimum amount for platform fee to be applied
  * Below this amount, no fee is charged
  */
-export const PLATFORM_FEE_MIN_AMOUNT = 1000; // $1,000 COP
+export const PLATFORM_FEE_MIN_AMOUNT = 1; // $1 USD
 
 /**
  * Get limits for a specific verification level
@@ -63,10 +63,10 @@ export function getLimitsForLevel(level: VerificationLevel): TransferLimitConfig
  * Fee is charged to the recipient AFTER receiving the full amount (Option A)
  *
  * Option A Flow:
- * 1. Sender sends $100,000 → Sender balance -$100,000
- * 2. Recipient receives $100,000 → Recipient balance +$100,000
- * 3. Platform fee charged → Recipient balance -$200 (0.2%)
- * 4. Final: Recipient has $99,800
+ * 1. Sender sends $100 → Sender balance -$100
+ * 2. Recipient receives $100 → Recipient balance +$100
+ * 3. Platform fee charged → Recipient balance -$0.20 (0.2%)
+ * 4. Final: Recipient has $99.80
  */
 export function calculatePlatformFee(amount: number): number {
   if (amount < PLATFORM_FEE_MIN_AMOUNT) {

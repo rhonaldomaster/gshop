@@ -157,27 +157,25 @@ class TransferService {
     }
   }
 
-  // Format currency for display (COP)
-  formatCOP(amount: number): string {
-    return new Intl.NumberFormat('es-CO', {
+  // Format currency for display (USD)
+  formatUSD(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      currency: 'USD',
     }).format(amount);
   }
 
   // Parse amount string to number
   parseAmount(amountStr: string): number {
     // Remove currency symbols, spaces, and thousands separators
-    const cleaned = amountStr.replace(/[^\d]/g, '');
-    return parseInt(cleaned, 10) || 0;
+    const cleaned = amountStr.replace(/[^\d.]/g, '');
+    return parseFloat(cleaned) || 0;
   }
 
   // Format amount as string for input display
   formatAmountInput(amount: number): string {
     if (amount === 0) return '';
-    return new Intl.NumberFormat('es-CO').format(amount);
+    return new Intl.NumberFormat('en-US').format(amount);
   }
 
   // Validate amount against limits
@@ -189,28 +187,28 @@ class TransferService {
     if (amount < limits.minPerTransaction) {
       return {
         valid: false,
-        error: `El monto minimo es ${this.formatCOP(limits.minPerTransaction)}`,
+        error: `El monto minimo es ${this.formatUSD(limits.minPerTransaction)}`,
       };
     }
 
     if (amount > limits.maxPerTransaction) {
       return {
         valid: false,
-        error: `El monto maximo por transaccion es ${this.formatCOP(limits.maxPerTransaction)}`,
+        error: `El monto maximo por transaccion es ${this.formatUSD(limits.maxPerTransaction)}`,
       };
     }
 
     if (amount > limits.dailyRemaining) {
       return {
         valid: false,
-        error: `Excede tu limite diario. Disponible: ${this.formatCOP(limits.dailyRemaining)}`,
+        error: `Excede tu limite diario. Disponible: ${this.formatUSD(limits.dailyRemaining)}`,
       };
     }
 
     if (amount > limits.monthlyRemaining) {
       return {
         valid: false,
-        error: `Excede tu limite mensual. Disponible: ${this.formatCOP(limits.monthlyRemaining)}`,
+        error: `Excede tu limite mensual. Disponible: ${this.formatUSD(limits.monthlyRemaining)}`,
       };
     }
 

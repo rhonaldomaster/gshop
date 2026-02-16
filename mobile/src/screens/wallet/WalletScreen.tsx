@@ -50,7 +50,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) 
 
       <View style={styles.balanceSection}>
         <GSText variant="h1" color="white" weight="bold">
-          {paymentsService.formatPrice(balance.tokenBalance, 'COP')}
+          {paymentsService.formatPrice(balance.tokenBalance, 'USD')}
         </GSText>
         <GSText variant="body" color="white" style={{ opacity: 0.8 }}>
           {t('wallet.availableBalance')}
@@ -142,7 +142,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
 
   const getAmountDisplay = (amount: number) => {
     const sign = amount >= 0 ? '+' : '';
-    return `${sign}${paymentsService.formatPrice(amount, 'COP')}`;
+    return `${sign}${paymentsService.formatPrice(amount, 'USD')}`;
   };
 
   const getStatusColor = (status: TokenTransaction['status']) => {
@@ -221,11 +221,10 @@ type TopupStep = 'amount' | 'processing' | 'success' | 'error';
 interface TopupModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (amountCOP: number) => Promise<void>;
+  onSubmit: (amountUSD: number) => Promise<void>;
   isLoading: boolean;
   topupStep: TopupStep;
   topupResult: {
-    amountCOP?: number;
     amountUSD?: number;
     error?: string;
   } | null;
@@ -244,25 +243,23 @@ const TopupModal: React.FC<TopupModalProps> = ({
   const { theme } = useTheme();
   const [amount, setAmount] = useState('');
 
-  // Quick amounts in COP (Colombian Pesos)
-  const quickAmounts = [50000, 100000, 200000, 500000];
+  // Quick amounts in USD
+  const quickAmounts = [5, 10, 25, 50];
 
-  const formatCOP = (value: number) => {
-    return new Intl.NumberFormat('es-CO', {
+  const formatUSD = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      currency: 'USD',
     }).format(value);
   };
 
   const handleSubmit = () => {
-    const numAmount = Number(amount.replace(/[.,]/g, ''));
-    if (numAmount < 10000) {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount < 0.50) {
       Alert.alert(t('wallet.topupModal.invalidAmount'), t('wallet.topupModal.minAmountError'));
       return;
     }
-    if (numAmount > 5000000) {
+    if (numAmount > 10000) {
       Alert.alert(t('wallet.topupModal.invalidAmount'), t('wallet.topupModal.maxAmountError'));
       return;
     }
@@ -285,8 +282,8 @@ const TopupModal: React.FC<TopupModalProps> = ({
         label={t('wallet.topupModal.enterAmount')}
         value={amount}
         onChangeText={(text) => {
-          // Only allow numbers
-          const cleaned = text.replace(/[^0-9]/g, '');
+          // Allow numbers and decimal point
+          const cleaned = text.replace(/[^0-9.]/g, '');
           setAmount(cleaned);
         }}
         placeholder="0"
@@ -313,7 +310,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
               weight="semiBold"
               color={amount === quickAmount.toString() ? 'white' : 'text'}
             >
-              {formatCOP(quickAmount)}
+              {formatUSD(quickAmount)}
             </GSText>
           </TouchableOpacity>
         ))}
@@ -363,9 +360,9 @@ const TopupModal: React.FC<TopupModalProps> = ({
       <GSText variant="h3" weight="bold" style={{ marginTop: 20 }}>
         {t('wallet.topUpSuccess')}
       </GSText>
-      {topupResult?.amountCOP && (
+      {topupResult?.amountUSD && (
         <GSText variant="h4" color="primary" weight="bold" style={{ marginTop: 8 }}>
-          +{formatCOP(topupResult.amountCOP)}
+          +{formatUSD(topupResult.amountUSD)}
         </GSText>
       )}
       <GSText variant="body" color="textSecondary" style={{ marginTop: 8, textAlign: 'center' }}>
@@ -420,7 +417,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
         <View style={styles.modalFooter}>
           {topupStep === 'amount' && (
             <GSButton
-              title={amount ? t('wallet.topupModal.payAmount', { amount: formatCOP(Number(amount)) }) : t('wallet.topUp')}
+              title={amount ? t('wallet.topupModal.payAmount', { amount: formatUSD(Number(amount)) }) : t('wallet.topUp')}
               onPress={handleSubmit}
               loading={isLoading}
               disabled={!amount || isLoading}
@@ -454,7 +451,6 @@ export default function WalletScreen() {
   const [topupLoading, setTopupLoading] = useState(false);
   const [topupStep, setTopupStep] = useState<TopupStep>('amount');
   const [topupResult, setTopupResult] = useState<{
-    amountCOP?: number;
     amountUSD?: number;
     error?: string;
   } | null>(null);
@@ -490,14 +486,14 @@ export default function WalletScreen() {
   }, [loadWalletData]);
 
   // Handle topup with Stripe SDK
-  const handleTopup = useCallback(async (amountCOP: number) => {
+  const handleTopup = useCallback(async (amountUSD: number) => {
     try {
       setTopupLoading(true);
       setTopupStep('processing');
 
       // Step 1: Create Payment Intent on backend
-      console.log('Creating Stripe topup intent for', amountCOP, 'COP');
-      const intentResponse = await paymentsService.createStripeTopupIntent(amountCOP);
+      console.log('Creating Stripe topup intent for', amountUSD, 'USD');
+      const intentResponse = await paymentsService.createStripeTopupIntent(amountUSD);
       console.log('Got intent response:', intentResponse);
 
       // Step 2: Initialize Stripe Payment Sheet
@@ -505,11 +501,6 @@ export default function WalletScreen() {
         paymentIntentClientSecret: intentResponse.clientSecret,
         merchantDisplayName: 'GSHOP',
         style: 'automatic',
-        defaultBillingDetails: {
-          address: {
-            country: 'CO',
-          },
-        },
       });
 
       if (initError) {
@@ -546,7 +537,6 @@ export default function WalletScreen() {
       if (finalStatus.status === 'completed') {
         setTopupStep('success');
         setTopupResult({
-          amountCOP: intentResponse.amountCOP,
           amountUSD: intentResponse.amountUSD,
         });
         // Reload wallet data to show new balance
@@ -555,7 +545,6 @@ export default function WalletScreen() {
         // Payment might still be processing or failed on backend
         setTopupStep('success'); // Show success since Stripe confirmed
         setTopupResult({
-          amountCOP: intentResponse.amountCOP,
           amountUSD: intentResponse.amountUSD,
         });
         loadWalletData();

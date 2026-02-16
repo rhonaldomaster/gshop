@@ -46,7 +46,7 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
             </GSText>
           </View>
           <GSText variant="h4" weight="bold">
-            {transferService.formatCOP(Number(preview.amountSent) || 0)}
+            {transferService.formatUSD(Number(preview.amountSent) || 0)}
           </GSText>
         </View>
 
@@ -62,7 +62,7 @@ export const TransferPreview: React.FC<TransferPreviewProps> = ({
             </GSText>
           </View>
           <GSText variant="h3" weight="bold" style={{ color: theme.colors.success }}>
-            {transferService.formatCOP(Number(preview.amountReceived) || 0)}
+            {transferService.formatUSD(Number(preview.amountReceived) || 0)}
           </GSText>
         </View>
       </View>
