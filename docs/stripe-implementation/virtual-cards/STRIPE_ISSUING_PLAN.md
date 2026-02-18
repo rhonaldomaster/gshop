@@ -2,16 +2,16 @@
 
 ## 📋 Executive Summary
 
-**Can GSHOP implement virtual cards with Stripe?** **YES**, but with **significant limitations** for the Colombian market.
+**Can GSHOP implement virtual cards with Stripe?** **YES** — and with Bridge (Stripe's acquisition), Colombia is now **directly supported**.
 
 **TL;DR**:
 - ✅ Technically possible with Stripe Issuing
-- ❌ **NOT available in Colombia** (US/UK/EU only)
-- ⚠️ Complex regulatory requirements
-- 💰 High implementation cost ($50k+ setup, ongoing fees)
-- 🚫 **Recommendation**: Not viable for Colombian market MVP
+- ✅ **Colombia supported via Bridge + Visa** (stablecoin-linked cards, private preview)
+- ⚠️ Traditional Stripe Issuing still US/UK/EU only — Bridge is the path for LATAM
+- 💰 Implementation cost TBD (Bridge fees not yet public)
+- ✅ **Recommendation**: Use **Bridge (Stripe) + Visa stablecoin cards** for Colombia and LATAM
 
-**Alternative Solution**: Use Colombian fintech partners (Rappipay, Bold, Ualá Colombia) for local virtual cards.
+> **UPDATE (2025)**: Stripe acquired [Bridge](https://stripe.com/newsroom/news/bridge-partners-with-visa) and partnered with Visa to launch **stablecoin-linked card issuing** with Colombia as one of the initial launch countries. This fundamentally changes the viability analysis. See [Option D: Bridge + Visa Stablecoin Cards](#option-d-bridge--visa-stablecoin-cards-recommended) for the new recommended approach.
 
 ---
 
@@ -57,14 +57,16 @@ User deposits $100 USD → GSHOP issues virtual card with $100 balance
 | **United States** 🇺🇸 | ✅ Full support | All features available |
 | **United Kingdom** 🇬🇧 | ✅ Full support | - |
 | **European Union** 🇪🇺 | ✅ Partial | Germany, France, Spain, Italy, Ireland, Netherlands, Belgium, Austria |
-| **Colombia** 🇨🇴 | ❌ **NOT AVAILABLE** | No support |
-| **Latin America** | ❌ **NOT AVAILABLE** | No support (except Brazil - limited) |
+| **Colombia** 🇨🇴 | ❌ Traditional Issuing / ✅ **Bridge + Visa** | Stablecoin-linked cards (early access) |
+| **Latin America** | ❌ Traditional Issuing / ✅ **Bridge + Visa** | Argentina, Mexico, Peru, Chile, Ecuador, Colombia |
 
 ### Impact on GSHOP
 
-**Problem**: GSHOP serves **Colombian users**, but Stripe Issuing is **NOT available in Colombia**.
+**Original Problem**: GSHOP serves **Colombian users**, and traditional Stripe Issuing is **NOT available in Colombia**.
 
-**Possible Workarounds** (all complex):
+**Update**: With Bridge + Visa, Colombia IS supported via stablecoin-linked cards. See [Option D](#option-d-bridge--visa-stablecoin-cards-recommended).
+
+**Legacy Workarounds** (kept for reference — Option D supersedes these):
 
 1. **Option A: US-Issued Cards to Colombian Users**
    - GSHOP (US company) issues cards via Stripe
@@ -82,13 +84,33 @@ User deposits $100 USD → GSHOP issues virtual card with $100 balance
      - Limited addressable market (GSHOP is Colombia-focused)
      - Feature parity problems
 
-3. **Option C: Use Colombian Fintech Partner** (RECOMMENDED)
+3. **Option C: Use Colombian Fintech Partner**
    - Partner with Rappipay, Bold, Ualá, or Nequi
    - Issue cards under Colombian regulations
    - ✅ **Benefits**:
      - Native COP support
      - No cross-border issues
      - Better user experience
+
+4. **Option D: Bridge + Visa Stablecoin Cards** (RECOMMENDED)
+   - Use Stripe's Bridge acquisition + Visa partnership
+   - Issue stablecoin-linked Visa cards directly to Colombian users
+   - ✅ **Benefits**:
+     - Colombia is an initial launch country
+     - Single API integration (stays within Stripe ecosystem)
+     - Automatic stablecoin-to-COP conversion at point of sale
+     - Merchant receives COP — transaction looks domestic
+     - Scales to Argentina, Mexico, Peru, Chile, Ecuador with zero extra work
+     - Users get USD-stable value storage with local spending power
+   - ⚠️ **Considerations**:
+     - Currently in **private preview** (must be approved by Stripe — more restrictive than early access)
+     - Platform must be US-based (GSHOP qualifies)
+     - Card currency is USD, balance held in USDC — Bridge converts to local fiat at POS
+     - Stablecoin regulatory framework in Colombia still evolving
+     - Fees not yet publicly documented
+     - Banking partner: Lead Bank (US-based)
+     - Physical cards ship from US only (virtual cards are instant)
+   - See [full analysis below](#-option-d-bridge--visa-stablecoin-cards-new---recommended)
 
 ---
 
@@ -632,9 +654,195 @@ export const VirtualCardScreen = () => {
 
 ---
 
-## 💡 Alternative Solutions (RECOMMENDED)
+## 💡 Alternative Solutions
 
-### Option 1: Partner with Colombian Fintech (BEST)
+### Option D: Bridge + Visa Stablecoin Cards (NEW - RECOMMENDED)
+
+**Sources**:
+- [Bridge partners with Visa to launch stablecoin card issuing product](https://stripe.com/newsroom/news/bridge-partners-with-visa)
+- [Stablecoin-funded Issuing cards with Connect](https://docs.stripe.com/issuing/stablecoins-connect) (private preview technical docs)
+
+**What is Bridge?**
+Bridge is a stablecoin infrastructure company **acquired by Stripe** (Stripe's largest acquisition). Together with Visa, they launched a card-issuing product that enables platforms to offer **stablecoin-linked Visa cards** through a single API integration.
+
+**How It Works (Connect Model)**:
+
+GSHOP acts as a **Connect platform**. Each user becomes a **connected account** with a custodial USDC wallet and a Visa card linked to it.
+
+```
+1. GSHOP (platform) funds its Stripe Financial Account (USD via bank wire/ACH)
+2. GSHOP transfers USD to user's connected account → auto-converts to USDC
+   (Outbound Payments v2 API handles USD → USDC conversion)
+3. Bridge issues a Visa prepaid debit card linked to the USDC balance
+4. User pays at any merchant → Bridge auto-converts USDC → local fiat (COP)
+5. Merchant receives COP like any normal Visa transaction
+```
+
+**Card Specifications** (from Stripe docs):
+
+| Specification | Value |
+|---------------|-------|
+| **Product Type** | Business Prepaid Debit |
+| **Card Network** | Visa |
+| **Card Currency** | USD |
+| **Funding Model** | Pre-funded, Stablecoin-backed (USDC) |
+| **Funding Chain** | Base (L2) |
+| **Wallet Type** | Custodial |
+| **Sponsor Bank** | Lead Bank |
+| **Card Types** | Virtual, Physical, Digital Wallets (Apple Pay, Google Pay) |
+| **Max per Authorization** | $10,000 USD |
+| **BIN Type** | Shared BIN |
+
+**API Flow (Technical Detail)**:
+
+```
+Step 1: Onboard user as Connected Account (v2 API)
+  → Required capabilities:
+    - storer.holds_currencies.usdc (stablecoin storage)
+    - storer.outbound_transfer.crypto_wallet (optional: external wallet transfers)
+    - card_creator.commercial.lead.prepaid_card (card issuing)
+  → KYC handled by Stripe + Bridge
+
+Step 2: Create Financial Account for user
+  → POST /v2/financial_accounts { type: "storage", storage: { holds_currencies: ["usdc"] } }
+
+Step 3: Fund user's account
+  → Platform transfers USD → connected account via Outbound Payments v2
+  → Automatic USD → USDC conversion during transfer
+
+Step 4: Issue Visa card
+  → POST /v1/issuing/cardholders (standard Issuing API)
+  → POST /v1/issuing/cards { financial_account_v2: "<user_fa_id>" }
+  → Card is funded from user's USDC balance
+
+Step 5: User spends
+  → Spending controls specified in USD (not USDC)
+  → Bridge handles USDC → local fiat conversion at point of sale
+  → Transactions tracked via Transactions v2 API + Received Debit v2 API
+```
+
+**Additional User Capabilities**:
+- **Crypto wallet transfers**: Users can send USDC to external wallets (Arbitrum, Base, Ethereum, Solana, Polygon, etc.)
+- **Fiat payouts**: Users can receive payouts in USD, MXN, EUR
+- **Digital wallets**: Cards can be added to Apple Pay and Google Pay
+
+**Physical Cards Note**: Currently ships from the US only (express/priority shipping required). Custom card designs require ~8-week lead time.
+
+**Supported Countries (Initial Launch)**:
+
+| Country | Status |
+|---------|--------|
+| **Colombia** 🇨🇴 | ✅ Initial launch |
+| **Argentina** 🇦🇷 | ✅ Initial launch |
+| **Mexico** 🇲🇽 | ✅ Initial launch |
+| **Peru** 🇵🇪 | ✅ Initial launch |
+| **Chile** 🇨🇱 | ✅ Initial launch |
+| **Ecuador** 🇪🇨 | ✅ Initial launch |
+| **Europe, Africa, Asia** | 🔜 Future expansion |
+
+**Key Advantages for GSHOP**:
+
+| Advantage | Detail |
+|-----------|--------|
+| **Colombia supported natively** | No workarounds needed — Colombia is a Day 1 market |
+| **Stays in Stripe ecosystem** | GSHOP already uses Stripe — single vendor relationship |
+| **Local transaction experience** | Merchant receives COP, card behaves like a local card |
+| **USD-stable value storage** | Users hold USDC, protected from COP volatility |
+| **Multi-country with one integration** | Same API works for CO, AR, MX, PE, CL, EC |
+| **150M+ merchant locations** | Works anywhere Visa is accepted worldwide |
+| **Programmatic card issuance** | Virtual + physical cards via API |
+
+**Architecture with Bridge (Connect Model)**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      GSHOP Mobile App                       │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────┐  │
+│  │ User Wallet    │  │ Visa Cards     │  │ Transactions │  │
+│  │ (USDC balance) │  │ (Virtual/Phys) │  │ (History)    │  │
+│  └────────┬───────┘  └────────┬───────┘  └──────┬───────┘  │
+│           │                   │                  │          │
+└───────────┼───────────────────┼──────────────────┼──────────┘
+            │                   │                  │
+            ▼                   ▼                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│              GSHOP Backend (NestJS) — PLATFORM              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │             Virtual Cards Module (NEW)                 │ │
+│  │  - ConnectService (onboard users as connected accts)   │ │
+│  │  - FinancialAccountService (create USDC wallets)       │ │
+│  │  - FundingService (USD → USDC via Outbound Payments)   │ │
+│  │  - CardsService (Issuing v1 API — issue Visa cards)    │ │
+│  │  - TransactionsService (Transactions v2 + webhooks)    │ │
+│  │  - AuthorizationService (real-time approve/decline)    │ │
+│  │  - CryptoTransferService (optional: USDC → ext wallet) │ │
+│  └────────────────────────────────────────────────────────┘ │
+│              │                                              │
+│  Platform Financial Account (USD → USDC funding source)     │
+│              │                                              │
+└──────────────┼──────────────────────────────────────────────┘
+               │
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│          Stripe + Bridge APIs (mixed v1 + v2)               │
+│                                                             │
+│  v2 APIs (Money Management):                                │
+│  - Financial Addresses v2 (bank wire/ACH funding)           │
+│  - Financial Accounts v2 (USDC storage per user)            │
+│  - Outbound Payments v2 (USD → USDC conversion + transfer)  │
+│  - Outbound Transfers v2 (USDC → external crypto wallets)   │
+│  - Transactions v2 (all money movement tracking)            │
+│  - Received Debits v2 (card spend tracking)                 │
+│                                                             │
+│  v1 APIs (Card Issuing):                                    │
+│  - Issuing Cardholders (create cardholder)                  │
+│  - Issuing Cards (create virtual/physical Visa card)        │
+│  - Issuing Authorizations (real-time approve/decline)       │
+│                                                             │
+│  Banking Partner: Lead Bank | Network: Visa                 │
+│  Stablecoin: USDC on Base (L2)                              │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Visa Network                            │
+│  - 150M+ merchant locations worldwide                        │
+│  - USDC → local fiat conversion at point of sale             │
+│  - Apple Pay / Google Pay support                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Risks & Considerations**:
+
+| Risk | Severity | Detail |
+|------|----------|--------|
+| **Private preview** | 🔴 High | More restrictive than early access — must be invited/approved by Stripe. Not GA. |
+| **US platform only** | 🟡 Medium | Platform (GSHOP) must be US-based. Connected accounts can be in approved LATAM markets. GSHOP qualifies as US entity. |
+| **Colombia not explicitly confirmed** | 🟡 Medium | Docs mention Mexico (MX) as example. Bridge/Visa announcement lists Colombia. Confirm with Stripe sales. |
+| **Stablecoin regulation (CO)** | 🟡 Medium | Superfinanciera still defining crypto/stablecoin framework |
+| **Bridge fees unknown** | 🟡 Medium | No fee structure in docs — must get from Stripe sales |
+| **Physical cards ship from US** | 🟡 Medium | Express/priority only. Customs, delivery time, and cost for Colombian users. Virtual cards are instant. |
+| **Card currency is USD** | 🟡 Medium | Card operates in USD, not COP. Bridge handles conversion at POS, but user balance is in USDC (pegged to USD). |
+| **$10k max per authorization** | 🟢 Low | Unlikely to hit for typical consumer transactions |
+| **Single vendor lock-in** | 🟡 Medium | Entire stack: Stripe + Bridge + Lead Bank + Visa |
+| **KYC required** | 🟢 Low | Stripe + Bridge handle KYC for connected accounts |
+| **Stablecoin depeg risk** | 🟢 Low | USDC is well-audited, but theoretical risk exists |
+| **Mixed API versions** | 🟢 Low | Uses both v1 (Issuing) and v2 (Money Management) APIs — documented as interoperable |
+
+**Estimated Implementation Plan**:
+
+1. **Week 1-2**: Apply for Bridge early access, contact Stripe sales
+2. **Week 3-4**: Get API credentials, review Bridge docs, legal review of stablecoin T&Cs
+3. **Week 5-8**: Backend integration (BridgeCardsService, webhooks, wallet flow)
+4. **Week 9-10**: Mobile UI (card display, deposit flow, transaction history)
+5. **Week 11-12**: Testing, beta rollout
+
+**Estimated Timeline**: 2-3 months
+**Estimated Cost**: $20,000-$35,000 (less regulatory overhead than traditional Stripe Issuing)
+
+---
+
+### Option 1: Partner with Colombian Fintech
 
 **Providers**:
 
@@ -693,54 +901,63 @@ const card = await rappipay.cards.create({
 - Gift balances
 - Affiliate/seller earnings held in wallet
 
-### Option 3: Crypto/Stablecoin Cards (Emerging)
+### Option 3: Crypto/Stablecoin Cards (Superseded by Option D)
 
 **Providers**: Crypto.com, Binance Card (if expanding to LATAM)
 
 **Concept**: Issue cards backed by stablecoins (USDC, USDT)
 
-**Status**: ⚠️ Experimental, high regulatory risk
+**Status**: ⚠️ Superseded — Bridge (Option D) achieves this within the Stripe ecosystem with better compliance, Visa partnership, and direct Colombia support. Third-party crypto card providers remain a fallback but add vendor complexity.
 
 ---
 
 ## 🎯 Recommendation
 
-### For GSHOP Colombian Market: **DO NOT** Use Stripe Issuing
+### For GSHOP Colombian Market: Use **Bridge (Stripe) + Visa Stablecoin Cards**
 
-**Why**:
-1. ❌ Not available in Colombia
-2. ❌ Extremely high regulatory complexity
-3. ❌ Poor user experience (COP ↔ USD confusion)
-4. ❌ High cost ($50k+ implementation)
-5. ❌ 4-5 month timeline
+**Why Bridge is the best path**:
+1. ✅ Colombia is a Day 1 supported market
+2. ✅ Stays within Stripe ecosystem (GSHOP already uses Stripe)
+3. ✅ Automatic stablecoin ↔ COP conversion — no user confusion
+4. ✅ Merchant receives COP — card behaves like a local transaction
+5. ✅ Single integration scales to 6 LATAM countries (CO, AR, MX, PE, CL, EC)
+6. ✅ USD-stable value storage protects users from COP volatility
+7. ✅ Estimated 2-3 months, ~$20k-$35k
 
-### Recommended Path: **Partner with Colombian Fintech**
+**Important caveat**: Bridge is in **private preview** — GSHOP must apply and be approved. The card currency is USD (balance in USDC), with automatic conversion to local fiat at point of sale. This is not a COP-native card, but the UX is seamless for the user.
 
-**Action Plan**:
+**Fallback**: If Bridge private preview access is not granted or timeline doesn't align, fall back to **Colombian Fintech Partner** (Option 1 — Rappipay, Ualá, Nequi).
 
-1. **Week 1-2**: Research Colombian card providers
-   - Rappipay, Bold, Ualá, Nequi, DaviPlata
-   - Compare APIs, fees, features
-   - Schedule demos
+### Recommended Action Plan
+
+1. **Week 1-2**: Apply for Bridge private preview + parallel research
+   - Contact Stripe sales for Bridge/Visa stablecoin card issuing program (private preview)
+   - Simultaneously research Rappipay, Ualá APIs as fallback
+   - Schedule demos with both Bridge and local providers
 
 2. **Week 3-4**: Legal & Compliance
-   - Review provider terms
-   - Ensure GSHOP can integrate (business type, KYC)
-   - Sign partnership agreement
+   - Review Bridge stablecoin T&Cs and Colombian regulatory implications
+   - If Bridge approved: proceed with Bridge integration
+   - If Bridge not available yet: pivot to Colombian fintech partner
 
 3. **Week 5-8**: Implementation
-   - Integrate provider API
-   - Build wallet UI
-   - Test card issuance flow
+   - Integrate Bridge API (or fallback provider)
+   - Build wallet UI (deposit COP → card balance)
+   - Implement webhook handlers for authorization events
 
-4. **Week 9-10**: Testing & Launch
+4. **Week 9-10**: Mobile UI
+   - Virtual card display screen
+   - Transaction history
+   - Top-up flow
+
+5. **Week 11-12**: Testing & Launch
    - Beta test with 100 users
-   - Monitor transactions
+   - Monitor transactions and conversion rates
    - Full rollout
 
-**Timeline**: 2-3 months (vs 4-5 months with Stripe)
+**Timeline**: 2-3 months
 
-**Cost**: $15,000-$30,000 (vs $50,000-$90,000 with Stripe)
+**Cost**: $20,000-$35,000 (Bridge) / $15,000-$30,000 (local fintech fallback)
 
 **Success Metrics**:
 - 30% user adoption (3,000 cards issued in Month 1)
@@ -752,13 +969,21 @@ const card = await rappipay.cards.create({
 
 ## 📚 Additional Resources
 
-### Stripe Issuing Documentation
-- Official Docs: https://stripe.com/docs/issuing
-- API Reference: https://stripe.com/docs/api/issuing
-- Country Availability: https://stripe.com/docs/issuing/availability
-- Webhooks: https://stripe.com/docs/issuing/webhooks
+### Bridge (Stripe) + Visa Card Issuing
+- **Bridge + Visa Announcement**: https://stripe.com/newsroom/news/bridge-partners-with-visa
+- **Stablecoin-funded Issuing with Connect (Technical Docs)**: https://docs.stripe.com/issuing/stablecoins-connect
+- **Stripe Issuing Global / Cross-Border**: https://docs.stripe.com/issuing/global
+- **Stripe Stablecoin Financial Accounts**: https://docs.stripe.com/financial-accounts/stablecoins
+- **Stripe Stablecoin Accounts (100+ countries)**: https://stripe.com/blog/introducing-stablecoin-payments-for-subscriptions
 
-### Colombian Fintech Providers
+### Stripe Issuing Documentation (Traditional)
+- Official Docs: https://docs.stripe.com/issuing
+- API Reference: https://docs.stripe.com/api/issuing
+- Country Availability: https://docs.stripe.com/issuing/global#local-issuing
+- Real-time Authorizations (Webhooks): https://docs.stripe.com/issuing/controls/real-time-authorizations
+- Webhooks for Issuing + Connect: https://docs.stripe.com/financial-accounts/connect/examples/webhooks
+
+### Colombian Fintech Providers (Fallback)
 - **Rappipay**: https://www.rappipay.com
 - **Bold**: https://bold.co
 - **Ualá Colombia**: https://www.uala.com.co
@@ -773,29 +998,36 @@ const card = await rappipay.cards.create({
 
 ## ✅ Next Steps
 
-### If Proceeding with Stripe Issuing (NOT RECOMMENDED)
+### Primary Path: Bridge + Visa Stablecoin Cards (RECOMMENDED)
 
 1. **Immediate** (This Week):
-   - [ ] Legal consultation ($500-$2,000)
-   - [ ] Stripe Issuing account application
-   - [ ] Review compliance requirements
+   - [ ] Apply for Bridge private preview via Stripe sales contact
+   - [ ] Review technical docs: [stablecoins-connect](https://docs.stripe.com/issuing/stablecoins-connect)
+   - [ ] Confirm Colombia is in the approved markets list for connected accounts
+   - [ ] Begin legal review of stablecoin card issuance in Colombia
+   - [ ] In parallel: research Rappipay/Ualá APIs as fallback
 
-2. **Short-term** (Month 1):
-   - [ ] Obtain legal opinion on Colombian user eligibility
-   - [ ] FinCEN registration (if required)
-   - [ ] Stripe approval (can take 2-4 weeks)
+2. **Short-term** (Weeks 2-4):
+   - [ ] Get Bridge API credentials and sandbox access (if approved)
+   - [ ] Review v1 (Issuing) + v2 (Money Management) API interop
+   - [ ] Test connected account onboarding + USDC financial account creation in sandbox
+   - [ ] Clarify Bridge fee structure with Stripe sales
+   - [ ] Legal opinion on stablecoin regulatory status in Colombia
 
-3. **Medium-term** (Months 2-3):
-   - [ ] Backend development
-   - [ ] Mobile UI development
-   - [ ] Testing
+3. **Medium-term** (Weeks 5-10):
+   - [ ] Backend: ConnectService, FinancialAccountService, CardsService (v1+v2 APIs)
+   - [ ] Implement funding flow: platform USD → connected account USDC → Visa card
+   - [ ] Mobile: Virtual card UI, transaction history, top-up flow, Apple Pay/Google Pay
+   - [ ] Integration testing with Bridge sandbox (supports both v1 and v2 APIs)
 
-4. **Long-term** (Month 4+):
-   - [ ] Beta launch
-   - [ ] Monitor compliance
-   - [ ] Scale
+4. **Long-term** (Weeks 11-12):
+   - [ ] Beta launch (100 users in Colombia)
+   - [ ] Monitor transactions, conversion rates, user feedback
+   - [ ] Full rollout
 
-### If Using Colombian Partner (RECOMMENDED)
+### Fallback Path: Colombian Fintech Partner
+
+If Bridge private preview access is not granted or timeline doesn't align:
 
 1. **Immediate** (This Week):
    - [ ] Research Rappipay, Bold, Ualá APIs
@@ -817,22 +1049,34 @@ const card = await rappipay.cards.create({
    - [ ] Full rollout
    - [ ] Monitor metrics
 
+### Legacy Path: Traditional Stripe Issuing (NOT RECOMMENDED for Colombia)
+
+Only relevant if GSHOP adds a US-only user segment:
+
+1. **If needed**: Apply for Stripe Issuing (US cards for US users only)
+2. **Do not** use traditional Stripe Issuing for Colombian users
+
 ---
 
 ## 📊 Decision Matrix
 
-| Criteria | Stripe Issuing | Colombian Partner | Wallet-Only |
-|----------|----------------|-------------------|-------------|
-| **Market Fit** | ❌ Poor | ✅ Excellent | 🟡 Good |
-| **Regulatory** | ❌ Complex | ✅ Simple | ✅ Simple |
-| **Cost** | ❌ High ($50k+) | ✅ Low ($15k-$30k) | ✅ Very Low ($5k) |
-| **Timeline** | ❌ 4-5 months | ✅ 2-3 months | ✅ 1 month |
-| **User Experience** | ❌ Confusing (USD) | ✅ Native (COP) | 🟡 Limited |
-| **Utility** | ✅ Spend anywhere | ✅ Spend anywhere | ❌ GSHOP only |
-| **Maintenance** | ❌ High | 🟡 Medium | ✅ Low |
+| Criteria | Bridge + Visa | Stripe Issuing (Traditional) | Colombian Partner | Wallet-Only |
+|----------|---------------|------------------------------|-------------------|-------------|
+| **Market Fit** | ✅ Excellent (CO Day 1) | ❌ Poor (no CO) | ✅ Excellent | 🟡 Good |
+| **Regulatory** | 🟡 Medium (stablecoin) | ❌ Complex (cross-border) | ✅ Simple | ✅ Simple |
+| **Cost** | 🟡 ~$20k-$35k (TBD) | ❌ High ($50k+) | ✅ Low ($15k-$30k) | ✅ Very Low ($5k) |
+| **Timeline** | ✅ 2-3 months | ❌ 4-5 months | ✅ 2-3 months | ✅ 1 month |
+| **User Experience** | ✅ Seamless (auto COP) | ❌ Confusing (USD) | ✅ Native (COP) | 🟡 Limited |
+| **Utility** | ✅ Spend anywhere (Visa) | ✅ Spend anywhere | ✅ Spend anywhere | ❌ GSHOP only |
+| **LATAM Scalability** | ✅ 6 countries, 1 API | ❌ Not available | ❌ Per-country partner | ❌ N/A |
+| **Stripe Ecosystem** | ✅ Same vendor | ✅ Same vendor | ❌ New vendor | ✅ N/A |
+| **Maintenance** | 🟡 Medium | ❌ High | 🟡 Medium | ✅ Low |
+| **Availability** | 🟡 Private preview | ✅ GA (US/EU) | ✅ GA | ✅ GA |
 
-**Winner**: **Colombian Fintech Partner** 🏆
+**Winner**: **Bridge + Visa Stablecoin Cards** 🏆
+
+**Fallback**: Colombian Fintech Partner (if Bridge early access unavailable)
 
 ---
 
-**Questions?** Let me know if you want to explore any specific provider or need help with implementation!
+**Questions?** Let me know if you want to explore the Bridge API integration or need help with implementation!
