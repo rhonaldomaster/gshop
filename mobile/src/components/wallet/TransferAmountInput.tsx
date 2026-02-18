@@ -62,7 +62,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
     });
   }, [navigation]);
 
-  const quickAmounts = [10000, 50000, 100000, 500000];
+  const quickAmounts = [5, 10, 25, 50];
 
   const handleTextChange = useCallback((text: string) => {
     // Only allow numeric input
@@ -90,7 +90,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
   }, [balance, limits, onChangeValue]);
 
   const displayValue = inputValue
-    ? new Intl.NumberFormat('es-CO').format(parseInt(inputValue, 10) || 0)
+    ? new Intl.NumberFormat('en-US').format(parseInt(inputValue, 10) || 0)
     : '';
 
   return (
@@ -160,7 +160,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
                 color: value === amount ? theme.colors.white : theme.colors.text,
               }}
             >
-              {transferService.formatCOP(amount)}
+              {transferService.formatUSD(amount)}
             </GSText>
           </TouchableOpacity>
         ))}
@@ -176,7 +176,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
                 {t('wallet.transferScreen.yourBalance')}
               </GSText>
               <GSText variant="body" weight="bold">
-                {transferService.formatCOP(balance)}
+                {transferService.formatUSD(balance)}
               </GSText>
             </View>
           </View>
@@ -188,7 +188,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
                 {t('wallet.transferScreen.dailyLimitRemaining')}
               </GSText>
               <GSText variant="body" weight="bold">
-                {transferService.formatCOP(limits.dailyRemaining)}
+                {transferService.formatUSD(limits.dailyRemaining)}
               </GSText>
             </View>
           </View>
@@ -200,7 +200,7 @@ export const TransferAmountInput: React.FC<TransferAmountInputProps> = ({
         <Ionicons name="shield-checkmark-outline" size={14} color={theme.colors.textSecondary} />
         <GSText variant="caption" color="textSecondary" style={{ marginLeft: 4 }}>
           {t('wallet.transferScreen.levelInfo')}: {transferService.getLevelDisplayName(limits.level)} |
-          {t('wallet.transferScreen.maxPerTransaction')}: {transferService.formatCOP(limits.maxPerTransaction)}
+          {t('wallet.transferScreen.maxPerTransaction')}: {transferService.formatUSD(limits.maxPerTransaction)}
         </GSText>
       </View>
 

@@ -101,7 +101,7 @@ export class TransferLimit {
     if (amount < limits.minPerTransaction) {
       return {
         allowed: false,
-        reason: `Minimum transfer amount is $${limits.minPerTransaction.toLocaleString()} COP`,
+        reason: `Minimum transfer amount is $${limits.minPerTransaction.toFixed(2)} USD`,
       };
     }
 
@@ -109,7 +109,7 @@ export class TransferLimit {
     if (amount > limits.maxPerTransaction) {
       return {
         allowed: false,
-        reason: `Maximum transfer amount is $${limits.maxPerTransaction.toLocaleString()} COP. Upgrade your verification level for higher limits.`,
+        reason: `Maximum transfer amount is $${limits.maxPerTransaction.toFixed(2)} USD. Upgrade your verification level for higher limits.`,
       };
     }
 
@@ -118,7 +118,7 @@ export class TransferLimit {
     if (amount > dailyRemaining) {
       return {
         allowed: false,
-        reason: `Daily limit exceeded. Remaining: $${dailyRemaining.toLocaleString()} COP`,
+        reason: `Daily limit exceeded. Remaining: $${dailyRemaining.toFixed(2)} USD`,
       };
     }
 
@@ -127,7 +127,7 @@ export class TransferLimit {
     if (amount > monthlyRemaining) {
       return {
         allowed: false,
-        reason: `Monthly limit exceeded. Remaining: $${monthlyRemaining.toLocaleString()} COP`,
+        reason: `Monthly limit exceeded. Remaining: $${monthlyRemaining.toFixed(2)} USD`,
       };
     }
 

@@ -851,27 +851,19 @@ export class TokenService {
    * Create a Stripe Payment Intent for wallet topup
    * Creates a pending transaction and returns clientSecret for mobile Stripe SDK
    */
-  async createStripeTopupIntent(userId: string, amountCOP: number): Promise<StripeTopupResponseDto> {
-    // Validate minimum amount
-    if (amountCOP < 1000) {
-      throw new BadRequestException('El monto minimo de recarga es $1,000 COP');
+  async createStripeTopupIntent(userId: string, amountUSD: number): Promise<StripeTopupResponseDto> {
+    // Validate minimum amount (Stripe minimum is $0.50 USD)
+    if (amountUSD < 0.50) {
+      throw new BadRequestException('El monto minimo de recarga es $0.50 USD');
     }
 
-    // Maximum topup amount: $50,000,000 COP
-    if (amountCOP > 50000000) {
-      throw new BadRequestException('El monto maximo de recarga es $50,000,000 COP');
+    // Maximum topup amount: $10,000 USD
+    if (amountUSD > 10000) {
+      throw new BadRequestException('El monto maximo de recarga es $10,000 USD');
     }
 
     // Ensure user has a wallet
     const wallet = await this.getUserWallet(userId);
-
-    // Convert COP to USD for Stripe
-    const { amountUSD, rate } = await this.currencyService.convertCOPtoUSD(amountCOP);
-
-    // Stripe minimum is $0.50 USD
-    if (amountUSD < 0.5) {
-      throw new BadRequestException('El monto es muy bajo para procesar. Minimo $1,000 COP');
-    }
 
     // Generate unique topup ID
     const topupId = `TOPUP_${Date.now()}_${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
@@ -883,14 +875,12 @@ export class TokenService {
         walletId: wallet.id,
         type: TokenTransactionType.TOPUP,
         status: TokenTransactionStatus.PENDING,
-        amount: amountCOP,
+        amount: amountUSD,
         reference: topupId,
         description: 'Recarga de saldo via Stripe',
         metadata: {
           topupId,
-          amountCOP,
           amountUSD,
-          exchangeRate: rate,
           paymentMethod: 'stripe',
           createdAt: new Date().toISOString()
         }
@@ -905,7 +895,7 @@ export class TokenService {
           topupId,
           transactionId: savedTx.id,
           userId,
-          amountCOP: amountCOP.toString(),
+          amountUSD: amountUSD.toString(),
           type: 'wallet_topup'
         },
         automatic_payment_methods: {
@@ -920,7 +910,7 @@ export class TokenService {
       };
       await this.transactionRepository.save(savedTx);
 
-      this.logger.log(`Created Stripe topup intent ${topupId} for user ${userId}: $${amountCOP} COP = $${amountUSD} USD`);
+      this.logger.log(`Created Stripe topup intent ${topupId} for user ${userId}: $${amountUSD} USD`);
 
       // Set expiration time (30 minutes)
       const expiresAt = new Date();
@@ -930,9 +920,7 @@ export class TokenService {
         topupId,
         clientSecret: paymentIntent.client_secret,
         publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
-        amountCOP,
         amountUSD,
-        exchangeRate: rate,
         expiresAt
       };
 
@@ -965,7 +953,7 @@ export class TokenService {
       topupId: transaction.reference || transaction.id,
       status: transaction.status,
       amount: Number(transaction.amount),
-      currency: 'COP',
+      currency: 'USD',
       stripePaymentIntentId: transaction.metadata?.stripePaymentIntentId,
       processedAt: transaction.processedAt,
       createdAt: transaction.createdAt
@@ -1005,7 +993,7 @@ export class TokenService {
     await queryRunner.startTransaction();
 
     try {
-      const amountCOP = Number(transaction.amount);
+      const amountUSD = Number(transaction.amount);
 
       // Get user's wallet
       const wallet = await queryRunner.manager.findOne(GshopWallet, {
@@ -1017,8 +1005,8 @@ export class TokenService {
       }
 
       // Credit wallet
-      wallet.balance = Number(wallet.balance) + amountCOP;
-      wallet.totalEarned = Number(wallet.totalEarned) + amountCOP;
+      wallet.balance = Number(wallet.balance) + amountUSD;
+      wallet.totalEarned = Number(wallet.totalEarned) + amountUSD;
       wallet.lastTransactionAt = new Date();
 
       await queryRunner.manager.save(GshopWallet, wallet);
@@ -1037,9 +1025,9 @@ export class TokenService {
       await queryRunner.commitTransaction();
 
       // Update circulation stats
-      await this.updateCirculation('TOPUP', amountCOP);
+      await this.updateCirculation('TOPUP', amountUSD);
 
-      this.logger.log(`Successfully processed topup ${transaction.reference}: +$${amountCOP} COP to user ${transaction.userId}`);
+      this.logger.log(`Successfully processed topup ${transaction.reference}: +$${amountUSD} USD to user ${transaction.userId}`);
 
       return { success: true, transactionId: transaction.id };
 
@@ -1092,7 +1080,7 @@ export class TokenService {
    * Pay for an order using wallet balance
    * @param userId - The user making the payment
    * @param orderId - The order to pay for
-   * @param amount - The total amount to pay (in COP)
+   * @param amount - The total amount to pay (in USD)
    * @returns Payment result with transaction ID
    */
   async payOrderWithWallet(
@@ -1117,8 +1105,8 @@ export class TokenService {
     // Check sufficient balance
     if (Number(wallet.balance) < amount) {
       throw new BadRequestException(
-        `Saldo insuficiente. Balance actual: $${Number(wallet.balance).toLocaleString()} COP, ` +
-        `Monto requerido: $${amount.toLocaleString()} COP`
+        `Saldo insuficiente. Balance actual: $${Number(wallet.balance).toFixed(2)} USD, ` +
+        `Monto requerido: $${amount.toFixed(2)} USD`
       );
     }
 
@@ -1140,7 +1128,7 @@ export class TokenService {
       order: { createdAt: 'DESC' }
     });
 
-    this.logger.log(`Order ${orderId} paid with wallet balance: $${amount} COP by user ${userId}`);
+    this.logger.log(`Order ${orderId} paid with wallet balance: $${amount} USD by user ${userId}`);
 
     return {
       success: true,

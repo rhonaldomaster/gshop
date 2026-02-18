@@ -105,7 +105,7 @@ export const TransferSuccess: React.FC<TransferSuccessProps> = ({
             {t('wallet.transferScreen.amountSent')}
           </GSText>
           <GSText variant="h3" weight="bold">
-            {transferService.formatCOP(result.summary.amountSent)}
+            {transferService.formatUSD(result.summary.amountSent)}
           </GSText>
         </View>
 

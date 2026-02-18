@@ -201,8 +201,8 @@ export class TokenController {
    * Returns clientSecret for mobile Stripe SDK
    *
    * POST /tokens/topup/stripe-intent
-   * Body: { amount: number } // Amount in COP
-   * Response: { topupId, clientSecret, publishableKey, amountCOP, amountUSD, exchangeRate, expiresAt }
+   * Body: { amount: number } // Amount in USD
+   * Response: { topupId, clientSecret, publishableKey, amountUSD, expiresAt }
    */
   @Post('topup/stripe-intent')
   @UseGuards(JwtAuthGuard)

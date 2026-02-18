@@ -117,9 +117,7 @@ export interface StripeTopupIntentResponse {
   topupId: string;
   clientSecret: string;
   publishableKey: string;
-  amountCOP: number;
   amountUSD: number;
-  exchangeRate: number;
   expiresAt: string;
 }
 
@@ -357,7 +355,7 @@ class PaymentsService {
         // Map API response to WalletBalance interface
         return {
           tokenBalance: parseFloat(walletData.balance) || 0,
-          usdValue: parseFloat(walletData.balance) || 0, // Same value for now since it's COP
+          usdValue: parseFloat(walletData.balance) || 0, // Balance is in USD
           pendingRewards: parseFloat(walletData.lockedBalance) || 0,
           transactions: transactions.map((tx: any) => ({
             id: tx.id,
@@ -400,13 +398,13 @@ class PaymentsService {
   /**
    * Create Stripe Payment Intent for wallet topup
    * Returns clientSecret for Stripe SDK to confirm payment
-   * @param amountCOP Amount in Colombian Pesos (COP)
+   * @param amountUSD Amount in USD
    */
-  async createStripeTopupIntent(amountCOP: number): Promise<StripeTopupIntentResponse> {
+  async createStripeTopupIntent(amountUSD: number): Promise<StripeTopupIntentResponse> {
     try {
       const response = await apiClient.post<StripeTopupIntentResponse>(
         '/tokens/topup/stripe-intent',
-        { amount: amountCOP }
+        { amount: amountUSD }
       );
 
       if (response.success && response.data) {
@@ -495,7 +493,7 @@ class PaymentsService {
           paymentAmount: 0,
           currentBalance: 0,
           shortfall: 0,
-          currency: 'COP',
+          currency: 'USD',
           error: response.message || 'Failed to check wallet eligibility'
         };
       }
@@ -506,7 +504,7 @@ class PaymentsService {
         paymentAmount: 0,
         currentBalance: 0,
         shortfall: 0,
-        currency: 'COP',
+        currency: 'USD',
         error: error?.message || 'Failed to check wallet balance'
       };
     }
@@ -687,19 +685,19 @@ class PaymentsService {
     return texts[status] || status;
   }
 
-  formatPrice(price: number | string, currency: string = 'COP'): string {
+  formatPrice(price: number | string, currency: string = 'USD'): string {
     // Convert string to number if needed (TypeORM decimal fields are serialized as strings)
     const numericPrice = typeof price === 'string' ? parseFloat(price) : price;
 
     // Return NaN-safe formatting
     if (isNaN(numericPrice)) {
-      return new Intl.NumberFormat('es-CO', {
+      return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency,
       }).format(0);
     }
 
-    return new Intl.NumberFormat('es-CO', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
     }).format(numericPrice);

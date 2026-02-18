@@ -96,9 +96,9 @@ export const ENV: EnvConfig = {
   IS_PROD: detectEnvironment() === 'production',
 
   // API Configuration
-  API_BASE_URL: getEnvVar('API_BASE_URL', 'https://5ff0-2800-484-1785-2b00-c549-934f-a4e3-ddad.ngrok-free.app'),
+  API_BASE_URL: getEnvVar('API_BASE_URL', 'https://04dd-2800-484-1785-2b00-a989-cbcc-e27b-f867.ngrok-free.app'),
   API_VERSION: getEnvVar('API_VERSION', '/api/v1'),
-  WEBSOCKET_URL: getEnvVar('WEBSOCKET_URL', 'https://5ff0-2800-484-1785-2b00-c549-934f-a4e3-ddad.ngrok-free.app'),
+  WEBSOCKET_URL: getEnvVar('WEBSOCKET_URL', 'https://04dd-2800-484-1785-2b00-a989-cbcc-e27b-f867.ngrok-free.app'),
 
   // Analytics & Tracking
   GSHOP_PIXEL_ID: getEnvVar('GSHOP_PIXEL_ID', __DEV__ ? 'dev-pixel-123' : ''),
