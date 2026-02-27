@@ -7,6 +7,7 @@ import { User } from '../database/entities/user.entity';
 import { GshopWallet, GshopTransaction } from '../token/token.entity';
 import { IssuingController } from './issuing.controller';
 import { IssuingWebhookController } from './issuing-webhook.controller';
+import { IssuingAdminController } from './issuing-admin.controller';
 import { StripeIssuingService } from './services/stripe-issuing.service';
 import { CardholdersService } from './services/cardholders.service';
 import { CardsService } from './services/cards.service';
@@ -25,7 +26,7 @@ import { FundingService } from './services/funding.service';
       GshopTransaction,
     ]),
   ],
-  controllers: [IssuingController, IssuingWebhookController],
+  controllers: [IssuingController, IssuingWebhookController, IssuingAdminController],
   providers: [
     StripeIssuingService,
     CardholdersService,

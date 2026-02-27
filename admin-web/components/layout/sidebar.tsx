@@ -24,6 +24,7 @@ import {
   UserCheck,
   ShieldCheck,
   ArrowLeftRight,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
@@ -39,6 +40,7 @@ const navigationConfig = [
   { key: 'creators', href: '/dashboard/creators', icon: UserCheck, showBadge: true },
   { key: 'payments', href: '/dashboard/payments', icon: CreditCard },
   { key: 'transactions', href: '/dashboard/transactions', icon: ArrowLeftRight },
+  { key: 'issuing', href: '/dashboard/issuing', icon: Wallet },
   { key: 'ads', href: '/dashboard/ads', icon: Target },
   { key: 'live', href: '/dashboard/live', icon: Radio },
   { key: 'analytics', href: '/dashboard/analytics', icon: BarChart3 },
