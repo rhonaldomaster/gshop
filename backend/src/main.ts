@@ -28,6 +28,10 @@ async function bootstrap() {
     '/api/v1/payments-v2/webhooks/stripe',
     express.raw({ type: 'application/json' }),
   );
+  app.use(
+    '/api/v1/webhooks/stripe/issuing',
+    express.raw({ type: 'application/json' }),
+  );
 
   // Global prefix
   app.setGlobalPrefix('api/v1');

@@ -29,6 +29,7 @@ import { CartModule } from './cart/cart.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SupportModule } from './support/support.module';
+import { IssuingModule } from './issuing/issuing.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule as PlatformConfigModule } from './config/config.module';
 import { InvoicingModule } from './invoicing/invoicing.module';
@@ -91,6 +92,7 @@ import { AppService } from './app.service';
     CouponsModule,
     NotificationsModule,
     SupportModule,
+    IssuingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
