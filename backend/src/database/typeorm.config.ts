@@ -75,6 +75,11 @@ import { SupportTicket, FAQ } from '../support/support.entity';
 // Streamer Follow Entity
 import { StreamerFollow } from './entities/streamer-follow.entity';
 
+// Issuing (Virtual Cards) Entities
+import { Cardholder } from '../issuing/entities/cardholder.entity';
+import { VirtualCard } from '../issuing/entities/virtual-card.entity';
+import { CardTransaction } from '../issuing/entities/card-transaction.entity';
+
 export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOptions => ({
   type: 'postgres',
   host: configService.get('DB_HOST', 'localhost'),
@@ -111,7 +116,9 @@ export const typeOrmConfig = (configService: ConfigService): TypeOrmModuleOption
     // Support entities
     SupportTicket, FAQ,
     // Streamer follow entity
-    StreamerFollow
+    StreamerFollow,
+    // Issuing (Virtual Cards) entities
+    Cardholder, VirtualCard, CardTransaction
   ],
   migrations: ['dist/src/database/migrations/*.js'],
   synchronize: false, // Disabled to prevent schema conflicts with manual migrations
