@@ -1,5 +1,5 @@
 // Default spending limits for new cards
-export const DEFAULT_SPENDING_LIMIT_CENTS = 0; // Cards start with $0 - must be funded
+export const DEFAULT_SPENDING_LIMIT_CENTS = 100; // $1.00 minimum - Stripe requires >= 1
 export const MAX_SPENDING_LIMIT_CENTS = 1_000_000; // $10,000 max per authorization
 
 // Stripe Issuing card defaults

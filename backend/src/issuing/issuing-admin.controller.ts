@@ -62,16 +62,17 @@ export class IssuingAdminController {
       take: limitNum,
     });
 
-    return { data, total, page: pageNum, limit: limitNum };
+    return { data: data.map(this.stripSensitiveFields), total, page: pageNum, limit: limitNum };
   }
 
   @Get('cardholders/:id')
   @ApiOperation({ summary: 'Get cardholder detail (admin)' })
   async getCardholder(@Param('id', ParseUUIDPipe) id: string) {
-    return this.cardholderRepo.findOne({
+    const result = await this.cardholderRepo.findOne({
       where: { id },
       relations: ['user', 'cards'],
     });
+    return result ? this.stripSensitiveFields(result) : null;
   }
 
   @Patch('cardholders/:id/status')
@@ -113,16 +114,17 @@ export class IssuingAdminController {
       take: limitNum,
     });
 
-    return { data, total, page: pageNum, limit: limitNum };
+    return { data: data.map(this.stripSensitiveFields), total, page: pageNum, limit: limitNum };
   }
 
   @Get('cards/:id')
   @ApiOperation({ summary: 'Get card detail (admin)' })
   async getCard(@Param('id', ParseUUIDPipe) id: string) {
-    return this.cardRepo.findOne({
+    const result = await this.cardRepo.findOne({
       where: { id },
       relations: ['user', 'cardholder', 'transactions'],
     });
+    return result ? this.stripSensitiveFields(result) : null;
   }
 
   // --- Transactions ---
@@ -154,10 +156,19 @@ export class IssuingAdminController {
       take: limitNum,
     });
 
-    return { data, total, page: pageNum, limit: limitNum };
+    return { data: data.map(this.stripSensitiveFields), total, page: pageNum, limit: limitNum };
   }
 
   // --- Stats ---
+
+  private stripSensitiveFields(entity: any): any {
+    const result = { ...entity };
+    if (result.user) {
+      const { password, ...userWithoutPassword } = result.user;
+      result.user = userWithoutPassword;
+    }
+    return result;
+  }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get issuing statistics (admin)' })
