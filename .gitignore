@@ -294,3 +294,6 @@ storybook-static
 .claude/*
 !.claude/skills/
 !.claude/skills/build/
+.cgrignore
+.mcp.json
+.gemini/
