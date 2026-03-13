@@ -15,7 +15,9 @@ export enum TokenTransactionType {
   PENALTY = 'penalty',
   TOPUP = 'topup',
   BURN = 'burn',
-  MINT = 'mint'
+  MINT = 'mint',
+  CARD_FUNDING = 'card_funding',
+  CARD_WITHDRAWAL = 'card_withdrawal'
 }
 
 export enum TokenTransactionStatus {

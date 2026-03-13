@@ -41,6 +41,7 @@
     "affiliates": "Afiliados Pendientes",
     "payments": "Pagos",
     "transactions": "Transferencias",
+    "issuing": "Tarjetas Virtuales",
     "sellers": "Vendedores",
     "live": "Transmisiones en vivo",
     "ads": "Anuncios",
@@ -1184,6 +1185,113 @@
       "platformFee": "Comision plataforma",
       "netReceived": "Neto recibido",
       "back": "Volver a transacciones"
+    }
+  },
+  "issuing": {
+    "title": "Tarjetas Virtuales",
+    "description": "Gestiona tarjetahabientes, tarjetas y transacciones de Stripe Issuing",
+    "stats": {
+      "totalCardholders": "Total Tarjetahabientes",
+      "activeCards": "Tarjetas Activas",
+      "totalTransactions": "Total Transacciones",
+      "active": "activos",
+      "pending": "pendientes",
+      "totalCards": "tarjetas en total",
+      "totalVolume": "volumen total"
+    },
+    "tabs": {
+      "cardholders": "Tarjetahabientes",
+      "cards": "Tarjetas",
+      "transactions": "Transacciones"
+    },
+    "filters": {
+      "allStatuses": "Todos los estados",
+      "allTypes": "Todos los tipos"
+    },
+    "statuses": {
+      "pending": "Pendiente",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "rejected": "Rechazado",
+      "canceled": "Cancelada",
+      "captured": "Capturada",
+      "reversed": "Revertida",
+      "declined": "Rechazada",
+      "expired": "Expirada"
+    },
+    "cardTypes": {
+      "virtual": "Virtual",
+      "physical": "Fisica"
+    },
+    "transactionTypes": {
+      "authorization": "Autorizacion",
+      "capture": "Captura",
+      "refund": "Reembolso",
+      "reversal": "Reversion"
+    },
+    "pagination": {
+      "page": "Pagina",
+      "of": "de"
+    },
+    "cardholders": {
+      "title": "Todos los Tarjetahabientes",
+      "searchPlaceholder": "Buscar por nombre o email...",
+      "user": "Usuario",
+      "status": "Estado",
+      "phone": "Telefono",
+      "cardsCount": "Tarjetas",
+      "createdAt": "Fecha de Creacion",
+      "noResults": "Sin tarjetahabientes",
+      "noResultsDescription": "No se encontraron tarjetahabientes con los filtros actuales.",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "confirmApproveTitle": "Aprobar Tarjetahabiente",
+      "confirmApproveDescription": "Estas seguro de aprobar al tarjetahabiente {name}? Esto le permitira crear tarjetas virtuales.",
+      "confirmRejectTitle": "Rechazar Tarjetahabiente",
+      "confirmRejectDescription": "Estas seguro de rechazar al tarjetahabiente {name}? No podra crear tarjetas virtuales."
+    },
+    "cards": {
+      "title": "Todas las Tarjetas",
+      "searchPlaceholder": "Buscar por numero o usuario...",
+      "card": "Tarjeta",
+      "user": "Usuario",
+      "type": "Tipo",
+      "status": "Estado",
+      "spendingLimit": "Limite de Gasto",
+      "createdAt": "Fecha de Creacion",
+      "noResults": "Sin tarjetas",
+      "noResultsDescription": "No se encontraron tarjetas con los filtros actuales."
+    },
+    "transactions": {
+      "title": "Todas las Transacciones",
+      "searchPlaceholder": "Buscar por comercio o usuario...",
+      "id": "ID",
+      "card": "Tarjeta",
+      "user": "Usuario",
+      "type": "Tipo",
+      "status": "Estado",
+      "amount": "Monto",
+      "merchant": "Comercio",
+      "date": "Fecha",
+      "noResults": "Sin transacciones",
+      "noResultsDescription": "No se encontraron transacciones con los filtros actuales."
+    },
+    "detail": {
+      "cardholderDetail": "Detalle del tarjetahabiente",
+      "cardholderInfo": "Informacion del Tarjetahabiente",
+      "email": "Email",
+      "phone": "Telefono",
+      "address": "Direccion",
+      "stripeCardholderId": "Stripe Cardholder ID",
+      "userId": "User ID",
+      "cards": "Tarjetas",
+      "noCards": "Este tarjetahabiente no tiene tarjetas creadas.",
+      "transactionHistory": "Historial de Transacciones",
+      "noTransactions": "No hay transacciones registradas.",
+      "timeline": "Linea de Tiempo",
+      "created": "Creado",
+      "updated": "Actualizado",
+      "notFound": "Tarjetahabiente no encontrado"
     }
   }
 }

@@ -719,6 +719,22 @@ export default function WalletScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Virtual Cards */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.quickActionButton, { backgroundColor: theme.colors.surface, flex: 1 }]}
+            onPress={() => navigation.navigate('CardsList' as any)}
+          >
+            <Ionicons name="card" size={24} color={theme.colors.primary} />
+            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+              {t('issuing.myCards')}
+            </GSText>
+            <GSText variant="caption" color="textSecondary">
+              {t('issuing.virtualCardsDescription')}
+            </GSText>
+          </TouchableOpacity>
+        </View>
+
         {/* Transaction History */}
         <View style={styles.transactionsSection}>
           <GSText variant="h4" weight="bold" style={styles.sectionTitle}>
