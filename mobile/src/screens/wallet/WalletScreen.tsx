@@ -26,6 +26,7 @@ import {
   TokenTransaction,
   StripeTopupIntentResponse,
 } from '../../services/payments.service';
+import { issuingService } from '../../services/issuing.service';
 
 interface WalletCardProps {
   balance: WalletBalance;
@@ -454,6 +455,7 @@ export default function WalletScreen() {
     amountUSD?: number;
     error?: string;
   } | null>(null);
+  const [showVirtualCards, setShowVirtualCards] = useState(false);
 
   // Load wallet data
   const loadWalletData = useCallback(async (isRefresh = false) => {
@@ -462,8 +464,12 @@ export default function WalletScreen() {
         setLoading(true);
       }
 
-      const balance = await paymentsService.getWalletBalance();
+      const [balance, featureStatus] = await Promise.all([
+        paymentsService.getWalletBalance(),
+        issuingService.getFeatureStatus(),
+      ]);
       setWalletBalance(balance);
+      setShowVirtualCards(featureStatus.requestsEnabled || featureStatus.hasCards);
     } catch (error: any) {
       console.error('Failed to load wallet data:', error);
       Alert.alert(t('common.error'), error.message || t('wallet.errors.loadFailed'));
@@ -719,21 +725,23 @@ export default function WalletScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Virtual Cards */}
-        <View style={styles.quickActions}>
-          <TouchableOpacity
-            style={[styles.quickActionButton, { backgroundColor: theme.colors.surface, flex: 1 }]}
-            onPress={() => navigation.navigate('CardsList' as any)}
-          >
-            <Ionicons name="card" size={24} color={theme.colors.primary} />
-            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-              {t('issuing.myCards')}
-            </GSText>
-            <GSText variant="caption" color="textSecondary">
-              {t('issuing.virtualCardsDescription')}
-            </GSText>
-          </TouchableOpacity>
-        </View>
+        {/* Virtual Cards - only show if requests enabled or user has cards */}
+        {showVirtualCards && (
+          <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={[styles.quickActionButton, { backgroundColor: theme.colors.surface, flex: 1 }]}
+              onPress={() => navigation.navigate('CardsList' as any)}
+            >
+              <Ionicons name="card" size={24} color={theme.colors.primary} />
+              <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+                {t('issuing.myCards')}
+              </GSText>
+              <GSText variant="caption" color="textSecondary">
+                {t('issuing.virtualCardsDescription')}
+              </GSText>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Transaction History */}
         <View style={styles.transactionsSection}>

@@ -135,6 +135,21 @@ export interface PaginatedTransactions {
 }
 
 class IssuingService {
+  // --- Feature status ---
+
+  async getFeatureStatus(): Promise<{ requestsEnabled: boolean; hasCards: boolean }> {
+    try {
+      const response = await apiClient.get<{ requestsEnabled: boolean; hasCards: boolean }>('/issuing/feature-status');
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return { requestsEnabled: false, hasCards: false };
+    } catch (error: any) {
+      console.error('IssuingService: Get feature status failed', error);
+      return { requestsEnabled: false, hasCards: false };
+    }
+  }
+
   // --- Cardholder methods ---
 
   async createCardholder(data: CreateCardholderRequest): Promise<Cardholder> {
