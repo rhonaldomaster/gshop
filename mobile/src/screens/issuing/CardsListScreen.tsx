@@ -118,6 +118,7 @@ export default function CardsListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [cardholderChecked, setCardholderChecked] = useState(false);
   const [creatingCard, setCreatingCard] = useState(false);
+  const [requestsEnabled, setRequestsEnabled] = useState(false);
 
   // Load cardholder and cards data
   const loadData = useCallback(async (isRefresh = false) => {
@@ -125,6 +126,10 @@ export default function CardsListScreen() {
       if (!isRefresh) {
         setLoading(true);
       }
+
+      // Check feature status
+      const featureStatus = await issuingService.getFeatureStatus();
+      setRequestsEnabled(featureStatus.requestsEnabled);
 
       // Check cardholder status
       const cardholderData = await issuingService.getMyCardholder();
@@ -221,8 +226,8 @@ export default function CardsListScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      {needsCardholderSetup ? (
-        // Cardholder setup banner
+      {needsCardholderSetup && requestsEnabled ? (
+        // Cardholder setup banner (only when requests are enabled)
         <View style={styles.setupContainer}>
           <View style={[styles.setupCard, { backgroundColor: theme.colors.surface }]}>
             <View style={[styles.setupIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
@@ -255,6 +260,21 @@ export default function CardsListScreen() {
                 style={styles.setupButton}
               />
             )}
+          </View>
+        </View>
+      ) : needsCardholderSetup && !requestsEnabled ? (
+        // No cardholder and requests disabled - show unavailable message
+        <View style={styles.setupContainer}>
+          <View style={[styles.setupCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.setupIconCircle, { backgroundColor: theme.colors.textSecondary + '15' }]}>
+              <Ionicons name="card-outline" size={48} color={theme.colors.textSecondary} />
+            </View>
+            <GSText variant="h4" weight="bold" style={styles.setupTitle}>
+              {t('issuing.requestsUnavailableTitle')}
+            </GSText>
+            <GSText variant="body" color="textSecondary" style={styles.setupSubtitle}>
+              {t('issuing.requestsUnavailableSubtitle')}
+            </GSText>
           </View>
         </View>
       ) : (
@@ -293,8 +313,8 @@ export default function CardsListScreen() {
         />
       )}
 
-      {/* Create card FAB - only when cardholder is active */}
-      {!needsCardholderSetup && (
+      {/* Create card FAB - only when cardholder is active AND requests are enabled */}
+      {!needsCardholderSetup && requestsEnabled && (
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: theme.colors.primary }]}
           onPress={handleCreateCard}
