@@ -725,23 +725,22 @@ export default function WalletScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Virtual Cards - only show if requests enabled or user has cards */}
-        {showVirtualCards && (
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={[styles.quickActionButton, { backgroundColor: theme.colors.surface, flex: 1 }]}
-              onPress={() => navigation.navigate('CardsList' as any)}
-            >
-              <Ionicons name="card" size={24} color={theme.colors.primary} />
-              <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
-                {t('issuing.myCards')}
-              </GSText>
-              <GSText variant="caption" color="textSecondary">
-                {t('issuing.virtualCardsDescription')}
-              </GSText>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Virtual Cards */}
+        <View style={styles.quickActions}>
+          <TouchableOpacity
+            style={[styles.quickActionButton, { backgroundColor: theme.colors.surface, flex: 1, opacity: showVirtualCards ? 1 : 0.6 }]}
+            onPress={() => showVirtualCards ? navigation.navigate('CardsList' as any) : null}
+            activeOpacity={showVirtualCards ? 0.7 : 1}
+          >
+            <Ionicons name="card" size={24} color={showVirtualCards ? theme.colors.primary : theme.colors.textSecondary} />
+            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+              {t('issuing.myCards')}
+            </GSText>
+            <GSText variant="caption" color="textSecondary">
+              {showVirtualCards ? t('issuing.virtualCardsDescription') : t('issuing.comingSoon')}
+            </GSText>
+          </TouchableOpacity>
+        </View>
 
         {/* Transaction History */}
         <View style={styles.transactionsSection}>

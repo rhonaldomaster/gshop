@@ -2219,6 +2219,7 @@
     "txStatusSettled": "Liquidada",
     "requestsUnavailableTitle": "Tarjetas virtuales no disponibles",
     "requestsUnavailableSubtitle": "La solicitud de tarjetas virtuales no está habilitada en este momento. Vuelve más tarde.",
+    "comingSoon": "Disponible próximamente",
     "errors": {
       "loadFailed": "No se pudieron cargar los datos",
       "createCardFailed": "No se pudo crear la tarjeta",
