@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useStripe } from '@stripe/stripe-react-native';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,6 @@ import {
   paymentsService,
   WalletBalance,
   TokenTransaction,
-  StripeTopupIntentResponse,
 } from '../../services/payments.service';
 import { issuingService } from '../../services/issuing.service';
 
@@ -44,7 +44,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) 
         <View style={styles.walletIcon}>
           <Ionicons name="diamond" size={24} color={theme.colors.white} />
         </View>
-        <GSText variant="body" color="white" weight="medium">
+        <GSText variant="body" color="white" weight="semiBold">
           {t('wallet.myWallet')}
         </GSText>
       </View>
@@ -73,7 +73,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) 
           onPress={onTopup}
         >
           <Ionicons name="add" size={20} color={theme.colors.white} />
-          <GSText variant="caption" color="white" weight="medium" style={{ marginTop: 4 }}>
+          <GSText variant="caption" color="white" weight="semiBold" style={{ marginTop: 4 }}>
             {t('wallet.topUp')}
           </GSText>
         </TouchableOpacity>
@@ -83,7 +83,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ balance, onTopup, onSend, t }) 
           onPress={onSend}
         >
           <Ionicons name="send" size={20} color={theme.colors.white} />
-          <GSText variant="caption" color="white" weight="medium" style={{ marginTop: 4 }}>
+          <GSText variant="caption" color="white" weight="semiBold" style={{ marginTop: 4 }}>
             {t('wallet.send')}
           </GSText>
         </TouchableOpacity>
@@ -170,7 +170,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
       </View>
 
       <View style={styles.transactionContent}>
-        <GSText variant="body" weight="medium">
+        <GSText variant="body" weight="semiBold">
           {transaction.description}
         </GSText>
         <GSText variant="caption" color="textSecondary">
@@ -201,7 +201,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, t }) => 
       <View style={styles.transactionAmount}>
         <GSText
           variant="body"
-          weight="medium"
+          weight="semiBold"
           style={{ color: getTransactionColor(transaction.type, transaction.amount) }}
         >
           {getAmountDisplay(transaction.amount)}
@@ -440,7 +440,7 @@ const TopupModal: React.FC<TopupModalProps> = ({
 
 export default function WalletScreen() {
   const { theme } = useTheme();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const { isAuthenticated } = useAuth();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const { t } = useTranslation();
@@ -574,7 +574,7 @@ export default function WalletScreen() {
 
   // Handle send tokens - navigate to transfer screen
   const handleSend = useCallback(() => {
-    navigation.navigate('Transfer' as any);
+    navigation.navigate('Transfer');
   }, [navigation]);
 
   // Render transaction item
@@ -609,7 +609,7 @@ export default function WalletScreen() {
           </GSText>
           <GSButton
             title={t('auth.signIn')}
-            onPress={() => navigation.navigate('Auth' as any)}
+            onPress={() => navigation.navigate('Auth')}
             style={styles.signInButton}
           />
         </View>
@@ -657,7 +657,7 @@ export default function WalletScreen() {
         <GSText variant="h3" weight="bold">
           {t('wallet.title')}
         </GSText>
-        <TouchableOpacity onPress={() => navigation.navigate('PaymentMethods' as any)}>
+        <TouchableOpacity onPress={() => navigation.navigate('PaymentMethods')}>
           <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
       </View>
@@ -690,7 +690,7 @@ export default function WalletScreen() {
             onPress={() => setShowTopupModal(true)}
           >
             <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
-            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+            <GSText variant="body" weight="semiBold" style={{ marginTop: 8 }}>
               {t('wallet.topUp')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
@@ -703,7 +703,7 @@ export default function WalletScreen() {
             onPress={handleSend}
           >
             <Ionicons name="send-outline" size={24} color={theme.colors.primary} />
-            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+            <GSText variant="body" weight="semiBold" style={{ marginTop: 8 }}>
               {t('wallet.send')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
@@ -713,10 +713,10 @@ export default function WalletScreen() {
 
           <TouchableOpacity
             style={[styles.quickActionButton, { backgroundColor: theme.colors.surface }]}
-            onPress={() => navigation.navigate('PaymentMethods' as any)}
+            onPress={() => navigation.navigate('PaymentMethods')}
           >
             <Ionicons name="card-outline" size={24} color={theme.colors.primary} />
-            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+            <GSText variant="body" weight="semiBold" style={{ marginTop: 8 }}>
               {t('wallet.quickActions.methods')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
@@ -729,11 +729,11 @@ export default function WalletScreen() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={[styles.quickActionButton, { backgroundColor: theme.colors.surface, flex: 1, opacity: showVirtualCards ? 1 : 0.6 }]}
-            onPress={() => showVirtualCards ? navigation.navigate('CardsList' as any) : null}
+            onPress={() => showVirtualCards ? navigation.navigate('CardsList') : null}
             activeOpacity={showVirtualCards ? 0.7 : 1}
           >
             <Ionicons name="card" size={24} color={showVirtualCards ? theme.colors.primary : theme.colors.textSecondary} />
-            <GSText variant="body" weight="medium" style={{ marginTop: 8 }}>
+            <GSText variant="body" weight="semiBold" style={{ marginTop: 8 }}>
               {t('issuing.myCards')}
             </GSText>
             <GSText variant="caption" color="textSecondary">
