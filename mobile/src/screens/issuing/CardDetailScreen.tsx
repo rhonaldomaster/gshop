@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import GSText from '../../components/ui/GSText';
 import GSButton from '../../components/ui/GSButton';
@@ -30,59 +31,238 @@ interface CardVisualProps {
   showSensitive: boolean;
 }
 
+// Gradient palettes for card variants
+const CARD_GRADIENTS: [string, string, string][] = [
+  ['#1a6dff', '#633EBB', '#4527a0'],
+  ['#0d47a1', '#1565c0', '#1e88e5'],
+  ['#4a148c', '#7b1fa2', '#ab47bc'],
+  ['#00695c', '#00897b', '#26a69a'],
+  ['#bf360c', '#e64a19', '#ff7043'],
+];
+
+// Brand logo component
+const CardBrandLogo: React.FC<{ brand: string }> = ({ brand }) => {
+  const name = brand.toLowerCase();
+  if (name === 'visa') {
+    return (
+      <GSText weight="bold" style={cvStyles.brandVisa}>
+        VISA
+      </GSText>
+    );
+  }
+  if (name === 'mastercard') {
+    return (
+      <View style={cvStyles.mastercardLogo}>
+        <View style={[cvStyles.mastercardCircle, { backgroundColor: '#EB001B' }]} />
+        <View style={[cvStyles.mastercardCircle, { backgroundColor: '#F79E1B', marginLeft: -10 }]} />
+      </View>
+    );
+  }
+  return (
+    <GSText weight="bold" style={cvStyles.brandGeneric}>
+      {brand.toUpperCase()}
+    </GSText>
+  );
+};
+
 const CardVisual: React.FC<CardVisualProps> = ({ card, sensitive, showSensitive }) => {
   const { t } = useTranslation();
 
-  const cardBg = card.status === 'canceled'
-    ? '#6b7280'
-    : '#4f46e5';
-
   // Format card number for display
   const displayNumber = showSensitive && sensitive
-    ? sensitive.number.replace(/(.{4})/g, '$1 ').trim()
-    : `**** **** **** ${card.last4}`;
+    ? sensitive.number.replace(/(.{4})/g, '$1  ').trim()
+    : `····  ····  ····  ${card.last4}`;
 
   const displayCvc = showSensitive && sensitive ? sensitive.cvc : '***';
 
+  // Pick gradient based on last4
+  const gradientIndex = (parseInt(card.last4, 10) || 0) % CARD_GRADIENTS.length;
+  const gradient = card.status === 'canceled'
+    ? ['#6b7280', '#4b5563', '#374151'] as [string, string, string]
+    : CARD_GRADIENTS[gradientIndex];
+
   return (
-    <View style={[styles.visualCard, { backgroundColor: cardBg }]}>
-      {/* Card brand */}
-      <View style={styles.visualCardTop}>
-        <GSText variant="body" color="white" weight="bold" style={{ textTransform: 'uppercase' }}>
-          {card.brand}
-        </GSText>
-        <GSText variant="caption" color="white" style={{ opacity: 0.7 }}>
-          {card.type === 'virtual' ? t('issuing.virtual') : t('issuing.physical')}
-        </GSText>
-      </View>
+    <View style={cvStyles.cardShadow}>
+      <LinearGradient
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={cvStyles.cardGradient}
+      >
+        {/* Decorative circles */}
+        <View style={cvStyles.decoCircleLarge} />
+        <View style={cvStyles.decoCircleSmall} />
 
-      {/* Card number */}
-      <GSText variant="h3" color="white" weight="bold" style={styles.visualCardNumber}>
-        {displayNumber}
-      </GSText>
+        {/* Top row: chip + contactless | brand logo */}
+        <View style={cvStyles.topRow}>
+          <View style={cvStyles.topLeft}>
+            <View style={cvStyles.chip}>
+              <View style={cvStyles.chipLineH} />
+              <View style={cvStyles.chipLineV} />
+            </View>
+            <Ionicons name="wifi-outline" size={20} color="rgba(255,255,255,0.6)" style={{ transform: [{ rotate: '90deg' }], marginLeft: 10 }} />
+          </View>
+          <CardBrandLogo brand={card.brand} />
+        </View>
 
-      {/* Expiry and CVC */}
-      <View style={styles.visualCardBottom}>
-        <View>
-          <GSText variant="caption" color="white" style={{ opacity: 0.6 }}>
-            {t('issuing.expires')}
-          </GSText>
-          <GSText variant="body" color="white" weight="medium">
-            {card.expMonth}/{card.expYear}
+        {/* Card number */}
+        <View style={cvStyles.numberRow}>
+          <GSText style={cvStyles.numberText}>
+            {displayNumber}
           </GSText>
         </View>
-        <View>
-          <GSText variant="caption" color="white" style={{ opacity: 0.6 }}>
-            CVC
-          </GSText>
-          <GSText variant="body" color="white" weight="medium">
-            {displayCvc}
-          </GSText>
+
+        {/* Bottom row: expiry, CVC, type */}
+        <View style={cvStyles.bottomRow}>
+          <View style={cvStyles.infoBlock}>
+            <GSText style={cvStyles.labelText}>
+              {t('issuing.expires').toUpperCase()}
+            </GSText>
+            <GSText style={cvStyles.valueText}>
+              {card.expMonth}/{card.expYear}
+            </GSText>
+          </View>
+          <View style={cvStyles.infoBlock}>
+            <GSText style={cvStyles.labelText}>CVC</GSText>
+            <GSText style={cvStyles.valueText}>{displayCvc}</GSText>
+          </View>
+          <View style={[cvStyles.infoBlock, { alignItems: 'flex-end' }]}>
+            <GSText style={cvStyles.labelText}>
+              {card.type === 'virtual' ? t('issuing.virtual').toUpperCase() : t('issuing.physical').toUpperCase()}
+            </GSText>
+            {card.spendingControls?.spendingLimits?.[0] && (
+              <GSText style={cvStyles.valueText}>
+                {issuingService.formatUSD(card.spendingControls.spendingLimits[0].amount / 100)}
+              </GSText>
+            )}
+          </View>
         </View>
-      </View>
+      </LinearGradient>
     </View>
   );
 };
+
+const cvStyles = StyleSheet.create({
+  cardShadow: {
+    width: '100%',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  cardGradient: {
+    width: '100%',
+    aspectRatio: 1.586,
+    borderRadius: 16,
+    padding: 24,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  // Decorative elements
+  decoCircleLarge: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -80,
+    right: -50,
+  },
+  decoCircleSmall: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    bottom: -40,
+    left: -30,
+  },
+  // Chip
+  chip: {
+    width: 42,
+    height: 30,
+    borderRadius: 6,
+    backgroundColor: '#d4af37',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  chipLineH: {
+    position: 'absolute',
+    width: '100%',
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  chipLineV: {
+    position: 'absolute',
+    width: 1,
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  // Top row
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  topLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  // Brand logos
+  brandVisa: {
+    color: '#fff',
+    fontSize: 26,
+    fontStyle: 'italic',
+    letterSpacing: 2,
+  },
+  mastercardLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mastercardCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    opacity: 0.9,
+  },
+  brandGeneric: {
+    color: '#fff',
+    fontSize: 18,
+    letterSpacing: 1,
+  },
+  // Card number
+  numberRow: {
+    paddingVertical: 4,
+  },
+  numberText: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '600',
+    letterSpacing: 3,
+  },
+  // Bottom row
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  infoBlock: {},
+  labelText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  valueText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+});
 
 // Transaction item for card transactions
 interface TransactionRowProps {
@@ -532,32 +712,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     alignItems: 'center',
-  },
-  visualCard: {
-    width: '100%',
-    aspectRatio: 1.6,
-    borderRadius: 16,
-    padding: 24,
-    justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  visualCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  visualCardNumber: {
-    letterSpacing: 3,
-    textAlign: 'center',
-  },
-  visualCardBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
   },
   revealButton: {
     flexDirection: 'row',

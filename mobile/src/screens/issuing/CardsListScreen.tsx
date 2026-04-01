@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import GSText from '../../components/ui/GSText';
@@ -28,8 +29,41 @@ interface CardItemProps {
   onPress: (card: VirtualCard) => void;
 }
 
+// Gradient palettes for card variants
+const CARD_GRADIENTS: [string, string, string][] = [
+  ['#1a6dff', '#633EBB', '#4527a0'],
+  ['#0d47a1', '#1565c0', '#1e88e5'],
+  ['#4a148c', '#7b1fa2', '#ab47bc'],
+  ['#00695c', '#00897b', '#26a69a'],
+  ['#bf360c', '#e64a19', '#ff7043'],
+];
+
+// Brand logo rendered with Ionicons
+const CardBrandLogo: React.FC<{ brand: string }> = ({ brand }) => {
+  const name = brand.toLowerCase();
+  if (name === 'visa') {
+    return (
+      <GSText weight="bold" style={cardStyles.brandVisa}>
+        VISA
+      </GSText>
+    );
+  }
+  if (name === 'mastercard') {
+    return (
+      <View style={cardStyles.mastercardLogo}>
+        <View style={[cardStyles.mastercardCircle, { backgroundColor: '#EB001B' }]} />
+        <View style={[cardStyles.mastercardCircle, { backgroundColor: '#F79E1B', marginLeft: -8 }]} />
+      </View>
+    );
+  }
+  return (
+    <GSText weight="bold" style={cardStyles.brandGeneric}>
+      {brand.toUpperCase()}
+    </GSText>
+  );
+};
+
 const CardItem: React.FC<CardItemProps> = ({ card, onPress }) => {
-  const { theme } = useTheme();
   const { t } = useTranslation();
 
   const getStatusLabel = (status: string) => {
@@ -49,62 +83,233 @@ const CardItem: React.FC<CardItemProps> = ({ card, onPress }) => {
 
   const statusColor = issuingService.getStatusColor(card.status);
 
-  // Get a gradient-like background based on card index
-  const cardBg = card.status === 'canceled'
-    ? '#6b7280'
-    : theme.colors.primary;
+  // Pick gradient based on last4 for consistent color per card
+  const gradientIndex = (parseInt(card.last4, 10) || 0) % CARD_GRADIENTS.length;
+  const gradient = card.status === 'canceled'
+    ? ['#6b7280', '#4b5563', '#374151'] as [string, string, string]
+    : CARD_GRADIENTS[gradientIndex];
 
   return (
     <TouchableOpacity
-      style={[styles.cardItem, { backgroundColor: cardBg }]}
       onPress={() => onPress(card)}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
+      style={cardStyles.cardShadow}
     >
-      {/* Card brand and status */}
-      <View style={styles.cardTopRow}>
-        <GSText variant="caption" color="white" weight="medium" style={{ textTransform: 'uppercase', opacity: 0.8 }}>
-          {card.brand.toUpperCase()} {card.type === 'virtual' ? t('issuing.virtual') : t('issuing.physical')}
-        </GSText>
-        <View style={[styles.statusBadge, { backgroundColor: statusColor + '30' }]}>
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <GSText variant="caption" color="white" weight="medium">
-            {getStatusLabel(card.status)}
+      <LinearGradient
+        colors={gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={cardStyles.cardGradient}
+      >
+        {/* Decorative circles */}
+        <View style={cardStyles.decoCircleLarge} />
+        <View style={cardStyles.decoCircleSmall} />
+
+        {/* Top row: chip + brand logo + status */}
+        <View style={cardStyles.topRow}>
+          <View style={cardStyles.topLeft}>
+            {/* Chip */}
+            <View style={cardStyles.chip}>
+              <View style={cardStyles.chipLineH} />
+              <View style={cardStyles.chipLineV} />
+            </View>
+            {/* Contactless icon */}
+            <Ionicons name="wifi-outline" size={18} color="rgba(255,255,255,0.6)" style={{ transform: [{ rotate: '90deg' }], marginLeft: 8 }} />
+          </View>
+          <View style={cardStyles.topRight}>
+            <CardBrandLogo brand={card.brand} />
+          </View>
+        </View>
+
+        {/* Card number */}
+        <View style={cardStyles.numberRow}>
+          <GSText style={cardStyles.numberText}>
+            ····  ····  ····  {card.last4}
           </GSText>
         </View>
-      </View>
 
-      {/* Card number (masked) */}
-      <View style={styles.cardNumberRow}>
-        <GSText variant="h4" color="white" weight="bold" style={{ letterSpacing: 2 }}>
-          **** **** **** {card.last4}
-        </GSText>
-      </View>
-
-      {/* Expiry and spending limit */}
-      <View style={styles.cardBottomRow}>
-        <View>
-          <GSText variant="caption" color="white" style={{ opacity: 0.7 }}>
-            {t('issuing.expires')}
-          </GSText>
-          <GSText variant="body" color="white" weight="medium">
-            {card.expMonth}/{card.expYear}
-          </GSText>
-        </View>
-        {card.spendingControls?.spendingLimits?.[0] && (
-          <View style={styles.cardLimitBadge}>
-            <GSText variant="caption" color="white" style={{ opacity: 0.7 }}>
-              {t('issuing.spendingLimit')}
-            </GSText>
-            <GSText variant="body" color="white" weight="medium">
-              {issuingService.formatUSD(card.spendingControls.spendingLimits[0].amount / 100)}
-              /{card.spendingControls.spendingLimits[0].interval}
+        {/* Bottom row: expiry, limit, status badge */}
+        <View style={cardStyles.bottomRow}>
+          <View style={cardStyles.bottomLeft}>
+            <View style={cardStyles.infoBlock}>
+              <GSText style={cardStyles.labelText}>
+                {card.type === 'virtual' ? t('issuing.virtual').toUpperCase() : t('issuing.physical').toUpperCase()}
+              </GSText>
+              <GSText style={cardStyles.valueText}>
+                {t('issuing.expires')} {card.expMonth}/{card.expYear}
+              </GSText>
+            </View>
+            {card.spendingControls?.spendingLimits?.[0] && (
+              <View style={[cardStyles.infoBlock, { marginLeft: 20 }]}>
+                <GSText style={cardStyles.labelText}>
+                  {t('issuing.spendingLimit').toUpperCase()}
+                </GSText>
+                <GSText style={cardStyles.valueText}>
+                  {issuingService.formatUSD(card.spendingControls.spendingLimits[0].amount / 100)}
+                  /{card.spendingControls.spendingLimits[0].interval}
+                </GSText>
+              </View>
+            )}
+          </View>
+          <View style={[cardStyles.statusBadge, { backgroundColor: statusColor + '40' }]}>
+            <View style={[cardStyles.statusDot, { backgroundColor: statusColor }]} />
+            <GSText style={cardStyles.statusText}>
+              {getStatusLabel(card.status)}
             </GSText>
           </View>
-        )}
-      </View>
+        </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
+
+const cardStyles = StyleSheet.create({
+  cardShadow: {
+    marginBottom: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  cardGradient: {
+    borderRadius: 16,
+    padding: 22,
+    aspectRatio: 1.586,
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+  },
+  // Decorative elements
+  decoCircleLarge: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    top: -60,
+    right: -40,
+  },
+  decoCircleSmall: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    bottom: -30,
+    left: -20,
+  },
+  // Chip
+  chip: {
+    width: 36,
+    height: 26,
+    borderRadius: 5,
+    backgroundColor: '#d4af37',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  chipLineH: {
+    position: 'absolute',
+    width: '100%',
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  chipLineV: {
+    position: 'absolute',
+    width: 1,
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  // Top row
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  topLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  topRight: {
+    alignItems: 'flex-end',
+  },
+  // Brand logos
+  brandVisa: {
+    color: '#fff',
+    fontSize: 22,
+    fontStyle: 'italic',
+    letterSpacing: 2,
+  },
+  mastercardLogo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mastercardCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    opacity: 0.9,
+  },
+  brandGeneric: {
+    color: '#fff',
+    fontSize: 16,
+    letterSpacing: 1,
+  },
+  // Card number
+  numberRow: {
+    paddingVertical: 4,
+  },
+  numberText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 3,
+    fontFamily: undefined,
+  },
+  // Bottom row
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  bottomLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  infoBlock: {},
+  labelText: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  valueText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  // Status
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+});
 
 export default function CardsListScreen() {
   const { theme } = useTheme();
@@ -118,6 +323,7 @@ export default function CardsListScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [cardholderChecked, setCardholderChecked] = useState(false);
   const [creatingCard, setCreatingCard] = useState(false);
+  const [requestsEnabled, setRequestsEnabled] = useState(false);
 
   // Load cardholder and cards data
   const loadData = useCallback(async (isRefresh = false) => {
@@ -125,6 +331,10 @@ export default function CardsListScreen() {
       if (!isRefresh) {
         setLoading(true);
       }
+
+      // Check feature status
+      const featureStatus = await issuingService.getFeatureStatus();
+      setRequestsEnabled(featureStatus.requestsEnabled);
 
       // Check cardholder status
       const cardholderData = await issuingService.getMyCardholder();
@@ -221,8 +431,8 @@ export default function CardsListScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      {needsCardholderSetup ? (
-        // Cardholder setup banner
+      {needsCardholderSetup && requestsEnabled ? (
+        // Cardholder setup banner (only when requests are enabled)
         <View style={styles.setupContainer}>
           <View style={[styles.setupCard, { backgroundColor: theme.colors.surface }]}>
             <View style={[styles.setupIconCircle, { backgroundColor: theme.colors.primary + '15' }]}>
@@ -255,6 +465,21 @@ export default function CardsListScreen() {
                 style={styles.setupButton}
               />
             )}
+          </View>
+        </View>
+      ) : needsCardholderSetup && !requestsEnabled ? (
+        // No cardholder and requests disabled - show unavailable message
+        <View style={styles.setupContainer}>
+          <View style={[styles.setupCard, { backgroundColor: theme.colors.surface }]}>
+            <View style={[styles.setupIconCircle, { backgroundColor: theme.colors.textSecondary + '15' }]}>
+              <Ionicons name="card-outline" size={48} color={theme.colors.textSecondary} />
+            </View>
+            <GSText variant="h4" weight="bold" style={styles.setupTitle}>
+              {t('issuing.requestsUnavailableTitle')}
+            </GSText>
+            <GSText variant="body" color="textSecondary" style={styles.setupSubtitle}>
+              {t('issuing.requestsUnavailableSubtitle')}
+            </GSText>
           </View>
         </View>
       ) : (
@@ -293,8 +518,8 @@ export default function CardsListScreen() {
         />
       )}
 
-      {/* Create card FAB - only when cardholder is active */}
-      {!needsCardholderSetup && (
+      {/* Create card FAB - only when cardholder is active AND requests are enabled */}
+      {!needsCardholderSetup && requestsEnabled && (
         <TouchableOpacity
           style={[styles.fab, { backgroundColor: theme.colors.primary }]}
           onPress={handleCreateCard}
@@ -340,46 +565,6 @@ const styles = StyleSheet.create({
   },
   listHeader: {
     paddingVertical: 12,
-  },
-  cardItem: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  cardNumberRow: {
-    marginBottom: 20,
-  },
-  cardBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-  },
-  cardLimitBadge: {
-    alignItems: 'flex-end',
   },
   setupContainer: {
     flex: 1,

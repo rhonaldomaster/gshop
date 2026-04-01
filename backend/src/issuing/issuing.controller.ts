@@ -37,6 +37,20 @@ export class IssuingController {
     private cardTransactionsService: CardTransactionsService,
   ) {}
 
+  @Get('feature-status')
+  @ApiOperation({ summary: 'Get issuing feature status (requests enabled, user has cards)' })
+  async getFeatureStatus(@Request() req) {
+    const requestsEnabled = process.env.ISSUING_REQUESTS_ENABLED === 'true';
+    let hasCards = false;
+    try {
+      const cards = await this.cardsService.getUserCards(req.user.id);
+      hasCards = cards.length > 0;
+    } catch {
+      // User has no cardholder or cards
+    }
+    return { requestsEnabled, hasCards };
+  }
+
   // --- Cardholder ---
 
   @Post('cardholders')
